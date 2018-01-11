@@ -112,11 +112,8 @@ class UltraFlatsTask(pipeBase.Task):
 				for y in range(meanmaps[0].shape[1]):
 					means = [meanmap[x][y] for meanmap in meanmaps]
 					varrs = [varmap[x][y] for varmap in varmaps]
-					print means
-					print varrs
 					slope, intercept, r_value, p_value, std_err = stats.linregress(means,varrs)
 					gain_map[x][y] = 1/slope
-        	print np.median(gain_map)
         	ptc = np.median(gain_map)
         	
         	# Write a fits file of the gain map 
@@ -124,8 +121,6 @@ class UltraFlatsTask(pipeBase.Task):
         	
         	 # Write gain and error to EO test results file.
             output.add_seg_result(amp, 'SINGLE_PIXEL_PTC_GAIN', ptc_gain)
-            output.add_seg_result(amp, 'SINGLE_PIXEL_PTC_GAIN_ERROR', ptc_error)
-            self.log.info("%i  %f  %f" % (amp, ptc_gain, ptc_error))
         output.write()
         fitsWriteto(mean_stack, 'gain_map_.fits',clobber = True)
 			
