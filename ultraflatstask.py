@@ -22,7 +22,7 @@ import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
 
 
-def glob_flats(full_path, outfile = 'single_pixel_ptc.txt'):
+def glob_flats(full_path, outfile = 'ultraflats.txt'):
 	flats = glob.glob(join(full_path, '20*.fits'))
 	output = open(outfile, 'w')
 	for item in flats:
@@ -50,26 +50,23 @@ class UltraFlatsTask(pipeBase.Task):
 	
 	@pipeBase.timeMethod
 	def stack(self, sensor_id, infiles, mask_files, gains, binsize=1, bias_frame = None,exps=['0.27','0.54','1.60','2.40']):
-		exps = ['0.27','1.60','2.40']
 		for exp in exps:
-        		in_file_path = '/nfs/slac/g/ki/ki19/lsst/elp25/S11'
-			files = glob.glob(join(in_file_path, '20*'+exp+'*.fits'))
-        		bias_frame = glob.glob(join(in_file_path, '*bias*'))[0]
-			#'ITL-3800C-090_sflat_bias_000_4663_20170621212349.fits'
-			#outfile = os.path.join(self.config.output_dir, '%s_ptc.fits' % sensor_id)
+        		
 			all_amps = imutils.allAmps(infiles[0])
 			#ptc_stats = dict([amp, ([],[])) for amp in all_amps])
 			exposure = []	
 			bitpix = None
-			overscan = makeAmplifierGeometry(files[0]).serial_overscan
+			overscan = makeAmplifierGeometry(infiles[0]).serial_overscan
 
-			mean_stack = fits.open(files[0])
-			var_stack = fits.open(files[0])
-			sum_stack = fits.open(files[0])
-			median_stack = fits.open(files[0])
-			for amp in imutils.allAmps(files[0]):
+			mean_stack = fits.open(infiles[0])
+			var_stack = fits.open(infiles[0])
+			sum_stack = fits.open(infiles[0])
+			median_stack = fits.open(infiles[0])
+			for amp in imutils.allAmps(infiles[0]):
+				print 'on amp number', amp
 				images = afwImage.vectorImageF()
-				for idx, infile in enumerate(files):
+				for idx, infile in enumerate(infiles):
+					print infile
 					ccd = MaskedCCD(infile, mask_files = (), bias_frame = bias_frame)
 					image = ccd.unbiased_and_trimmed_image(amp)
 
@@ -97,13 +94,13 @@ class UltraFlatsTask(pipeBase.Task):
                         		if bitpix is not None:
                                 		imutils.set_bitpix(output[amp], bitpix)
 
-			fitsWriteto(mean_stack, sensor_id + '_mean_image_'+exp+'.fits',clobber = True)
-			fitsWriteto(var_stack, sensor_id + '_var_image_'+exp+'.fits', clobber = True)
-			fitsWriteto(sum_stack, sensor_id +'_sum_image_'+exp+'.fits', clobber = True)
-			fitsWriteto(median_stack, sensor_id +'_median_image_'+exp+'.fits', clobber = True)
+			fitsWriteto(mean_stack, 'mean_image_'+exp+'.fits',clobber = True)
+			fitsWriteto(var_stack, 'var_image_'+exp+'.fits', clobber = True)
+			fitsWriteto(sum_stack, 'sum_image_'+exp+'.fits', clobber = True)
+			fitsWriteto(median_stack, 'median_image_'+exp+'.fits', clobber = True)
 			
 	def single_pixel_ptc(self,meanimages,varimages,infiles):
-		gain_map = fits.open(infiles[0])
+		gain_map_image = fits.open(infiles[0])
 		for amp in imutils.allAmps(infiles[0]):
 			meanmaps =  [afwImage.ImageF(meanimage).getArray() for meanimage in meanimages]
 			varmaps = [afwImage.ImageF(varimage).getArray() for varimage in varimages]
@@ -114,15 +111,9 @@ class UltraFlatsTask(pipeBase.Task):
 					varrs = [varmap[x][y] for varmap in varmaps]
 					slope, intercept, r_value, p_value, std_err = stats.linregress(means,varrs)
 					gain_map[x][y] = 1/slope
-        	ptc = np.median(gain_map)
-        	
-        	# Write a fits file of the gain map 
-        	
-        	
-        	 # Write gain and error to EO test results file.
-            output.add_seg_result(amp, 'SINGLE_PIXEL_PTC_GAIN', ptc_gain)
-        output.write()
-        fitsWriteto(mean_stack, 'gain_map_.fits',clobber = True)
+			gain_map_image[amp].data = gain_map
+        	print np.median(gain_map)
+        fitsWriteto(gain_map_image, 'gain_map.fits',clobber=True)
 			
         	
 		
