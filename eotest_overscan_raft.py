@@ -11,8 +11,9 @@ import numpy as np
 import errno
 
 from overscanTask import OverscanTask
-from lsst.eotest.sensor import parse_geom_kwd
+from lsst.eotest.sensor import parse_geom_kwd, makeAmplifierGeometry
 from deferredChargePlots import *
+import lsst.eotest.image_utils as imutils
 
 def main(directory, output_dir):
 
@@ -25,6 +26,7 @@ def main(directory, output_dir):
             raise
 
     for sensor_id in ccd_names:
+        print(sensor_id)
 
         ccd_output_dir = join(output_dir, sensor_id)
         try:
@@ -40,10 +42,13 @@ def main(directory, output_dir):
         bias_files = sorted(glob.glob(join(flat_pair_dir, '*flat_bias*.fits')))
 
         ## Make a superbias 
-#        ccd = MaskedCCD(bias_files[0])
-#        oscan = ccd.amp_geom
-#        bias_frame = join(output_dir, '{0}_superbias.fits'.format(sensor_id))
-#        super_bias_file(bias_files, oscan, bias_frame)
+#        print("Making superbias")
+#        amp_geom = makeAmplifierGeometry(bias_files[0])
+#        oscan = amp_geom.serial_overscan
+#        bias_frame = join(output_dir, 
+#                          '{0}_superbias.fits'.format(sensor_id))
+#        imutils.super_bias_file(bias_files[:4], oscan, bias_frame)
+        bias_frame = bias_files[0]
         
         ## Get amplifier gains
         with fits.open(flat1_files[0]) as hdulist:
@@ -62,22 +67,17 @@ def main(directory, output_dir):
         overscantask = OverscanTask()
         overscantask.config.output_dir = ccd_output_dir
         output_file = overscantask.run(sensor_id, flat1_files, gains, 
-                                       bias_frame=bias_files[0])
+                                       bias_frame=bias_frame)
 
-        with fits.open(output_file) as hdul:
-
-            results = hdul[0].data
-
-            eper_plot(sensor_id, results, xmin=xmin, xmax=xmax, 
-                      output_dir=ccd_output_dir)
-            first_overscan_plot(sensor_id, results, xmin=xmin, xmax=xmax, 
-                                output_dir=ccd_output_dir)
-            second_overscan_plot(sensor_id, results, xmin=xmin, xmax=xmax, 
-                                 output_dir=ccd_output_dir)
-            cti_plot(sensor_id, results, xmin=xmin, xmax=xmax, 
-                     output_dir=ccd_output_dir)
-            oscanratio_plot(sensor_id, results, xmin=xmin, xmax=xmax,
+        ## Make plots
+        eper_plot(sensor_id, output_file, xmax=xmax, 
+                  output_dir=ccd_output_dir)
+        first_overscan_plot(sensor_id, output_file, xmax=xmax, 
                             output_dir=ccd_output_dir)
+        second_overscan_plot(sensor_id, output_file, xmax=xmax, 
+                             output_dir=ccd_output_dir)
+        cti_plot(sensor_id, output_file, xmax=xmax, 
+                 output_dir=ccd_output_dir)
 
 if __name__ == '__main__':
 

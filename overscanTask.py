@@ -12,6 +12,7 @@ import lsst.pipe.base as pipeBase
 import lsst.eotest.image_utils as imutils
 from lsst.eotest.fitsTools import fitsWriteto
 from lsst.eotest.sensor import MaskedCCD, parse_geom_kwd
+from overscan_fit import OverscanFit
 
 class OverscanConfig(pexConfig.Config):
     """Configuration for overscan analysis task"""
@@ -19,6 +20,10 @@ class OverscanConfig(pexConfig.Config):
     output_file = pexConfig.Field("Output filename", str, default=None)
     smoothing = pexConfig.Field("Smoothing for spline overscan correction",
                                 int, default=11000)
+    minflux = pexConfig.Field("Minimum flux for overscan fitting.", float,
+                              default=40000.0)
+    maxflux = pexConfig.Field("Maximum flux for overscan fitting.", float,
+                              default=150000.0)
     verbose = pexConfig.Field("Turn verbosity on", bool, default=True)
 
 class OverscanTask(pipeBase.Task):
@@ -28,35 +33,15 @@ class OverscanTask(pipeBase.Task):
 
     def run(self, sensor_id, infiles, gains, bias_frame=None):
 
-        with fits.open(infiles[0]) as hdulist:
-            datasec = parse_geom_kwd(hdulist[1].header['DATASEC'])
-            ymin = datasec['ymin']
-            ymax = datasec['ymax']
-            xmin = datasec['xmin']
-            xmax = datasec['xmax']
-            ny, nx = hdulist[1].shape
-
         ## Calculate mean row for each flat file
-        results = np.zeros((16, len(infiles), nx))
+        fitter = OverscanFit(num_pixels=10, minflux=30000., maxflux=150000.)
         for i, infile in enumerate(infiles):
             if self.config.verbose:
                 self.log.info("Processing {0}".format(infile))
             ccd = MaskedCCD(infile, bias_frame=bias_frame)
             for amp in range(1, 17):
-                smoothing = self.config.smoothing
-                image = ccd.bias_subtracted_image(amp, s=smoothing)
-                imarr = image.getImage().getArray()
-                results[amp-1, i, :] = np.mean(imarr[ymin-1:ymax, :],
-                                               axis=0)*gains[amp]
-
-        ## Sort results array by increasing flux
-        flux = np.median(results[:, :, xmin-1:xmax], axis=(0, 2))
-        indices = np.argsort(flux)
-        results = results[:, indices, :]
-        
-        ## Save as FITs file
-        hdu = fits.PrimaryHDU(results)
-        hdul = fits.HDUList([hdu])
+                fitter.process_image(ccd, amp, gains)
+                
         output_dir = self.config.output_dir
         if self.config.output_file is None:
             output_file = os.path.join(output_dir, 
@@ -65,6 +50,6 @@ class OverscanTask(pipeBase.Task):
             output_file = os.path.join(output_dir, self.config.output_file)
         if self.config.verbose:
             self.log.info("writing to {0}".format(output_file))
-        fitsWriteto(hdul, output_file, overwrite=True)
+        fitter.write_results(outfile=output_file)
 
         return output_file
