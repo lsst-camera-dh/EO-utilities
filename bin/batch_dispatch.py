@@ -5,9 +5,8 @@ import argparse
 
 from batch_utils import read_runlist, dispatch_job
 
-
-if __name__ == '__main__':
-
+def main():
+    """Hook for setup.py"""
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-i", "--input", default=None,
@@ -41,3 +40,7 @@ if __name__ == '__main__':
         logfile = os.path.join(args.logdir, "%s_%s_%s%s.log" %\
                                    (raft, run_num, args.jobname.replace('.py', ''), args.logsuffix))
         dispatch_job(args.jobname, raft, run_num, logfile, **opt_dict)
+
+
+if __name__ == '__main__':
+    main()

@@ -1,30 +1,16 @@
 #!/usr/bin/env python
 
-import argparse
+from config_utils import setup_parser
 from bias_utils import run_plot_bias_fft, ALL_SLOTS
 
-DEFAULT_ROOT_DIR = '/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive-test/LCA-11021_RTM/'
+def main():
+    """Hook for setup.py"""
 
-if __name__ == '__main__':
+    argnames = ['raft', 'run', 'slots',
+                'bias', 'superbias',
+                'std', 'mask', 'root_dir']
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--raft", default=None,
-                        help="Raft Name")
-    parser.add_argument("--run", default=None,
-                        help="Run id")
-    parser.add_argument("--slots", default=None, action="append",
-                        help="Slot number")
-    parser.add_argument("--bias", default=None,
-                        help="Method of bias to use")
-    parser.add_argument("--superbias", default=None,
-                        help="Method of superbias to use")
-    parser.add_argument("--std", default=False, action='store_true',
-                        help="Plot std instead of mean")
-    parser.add_argument("--mask", default=False, action='store_true',
-                        help="Use masks")
-    parser.add_argument("--root_dir", default=DEFAULT_ROOT_DIR,
-                        help="Root file path")
-
+    parser = setup_parser(argnames)
     args = parser.parse_args()
     arg_dict = args.__dict__.copy()
 
@@ -36,3 +22,7 @@ if __name__ == '__main__':
         slot_list = ALL_SLOTS
 
     run_plot_bias_fft(raft, run_num, slot_list, **arg_dict)
+
+
+if __name__ == '__main__':
+    main()
