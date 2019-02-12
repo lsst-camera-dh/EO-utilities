@@ -78,7 +78,7 @@ def setup_amp_plots_grid(**kwargs):
     return (fig, axs)
 
 
-def setup_raft_plots_grid(xlabel, ylabel, figsize=(14, 8)):
+def setup_raft_plots_grid(**kwargs):
     """Set up a 3x3 grid of plots with requested labeling
 
     Keyword arguments
@@ -321,7 +321,7 @@ def histogram_array(sensor_file, mask_files, **kwargs):
             im = imutil.unbias_and_trim(ccd[amp], oscan, bias_method=bias_method)
         else:
             im = ccd[amp]
-  
+
         if superbias_frame is not None:
             im -= superbias_frame[amp]
 

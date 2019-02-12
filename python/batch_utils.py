@@ -1,6 +1,7 @@
 """Some utilities to interface to the slac batch system"""
 
 import os
+import sys
 
 def dispatch_job(jobname, raft, run_num, logfile, **kwargs):
     """Stack the overscan region from all the amps on a sensor
@@ -38,7 +39,7 @@ def dispatch_job(jobname, raft, run_num, logfile, **kwargs):
         bsub_com += " %s" % optstring
 
     if dry_run:
-        print (bsub_com)
+        sys.stdout.write("%s\n" % bsub_com)
     else:
         os.system(bsub_com)
 
@@ -55,13 +56,13 @@ def read_runlist(filepath):
     outlist:       list
        A list of tuples with (raft, run_num)
     """
-    f = open(filepath)
-    l = f.readline()
+    fin = open(filepath)
+    lin = fin.readline()
 
     outlist = []
-    while l:
-        tokens = l.split()
+    while lin:
+        tokens = lin.split()
         if len(tokens) == 2:
             outlist.append(tokens)
-        l = f.readline()
+        lin = fin.readline()
     return outlist

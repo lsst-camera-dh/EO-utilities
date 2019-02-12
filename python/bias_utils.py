@@ -158,7 +158,7 @@ def run_plot_bias_v_row(raft, run_num, slot_list, **kwargs):
         plt.ion()
 
     all_bias_files = get_bias_files_run(run_num, acq_types, db)
-   
+
     for slot in slot_list:
 
         sys.stdout.write("Working on %s\n" % slot)
@@ -171,12 +171,12 @@ def run_plot_bias_v_row(raft, run_num, slot_list, **kwargs):
             mask_files = []
 
         oscan = makeAmplifierGeometry(bias_files[0])
-        nrow_s = oscan.serial_overscan.getHeight()    
+        nrow_s = oscan.serial_overscan.getHeight()
         xrow_s = np.linspace(0, nrow_s-1, nrow_s)
 
         fig_row, axs_row =\
             setup_amp_plots_grid(title="Bias by row", xlabel="row", ylabel="Magnitude [ADU]")
-        
+
         for ifile, bias_file in enumerate(bias_files):
             if ifile % 10 == 0:
                 sys.stdout.write('.')
@@ -185,7 +185,7 @@ def run_plot_bias_v_row(raft, run_num, slot_list, **kwargs):
             ccd = MaskedCCD(bias_file, mask_files=mask_files)
 
             for i, amp in enumerate(ccd):
-                im = afwImage.ImageF(bias_file, i+2)
+                im = afwImage.ImageF(bias_file, amp+1)
                 bim = imutil.bias_image(im, oscan.serial_overscan, bias_method=bias_type)
                 bim_row_mean = bim.Factory(bim, oscan.serial_overscan).getArray().mean(1)
                 axs_row.flat[i].plot(xrow_s[0:len(bim_row_mean)], bim_row_mean)
@@ -520,7 +520,6 @@ def run_plot_correl_wrt_oscan(raft, run_num, slot_list, **kwargs):
     """
 
     acq_types = kwargs.get('acq_types', ACQ_TYPES_DEFAULT)
-    root_dir = kwargs.get('root_dir', RAFT_ROOT_FOLDER)
     db = kwargs.get('db', 'Dev')
 
     all_bias_files = get_bias_files_run(run_num, acq_types, db)
@@ -870,7 +869,6 @@ def run_plot_oscan_correl(raftName, run_num, **kwargs):
     """
 
     covar = kwargs.get('covar', False)
-    root_dir = kwargs.get('root_dir', RAFT_ROOT_FOLDER)
     db = kwargs.get('db', 'Dev')
 
     all_bias_files = get_bias_files_run(run_num, acq_types=ACQ_TYPES_DEFAULT[0:1], db=db)

@@ -20,7 +20,7 @@ RD_ROOT_FOLDER = '/gpfs/slac/lsst/fs1/g/data/R_and_D/'
 RAFT_ROOT_FOLDER = '/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive-test/LCA-11021_RTM/'
 
 
-def get_bias_files_run(run_id, acq_types=ACQ_TYPES_DEFAULT, db="Dev"):
+def get_bias_files_run(run_id, acq_types=None, db="Dev"):
     """Get a set of bias files out of a folder
 
     Parameters
@@ -35,6 +35,9 @@ def get_bias_files_run(run_id, acq_types=ACQ_TYPES_DEFAULT, db="Dev"):
        Dictionary maping slot to bias file names
     """
     outdict = {}
+    if acq_types is None:
+        acq_types = ACQ_TYPES_DEFAULT
+
     handler = get_EO_analysis_files(db=db)
     for acq_type in acq_types:
         r_dict = handler.get_files(testName=acq_type, run=run_id, imgtype='BIAS')
@@ -45,12 +48,12 @@ def get_bias_files_run(run_id, acq_types=ACQ_TYPES_DEFAULT, db="Dev"):
                 outdict[key] = val
     return outdict
 
-def get_bias_files_RandD(raftName, folder, root_data_path=RD_ROOT_FOLDER):
+def get_bias_files_rd(raft, folder, root_data_path=RD_ROOT_FOLDER):
     """Get a set of bias files out of a folder
 
     Parameters
     ----------
-    raftName:        str
+    raft:        str
     folder:          str
     root_data_path:  str
 
@@ -59,7 +62,7 @@ def get_bias_files_RandD(raftName, folder, root_data_path=RD_ROOT_FOLDER):
     bias_files:  dict
        Dictionary maping slot to bias file name
     """
-    files = sorted(glob.glob(os.path.join(root_data_path, raftName, folder,
+    files = sorted(glob.glob(os.path.join(root_data_path, raft, folder,
                                           'data', '*Bias*.fits*')))
     bias_files = dict()
     for item in files:
@@ -68,13 +71,13 @@ def get_bias_files_RandD(raftName, folder, root_data_path=RD_ROOT_FOLDER):
     return bias_files
 
 
-def get_bias_files_raft(raftName, folder, acq_type='dark_raft_acq',
+def get_bias_files_raft(raft, folder, acq_type='dark_raft_acq',
                         root_data_path=RAFT_ROOT_FOLDER):
     """Get a set of bias files out of a folder
 
     Parameters
     ----------
-    raftName:        str
+    raft:        str
     folder:          str
     root_data_path:  str
 
@@ -85,7 +88,7 @@ def get_bias_files_raft(raftName, folder, acq_type='dark_raft_acq',
     """
     files = []
 
-    full_raft = "LCA-11021_%s"% raftName
+    full_raft = "LCA-11021_%s"% raft
     glob_string = os.path.join(root_data_path, full_raft, folder, acq_type,
                                'v0', '*', '*', '*_bias_*.fits')
     files = sorted(glob.glob(glob_string))
@@ -97,14 +100,14 @@ def get_bias_files_raft(raftName, folder, acq_type='dark_raft_acq',
     return bias_files
 
 
-def get_bias_files_slot(raftName, folder, slot,
-                        acq_types=ACQ_TYPES_DEFAULT,
+def get_bias_files_slot(raft, folder, slot,
+                        acq_types=None,
                         root_data_path=RAFT_ROOT_FOLDER):
     """Get a set of bias files out of a folder
 
     Parameters
     ----------
-    raftName:        str
+    raft:        str
     folder:          str
     slot:            str
     acq_types:       list
@@ -115,22 +118,24 @@ def get_bias_files_slot(raftName, folder, slot,
     files:            list
        All the files matching the request
     """
+    if acq_types is None:
+        acq_types = ACQ_TYPES_DEFAULT
     files = []
     for acq_type in acq_types:
-        glob_string = os.path.join(root_data_path, "LCA-11021_%s" % raftName, folder,
+        glob_string = os.path.join(root_data_path, "LCA-11021_%s" % raft, folder,
                                    acq_type, 'v0', '*', slot, '*_bias_*.fits')
         files += sorted(glob.glob(glob_string))
     return files
 
 
-def get_mask_files_slot(raftName, folder, sensor_id,
-                        mask_types=MASK_TYPES_DEFAULT,
+def get_mask_files_slot(raft, folder, sensor_id,
+                        mask_types=None,
                         root_data_path=RAFT_ROOT_FOLDER):
     """Get a set of mask files out of a folder
 
     Parameters
     ----------
-    raftName:        str
+    raft:        str
     folder:          str
     sensor_id:       str
     acq_types:       list
@@ -141,8 +146,10 @@ def get_mask_files_slot(raftName, folder, sensor_id,
     files:            list
        All the files matching the request
     """
+    if mask_types is None:
+        mask_types = MASK_TYPES_DEFAULT
     files = []
     for mask_type in mask_types:
-        files += sorted(glob.glob(os.path.join(root_data_path, "LCA-11021_%s" % raftName, folder,
+        files += sorted(glob.glob(os.path.join(root_data_path, "LCA-11021_%s" % raft, folder,
                                                mask_type, 'v0', '*', '%s_*_mask.fits' % sensor_id)))
     return files

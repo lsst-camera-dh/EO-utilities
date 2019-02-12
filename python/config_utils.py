@@ -53,7 +53,7 @@ def add_arguments(parser, arg_dict):
                                 default=argdefault,
                                 help=arghelp)
         elif argtype in [bool]:
-             parser.add_argument("--%s" % argname,
+            parser.add_argument("--%s" % argname,
                                 action='store_true',
                                 default=argdefault,
                                 help=arghelp)
