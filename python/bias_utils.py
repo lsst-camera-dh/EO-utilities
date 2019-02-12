@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from scipy import fftpack
 
 import lsst.afw.math as afwMath
+import lsst.afw.image as afwImage
 from lsst.eotest.sensor import MaskedCCD, makeAmplifierGeometry
 import lsst.eotest.image_utils as imutil
 
@@ -20,7 +21,7 @@ from file_utils import get_bias_files_slot, get_mask_files_slot,\
     get_bias_files_raft, get_bias_files_RandD,\
     ACQ_TYPES_DEFAULT, MASK_TYPES_DEFAULT, RAFT_ROOT_FOLDER
 from plot_utils import setup_figure, setup_amp_plots_grid,\
-    plot_fft, plot_sensor, historgram_array
+    plot_fft, plot_sensor, histogram_array
 from image_utils import get_image_frames_2d, array_struct
 
 DEFAULT_BIAS_TYPE = 'spline'
@@ -114,10 +115,80 @@ def run_make_superbias(raft, run_num, slot_list, **kwargs):
             fig_sensor[0].savefig(output_file.replace('.fits', '.png'))
 
         if stats_hist:
-            fig_hist = historgram_array(output_file, mask_files,
-                                        "RMS [counts]", "Pixels / 0.1 counts",
-                                        nbins=200, vmin=0., vmax=20.)
+            fig_hist = histogram_array(output_file, mask_files,
+                                       title="Historam of RMS of bias-images, per pixel",
+                                       xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
+                                       nbins=200, vmin=0., vmax=20.)
             fig_hist[0].savefig(output_file.replace('.fits', '_hist.png'))
+
+
+def run_plot_bias_v_row(raft, run_num, slot_list, **kwargs):
+    """Make superbias frames
+
+    Parameters
+    ----------
+    raft:        str
+       The raft name, i.e., 'RTM-004-Dev'
+    run_num:     str
+       The run number, i.e,. '6106D'
+    slot_list:   list
+       List of slots
+
+    Keyword arguments
+    -----------------
+    acq_types:    list
+    mask_types:   list
+    root_dir:     string
+    mask:         bool
+    bias:         str
+    """
+    acq_types = kwargs.get('acq_types', ACQ_TYPES_DEFAULT)
+    mask_types = kwargs.get('mask_types', MASK_TYPES_DEFAULT)
+    root_dir = kwargs.get('root_dir', RAFT_ROOT_FOLDER)
+    mask = kwargs.get('mask', False)
+    bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
+
+    # If we are doing more that one slot, don't show the plots
+    if len(slot_list) > 1:
+        plt.ioff()
+    else:
+        plt.ion()
+
+    for slot in slot_list:
+
+        sys.stdout.write("Working on %s\n" % slot)
+
+        bias_files = get_bias_files_slot(raft, run_num, slot, acq_types, root_dir)
+        if mask:
+            sensor_id = (os.path.splitext(os.path.split(bias_files[0])[-1])[0]).split('_')[0]
+            mask_files = get_mask_files_slot(raft, run_num, sensor_id, mask_types, root_dir)
+        else:
+            mask_files = []
+
+        oscan = makeAmplifierGeometry(bias_files[0])
+        nrow_s = oscan.serial_overscan.getHeight()    
+        xrow_s = np.linspace(0, nrow_s-1, nrow_s)
+
+        fig_row, axs_row =\
+            setup_amp_plots_grid(title="Bias by row", xlabel="row", ylabel="Magnitude [ADU]")
+        
+        for ifile, bias_file in enumerate(bias_files):
+            if ifile % 10 == 0:
+                sys.stdout.write('.')
+                sys.stdout.flush()
+
+            ccd = MaskedCCD(bias_file, mask_files=mask_files)
+
+            for i, amp in enumerate(ccd):
+                im = afwImage.ImageF(bias_file, i+2)
+                bim = imutil.bias_image(im, oscan.serial_overscan, bias_method=bias_type)
+                bim_row_mean = bim.Factory(bim, oscan.serial_overscan).getArray().mean(1)
+                axs_row.flat[i].plot(xrow_s[0:len(bim_row_mean)], bim_row_mean)
+
+        output_file = os.path.join('superbias', 'plots',
+                                   '%s-%s-%s_biasval_b-%s.png' % (raft, run_num, slot, bias_type))
+
+        fig_row.savefig(output_file)
 
 
 
@@ -184,9 +255,15 @@ def run_plot_bias_fft(raft, run_num, slot_list, **kwargs):
         freqs_s = fftpack.fftfreq(nrow_s)*f_s
         freqs_p = fftpack.fftfreq(nrow_p)*f_s
 
-        fig_raw_i_row, axs_raw_i_row = setup_amp_plots_grid("row", "counts", figsize=(15, 10))
-        fig_raw_s_row, axs_raw_s_row = setup_amp_plots_grid("row", "counts", figsize=(15, 10))
-        fig_raw_p_row, axs_raw_p_row = setup_amp_plots_grid("row", "counts", figsize=(15, 10))
+        fig_raw_i_row, axs_raw_i_row =\
+            setup_amp_plots_grid(title="FFT of imaging region mean by row",
+                                 xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]")
+        fig_raw_s_row, axs_raw_s_row =\
+            setup_amp_plots_grid(title="FFT of serial overscan mean by row",
+                                 xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]")
+        fig_raw_p_row, axs_raw_p_row =\
+            setup_amp_plots_grid(title="FFT of parallel overscan mean by row",
+                                 xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]")
 
         if superbias_type is None:
             superbias_file = None
@@ -229,9 +306,9 @@ def run_plot_bias_fft(raft, run_num, slot_list, **kwargs):
                 fftpow_s /= len(fftpow_s)/2
                 fftpow_p /= len(fftpow_p)/2
 
-                plot_fft(axs_raw_i_row.flat[i], freqs_i, fftpow_i)
-                plot_fft(axs_raw_s_row.flat[i], freqs_s, fftpow_s)
-                plot_fft(axs_raw_p_row.flat[i], freqs_p, fftpow_p)
+                plot_fft(axs_raw_i_row.flat[i], freqs_i, np.sqrt(fftpow_i))
+                plot_fft(axs_raw_s_row.flat[i], freqs_s, np.sqrt(fftpow_s))
+                plot_fft(axs_raw_p_row.flat[i], freqs_p, np.sqrt(fftpow_p))
 
 
         sys.stdout.write("!\n")
@@ -285,7 +362,7 @@ def run_plot_bias_struct(raft, run_num, slot_list, **kwargs):
     std = kwargs.get('std', False)
     bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
     superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
- 
+
    # If we are doing more that one slot, don't show the plots
     if len(slot_list) > 1:
         plt.ioff()
@@ -320,12 +397,24 @@ def run_plot_bias_struct(raft, run_num, slot_list, **kwargs):
         xcol_s = np.linspace(0, ncol_s-1, ncol_s)
         xcol_p = np.linspace(0, ncol_p-1, ncol_p)
 
-        fig_raw_i_row, axs_raw_i_row = setup_amp_plots_grid("row", "counts", figsize=(15, 10))
-        fig_raw_i_col, axs_raw_i_col = setup_amp_plots_grid("col", "counts", figsize=(15, 10))
-        fig_raw_s_row, axs_raw_s_row = setup_amp_plots_grid("row", "counts", figsize=(15, 10))
-        fig_raw_s_col, axs_raw_s_col = setup_amp_plots_grid("col", "counts", figsize=(15, 10))
-        fig_raw_p_row, axs_raw_p_row = setup_amp_plots_grid("row", "counts", figsize=(15, 10))
-        fig_raw_p_col, axs_raw_p_col = setup_amp_plots_grid("col", "counts", figsize=(15, 10))
+        fig_raw_i_row, axs_raw_i_row =\
+            setup_amp_plots_grid(title="Imaging region, profile by row",
+                                 xlabel="row", ylabel="ADU")
+        fig_raw_i_col, axs_raw_i_col =\
+            setup_amp_plots_grid(title="Imaging region, profile by col",
+                                 xlabel="col", ylabel="ADU")
+        fig_raw_s_row, axs_raw_s_row =\
+            setup_amp_plots_grid(title="Serial overscan, profile by row",
+                                 xlabel="row", ylabel="ADU")
+        fig_raw_s_col, axs_raw_s_col =\
+            setup_amp_plots_grid(title="Serial overscan, profile by row",
+                                 xlabel="col", ylabel="ADU")
+        fig_raw_p_row, axs_raw_p_row =\
+            setup_amp_plots_grid(title="Parallel overscan, profile by row",
+                                 xlabel="row", ylabel="ADU")
+        fig_raw_p_col, axs_raw_p_col =\
+            setup_amp_plots_grid(title="Parallel overscan, profile by row",
+                                 xlabel="col", ylabel="ADU")
 
         if superbias_type is None:
             superbias_file = None
@@ -436,10 +525,14 @@ def run_plot_correl_wrt_oscan(raft, run_num, slot_list, **kwargs):
         nrow_i = oscan.imaging.getHeight()
         ncol_i = oscan.imaging.getWidth()
 
-        fig_correl_row, axs_correl_row = setup_amp_plots_grid("Serial OS [counts]",
-                                                              "Delta [counts]", figsize=(15, 10))
-        fig_correl_col, axs_correl_col = setup_amp_plots_grid("Parallel OS [counts]",
-                                                              "Delta [counts]", figsize=(15, 10))
+        fig_correl_row, axs_correl_row =\
+            setup_amp_plots_grid(title="Correlation: imaging region and serial overscan",
+                                 xlabel="Correlation",
+                                 ylabel="Number of frames")
+        fig_correl_col, axs_correl_col =\
+            setup_amp_plots_grid(title="Correlation: imaging region and paralell overscan",
+                                 xlabel="Correlation",
+                                 ylabel="Number of frames")
 
         ref_images = {}
 
@@ -526,7 +619,7 @@ def run_plot_oscan_amp_stack(raft, run_num, slot_list, **kwargs):
         plt.ioff()
     else:
         plt.ion()
-        
+
     for slot in slot_list:
 
         bias_files = get_bias_files_slot(raft, run_num, slot, acq_types, root_dir)
@@ -557,38 +650,50 @@ def run_plot_oscan_amp_stack(raft, run_num, slot_list, **kwargs):
         xcol_s = np.linspace(0, ncol_s-1, ncol_s)
         xcol_p = np.linspace(0, ncol_p-1, ncol_p)
 
-        fig_mean_i_row, ax_mean_i_row = setup_figure("row", "Mean [counts]",
-                                                     figsize=(15, 10))
-        fig_mean_i_col, ax_mean_i_col = setup_figure("col", "Mean [counts]",
-                                                     figsize=(15, 10))
-        fig_mean_s_row, ax_mean_s_row = setup_figure("row", "Mean [counts]",
-                                                     figsize=(15, 10))
-        fig_mean_s_col, ax_mean_s_col = setup_figure("col", "Mean [counts]",
-                                                     figsize=(15, 10))
-        fig_mean_p_row, ax_mean_p_row = setup_figure("row", "Mean [counts]",
-                                                     figsize=(15, 10))
-        fig_mean_p_col, ax_mean_p_col = setup_figure("col", "Mean [counts]",
-                                                     figsize=(15, 10))
+        fig_mean_i_row, ax_mean_i_row = setup_figure(title="Imaging region, profile by row",
+                                                     xlabel="row", ylabel="Mean [ADU]")
+        fig_mean_i_col, ax_mean_i_col = setup_figure(title="Imaging region, profile by col",
+                                                     xlabel="col", ylabel="Mean [ADU]")
+        fig_mean_s_row, ax_mean_s_row = setup_figure(title="Serial overscan, profile by row",
+                                                     xlabel="row", ylabel="Mean [ADU]")
+        fig_mean_s_col, ax_mean_s_col = setup_figure(title="Serial overscan, profile by col",
+                                                     xlabel="col", ylabel="Mean [ADU]")
+        fig_mean_p_row, ax_mean_p_row = setup_figure(title="Parallel overscan, profile by row",
+                                                     xlabel="row", ylabel="Mean [ADU]")
+        fig_mean_p_col, ax_mean_p_col = setup_figure(title="Parallel overscan, profile by col",
+                                                     xlabel="col", ylabel="Mean [ADU]")
 
-        fig_std_i_row, ax_std_i_row = setup_figure("row", "Std [counts]", figsize=(15, 10))
-        fig_std_i_col, ax_std_i_col = setup_figure("col", "Std [counts]", figsize=(15, 10))
-        fig_std_s_row, ax_std_s_row = setup_figure("row", "Std [counts]", figsize=(15, 10))
-        fig_std_s_col, ax_std_s_col = setup_figure("col", "Std [counts]", figsize=(15, 10))
-        fig_std_p_row, ax_std_p_row = setup_figure("row", "Std [counts]", figsize=(15, 10))
-        fig_std_p_col, ax_std_p_col = setup_figure("col", "Std [counts]", figsize=(15, 10))
+        fig_std_i_row, ax_std_i_row = setup_figure(title="Imaging region, profile by col",
+                                                   xlabel="row", ylabel="Std [ADU]")
+        fig_std_i_col, ax_std_i_col = setup_figure(title="Imaging region, profile by col",
+                                                   xlabel="col", ylabel="Std [ADU]")
+        fig_std_s_row, ax_std_s_row = setup_figure(title="Serial overscan, profile by col",
+                                                   xlabel="row", ylabel="Std [ADU]")
+        fig_std_s_col, ax_std_s_col = setup_figure(title="Serial overscan, profile by col",
+                                                   xlabel="col", ylabel="Std [ADU]")
+        fig_std_p_row, ax_std_p_row = setup_figure(title="Parallel overscan, profile by col",
+                                                   xlabel="row", ylabel="Std [ADU]")
+        fig_std_p_col, ax_std_p_col = setup_figure(title="Parallel overscan, profile by col",
+                                                   xlabel="col", ylabel="Std [ADU]")
 
-        fig_signif_i_row, ax_signif_i_row = setup_figure("row", "Significance [sigma]",
-                                                         figsize=(15, 10))
-        fig_signif_i_col, ax_signif_i_col = setup_figure("col", "Significance [sigma]",
-                                                         figsize=(15, 10))
-        fig_signif_s_row, ax_signif_s_row = setup_figure("row", "Significance [sigma]",
-                                                         figsize=(15, 10))
-        fig_signif_s_col, ax_signif_s_col = setup_figure("col", "Significance [sigma]",
-                                                         figsize=(15, 10))
-        fig_signif_p_row, ax_signif_p_row = setup_figure("row", "Significance [sigma]",
-                                                         figsize=(15, 10))
-        fig_signif_p_col, ax_signif_p_col = setup_figure("col", "Significance [sigma]",
-                                                         figsize=(15, 10))
+        fig_signif_i_row, ax_signif_i_row = setup_figure(title="Imaging region, profile by row",
+                                                         xlabel="row",
+                                                         ylabel="Significance [sigma]")
+        fig_signif_i_col, ax_signif_i_col = setup_figure(title="Imaging region, profile by col",
+                                                         xlabel="col",
+                                                         ylabel="Significance [sigma]")
+        fig_signif_s_row, ax_signif_s_row = setup_figure(title="Serial overscan, profile by row",
+                                                         xlabel="row",
+                                                         ylabel="Significance [sigma]")
+        fig_signif_s_col, ax_signif_s_col = setup_figure(title="Serial overscan, profile by row",
+                                                         xlabel="col",
+                                                         ylabel="Significance [sigma]")
+        fig_signif_p_row, ax_signif_p_row = setup_figure(title="Parallel overscan, profile by row",
+                                                         xlabel="row",
+                                                         ylabel="Significance [sigma]")
+        fig_signif_p_col, ax_signif_p_col = setup_figure(title="Parallel overscan, profile by row",
+                                                         xlabel="col",
+                                                         ylabel="Significance [sigma]")
 
         if superbias_type is None:
             superbias_file = None
@@ -802,7 +907,7 @@ def run_plot_superbias_fft(raft, run_num, slot_list, **kwargs):
     mask = kwargs.get('mask', False)
     std = kwargs.get('std', False)
     superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
- 
+
     # If we are doing more that one slot, don't show the plots
     if len(slot_list) > 1:
         plt.ioff()
@@ -835,10 +940,15 @@ def run_plot_superbias_fft(raft, run_num, slot_list, **kwargs):
         freqs_s = fftpack.fftfreq(nrow_s)*f_s
         freqs_p = fftpack.fftfreq(nrow_p)*f_s
 
-        fig_raw_i_row, axs_raw_i_row = setup_amp_plots_grid("row", "counts", figsize=(15, 10))
-        fig_raw_s_row, axs_raw_s_row = setup_amp_plots_grid("row", "counts", figsize=(15, 10))
-        fig_raw_p_row, axs_raw_p_row = setup_amp_plots_grid("row", "counts", figsize=(15, 10))
-
+        fig_raw_i_row, axs_raw_i_row =\
+            setup_amp_plots_grid(title="FFT of superbias imaging region mean by row",
+                                 xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]")
+        fig_raw_s_row, axs_raw_s_row =\
+            setup_amp_plots_grid(title="FFT of superbias serial overscan mean by row",
+                                 xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]")
+        fig_raw_p_row, axs_raw_p_row =\
+            setup_amp_plots_grid(title="FFT of superbias parallel overscan mean by row",
+                                 xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]")
 
         for i, amp in enumerate(superbias):
 
@@ -857,10 +967,9 @@ def run_plot_superbias_fft(raft, run_num, slot_list, **kwargs):
             fftpow_s /= len(fftpow_s)/2
             fftpow_p /= len(fftpow_p)/2
 
-            plot_fft(axs_raw_i_row.flat[i], freqs_i, fftpow_i)
-            plot_fft(axs_raw_s_row.flat[i], freqs_s, fftpow_s)
-            plot_fft(axs_raw_p_row.flat[i], freqs_p, fftpow_p)
-
+            plot_fft(axs_raw_i_row.flat[i], freqs_i, np.sqrt(fftpow_i))
+            plot_fft(axs_raw_s_row.flat[i], freqs_s, np.sqrt(fftpow_s))
+            plot_fft(axs_raw_p_row.flat[i], freqs_p, np.sqrt(fftpow_p))
 
         outbase = os.path.join("superbias", "plots", '%s-%s-%s_superbias' % (raft, run_num, slot))
         outbase += "_b-%s" % superbias_type
@@ -927,12 +1036,24 @@ def run_plot_superbias_struct(raft, run_num, slot_list, **kwargs):
         xcol_s = np.linspace(0, ncol_s-1, ncol_s)
         xcol_p = np.linspace(0, ncol_p-1, ncol_p)
 
-        fig_raw_i_row, axs_raw_i_row = setup_amp_plots_grid("row", "counts", figsize=(15, 10))
-        fig_raw_i_col, axs_raw_i_col = setup_amp_plots_grid("col", "counts", figsize=(15, 10))
-        fig_raw_s_row, axs_raw_s_row = setup_amp_plots_grid("row", "counts", figsize=(15, 10))
-        fig_raw_s_col, axs_raw_s_col = setup_amp_plots_grid("col", "counts", figsize=(15, 10))
-        fig_raw_p_row, axs_raw_p_row = setup_amp_plots_grid("row", "counts", figsize=(15, 10))
-        fig_raw_p_col, axs_raw_p_col = setup_amp_plots_grid("col", "counts", figsize=(15, 10))
+        fig_raw_i_row, axs_raw_i_row =\
+            setup_amp_plots_grid(title="Imaging region, profile by row",
+                                 xlabel="row", ylabel="ADU")
+        fig_raw_i_col, axs_raw_i_col =\
+            setup_amp_plots_grid(title="Imaging region, profile by col",
+                                 xlabel="col", ylabel="ADU")
+        fig_raw_s_row, axs_raw_s_row =\
+            setup_amp_plots_grid(title="Serial overscan, profile by row",
+                                 xlabel="row", ylabel="ADU")
+        fig_raw_s_col, axs_raw_s_col =\
+            setup_amp_plots_grid(title="Serial overscan, profile by row",
+                                 xlabel="col", ylabel="ADU")
+        fig_raw_p_row, axs_raw_p_row =\
+            setup_amp_plots_grid(title="Parallel overscan, profile by row",
+                                 xlabel="row", ylabel="ADU")
+        fig_raw_p_col, axs_raw_p_col =\
+            setup_amp_plots_grid(title="Parallel overscan, profile by row",
+                                 xlabel="col", ylabel="ADU")
 
         for i, amp in enumerate(superbias):
 

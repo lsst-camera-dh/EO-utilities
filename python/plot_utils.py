@@ -7,11 +7,12 @@ import lsst.eotest.image_utils as imutil
 from lsst.eotest.sensor import MaskedCCD
 
 
-def setup_figure(xlabel, ylabel, figsize=(14, 8)):
+def setup_figure(**kwargs):
     """Set up a 4x4 grid of plots with requested labeling
 
-    Parameters
-    ----------
+    Keyword arguments
+    -----------------
+    title:      str
     xlabel:     str
     ylabel:     str
     figsize:    tuple
@@ -22,17 +23,27 @@ def setup_figure(xlabel, ylabel, figsize=(14, 8)):
     fig:        `matplotlib.figure.Figure`
     ax:         `matplotlib.Axes._subplots.AxesSubplot`
     """
+    title = kwargs.get('title', None)
+    xlabel = kwargs.get('xlabel', None)
+    ylabel = kwargs.get('ylabel', None)
+    figsize = kwargs.get('figsize', (15, 10))
+
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    if title is not None:
+        fig.suptitle(title)
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
+    if ylabel is not None:
+        ax.set_ylabel(ylabel)
     return (fig, ax)
 
 
-def setup_amp_plots_grid(xlabel, ylabel, figsize=(14, 8)):
+def setup_amp_plots_grid(**kwargs):
     """Set up a 4x4 grid of plots with requested labeling
 
-    Parameters
-    ----------
+    Keyword arguments
+    -----------------
+    title:      str
     xlabel:     str
     ylabel:     str
     figsize:    tuple
@@ -43,43 +54,67 @@ def setup_amp_plots_grid(xlabel, ylabel, figsize=(14, 8)):
     fig:        `matplotlib.figure.Figure`
     axs:        Array of `matplotlib.Axes._subplots.AxesSubplot`
     """
+    title = kwargs.get('title', None)
+    xlabel = kwargs.get('xlabel', None)
+    ylabel = kwargs.get('ylabel', None)
+    figsize = kwargs.get('figsize', (15, 10))
+
     fig_nrow = 4
     fig_ncol = 4
     fig, axs = plt.subplots(nrows=fig_nrow, ncols=fig_ncol, figsize=figsize)
-    for i_row in range(fig_nrow):
-        ax_row = axs[i_row, 0]
-        ax_row.set_ylabel(ylabel)
 
-    for i_col in range(fig_ncol):
-        ax_col = axs[3, i_col]
-        ax_col.set_xlabel(xlabel)
+    if title is not None:
+        fig.suptitle(title)
+
+    if ylabel is not None:
+        for i_row in range(fig_nrow):
+            ax_row = axs[i_row, 0]
+            ax_row.set_ylabel(ylabel)
+
+    if xlabel is not None:
+        for i_col in range(fig_ncol):
+            ax_col = axs[3, i_col]
+            ax_col.set_xlabel(xlabel)
     return (fig, axs)
 
 
 def setup_raft_plots_grid(xlabel, ylabel, figsize=(14, 8)):
     """Set up a 3x3 grid of plots with requested labeling
 
+    Keyword arguments
+    -----------------
+    title:      str
     xlabel:     str
-       x-axis label for the plots
     ylabel:     str
-       y-axis label for the plots
     figsize:    tuple
-       figure width, height in inches
+       with the figure width, height in inches
 
-    returns:
+    Returns
+    -------
     fig:        `matplotlib.figure.Figure`
     axs:        Array of `matplotlib.Axes._subplots.AxesSubplot`
     """
+    title = kwargs.get('title', None)
+    xlabel = kwargs.get('xlabel', None)
+    ylabel = kwargs.get('ylabel', None)
+    figsize = kwargs.get('figsize', (15, 10))
+
     fig_nrow = 3
     fig_ncol = 3
     fig, axs = plt.subplots(nrows=fig_nrow, ncols=fig_ncol, figsize=figsize)
-    for i_row in range(fig_nrow):
-        ax_row = axs[i_row, 0]
-        ax_row.set_ylabel(ylabel)
 
-    for i_col in range(fig_ncol):
-        ax_col = axs[2, i_col]
-        ax_col.set_xlabel(xlabel)
+    if title is not None:
+        fig.suptitle(title)
+
+    if ylabel is not None:
+        for i_row in range(fig_nrow):
+            ax_row = axs[i_row, 0]
+            ax_row.set_ylabel(ylabel)
+
+    if xlabel is not None:
+        for i_col in range(fig_ncol):
+            ax_col = axs[2, i_col]
+            ax_col.set_xlabel(xlabel)
     return (fig, axs)
 
 
@@ -151,8 +186,6 @@ def plot_stat_color(data, title, clabel, figsize=(14, 8), **kwargs):
 
 
 def plot_sensor(sensor_file, mask_files, **kwargs):
-
-
     """Plot the data from all 16 amps on a sensor in a single figure
 
     Parameters
@@ -163,10 +196,16 @@ def plot_sensor(sensor_file, mask_files, **kwargs):
 
     Keyword arguments
     -----------------
-    vmin:          float, minimum value for color axis
-    vmax:          float, maximum value for color axis
-    bias_method:   str, method used to subtract bias 'none', 'mean', 'row', 'func' or 'spline'.
-    subtract_mean: bool, subtract mean value from each image
+    vmin:          float
+        minimum value for color axis
+    vmax:          float
+        maximum value for color axis
+    bias:          str
+        method used to subtract bias 'none', 'mean', 'row', 'func' or 'spline'.
+    superbias:     str
+        file with superbias image to subtract
+    subtract_mean: bool
+        subtract mean value from each image
 
     Returns
     -------
@@ -176,11 +215,17 @@ def plot_sensor(sensor_file, mask_files, **kwargs):
 
     vmin = kwargs.get('vmin', -10)
     vmax = kwargs.get('vmax', 10)
-    bias_method = kwargs.get('bias_method', None)
+    bias_method = kwargs.get('bias', None)
+    superbias = kwargs.get('superbias', None)
     subtract_mean = kwargs.get('subtract_mean', False)
 
     all_amps = imutil.allAmps()
     ccd = MaskedCCD(sensor_file, mask_files=mask_files)
+
+    if superbias is None:
+        superbias_frame = None
+    else:
+        superbias_frame = MaskedCCD(superbias)
 
     fig, axs = plt.subplots(2, 8, figsize=(15, 10))
     axs = axs.ravel()
@@ -192,11 +237,13 @@ def plot_sensor(sensor_file, mask_files, **kwargs):
         idx = amp - 1
         if bias_method is not None:
             im = imutil.unbias_and_trim(ccd[amp], oscan, bias_method=bias_method)
-            dd = im.getImage().getArray()
         else:
             im = ccd[amp]
-            dd = im.getImage().getArray()
 
+        if superbias_frame is not None:
+            im -= superbias_frame[amp]
+
+        dd = im.getImage().getArray()
         if subtract_mean:
             dd -= dd.mean()
 
@@ -207,9 +254,7 @@ def plot_sensor(sensor_file, mask_files, **kwargs):
     return (fig, axs)
 
 
-def historgram_array(sensor_file, mask_files,
-                     xlabel, ylabel, nbins=100,
-                     vmin=-10, vmax=10, region=None):
+def histogram_array(sensor_file, mask_files, **kwargs):
     """Plot the data from all 16 amps on a sensor in a single figure
 
     Parameters
@@ -218,6 +263,11 @@ def historgram_array(sensor_file, mask_files,
        name of the file containing data to be plotted
     mask_files:    list
        names of files used to construct the mask
+
+    Keyword arguments
+    -----------------
+    title:         str
+       title for the figure
     xlabel:        str
        x-axis label for the plots
     ylabel:        str y
@@ -226,8 +276,12 @@ def historgram_array(sensor_file, mask_files,
        minimum value for color axis
     vmax:          float
        maximum value for color axis
-    bias_method:   str
-       method used to subtract bias:  'none', 'mean', 'row', 'func' or 'spline'.
+    nbins:         int
+       number of bins to use in historam
+    bias:          str
+        method used to subtract bias 'none', 'mean', 'row', 'func' or 'spline'.
+    superbias:     str
+        file with superbias image to subtract
     subtract_mean: bool
        subtract mean value from each image
 
@@ -236,17 +290,45 @@ def historgram_array(sensor_file, mask_files,
     fig:        `matplotlib.figure.Figure`
     axs:        Array of `matplotlib.Axes._subplots.AxesSubplot`
     """
-    all_amps = imutil.allAmps()
+    title = kwargs.get('title', None)
+    xlabel = kwargs.get('xlabel', None)
+    ylabel = kwargs.get('ylabel', None)
+    vmin = kwargs.get('vmin', -10.)
+    vmax = kwargs.get('vmax', 10.)
+    nbins = kwargs.get('nbins', 200)
+    bias_method = kwargs.get('bias', None)
+    superbias = kwargs.get('superbias', None)
+    subtract_mean = kwargs.get('subtract_mean', False)
+    region = kwargs.get('region', None)
+
     ccd = MaskedCCD(sensor_file, mask_files=mask_files)
 
-    fig, axs = setup_amp_plots_grid(xlabel, ylabel)
+    if superbias is None:
+        superbias_frame = None
+    else:
+        superbias_frame = MaskedCCD(superbias)
 
     if region is None:
         region = ccd.amp_geom.imaging
 
-    for idx, amp in enumerate(all_amps):
-        image = ccd[amp].getImage()
-        dd = image.Factory(image, region).getArray()
+    if bias_method is not None:
+        oscan = ccd.amp_geom.serial_overscan
+
+    fig, axs = setup_amp_plots_grid(title=title, xlabel=xlabel, ylabel=ylabel)
+
+    for idx, amp in enumerate(ccd):
+        if bias_method is not None:
+            im = imutil.unbias_and_trim(ccd[amp], oscan, bias_method=bias_method)
+        else:
+            im = ccd[amp]
+  
+        if superbias_frame is not None:
+            im -= superbias_frame[amp]
+
+        dd = im.Factory(im, region).getImage().getArray()
+        if subtract_mean:
+            dd -= dd.mean()
+
         axs.flat[idx].hist(dd.flat, bins=nbins, range=(vmin, vmax))
 
     plt.tight_layout()
