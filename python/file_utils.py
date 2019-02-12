@@ -3,6 +3,7 @@
 import os
 import glob
 
+from get_EO_analysis_files import get_EO_analysis_files
 
 ACQ_TYPES_DEFAULT = ['fe55_raft_acq',
                      'flat_pair_raft_acq',
@@ -17,6 +18,32 @@ MASK_TYPES_DEFAULT = ['fe55_raft_analysis',
 
 RD_ROOT_FOLDER = '/gpfs/slac/lsst/fs1/g/data/R_and_D/'
 RAFT_ROOT_FOLDER = '/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive-test/LCA-11021_RTM/'
+
+
+def get_bias_files_run(run_id, acq_types=ACQ_TYPES_DEFAULT, db="Dev"):
+    """Get a set of bias files out of a folder
+
+    Parameters
+    ----------
+    run_id:          str
+    acd_types:       list
+    db:              str
+
+    Returns
+    -------
+    outdict:  dict
+       Dictionary maping slot to bias file names
+    """
+    outdict = {}
+    handler = get_EO_analysis_files(db=db)
+    for acq_type in acq_types:
+        r_dict = handler.get_files(testName=acq_type, run=run_id, imgtype='BIAS')
+        for key, val in r_dict.items():
+            if key in outdict:
+                outdict[key] += val
+            else:
+                outdict[key] = val
+    return outdict
 
 def get_bias_files_RandD(raftName, folder, root_data_path=RD_ROOT_FOLDER):
     """Get a set of bias files out of a folder
