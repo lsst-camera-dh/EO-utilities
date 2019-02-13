@@ -5,20 +5,20 @@ import os
 import argparse
 from collections import OrderedDict
 
-DEFAULT_ROOT_DIR = '/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive-test/LCA-11021_RTM/'
-DEFAULT_OUT_DIR = '.'
+DEFAULT_DB = 'Dev'
+DEFAULT_OUTDIR = 'superbias'
 
 DEFAULTS = OrderedDict(
     input=(str, None, "Input file"),
     output=(str, None, "Output file"),
     raft=(str, None, "Raft Name"),
     run=(str, None, "Run ID"),
+    slots=(list, None, "Slot ID(s)"),
     bias=(str, None, "Method to use for unbiasing"),
     superbias=(str, None, "Version of superbias frame to use"),
     stat=(str, "Median", "Statistic to use to stack images"),
-    root_dir=(str, DEFAULT_ROOT_DIR, "Input file path root"),
-    out_dir=(str, DEFAULT_OUT_DIR, "Output file path root"),
-    slots=(list, None, "Slot ID(s)"),
+    db=(str, DEFAULT_DB, "Data catalog database"),
+    outdir=(str, DEFAULT_OUTDIR, "Output file path root"),
     vmin=(float, None, "Color scale minimum value"),
     vmax=(float, None, "Color scale maximum value"),
     nbins=(int, None, "Number of bins in histogram"),

@@ -7,7 +7,7 @@ def main():
     """Hook for setup.py"""
     argnames = ['raft', 'run', 'slots',
                 'bias', 'superbias', 'mask',
-                'root_dir']
+                'db', 'outdir']
 
     parser = setup_parser(argnames)
     args = parser.parse_args()

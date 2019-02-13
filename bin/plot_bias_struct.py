@@ -8,7 +8,7 @@ def main():
 
     argnames = ['raft', 'run', 'slots',
                 'bias', 'superbias',
-                'std', 'mask', 'root_dir']
+                'std', 'mask', 'db', 'outdir']
 
     parser = setup_parser(argnames)
     args = parser.parse_args()

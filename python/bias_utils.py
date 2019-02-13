@@ -17,8 +17,10 @@ import lsst.eotest.image_utils as imutil
 
 from correlated_noise import raft_level_oscan_correlations
 
-from file_utils import get_bias_files_run, get_mask_files_slot,\
-    ACQ_TYPES_DEFAULT, MASK_TYPES_DEFAULT, RAFT_ROOT_FOLDER
+from file_utils import get_bias_files_run, get_mask_files_run,\
+    superbias_filename, superbias_stat_filename,\
+    bias_plot_basename, superbias_plot_basename,\
+    ACQ_TYPES_DEFAULT, MASK_TYPES_DEFAULT, DEFAULT_DB
 from plot_utils import setup_figure, setup_amp_plots_grid,\
     plot_fft, plot_sensor, histogram_array
 from image_utils import get_image_frames_2d, array_struct
@@ -26,6 +28,7 @@ from image_utils import get_image_frames_2d, array_struct
 DEFAULT_BIAS_TYPE = 'spline'
 DEFAULT_STAT_TYPE = 'median'
 DEFAULT_SUPERBIAS_TYPE = None
+DEFAULT_OUTDIR = 'superbias'
 
 BITPIX = -32
 T_SERIAL = 2e-06
@@ -49,24 +52,25 @@ def run_make_superbias(raft, run_num, slot_list, **kwargs):
     -----------------
     acq_types:    list
     mask_types:   list
-    root_dir:     string
+    db:           string
     mask:         bool
     skip:         bool
     bias:         str
     stat_type     str
+    outdir:       str
     plot          bool
     stats_hist    bool
     """
     acq_types = kwargs.get('acq_types', ACQ_TYPES_DEFAULT)
     mask_types = kwargs.get('mask_types', MASK_TYPES_DEFAULT)
-    root_dir = kwargs.get('root_dir', RAFT_ROOT_FOLDER)
+    db = kwargs.get('db', DEFAULT_DB)
     mask = kwargs.get('mask', False)
     skip = kwargs.get('skip', False)
     bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
     stat_type = kwargs.get('stat', DEFAULT_STAT_TYPE)
+    outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
     plot = kwargs.get('plot', False)
     stats_hist = kwargs.get('stats_hist', False)
-    db = kwargs.get('db', 'Dev')
 
     if stat_type.upper() in afwMath.__dict__ and\
             isinstance(afwMath.__dict__[stat_type.upper()], int):
@@ -81,6 +85,8 @@ def run_make_superbias(raft, run_num, slot_list, **kwargs):
         plt.ion()
 
     all_bias_files = get_bias_files_run(run_num, acq_types, db)
+    if mask:
+        all_mask_files = get_mask_files_run(run_num, mask_types, db)
 
     for slot in slot_list:
 
@@ -88,21 +94,17 @@ def run_make_superbias(raft, run_num, slot_list, **kwargs):
 
         bias_files = all_bias_files[slot]
         if mask:
-            sensor_id = (os.path.splitext(os.path.split(bias_files[0])[-1])[0]).split('_')[0]
-            mask_files = get_mask_files_slot(raft, run_num, sensor_id, mask_types, root_dir)
+            mask_files = all_mask_files[slot]
         else:
             mask_files = []
 
         oscan = makeAmplifierGeometry(bias_files[0])
 
         if statistic == afwMath.MEDIAN:
-            output_file = os.path.join('superbias',
-                                       '%s-%s-%s_superbias_b-%s.fits' %\
-                                           (raft, run_num, slot, bias_type))
+            output_file = superbias_filename(outdir, raft, run_num, slot, bias_type)
         else:
-            output_file = os.path.join('superbias',
-                                       '%s-%s-%s_%s_b-%s.fits' %\
-                                           (raft, run_num, slot, stat_type.lower(), bias_type))
+            output_file = superbias_stat_filename(outdir, raft, run_num, slot,
+                                                  stat_type.lower(), bias_type)
 
         if not skip:
             imutil.superbias_file(bias_files[::2],
@@ -140,16 +142,17 @@ def run_plot_bias_v_row(raft, run_num, slot_list, **kwargs):
     -----------------
     acq_types:    list
     mask_types:   list
-    root_dir:     string
+    db:           string
     mask:         bool
     bias:         str
+    outdir:       str
     """
     acq_types = kwargs.get('acq_types', ACQ_TYPES_DEFAULT)
     mask_types = kwargs.get('mask_types', MASK_TYPES_DEFAULT)
-    root_dir = kwargs.get('root_dir', RAFT_ROOT_FOLDER)
+    db = kwargs.get('db', DEFAULT_DB)
     mask = kwargs.get('mask', False)
     bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
-    db = kwargs.get('db', 'Dev')
+    outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
 
     # If we are doing more that one slot, don't show the plots
     if len(slot_list) > 1:
@@ -158,6 +161,8 @@ def run_plot_bias_v_row(raft, run_num, slot_list, **kwargs):
         plt.ion()
 
     all_bias_files = get_bias_files_run(run_num, acq_types, db)
+    if mask:
+        all_mask_files = get_mask_files_run(run_num, mask_types, db)
 
     for slot in slot_list:
 
@@ -165,8 +170,7 @@ def run_plot_bias_v_row(raft, run_num, slot_list, **kwargs):
 
         bias_files = all_bias_files[slot]
         if mask:
-            sensor_id = (os.path.splitext(os.path.split(bias_files[0])[-1])[0]).split('_')[0]
-            mask_files = get_mask_files_slot(raft, run_num, sensor_id, mask_types, root_dir)
+            mask_files = all_mask_files[slot]
         else:
             mask_files = []
 
@@ -190,9 +194,7 @@ def run_plot_bias_v_row(raft, run_num, slot_list, **kwargs):
                 bim_row_mean = bim.Factory(bim, oscan.serial_overscan).getArray().mean(1)
                 axs_row.flat[i].plot(xrow_s[0:len(bim_row_mean)], bim_row_mean)
 
-        output_file = os.path.join('superbias', 'plots',
-                                   '%s-%s-%s_biasval_b-%s.png' % (raft, run_num, slot, bias_type))
-
+        output_file = bias_plot_basename(outdir, raft, run_num, slot, 'biasval', bias_type)
         fig_row.savefig(output_file)
 
 
@@ -214,20 +216,21 @@ def run_plot_bias_fft(raft, run_num, slot_list, **kwargs):
     -----------------
     acq_types:      list
     mask_types:     list
-    root_dir:       string
+    db:             string
     mask:           bool
     std:            bool
     bias:           str
     superbias:      str
+    outdir:       str
     """
     acq_types = kwargs.get('acq_types', ACQ_TYPES_DEFAULT)
     mask_types = kwargs.get('mask_types', MASK_TYPES_DEFAULT)
-    root_dir = kwargs.get('root_dir', RAFT_ROOT_FOLDER)
+    db = kwargs.get('db', DEFAULT_DB)
     mask = kwargs.get('mask', False)
     std = kwargs.get('std', False)
     bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
     superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
-    db = kwargs.get('db', 'Dev')
+    outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
 
     # If we are doing more that one slot, don't show the plots
     if len(slot_list) > 1:
@@ -236,12 +239,14 @@ def run_plot_bias_fft(raft, run_num, slot_list, **kwargs):
         plt.ion()
 
     all_bias_files = get_bias_files_run(run_num, acq_types, db)
+    if mask:
+        all_mask_files = get_mask_files_run(run_num, mask_types, db)
+
     for slot in slot_list:
 
         bias_files = all_bias_files[slot]
         if mask:
-            sensor_id = (os.path.splitext(os.path.split(bias_files[0])[-1])[0]).split('_')[0]
-            mask_files = get_mask_files_slot(raft, run_num, sensor_id, mask_types, root_dir)
+            mask_files = all_mask_files[slot]
         else:
             mask_files = []
 
@@ -276,9 +281,7 @@ def run_plot_bias_fft(raft, run_num, slot_list, **kwargs):
             superbias_file = None
             superbias_frame = None
         else:
-            superbias_file = os.path.join('superbias',
-                                          '%s-%s-%s_superbias_b-%s.fits' %\
-                                              (raft, run_num, slot, superbias_type))
+            superbias_file = superbias_filename(outdir, raft, run_num, slot, superbias_type)
             superbias_frame = MaskedCCD(superbias_file, mask_files=mask_files)
 
         for ifile, bias_file in enumerate(bias_files):
@@ -319,18 +322,8 @@ def run_plot_bias_fft(raft, run_num, slot_list, **kwargs):
 
 
         sys.stdout.write("!\n")
-        outbase = os.path.join("superbias", "plots", "%s_%s_%s" % (raft, run_num, slot))
-
-        if bias_type is None:
-            outbase += "_b-none"
-        else:
-            outbase += "_b-%s" % bias_type
-
-        if superbias_type is None:
-            outbase += "_s-none"
-        else:
-            outbase += "_s-%s" % superbias_type
-
+        outbase = bias_plot_basename(outdir, raft, run_num, slot, "bias",
+                                     bias_type, superbias_type)
         if std:
             outbase += "_std"
 
@@ -356,20 +349,21 @@ def run_plot_bias_struct(raft, run_num, slot_list, **kwargs):
     -----------------
     acq_types:      list
     mask_types:     list
-    root_dir:       string
+    db:             string
     mask:           bool
     std:            bool
     bias:           str
     superbias:      str
+    outdir:       str
     """
     acq_types = kwargs.get('acq_types', ACQ_TYPES_DEFAULT)
     mask_types = kwargs.get('mask_types', MASK_TYPES_DEFAULT)
-    root_dir = kwargs.get('root_dir', RAFT_ROOT_FOLDER)
+    db = kwargs.get('db', DEFAULT_DB)
     mask = kwargs.get('mask', False)
     std = kwargs.get('std', False)
     bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
     superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
-    db = kwargs.get('db', 'Dev')
+    outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
 
    # If we are doing more that one slot, don't show the plots
     if len(slot_list) > 1:
@@ -378,13 +372,14 @@ def run_plot_bias_struct(raft, run_num, slot_list, **kwargs):
         plt.ion()
 
     all_bias_files = get_bias_files_run(run_num, acq_types, db)
+    if mask:
+        all_mask_files = get_mask_files_run(run_num, mask_types, db)
 
     for slot in slot_list:
 
         bias_files = all_bias_files[slot]
         if mask:
-            sensor_id = (os.path.splitext(os.path.split(bias_files[0])[-1])[0]).split('_')[0]
-            mask_files = get_mask_files_slot(raft, run_num, sensor_id, mask_types, root_dir)
+            mask_files = all_mask_files[slot]
         else:
             mask_files = []
 
@@ -430,9 +425,7 @@ def run_plot_bias_struct(raft, run_num, slot_list, **kwargs):
             superbias_file = None
             superbias_frame = None
         else:
-            superbias_file = os.path.join('superbias',
-                                          '%s-%s-%s_superbias_b-%s.fits' %\
-                                              (raft, run_num, slot, superbias_type))
+            superbias_file = superbias_filename(outdir, raft, run_num, slot, superbias_type)
             superbias_frame = MaskedCCD(superbias_file, mask_files=mask_files)
 
         for ifile, bias_file in enumerate(bias_files):
@@ -475,17 +468,7 @@ def run_plot_bias_struct(raft, run_num, slot_list, **kwargs):
 
 
         sys.stdout.write("!\n")
-        outbase = os.path.join("superbias", "plots", "%s_%s_%s" % (raft, run_num, slot))
-
-        if bias_type is None:
-            outbase += "_b-none"
-        else:
-            outbase += "_b-%s" % bias_type
-
-        if superbias_type is None:
-            outbase += "_s-none"
-        else:
-            outbase += "_s-%s" % superbias_type
+        outbase = bias_plot_basename(outdir, raft, run_num, slot, "bias", bias_type, superbias_type)
 
         if std:
             outbase += "_std"
@@ -516,11 +499,13 @@ def run_plot_correl_wrt_oscan(raft, run_num, slot_list, **kwargs):
     Keyword arguments
     -----------------
     acq_types:      list
-    root_dir:       string
+    db:             string
+    outdir:       str
     """
 
     acq_types = kwargs.get('acq_types', ACQ_TYPES_DEFAULT)
-    db = kwargs.get('db', 'Dev')
+    db = kwargs.get('db', DEFAULT_DB)
+    outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
 
     all_bias_files = get_bias_files_run(run_num, acq_types, db)
     for slot in slot_list:
@@ -589,7 +574,7 @@ def run_plot_correl_wrt_oscan(raft, run_num, slot_list, **kwargs):
             ax_correl_row.hist(s_correl[i], bins=100, range=(-1., 1.))
             ax_correl_col.hist(p_correl[i], bins=100, range=(-1., 1.))
 
-        outbase = os.path.join("bias_results", "plots", "%s_%s_%s" % (raft, run_num, slot))
+        outbase = bias_plot_basename(outdir, raft, run_num, slot, "bias")
         fig_correl_row.savefig("%s_correl_row.png" % outbase)
         fig_correl_col.savefig("%s_correl_col.png" % outbase)
 
@@ -612,19 +597,20 @@ def run_plot_oscan_amp_stack(raft, run_num, slot_list, **kwargs):
     -----------------
     acq_types:      list
     mask_types:     list
-    root_dir:       string
+    db:             string
     mask:           bool
     bias_type:      str
     superbias_type: str
+    outdir:       str
     """
 
     acq_types = kwargs.get('acq_types', ACQ_TYPES_DEFAULT)
     mask_types = kwargs.get('mask_types', MASK_TYPES_DEFAULT)
-    root_dir = kwargs.get('root_dir', RAFT_ROOT_FOLDER)
+    db = kwargs.get('db', DEFAULT_DB)
     mask = kwargs.get('mask', False)
     bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
     superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
-    db = kwargs.get('db', 'Dev')
+    outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
 
     # If we are doing more that one slot, don't show the plots
     if len(slot_list) > 1:
@@ -633,12 +619,14 @@ def run_plot_oscan_amp_stack(raft, run_num, slot_list, **kwargs):
         plt.ion()
 
     all_bias_files = get_bias_files_run(run_num, acq_types, db)
+    if mask:
+        all_mask_files = get_mask_files_run(run_num, mask_types, db)
+
     for slot in slot_list:
 
         bias_files = all_bias_files[slot]
         if mask:
-            sensor_id = (os.path.splitext(os.path.split(bias_files[0])[-1])[0]).split('_')[0]
-            mask_files = get_mask_files_slot(raft, run_num, sensor_id, mask_types, root_dir)
+            mask_files = all_mask_files[slot]
         else:
             mask_files = []
 
@@ -710,9 +698,7 @@ def run_plot_oscan_amp_stack(raft, run_num, slot_list, **kwargs):
             superbias_file = None
             superbias_frame = None
         else:
-            superbias_file = os.path.join('superbias',
-                                          '%s-%s-%s_superbias_b-%s.fits' %\
-                                              (raft, run_num, slot, superbias_type))
+            superbias_file = superbias_filename(outdir, raft, run_num, slot, superbias_type)
             superbias_frame = MaskedCCD(superbias_file, mask_files=mask_files)
 
 
@@ -816,17 +802,7 @@ def run_plot_oscan_amp_stack(raft, run_num, slot_list, **kwargs):
             ax_signif_p_row.plot(xrow_p, signif_p_row)
             ax_signif_p_col.plot(xcol_p, signif_p_col)
 
-        outbase = os.path.join("superbias", "plots", "%s_%s_%s" % (raft, run_num, slot))
-
-        if bias_type is None:
-            outbase += "_b-none"
-        else:
-            outbase += "_b-%s" % bias_type
-
-        if superbias_type is None:
-            outbase += "_s-none"
-        else:
-            outbase += "_s-%s" % superbias_type
+        outbase = bias_plot_basename(outdir, raft, run_num, slot, "bias", bias_type, superbias_type)
 
         fig_mean_i_row.savefig("%s_mean_stack_i_row.png" % outbase)
         fig_mean_i_col.savefig("%s_mean_stack_i_col.png" % outbase)
@@ -865,11 +841,12 @@ def run_plot_oscan_correl(raftName, run_num, **kwargs):
     Keyword arguments
     -----------------
     covar:       bool
-    root_dir:    str
+    db:          str
+    outdir:       str
     """
 
     covar = kwargs.get('covar', False)
-    db = kwargs.get('db', 'Dev')
+    db = kwargs.get('db', DEFAULT_DB)
 
     all_bias_files = get_bias_files_run(run_num, acq_types=ACQ_TYPES_DEFAULT[0:1], db=db)
     bias_files = {key : val[0] for key, val in all_bias_files.items()}
@@ -902,16 +879,18 @@ def run_plot_superbias_fft(raft, run_num, slot_list, **kwargs):
     Keyword arguments
     -----------------
     mask_types:     list
-    root_dir:       string
+    db:             str
     mask:           bool
     std:            bool
     superbias:      str
+    outdir:       str
     """
-    root_dir = kwargs.get('root_dir', RAFT_ROOT_FOLDER)
     mask_types = kwargs.get('mask_types', MASK_TYPES_DEFAULT)
+    db = kwargs.get('db', DEFAULT_DB)
     mask = kwargs.get('mask', False)
     std = kwargs.get('std', False)
     superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
+    outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
 
     # If we are doing more that one slot, don't show the plots
     if len(slot_list) > 1:
@@ -919,14 +898,13 @@ def run_plot_superbias_fft(raft, run_num, slot_list, **kwargs):
     else:
         plt.ion()
 
-    for slot in slot_list:
-        superbias_file = os.path.join('superbias',
-                                      '%s-%s-%s_superbias_b-%s.fits' %\
-                                          (raft, run_num, slot, superbias_type))
+    if mask:
+        all_mask_files = get_mask_files_run(run_num, mask_types, db)
 
+    for slot in slot_list:
+        superbias_file = superbias_filename(outdir, raft, run_num, slot, superbias_type)
         if mask:
-            sensor_id = (os.path.splitext(os.path.split(superbias_file)[-1])[0]).split('_')[0]
-            mask_files = get_mask_files_slot(raft, run_num, sensor_id, mask_types, root_dir)
+            mask_files = all_mask_files[slot]
         else:
             mask_files = []
 
@@ -976,8 +954,7 @@ def run_plot_superbias_fft(raft, run_num, slot_list, **kwargs):
             plot_fft(axs_raw_s_row.flat[i], freqs_s, np.sqrt(fftpow_s))
             plot_fft(axs_raw_p_row.flat[i], freqs_p, np.sqrt(fftpow_p))
 
-        outbase = os.path.join("superbias", "plots", '%s-%s-%s_superbias' % (raft, run_num, slot))
-        outbase += "_b-%s" % superbias_type
+        outbase = superbias_plot_basename(outdir, raft, run_num, slot, "superbias", superbias_type)
         if std:
             outbase += "_std"
 
@@ -1001,26 +978,29 @@ def run_plot_superbias_struct(raft, run_num, slot_list, **kwargs):
     Keyword arguments
     -----------------
     mask_types:     list
-    root_dir:       string
+    db:             string
     mask:           bool
     std:            bool
     superbias:      str
+    outdir:       str
     """
 
-    root_dir = kwargs.get('root_dir', RAFT_ROOT_FOLDER)
     mask_types = kwargs.get('mask_types', MASK_TYPES_DEFAULT)
+    db = kwargs.get('db', DEFAULT_DB)
     mask = kwargs.get('mask', False)
     std = kwargs.get('std', False)
     superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
+    outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
+
+    if mask:
+        all_mask_files = get_mask_files_run(run_num, mask_types, db)
 
     for slot in slot_list:
         superbias_file = os.path.join('superbias',
                                       '%s-%s-%s_superbias_b-%s.fits' %\
                                           (raft, run_num, slot, superbias_type))
-
         if mask:
-            sensor_id = (os.path.splitext(os.path.split(superbias_file)[-1])[0]).split('_')[0]
-            mask_files = get_mask_files_slot(raft, run_num, sensor_id, mask_types, root_dir)
+            mask_files = all_mask_files[slot]
         else:
             mask_files = []
 
@@ -1083,11 +1063,9 @@ def run_plot_superbias_struct(raft, run_num, slot_list, **kwargs):
             ax_raw_p_row.plot(xrow_p, p_struct['rows'])
             ax_raw_p_col.plot(xcol_p, p_struct['cols'])
 
-        outbase = os.path.join("superbias", "plots", '%s-%s-%s_superbias' % (raft, run_num, slot))
-        outbase += "_b-%s" % superbias_type
+        outbase = superbias_plot_basename(outdir, raft, run_num, slot, "superbias", superbias_type)
         if std:
             outbase += "_std"
-
 
         fig_raw_i_row.savefig("%s_i_row.png" % outbase)
         fig_raw_i_col.savefig("%s_i_col.png" % outbase)

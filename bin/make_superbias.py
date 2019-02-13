@@ -6,7 +6,7 @@ from bias_utils import run_make_superbias, ALL_SLOTS
 def main():
     """Hook for setup.py"""
     argnames = ['raft', 'run', 'slots', 'bias', 'stat', 'plot',
-                'skip', 'stats_hist', 'mask', 'root_dir']
+                'skip', 'stats_hist', 'mask', 'db', 'outdir']
 
     parser = setup_parser(argnames)
     args = parser.parse_args()

@@ -7,7 +7,7 @@ from bias_utils import run_plot_correl_wrt_oscan, ALL_SLOTS
 def main():
     """Hook for setup.py"""
     argnames = ['raft', 'run', 'slots',
-                'root_dir']
+                'db', 'outdir']
 
     parser = setup_parser(argnames)
     args = parser.parse_args()

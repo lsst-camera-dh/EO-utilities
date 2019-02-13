@@ -18,9 +18,112 @@ MASK_TYPES_DEFAULT = ['fe55_raft_analysis',
 
 RD_ROOT_FOLDER = '/gpfs/slac/lsst/fs1/g/data/R_and_D/'
 RAFT_ROOT_FOLDER = '/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive-test/LCA-11021_RTM/'
+DEFAULT_DB = 'Dev'
 
 
-def get_bias_files_run(run_id, acq_types=None, db="Dev"):
+def superbias_filename(outdir, raft, run_num, slot, bias_type):    
+    """Return the filename for a superbias file
+
+    Parameters
+    ----------
+    outdir:               str
+    raft:                 str
+    run_num:              str
+    slot:                 str
+    bias_type:            str
+
+    Returns
+    -------
+    outpath:              str
+    """
+    outpath = os.path.join(outdir,
+                           '%s-%s-%s_superbias_b-%s.fits' % (raft, run_num, slot, bias_type))
+    return outpath
+
+
+def superbias_stat_filename(outdir, raft, run_num, slot, tat_type, superbias_type):    
+    """Return the filename for a superbias file
+
+    Parameters
+    ----------
+    outdir:               str
+    raft:                 str
+    run_num:              str
+    slot:                 str
+    stat_type:            str
+    superbias_type:       str
+
+    Returns
+    -------
+    outpath:              str
+    """
+    outpath = os.path.join(outdir,
+                           '%s-%s-%s_%s_b-%s.fits' %\
+                               (raft, run_num, slot, stat_type.lower(), bias_type))
+    return outpath
+
+
+def bias_plot_basename(outdir, raft, run_num, slot, plotname,
+                       bias_type=None, superbias_type=None):    
+    """Return the filename for a superbias file
+
+    Parameters
+    ----------
+    outdir:               str
+    raft:                 str
+    run_num:              str
+    slot:                 str
+    bias_type:            str
+    superbias_type:       str
+
+    Returns
+    -------
+    outpath:              str
+    """
+    outpath = os.path.join(outdir, "plots", 
+                           "%s-%s-%s_%s" % (raft, run_num, slot, plotname))
+
+    if bias_type is None:
+        outpath += "_b-none"
+    else:
+        outpath += "_b-%s" % bias_type
+        
+    if superbias_type is None:
+        outpath += "_s-none"
+    else:
+        outpath += "_s-%s" % superbias_type
+    
+    return outpath
+
+  
+def superbias_plot_basename(outdir, raft, run_num, slot, plotname,
+                            superbias_type=None):    
+    """Return the filename for a superbias file
+
+    Parameters
+    ----------
+    outdir:               str
+    raft:                 str
+    run_num:              str
+    slot:                 str
+    superbias_type:       str
+
+    Returns
+    -------
+    outpath:              str
+    """
+    outpath = os.path.join(outdir, "plots", 
+                           "%s-%s-%s_%s" % (raft, run_num, slot, plotname))
+
+    if superbias_type is None:
+        outpath += "_b-none"
+    else:
+        outpath += "_b-%s" % superbias_type
+           
+    return outpath
+
+
+def get_bias_files_run(run_id, acq_types=None, db=DEFAULT_DB):
     """Get a set of bias files out of a folder
 
     Parameters
@@ -47,6 +150,36 @@ def get_bias_files_run(run_id, acq_types=None, db="Dev"):
             else:
                 outdict[key] = val
     return outdict
+
+
+def get_mask_files_run(run_id, mask_types=None, db=DEFAULT_DB):
+    """Get a set of bias files out of a folder
+
+    Parameters
+    ----------
+    run_id:          str
+    mask_types:      list
+    db:              str
+
+    Returns
+    -------
+    outdict:  dict
+       Dictionary maping slot to bias file names
+    """
+    outdict = {}
+    if mask_types is None:
+        mask_types = MASK_TYPES_DEFAULT
+
+    handler = get_EO_analysis_files(db=db)
+    for mask_type in mask_types:
+        r_dict = handler.get_files(testName=mask_type, run=run_id, imgtype='FLAT')
+        for key, val in r_dict.items():
+            if key in outdict:
+                outdict[key] += val
+            else:
+                outdict[key] = val
+    return outdict
+
 
 def get_bias_files_rd(raft, folder, root_data_path=RD_ROOT_FOLDER):
     """Get a set of bias files out of a folder

@@ -6,7 +6,7 @@ from bias_utils import run_plot_bias_v_row, ALL_SLOTS
 def main():
     """Hook for setup.py"""
     argnames = ['raft', 'run', 'slots',
-                'bias', 'mask', 'root_dir']
+                'bias', 'mask', 'db', 'outdir']
 
     parser = setup_parser(argnames)
     args = parser.parse_args()
