@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-from config_utils import setup_parser
-from bias_utils import run_plot_superbias_struct, ALL_SLOTS
+from lsst.eo_utils.config_utils import setup_parser
+from lsst.eo_utils.bias_utils import run_plot_superbias_struct, ALL_SLOTS
 
 def main():
     """Hook for setup.py"""

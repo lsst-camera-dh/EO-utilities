@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-from config_utils import setup_parser
-from plot_utils import plot_sensor, histogram_array
+from lsst.eo_utils.config_utils import setup_parser
+from lsst.eo_utils.plot_utils import plot_sensor, histogram_array
 
 def main():
     """Hook for setup.py"""

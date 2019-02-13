@@ -3,7 +3,7 @@
 import os
 import argparse
 
-from batch_utils import read_runlist, dispatch_job
+from lsst.eo_utils.batch_utils import read_runlist, dispatch_job
 
 def main():
     """Hook for setup.py"""
