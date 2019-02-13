@@ -90,7 +90,8 @@ def run_make_superbias(raft, run_num, slot_list, **kwargs):
 
     for slot in slot_list:
 
-        sys.stdout.write("Working on %s\n" % slot)
+        bias_files = all_bias_files[slot]
+        sys.stdout.write("Working on %s, %i files.\n" % (slot, len(bias_files)))
 
         bias_files = all_bias_files[slot]
         if mask:
@@ -122,6 +123,7 @@ def run_make_superbias(raft, run_num, slot_list, **kwargs):
         if plot:
             fig_sensor = plot_sensor(output_file, mask_files)
             fig_sensor[0].savefig(output_file.replace('.fits', '.png'))
+            plt.close(fig_sensor[0])
 
         if stats_hist:
             fig_hist = histogram_array(output_file, mask_files,
@@ -129,7 +131,7 @@ def run_make_superbias(raft, run_num, slot_list, **kwargs):
                                        xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
                                        nbins=200, vmin=0., vmax=20.)
             fig_hist[0].savefig(output_file.replace('.fits', '_hist.png'))
-
+            plt.close(fig_hist[0])
 
 def run_plot_bias_v_row(raft, run_num, slot_list, **kwargs):
     """Make superbias frames
@@ -171,9 +173,9 @@ def run_plot_bias_v_row(raft, run_num, slot_list, **kwargs):
 
     for slot in slot_list:
 
-        sys.stdout.write("Working on %s\n" % slot)
-
         bias_files = all_bias_files[slot]
+        sys.stdout.write("Working on %s, %i files: \n" % (slot, len(bias_files)))
+
         if mask:
             mask_files = all_mask_files[slot]
         else:
@@ -199,6 +201,9 @@ def run_plot_bias_v_row(raft, run_num, slot_list, **kwargs):
                 bim_row_mean = bim.Factory(bim, oscan.serial_overscan).getArray().mean(1)
                 axs_row.flat[i].plot(xrow_s[0:len(bim_row_mean)], bim_row_mean)
 
+        sys.stdout.write("!\n")
+        sys.stdout.flush()
+
         output_file = bias_plot_basename(outdir, raft, run_num, slot, 'biasval', bias_type)
         try:
             os.makedirs(os.path.dirname(output_file))
@@ -206,7 +211,7 @@ def run_plot_bias_v_row(raft, run_num, slot_list, **kwargs):
             pass
 
         fig_row.savefig(output_file)
-
+        plt.close(fig_row)
 
 
 def run_plot_bias_fft(raft, run_num, slot_list, **kwargs):
@@ -332,6 +337,8 @@ def run_plot_bias_fft(raft, run_num, slot_list, **kwargs):
 
 
         sys.stdout.write("!\n")
+        sys.stdout.flush()
+
         outbase = bias_plot_basename(outdir, raft, run_num, slot, "bias",
                                      bias_type, superbias_type)
         try:
@@ -345,6 +352,10 @@ def run_plot_bias_fft(raft, run_num, slot_list, **kwargs):
         fig_raw_i_row.savefig("%s_fft_i_row.png" % outbase)
         fig_raw_s_row.savefig("%s_fft_s_row.png" % outbase)
         fig_raw_p_row.savefig("%s_fft_p_row.png" % outbase)
+        plt.close(fig_raw_i_row)
+        plt.close(fig_raw_s_row)
+        plt.close(fig_raw_p_row)
+
 
 
 def run_plot_bias_struct(raft, run_num, slot_list, **kwargs):
@@ -483,6 +494,7 @@ def run_plot_bias_struct(raft, run_num, slot_list, **kwargs):
 
 
         sys.stdout.write("!\n")
+        sys.stdout.flush()
         outbase = bias_plot_basename(outdir, raft, run_num, slot, "bias", bias_type, superbias_type)
         try:
             os.makedirs(os.path.dirname(outbase))
@@ -498,7 +510,12 @@ def run_plot_bias_struct(raft, run_num, slot_list, **kwargs):
         fig_raw_s_col.savefig("%s_s_col.png" % outbase)
         fig_raw_p_row.savefig("%s_p_row.png" % outbase)
         fig_raw_p_col.savefig("%s_p_col.png" % outbase)
-
+        plt.close(fig_raw_i_row)
+        plt.close(fig_raw_i_col)
+        plt.close(fig_raw_s_row)
+        plt.close(fig_raw_s_col)
+        plt.close(fig_raw_p_row)
+        plt.close(fig_raw_p_col)
 
 
 
@@ -586,6 +603,8 @@ def run_plot_correl_wrt_oscan(raft, run_num, slot_list, **kwargs):
                 p_correl[i, ifile-1] = np.corrcoef(del_p_array.mean(0)[0:ncol_i][mask_p],
                                                    dd_p[mask_p])[0, 1]
 
+        sys.stdout.write("!\n")
+        sys.stdout.flush()
 
         for i in range(16):
             ax_correl_row = axs_correl_row.flat[i]
@@ -601,7 +620,8 @@ def run_plot_correl_wrt_oscan(raft, run_num, slot_list, **kwargs):
 
         fig_correl_row.savefig("%s_correl_row.png" % outbase)
         fig_correl_col.savefig("%s_correl_col.png" % outbase)
-
+        plt.close(fig_correl_row)
+        plt.close(fig_correl_col)
 
 
 def run_plot_oscan_amp_stack(raft, run_num, slot_list, **kwargs):
@@ -768,6 +788,8 @@ def run_plot_oscan_amp_stack(raft, run_num, slot_list, **kwargs):
                 p_row_stack[ifile, i] = p_struct['rows']
                 p_col_stack[ifile, i] = p_struct['cols']
 
+        sys.stdout.write("!\n")
+        sys.stdout.flush()
 
         amp_mean_i_row = i_row_stack.mean(0).mean(1)
         amp_mean_i_col = i_col_stack.mean(0).mean(1)
@@ -838,6 +860,12 @@ def run_plot_oscan_amp_stack(raft, run_num, slot_list, **kwargs):
         fig_mean_s_col.savefig("%s_mean_stack_s_col.png" % outbase)
         fig_mean_p_row.savefig("%s_mean_stack_p_row.png" % outbase)
         fig_mean_p_col.savefig("%s_mean_stack_p_col.png" % outbase)
+        plt.close(fig_mean_i_row)
+        plt.close(fig_mean_i_col)
+        plt.close(fig_mean_s_row)
+        plt.close(fig_mean_s_row)
+        plt.close(fig_mean_p_col)
+        plt.close(fig_mean_p_col)
 
         fig_std_i_row.savefig("%s_std_stack_i_row.png" % outbase)
         fig_std_i_col.savefig("%s_std_stack_i_col.png" % outbase)
@@ -845,6 +873,12 @@ def run_plot_oscan_amp_stack(raft, run_num, slot_list, **kwargs):
         fig_std_s_col.savefig("%s_std_stack_s_col.png" % outbase)
         fig_std_p_row.savefig("%s_std_stack_p_row.png" % outbase)
         fig_std_p_col.savefig("%s_std_stack_p_col.png" % outbase)
+        plt.close(fig_std_i_row)
+        plt.close(fig_std_i_col)
+        plt.close(fig_std_s_row)
+        plt.close(fig_std_s_row)
+        plt.close(fig_std_p_col)
+        plt.close(fig_std_p_col)
 
         fig_signif_i_row.savefig("%s_signif_stack_i_row.png" % outbase)
         fig_signif_i_col.savefig("%s_signif_stack_i_col.png" % outbase)
@@ -852,8 +886,12 @@ def run_plot_oscan_amp_stack(raft, run_num, slot_list, **kwargs):
         fig_signif_s_col.savefig("%s_signif_stack_s_col.png" % outbase)
         fig_signif_p_row.savefig("%s_signif_stack_p_row.png" % outbase)
         fig_signif_p_col.savefig("%s_signif_stack_p_col.png" % outbase)
-
-
+        plt.close(fig_signif_i_row)
+        plt.close(fig_signif_i_col)
+        plt.close(fig_signif_s_row)
+        plt.close(fig_signif_s_row)
+        plt.close(fig_signif_p_col)
+        plt.close(fig_signif_p_col)
 
 
 def run_plot_oscan_correl(raftName, run_num, **kwargs):
@@ -874,6 +912,7 @@ def run_plot_oscan_correl(raftName, run_num, **kwargs):
     """
 
     covar = kwargs.get('covar', False)
+    outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
     db = kwargs.get('db', DEFAULT_DB)
 
     all_bias_files = get_bias_files_run(run_num, acq_types=ACQ_TYPES_DEFAULT[0:1], db=db)
@@ -882,12 +921,18 @@ def run_plot_oscan_correl(raftName, run_num, **kwargs):
     title = 'Raft {}, {}'.format(raftName, run_num)
     fig = raft_level_oscan_correlations(bias_files, title=title, covar=covar)
     if covar:
-        outfile = os.path.join("bias_results", "plots",
+        outfile = os.path.join(outdir, "plots", raftName,
                                '{}_{}_overscan_covar.png'.format(raftName, run_num))
     else:
-        outfile = os.path.join("bias_results", "plots",
+        outfile = os.path.join(outdir, "plots", raftName,
                                '{}_{}_overscan_correlations.png'.format(raftName, run_num))
+    try:
+        os.makedirs(os.path.dirname(outfile))
+    except OSError:
+        pass
+
     fig[0].savefig(outfile)
+    plt.close(fig[0])
 
 
 
@@ -930,6 +975,10 @@ def run_plot_superbias_fft(raft, run_num, slot_list, **kwargs):
         all_mask_files = get_mask_files_run(run_num, mask_types, db)
 
     for slot in slot_list:
+
+        sys.stdout.write("Working on %s.\n")
+        sys.stdout.flush()
+
         superbias_file = superbias_filename(outdir, raft, run_num, slot, superbias_type)
         if mask:
             mask_files = all_mask_files[slot]
@@ -994,6 +1043,9 @@ def run_plot_superbias_fft(raft, run_num, slot_list, **kwargs):
         fig_raw_i_row.savefig("%s_fft_i_row.png" % outbase)
         fig_raw_s_row.savefig("%s_fft_s_row.png" % outbase)
         fig_raw_p_row.savefig("%s_fft_p_row.png" % outbase)
+        plt.close(fig_raw_i_row)
+        plt.close(fig_raw_s_row)
+        plt.close(fig_raw_p_row)
 
 
 def run_plot_superbias_struct(raft, run_num, slot_list, **kwargs):
@@ -1029,9 +1081,10 @@ def run_plot_superbias_struct(raft, run_num, slot_list, **kwargs):
         all_mask_files = get_mask_files_run(run_num, mask_types, db)
 
     for slot in slot_list:
-        superbias_file = os.path.join('superbias',
-                                      '%s-%s-%s_superbias_b-%s.fits' %\
-                                          (raft, run_num, slot, superbias_type))
+        sys.stdout.write("Working on %s.\n")
+        sys.stdout.flush()
+
+        superbias_file = superbias_filename(outdir, raft, run_num, slot, superbias_type)
         if mask:
             mask_files = all_mask_files[slot]
         else:
@@ -1111,3 +1164,9 @@ def run_plot_superbias_struct(raft, run_num, slot_list, **kwargs):
         fig_raw_s_col.savefig("%s_s_col.png" % outbase)
         fig_raw_p_row.savefig("%s_p_row.png" % outbase)
         fig_raw_p_col.savefig("%s_p_col.png" % outbase)
+        plt.close(fig_raw_i_row)
+        plt.close(fig_raw_i_col)
+        plt.close(fig_raw_s_row)
+        plt.close(fig_raw_s_col)
+        plt.close(fig_raw_p_row)
+        plt.close(fig_raw_p_col)

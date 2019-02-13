@@ -21,7 +21,7 @@ RAFT_ROOT_FOLDER = '/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive-test/LCA-11
 DEFAULT_DB = 'Dev'
 
 
-def superbias_filename(outdir, raft, run_num, slot, bias_type):    
+def superbias_filename(outdir, raft, run_num, slot, bias_type):
     """Return the filename for a superbias file
 
     Parameters
@@ -41,7 +41,7 @@ def superbias_filename(outdir, raft, run_num, slot, bias_type):
     return outpath
 
 
-def superbias_stat_filename(outdir, raft, run_num, slot, tat_type, superbias_type):    
+def superbias_stat_filename(outdir, raft, run_num, slot, stat_type, superbias_type):
     """Return the filename for a superbias file
 
     Parameters
@@ -59,12 +59,12 @@ def superbias_stat_filename(outdir, raft, run_num, slot, tat_type, superbias_typ
     """
     outpath = os.path.join(outdir, raft,
                            '%s-%s-%s_%s_b-%s.fits' %\
-                               (raft, run_num, slot, stat_type.lower(), bias_type))
+                               (raft, run_num, slot, stat_type.lower(), superbias_type))
     return outpath
 
 
 def bias_plot_basename(outdir, raft, run_num, slot, plotname,
-                       bias_type=None, superbias_type=None):    
+                       bias_type=None, superbias_type=None):
     """Return the filename for a superbias file
 
     Parameters
@@ -80,24 +80,24 @@ def bias_plot_basename(outdir, raft, run_num, slot, plotname,
     -------
     outpath:              str
     """
-    outpath = os.path.join(outdir, "plots", raft, 
+    outpath = os.path.join(outdir, "plots", raft,
                            "%s-%s-%s_%s" % (raft, run_num, slot, plotname))
 
     if bias_type is None:
         outpath += "_b-none"
     else:
         outpath += "_b-%s" % bias_type
-        
+
     if superbias_type is None:
         outpath += "_s-none"
     else:
         outpath += "_s-%s" % superbias_type
-    
+
     return outpath
 
-  
+
 def superbias_plot_basename(outdir, raft, run_num, slot, plotname,
-                            superbias_type=None):    
+                            superbias_type=None):
     """Return the filename for a superbias file
 
     Parameters
@@ -112,14 +112,14 @@ def superbias_plot_basename(outdir, raft, run_num, slot, plotname,
     -------
     outpath:              str
     """
-    outpath = os.path.join(outdir, "plots", raft, 
+    outpath = os.path.join(outdir, "plots", raft,
                            "%s-%s-%s_%s" % (raft, run_num, slot, plotname))
 
     if superbias_type is None:
         outpath += "_b-none"
     else:
         outpath += "_b-%s" % superbias_type
-           
+
     return outpath
 
 

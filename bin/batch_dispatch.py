@@ -17,7 +17,7 @@ def main():
                         help="Name of job to execute")
     parser.add_argument("--logsuffix", default='',
                         help="Suffisx to appned to log files ")
-    parser.add_argument("--bsub_args", default="-W 600 -R bullet",
+    parser.add_argument("--bsub_args", default="-W 1200 -R bullet",
                         help="Arguents to pass to bsub command")
     parser.add_argument("--optstring", default=None,
                         help="Arguments to pass to job")
