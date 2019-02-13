@@ -36,7 +36,7 @@ def superbias_filename(outdir, raft, run_num, slot, bias_type):
     -------
     outpath:              str
     """
-    outpath = os.path.join(outdir,
+    outpath = os.path.join(outdir, raft,
                            '%s-%s-%s_superbias_b-%s.fits' % (raft, run_num, slot, bias_type))
     return outpath
 
@@ -57,7 +57,7 @@ def superbias_stat_filename(outdir, raft, run_num, slot, tat_type, superbias_typ
     -------
     outpath:              str
     """
-    outpath = os.path.join(outdir,
+    outpath = os.path.join(outdir, raft,
                            '%s-%s-%s_%s_b-%s.fits' %\
                                (raft, run_num, slot, stat_type.lower(), bias_type))
     return outpath
@@ -80,7 +80,7 @@ def bias_plot_basename(outdir, raft, run_num, slot, plotname,
     -------
     outpath:              str
     """
-    outpath = os.path.join(outdir, "plots", 
+    outpath = os.path.join(outdir, "plots", raft, 
                            "%s-%s-%s_%s" % (raft, run_num, slot, plotname))
 
     if bias_type is None:
@@ -112,7 +112,7 @@ def superbias_plot_basename(outdir, raft, run_num, slot, plotname,
     -------
     outpath:              str
     """
-    outpath = os.path.join(outdir, "plots", 
+    outpath = os.path.join(outdir, "plots", raft, 
                            "%s-%s-%s_%s" % (raft, run_num, slot, plotname))
 
     if superbias_type is None:

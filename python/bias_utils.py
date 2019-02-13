@@ -106,6 +106,11 @@ def run_make_superbias(raft, run_num, slot_list, **kwargs):
             output_file = superbias_stat_filename(outdir, raft, run_num, slot,
                                                   stat_type.lower(), bias_type)
 
+        try:
+            os.makedirs(os.path.dirname(output_file))
+        except OSError:
+            pass
+
         if not skip:
             imutil.superbias_file(bias_files[::2],
                                   oscan.serial_overscan,
@@ -195,6 +200,11 @@ def run_plot_bias_v_row(raft, run_num, slot_list, **kwargs):
                 axs_row.flat[i].plot(xrow_s[0:len(bim_row_mean)], bim_row_mean)
 
         output_file = bias_plot_basename(outdir, raft, run_num, slot, 'biasval', bias_type)
+        try:
+            os.makedirs(os.path.dirname(output_file))
+        except OSError:
+            pass
+
         fig_row.savefig(output_file)
 
 
@@ -324,6 +334,11 @@ def run_plot_bias_fft(raft, run_num, slot_list, **kwargs):
         sys.stdout.write("!\n")
         outbase = bias_plot_basename(outdir, raft, run_num, slot, "bias",
                                      bias_type, superbias_type)
+        try:
+            os.makedirs(os.path.dirname(outbase))
+        except OSError:
+            pass
+
         if std:
             outbase += "_std"
 
@@ -469,6 +484,10 @@ def run_plot_bias_struct(raft, run_num, slot_list, **kwargs):
 
         sys.stdout.write("!\n")
         outbase = bias_plot_basename(outdir, raft, run_num, slot, "bias", bias_type, superbias_type)
+        try:
+            os.makedirs(os.path.dirname(outbase))
+        except OSError:
+            pass
 
         if std:
             outbase += "_std"
@@ -575,6 +594,11 @@ def run_plot_correl_wrt_oscan(raft, run_num, slot_list, **kwargs):
             ax_correl_col.hist(p_correl[i], bins=100, range=(-1., 1.))
 
         outbase = bias_plot_basename(outdir, raft, run_num, slot, "bias")
+        try:
+            os.makedirs(os.path.dirname(outbase))
+        except OSError:
+            pass
+
         fig_correl_row.savefig("%s_correl_row.png" % outbase)
         fig_correl_col.savefig("%s_correl_col.png" % outbase)
 
@@ -803,6 +827,10 @@ def run_plot_oscan_amp_stack(raft, run_num, slot_list, **kwargs):
             ax_signif_p_col.plot(xcol_p, signif_p_col)
 
         outbase = bias_plot_basename(outdir, raft, run_num, slot, "bias", bias_type, superbias_type)
+        try:
+            os.makedirs(os.path.dirname(outbase))
+        except OSError:
+            pass
 
         fig_mean_i_row.savefig("%s_mean_stack_i_row.png" % outbase)
         fig_mean_i_col.savefig("%s_mean_stack_i_col.png" % outbase)
@@ -955,6 +983,11 @@ def run_plot_superbias_fft(raft, run_num, slot_list, **kwargs):
             plot_fft(axs_raw_p_row.flat[i], freqs_p, np.sqrt(fftpow_p))
 
         outbase = superbias_plot_basename(outdir, raft, run_num, slot, "superbias", superbias_type)
+        try:
+            os.makedirs(os.path.dirname(outbase))
+        except OSError:
+            pass
+
         if std:
             outbase += "_std"
 
@@ -1064,6 +1097,11 @@ def run_plot_superbias_struct(raft, run_num, slot_list, **kwargs):
             ax_raw_p_col.plot(xcol_p, p_struct['cols'])
 
         outbase = superbias_plot_basename(outdir, raft, run_num, slot, "superbias", superbias_type)
+        try:
+            os.makedirs(os.path.dirname(outbase))
+        except OSError:
+            pass
+
         if std:
             outbase += "_std"
 
