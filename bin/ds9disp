@@ -54,6 +54,7 @@ elif args.seg is not None:
         # display without overscan
         d = pyds9.DS9()  #start='--mosaicimage iraf')
         d.set('file ' + files[0] + '[Segment' + args.seg + ']')
+        d.set('zoom to fit')
             
     else:
         # display with overscan
@@ -109,6 +110,7 @@ elif args.seg is not None:
         d = pyds9.DS9()  #start='--mosaicimage iraf')
         d.set('file ' + tempfile + '[' + sensor_loc + '_Segment' + args.seg + ']')
         d.set('scale mode zscale')
+        d.set('zoom to fit')
 
 elif args.ccd is not None:
     if len(files) > 1:
@@ -119,6 +121,7 @@ elif args.ccd is not None:
         d.set('mosaicimage wcsb ' + files[0])
         d.set('view wcsb')  # Display a continuous pixel coordinate system
         d.set('scale mode zscale')
+        d.set('zoom to fit')
         d.set('rotate 180')
             
     else:
@@ -186,6 +189,7 @@ elif args.ccd is not None:
         d.set('mosaicimage wcsb ' + tempfile)
         d.set('scale mode zscale')
         d.set('view wcsb')  # Display a continuous pixel coordinate system
+        d.set('zoom to fit')
         d.set('rotate 180') # Rotate to DM convention
 
 elif args.raft is not None:
@@ -212,6 +216,7 @@ elif args.raft is not None:
         d.set('mosaicimage wcsq ' + tempfile)
         d.set('scale mode zscale')
         d.set('view wcsq')
+        d.set('zoom to fit')
         d.set('rotate 180')
     else:
         # Assemble the raft image with the overscans included (below from
@@ -289,6 +294,7 @@ elif args.raft is not None:
         d.set('mosaicimage wcsq ' + tempfile)
         d.set('scale mode zscale')
         d.set('view wcsq')  # Display a continuous pixel coordinate system
+        d.set('zoom to fit')
         d.set('rotate 180') # Rotate to DM convention
 
 else:
