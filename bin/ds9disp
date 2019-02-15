@@ -12,20 +12,24 @@ from builtins import range
 
 def fname(run, acq, img, seq, raft, ccd=None):
     #prefix = '/gpfs/slac/kipac/fs1/g/lsst/test_data/archive/LCA-10134_Cryostat/LCA-10134_Cryostat-0001/BOT_acq_sim/'
-    # For now ignore the raft and run specification and point at raft test data
-    #prefix = '/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive-test/LCA-11021_RTM/LCA-11021_RTM-010-Dev/5980D/'
+    # For now ignore the raft specification and point at TS8 data for RTM-010
     prefix = '/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive-test/LCA-11021_RTM/LCA-11021_RTM-010-Dev/'
 
-    filepath = prefix + run + '/' + acq.lower() + '_raft_acq/v0/'
     if ccd is None:
         ccd = '*'  # if ccd is not specified, return a file for each CCD in the raft
-    glob_str = filepath + '*/' + ccd + '/*' + acq.lower() + '_*' + img.lower() + '_' + seq.zfill(3) + '*'
+
+    if acq.lower() == 'flat':
+        filepath = prefix + run + '/' + acq.lower() + '_pair_raft_acq/v0/'
+        glob_str = filepath + '*/' + ccd + '/*' + acq.lower() + '_' + seq +'_' + img.lower() + '_*'
+    else:
+        filepath = prefix + run + '/' + acq.lower() + '_raft_acq/v0/'
+        glob_str = filepath + '*/' + ccd + '/*' + acq.lower() + '_*' + img.lower() + '_' + seq.zfill(3) + '*'
     #print(glob_str)
     files = glob.glob(glob_str)
     files.sort()
     return files 
     
-tempfile = '/scratch/temp_' + os.environ['USER'] + '.fits'
+tempfile = '/tmp/temp_' + os.environ['USER'] + '.fits'
 # Example command lines
 # -run 9999 -acq DARK -img DARK -seq 3 -raft R22 -ccd S11 -seg 10 -over
 # -run 9999 -acq DARK -img DARK -seq 3 -raft R22
