@@ -42,13 +42,12 @@ def main(directory, output_dir):
         bias_files = sorted(glob.glob(join(flat_pair_dir, '*flat_bias*.fits')))
 
         ## Make a superbias 
-#        print("Making superbias")
-#        amp_geom = makeAmplifierGeometry(bias_files[0])
-#        oscan = amp_geom.serial_overscan
-#        bias_frame = join(output_dir, 
-#                          '{0}_superbias.fits'.format(sensor_id))
-#        imutils.super_bias_file(bias_files[:4], oscan, bias_frame)
-        bias_frame = bias_files[0]
+        print("Making superbias")
+        amp_geom = makeAmplifierGeometry(bias_files[0])
+        oscan = amp_geom.serial_overscan
+        bias_frame = join(output_dir, 
+                          '{0}_superbias.fits'.format(sensor_id))
+        imutils.superbias_file(bias_files[:4], oscan, bias_frame)
         
         ## Get amplifier gains
         with fits.open(flat1_files[0]) as hdulist:
@@ -74,8 +73,6 @@ def main(directory, output_dir):
                   output_dir=ccd_output_dir)
         first_overscan_plot(sensor_id, output_file, xmax=xmax, 
                             output_dir=ccd_output_dir)
-        second_overscan_plot(sensor_id, output_file, xmax=xmax, 
-                             output_dir=ccd_output_dir)
         cti_plot(sensor_id, output_file, xmax=xmax, 
                  output_dir=ccd_output_dir)
 

@@ -167,6 +167,7 @@ def cti_plot(sensor_id, results_file, xmax=521, maxflux=150000., output_dir='./'
         ax.loglog(lastpixel[flux <= maxflux], cti[flux <= maxflux],
                   label="Amp {0}".format(i+1), marker=marker)
 
+    ax.axhline(y = 0.000005, color='black', linestyle='--')
     ax.set_ylim(bottom=5E-8, top=2E-4)
     ax.set_xlim(left=50.0)
     ax.grid(True, which='major', axis='both')

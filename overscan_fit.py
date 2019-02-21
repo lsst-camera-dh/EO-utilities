@@ -64,7 +64,8 @@ class OverscanFit(object):
         ymax = amp_geom['ymax']
 
         imarr = image.getImage().getArray()
-        meanrow_data = np.mean(imarr[ymin-1:ymax, :], axis=0)*gains[amp]
+        meanrow_data = np.mean(imarr[ymin-1:ymax, :]*gains[amp], axis=0)
+        varrow_data = np.var(imarr[ymin-1:ymax, :]*gains[amp], axis=0)
         flux = np.mean(imarr[ymin-1:ymax, xmin-1:xmax]*gains[amp])
         flux_var = np.var(imarr[ymin-1:ymax, xmin-1:xmax]*gains[amp])
         exp = np.nan

@@ -21,9 +21,9 @@ class OverscanConfig(pexConfig.Config):
     smoothing = pexConfig.Field("Smoothing for spline overscan correction",
                                 int, default=11000)
     minflux = pexConfig.Field("Minimum flux for overscan fitting.", float,
-                              default=40000.0)
+                              default=10000.0)
     maxflux = pexConfig.Field("Maximum flux for overscan fitting.", float,
-                              default=150000.0)
+                              default=140000.0)
     verbose = pexConfig.Field("Turn verbosity on", bool, default=True)
 
 class OverscanTask(pipeBase.Task):
@@ -34,7 +34,10 @@ class OverscanTask(pipeBase.Task):
     def run(self, sensor_id, infiles, gains, bias_frame=None):
 
         ## Calculate mean row for each flat file
-        fitter = OverscanFit(num_pixels=10, minflux=30000., maxflux=150000.)
+        minflux = self.config.minflux
+        maxflux = self.config.maxflux
+
+        fitter = OverscanFit(num_pixels=10, minflux=minflux, maxflux=maxflux)
         for i, infile in enumerate(infiles):
             if self.config.verbose:
                 self.log.info("Processing {0}".format(infile))
@@ -45,7 +48,7 @@ class OverscanTask(pipeBase.Task):
         output_dir = self.config.output_dir
         if self.config.output_file is None:
             output_file = os.path.join(output_dir, 
-                                       '{0}_mean_rows_results.fits'.format(sensor_id))
+                                       '{0}_overscan_results.fits'.format(sensor_id))
         else:
             output_file = os.path.join(output_dir, self.config.output_file)
         if self.config.verbose:
