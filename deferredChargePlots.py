@@ -5,6 +5,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy.io import fits
+import argparse
 
 def eper_plot(sensor_id, results_file, xmax=512, output_dir='./'):
     """Plot of overscans as a function of flux."""
@@ -36,7 +37,7 @@ def eper_plot(sensor_id, results_file, xmax=512, output_dir='./'):
                 overscan = meanrow[xmax:] - offset
                 columns = np.arange(xmax, meanrow.shape[0])
         
-                axes[i].plot(columns, overscan, label='{0:d}'.format(int(round(flux, -2))))
+                axes[i].plot(columns, overscan, label='{0:d} e-'.format(int(round(flux, -2))))
                 axes[i].set_yscale('symlog', linthreshy=1.0)
                 axes[i].set_ylim(-2, 300)
                 axes[i].set_yticklabels([r'$-1$', '0', '1', r'$10^{1}$', r'$10^{2}$'])
@@ -58,7 +59,7 @@ def eper_plot(sensor_id, results_file, xmax=512, output_dir='./'):
     plt.close()
     hdulist.close()
 
-def first_overscan_plot(sensor_id, results_file, xmax=521, maxflux=150000., 
+def overscan1_plot(sensor_id, results_file, xmax=521, maxflux=150000., 
                         output_dir='./'):
     """Plot of the first overscan as a function of flux."""
 
@@ -98,9 +99,8 @@ def first_overscan_plot(sensor_id, results_file, xmax=521, maxflux=150000.,
     plt.close()
     hdulist.close()
 
-def second_overscan_plot(sensor_id, results_file, xmax=521, maxflux=150000., 
-                         output_dir='./'):
-    """Plot of the first overscan as a function of flux."""
+def overscan2_plot(sensor_id, results_file, xmax=521, maxflux=150000., output_dir='./'):
+    """Plot of the second overscan as a function of flux."""
 
     ## Create and save overscan pixel ratio vs flux graphs
     fig, ax = plt.subplots(1,1, figsize=(10, 8))
@@ -181,3 +181,65 @@ def cti_plot(sensor_id, results_file, xmax=521, maxflux=150000., output_dir='./'
                              '{0}_cti.png'.format(sensor_id)))
     plt.close()
     hdulist.close()
+
+def noise_plot(sensor_id, results_file, maxflux=150000., output_dir='./'):
+    """Plot of the first overscan as a function of flux."""
+
+    ## Create and save overscan pixel ratio vs flux graphs
+    fig, ax = plt.subplots(1,1, figsize=(10, 8))
+    fig.patch.set_facecolor('white')
+    fig.patch.set_alpha(1.0)
+    
+    hdulist = fits.open(results_file)
+    
+    for i in range(16):
+        
+        if i >= 10: marker = 's'
+        else: marker = '^'
+            
+        data = hdulist[i+1].data        
+        sorted_indices = np.argsort(data['FLUX'])
+        
+        
+        noise = data['NOISE'][sorted_indices]
+        flux = data['FLUX'][sorted_indices]
+        
+        ax.semilogx(flux[flux <= maxflux], noise[flux <= maxflux], 
+                  label="Amp {0}".format(i+1), marker=marker)
+        
+    ax.grid(True, which='major', axis='both')
+    ax.set_xlabel('Flux [e-]', fontsize=14)
+    ax.set_ylabel('Overscan Noise [e-]', fontsize=14)
+    ax.set_ylim(0.0, 10.0)
+
+    h, l = ax.get_legend_handles_labels()
+    ax.legend(h, l, loc = 'upper left', ncol=4, fontsize=12)
+    ax.set_title('Overscan Noise vs. Flux', fontsize=18)
+    plt.savefig(os.path.join(output_dir, 
+                             '{0}_overscan_noise.png'.format(sensor_id)))
+    plt.close()
+    hdulist.close()
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('sensor_id', type=str)
+    parser.add_argument('results_file', type=str)
+    parser.add_argument('-x', '--xmax', type=int, default=512)
+    parser.add_argument('-f', '--maxflux', type=float, default=150000.0)
+    parser.add_argument('-o', '--output_dir', type=str, default='./')
+    args = parser.parse_args()
+
+    sensor_id = args.sensor_id
+    results_file = args.results_file
+    xmax = args.xmax
+    maxflux = args.maxflux
+    output_dir = args.output_dir
+
+    eper_plot(sensor_id, results_file, xmax=xmax, output_dir=output_dir)
+    overscan1_plot(sensor_id, results_file, xmax=xmax, maxflux=maxflux, output_dir=output_dir)
+    overscan2_plot(sensor_id, results_file, xmax=xmax, maxflux=maxflux, output_dir=output_dir)
+    cti_plot(sensor_id, results_file, xmax=xmax, maxflux=maxflux, output_dir=output_dir)
+    noise_plot(sensor_id, results_file, maxflux=maxflux, output_dir=output_dir)
+
+    

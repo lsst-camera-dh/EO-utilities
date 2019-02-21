@@ -89,9 +89,9 @@ def main(rtm_id, output_dir='./', db='Prod', mirrorName='vendor'):
 
         eper_plot(sensor_pos, output_file, xmax=xmax, 
                   output_dir=ccd_output_dir)
-        first_overscan_plot(sensor_pos, output_file, xmax=xmax, 
+        overscan1_plot(sensor_pos, output_file, xmax=xmax, 
                             output_dir=ccd_output_dir)
-        second_overscan_plot(sensor_pos, output_file, xmax=xmax, 
+        overscan2_plot(sensor_pos, output_file, xmax=xmax, 
                              output_dir=ccd_output_dir)
         cti_plot(sensor_pos, output_file, xmax=xmax, 
                  output_dir=ccd_output_dir)

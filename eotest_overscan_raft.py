@@ -15,7 +15,7 @@ from lsst.eotest.sensor import parse_geom_kwd, makeAmplifierGeometry
 from deferredChargePlots import *
 import lsst.eotest.image_utils as imutils
 
-def main(directory, output_dir):
+def main(directory, output_dir, plot=False):
 
     ccd_names = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
 
@@ -69,12 +69,13 @@ def main(directory, output_dir):
                                        bias_frame=bias_frame)
 
         ## Make plots
-        eper_plot(sensor_id, output_file, xmax=xmax, 
-                  output_dir=ccd_output_dir)
-        first_overscan_plot(sensor_id, output_file, xmax=xmax, 
-                            output_dir=ccd_output_dir)
-        cti_plot(sensor_id, output_file, xmax=xmax, 
-                 output_dir=ccd_output_dir)
+        if plot:
+            eper_plot(sensor_id, output_file, xmax=xmax, 
+                      output_dir=ccd_output_dir)
+            overscan_plot(sensor_id, output_file, xmax=xmax, 
+                                output_dir=ccd_output_dir)
+            cti_plot(sensor_id, output_file, xmax=xmax, 
+                     output_dir=ccd_output_dir)
 
 if __name__ == '__main__':
 
@@ -83,10 +84,12 @@ if __name__ == '__main__':
                         help='File path to eotest job harness directory')
     parser.add_argument('-o', '--output_dir', default='./', type=str,
                         help = "Output directory for FITs results.")
+    parser.add_argument('-n', '--plots', action='store_true')
     args = parser.parse_args()
 
     directory = args.eotest_dir
     output_dir = args.output_dir
+    plots = args.plots
     
-    main(directory, output_dir)
+    main(directory, output_dir, plots)
 
