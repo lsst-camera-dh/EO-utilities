@@ -140,7 +140,7 @@ def make_superbias_slot(raft, run_num, slot, slot_data, **kwargs):
         output_file = superbias_filename(outdir, raft, run_num, slot, bias_type)
     else:
         output_file = superbias_stat_filename(outdir, raft, run_num, slot,
-                                              stat_type.lower(), bias_type)
+                                              stat_type=stat_type, bias_type=bias_type)
 
     makedir_safe(output_file)
 
@@ -211,7 +211,8 @@ def plot_bias_v_row_slot(raft, run_num, slot, slot_data, **kwargs):
     sys.stdout.write("!\n")
     sys.stdout.flush()
 
-    output_file = bias_plot_basename(outdir, raft, run_num, slot, 'biasval', bias_type)
+    output_file = bias_plot_basename(outdir, raft, run_num, slot,
+                                     plotname='biasval', bias_type=bias_type)
     makedir_safe(output_file)
 
     figs.savefig("val", output_file)
@@ -267,7 +268,6 @@ def plot_bias_fft_slot(raft, run_num, slot, slot_data, **kwargs):
                               xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]")
 
     if superbias_type is None:
-        superbias_file = None
         superbias_frame = None
     else:
         superbias_file = superbias_filename(outdir, raft, run_num, slot, superbias_type)
@@ -294,8 +294,8 @@ def plot_bias_fft_slot(raft, run_num, slot, slot_data, **kwargs):
     sys.stdout.write("!\n")
     sys.stdout.flush()
 
-    outbase = bias_plot_basename(outdir, raft, run_num, slot, "bias",
-                                 bias_type, superbias_type)
+    outbase = bias_plot_basename(outdir, raft, run_num, slot,
+                                 plotname="bias", bias_type=bias_type, superbias_type=superbias_type)
     makedir_safe(outbase)
     figs.save_all(outbase)
 
@@ -356,7 +356,6 @@ def plot_bias_struct_slot(raft, run_num, slot, slot_data, **kwargs):
                               xlabel="col", ylabel="ADU")
 
     if superbias_type is None:
-        superbias_file = None
         superbias_frame = None
     else:
         superbias_file = superbias_filename(outdir, raft, run_num, slot, superbias_type)
@@ -384,7 +383,8 @@ def plot_bias_struct_slot(raft, run_num, slot, slot_data, **kwargs):
 
     sys.stdout.write("!\n")
     sys.stdout.flush()
-    outbase = bias_plot_basename(outdir, raft, run_num, slot, "bias", bias_type, superbias_type)
+    outbase = bias_plot_basename(outdir, raft, run_num, slot,
+                                 plotname="bias", bias_type=bias_type, superbias_type=superbias_type)
     makedir_safe(outbase)
 
     if std:
@@ -393,7 +393,7 @@ def plot_bias_struct_slot(raft, run_num, slot, slot_data, **kwargs):
     figs.save_all(outbase)
 
 
-def plot_correl_wrt_oscan_scan(raft, run_num, slot, slot_data, **kwargs):
+def plot_correl_wrt_oscan_slot(raft, run_num, slot, slot_data, **kwargs):
     """Plot the correlations between the imaging section
     and the overscan regions in a series of bias frames
 
@@ -473,7 +473,7 @@ def plot_correl_wrt_oscan_scan(raft, run_num, slot, slot_data, **kwargs):
         figs.get_obj('row', 'axs').flat[i].hist(s_correl[i], bins=100, range=(-1., 1.))
         figs.get_obj('col', 'axs').flat[i].hist(p_correl[i], bins=100, range=(-1., 1.))
 
-    outbase = bias_plot_basename(outdir, raft, run_num, slot, "bias_correl")
+    outbase = bias_plot_basename(outdir, raft, run_num, slot, plotname="bias_correl")
     makedir_safe(outbase)
     figs.save_all(outbase)
 
@@ -565,7 +565,6 @@ def plot_oscan_amp_stack_slot(raft, run_num, slot, slot_data, **kwargs):
                       ylabel="Significance [sigma]")
 
     if superbias_type is None:
-        superbias_file = None
         superbias_frame = None
     else:
         superbias_file = superbias_filename(outdir, raft, run_num, slot, superbias_type)
@@ -627,7 +626,8 @@ def plot_oscan_amp_stack_slot(raft, run_num, slot, slot_data, **kwargs):
             figs.plot_single("std_%s" % key, xvals, std_val)
             figs.plot_single("signif_%s" % key, xvals, signif_val)
 
-    outbase = bias_plot_basename(outdir, raft, run_num, slot, "bias", bias_type, superbias_type)
+    outbase = bias_plot_basename(outdir, raft, run_num, slot,
+                                 plotname="bias", bias_type=bias_type, superbias_type=superbias_type)
     makedir_safe(outbase)
     figs.save_all(outbase)
 
@@ -734,7 +734,8 @@ def plot_superbias_fft_slot(raft, run_num, slot, slot_data, **kwargs):
 
             figs.plot_fft("%i_row" % key, i, freqs, np.sqrt(fftpow))
 
-    outbase = superbias_plot_basename(outdir, raft, run_num, slot, "superbias", superbias_type)
+    outbase = superbias_plot_basename(outdir, raft, run_num, slot,
+                                      plotname="superbias", superbias_type=superbias_type)
     makedir_safe(outbase)
     if std:
         outbase += "_std"
@@ -807,6 +808,7 @@ def plot_superbias_struct_slot(raft, run_num, slot, slot_data, **kwargs):
             figs.plot("%s_row" % key, i, xrow, struct['rows'])
             figs.plot("%s_col" % key, i, xcol, struct['cols'])
 
-    outbase = superbias_plot_basename(outdir, raft, run_num, slot, "superbias", superbias_type)
+    outbase = superbias_plot_basename(outdir, raft, run_num, slot,
+                                      plotname="superbias", superbias_type=superbias_type)
     makedir_safe(outbase)
     figs.save_all(outbase)

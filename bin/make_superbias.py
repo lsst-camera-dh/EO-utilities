@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+"""This module is just a command line interface to make superbias files"""
+
 from lsst.eo_utils.bias_utils import BiasAnalysisBySlot, make_superbias_slot
 
 def main():

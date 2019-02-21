@@ -156,17 +156,25 @@ class FigureDict(object):
         ax = self._fig_dict[key]['axs'].flat[iamp]
         ax.plot(freqs[0:n_row/2], fftpow[0:n_row/2])
 
-    def plot_hist(self, key, iamp, data, xmin=-20, xmax=20, nbins=80):
+    def plot_hist(self, key, iamp, data, **kwargs):
         """Histograms data and plots it
 
         @param key (str)              Key for the figure.
         @param iamp (int)             Amp index
         @param data (numpy.ndarray)   Data to histogram
-        @param xmin (float)
-        @param xmax (float)
-        @param nbins (int)
+        @param kwargs (dict)
+            xmin (float)
+            xmax (float)
+            nbins (int)
         """
-        hist = np.histogram(data, bins=nbins, range=(xmin, xmax))
+        xmin = kwargs.get('xmin', None)
+        xmax = kwargs.get('xmin', None)
+        if xmin is not None and xmax is not None:
+            xr = (xmin, xmax)
+        else:
+            xr = None
+
+        hist = np.histogram(data, bins=kwargs['nbins'], range=xr)
         bins = (hist[1][0:-1] + hist[1][1:])/2.
         ax = self._fig_dict[key]['axs'].flat[iamp]
         ax.plot(bins, hist[0])
@@ -190,15 +198,15 @@ class FigureDict(object):
         """
         self._fig_dict[key]['ax'].plot(xdata, ydata)
 
-    def plot_stat_color(self, key, data, title, clabel, figsize=(14, 8), **kwargs):
+    def plot_stat_color(self, key, data, **kwargs):
         """Make a 2D color image of an array of data
 
         @param key (str)               Key for the figure.
         @param data (numpy.ndarray)    The data to be plotted
-        @param title (str)
-        @param clabel (str)
-        @param figsize (tuple)
         @param kwargs
+          title (str)
+          clabel (str)
+          figsize (tuple)
           xlabel (str)
           ylabel (str)
 
@@ -207,14 +215,19 @@ class FigureDict(object):
            ax (matplotlib.Axes._subplots.AxesSubplot)
            im
            cbar
-         """
+        """
+        title = kwargs.get('title', None)
+        clabel = kwargs.get('clabel', None)
+        figsize = kwargs.get('figsize', (14, 8))
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
         ax.set_xlabel(kwargs.pop('xlabel', "Amp. Index"))
         ax.set_ylabel(kwargs.pop('ylabel', "Slot Index"))
         im = ax.imshow(data, interpolation='nearest', **kwargs)
-        ax.set_title(title)
+        if title is not None:
+            ax.set_title(title)
         cbar = fig.colorbar(im, ax=ax)
-        cbar.ax.set_ylabel(clabel, rotation=-90, va='bottom')
+        if clabel is not None:
+            cbar.ax.set_ylabel(clabel, rotation=-90, va='bottom')
         o_dict = dict(fig=fig, ax=ax, im=im, cbar=cbar)
         self._fig_dict[key] = o_dict
         return o_dict
@@ -232,7 +245,7 @@ class FigureDict(object):
             superbias (str)       file with superbias image to subtract
             subtract_mean (bool)  Flag to subtract mean value from each image
 
-        @retrns (dict)
+        @returns (dict)
             fig (matplotlib.figure.Figure)
             axs (Array of `matplotlib.Axes._subplots.AxesSubplot)
         """
@@ -293,7 +306,7 @@ class FigureDict(object):
             superbias (str)       file with superbias image to subtract
             subtract_mean (bool)  Flag to subtract mean value from each image
 
-        @retrns (dict)
+        @returns (dict)
             fig (matplotlib.figure.Figure)
             axs (Array of `matplotlib.Axes._subplots.AxesSubplot)
 

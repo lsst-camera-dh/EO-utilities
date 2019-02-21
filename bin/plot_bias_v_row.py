@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+"""This module is just a command line interface to plot the unbiasing function
+for bias images"""
+
 from lsst.eo_utils.bias_utils import BiasAnalysisBySlot, plot_bias_v_row_slot
 
 def main():

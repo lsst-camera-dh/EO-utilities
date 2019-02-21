@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
+"""This module is just a command line interface to dispatch jobs to the SLAC batch farm"""
+
 import os
 import argparse
 
 from lsst.eo_utils.batch_utils import read_runlist, dispatch_job
-from file_utils import get_hardware_type_and_id
+from lsst.eo_utils.file_utils import get_hardware_type_and_id
 
 def main():
     """Hook for setup.py"""
@@ -38,7 +40,8 @@ def main():
     for run in run_list:
 
         run_num = run[0]
-        htype, hid = get_hardware_type_and_id(args.db, run_num)
+        hinfo = get_hardware_type_and_id(args.db, run_num)
+        hid = hinfo[0]
 
         logfile = os.path.join(args.logdir, "%s_%s_%s%s.log" %\
                                    (hid, run_num, args.jobname.replace('.py', ''), args.logsuffix))

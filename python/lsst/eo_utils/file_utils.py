@@ -74,44 +74,51 @@ def superbias_filename(outdir, raft, run_num, slot, bias_type):
     return outpath
 
 
-def superbias_stat_filename(outdir, raft, run_num, slot, stat_type, superbias_type):
+def superbias_stat_filename(outdir, raft, run_num, slot, **kwargs):
     """Return the filename for a superbias-like statistics file
 
     The format is {outdir}/{raft}/{raft}-{run_num}-{slot}_{stat_type}_b-{superbias_type}.fits
 
-    @param outdir(str)
-    @param raft(str)
-    @param run_num(str)
-    @param slot(str)
-    @param stat_type(str)
-    @param superbias_type(str)
+    @param outdir (str)
+    @param raft (str)
+    @param run_num (str)
+    @param slot (str)
+    @param kwargs (dict)
+        stat_type(str)
+        bias_type(str)
 
     @returns (str) The path for the file.
     """
+    stat_type = kwargs['stat_type']
+    bias_type = kwargs.get('bias_type', None)
+
     outpath = os.path.join(outdir, raft,
                            '%s-%s-%s_%s_b-%s.fits' %\
-                               (raft, run_num, slot, stat_type.lower(), superbias_type))
+                               (raft, run_num, slot, stat_type.lower(), bias_type))
     return outpath
 
 
-def bias_plot_basename(outdir, raft, run_num, slot, plotname,
-                       bias_type=None, superbias_type=None):
+def bias_plot_basename(outdir, raft, run_num, slot, **kwargs):
     """Return the filename for a plot made from a bias file
 
     The format is {outdir}/plots/{raft}/{raft}-{run_num}-{slot}_{plotname}_b-{bias_type}_s-{superbias_type}
 
-    @param outdir(str)
-    @param raft(str)
-    @param run_num(str)
-    @param slot(str)
-    @param plotname(str)
-    @param bias_type(str)
-    @param superbias_type(str)
+    @param outdir (str)
+    @param raft (str)
+    @param run_num (str)
+    @param slot (str)
+    @param kwargs (dict)
+        plotname (str)
+        bias_type(str)
+        superbias_type(str)
 
     @returns (str) The path for the file.
     """
+    bias_type = kwargs.get('bias_type', None)
+    superbias_type = kwargs.get('superbias_type', None)
+
     outpath = os.path.join(outdir, "plots", raft,
-                           "%s-%s-%s_%s" % (raft, run_num, slot, plotname))
+                           "%s-%s-%s_%s" % (raft, run_num, slot, kwargs['plotname']))
 
     if bias_type is None:
         outpath += "_b-none"
@@ -126,23 +133,24 @@ def bias_plot_basename(outdir, raft, run_num, slot, plotname,
     return outpath
 
 
-def superbias_plot_basename(outdir, raft, run_num, slot, plotname,
-                            superbias_type=None):
+def superbias_plot_basename(outdir, raft, run_num, slot, **kwargs):
     """Return the filename for a plot made from a superbias file
 
     The format is {outdir}/plots/{raft}/{raft}-{run_num}-{slot}_{plotname}_b-{superbias_type}
 
-    @param outdir(str)
-    @param raft(str)
-    @param run_num(str)
-    @param slot(str)
-    @param plotname(str)
-    @param superbias_type(str)
+    @param outdir (str)
+    @param raft (str)
+    @param run_num (str)
+    @param slot (str)
+    @param kwargs (dict)
+        plotname(str)
+        superbias_type(str)
 
     @returns (str) The path for the file.
     """
+    superbias_type = kwargs.get('superbias_type')
     outpath = os.path.join(outdir, "plots", raft,
-                           "%s-%s-%s_%s" % (raft, run_num, slot, plotname))
+                           "%s-%s-%s_%s" % (raft, run_num, slot, kwargs['plotname']))
 
     if superbias_type is None:
         outpath += "_b-none"

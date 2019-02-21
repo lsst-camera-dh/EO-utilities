@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+"""This module is just a command line interface to plot profile structure in superbias frames"""
+
 from lsst.eo_utils.bias_utils import BiasAnalysisBySlot, plot_superbias_struct_slot
 
 def main():

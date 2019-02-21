@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+"""This module is just a command line interface to plot the
+correlations between overscan regions for each pair of
+amplifiers on a raft"""
+
 from lsst.eo_utils.bias_utils import BiasAnalysisByRaft, plot_oscan_correl_raft
 
 def main():

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+"""This module is just a command line interface to plot the FFT of bias images"""
+
 from lsst.eo_utils.bias_utils import BiasAnalysisBySlot, plot_bias_fft_slot
 
 def main():
