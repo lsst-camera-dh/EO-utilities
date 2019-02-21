@@ -1,27 +1,16 @@
 #!/usr/bin/env python
 
-from lsst.eo_utils.config_utils import setup_parser
-from lsst.eo_utils.bias_utils import run_plot_bias_struct, ALL_SLOTS
+from lsst.eo_utils.bias_utils import BiasAnalysisBySlot, plot_bias_struct_slot
 
 def main():
     """Hook for setup.py"""
 
-    argnames = ['raft', 'run', 'slots',
+    argnames = ['run', 'rafts', 'slots',
                 'bias', 'superbias',
                 'std', 'mask', 'db', 'outdir']
 
-    parser = setup_parser(argnames)
-    args = parser.parse_args()
-    arg_dict = args.__dict__.copy()
-
-    raft = arg_dict.pop('raft')
-    run_num = arg_dict.pop('run')
-    slot_list = arg_dict.pop('slots')
-
-    if slot_list is None:
-        slot_list = ALL_SLOTS
-
-    run_plot_bias_struct(raft, run_num, slot_list, **arg_dict)
+    functor = BiasAnalysisBySlot(plot_bias_struct_slot, argnames)
+    functor.run()
 
 
 if __name__ == '__main__':

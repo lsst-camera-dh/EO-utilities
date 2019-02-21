@@ -1,21 +1,14 @@
 #!/usr/bin/env python
 
-from lsst.eo_utils.config_utils import setup_parser
-from lsst.eo_utils.bias_utils import run_plot_oscan_correl
+from lsst.eo_utils.bias_utils import BiasAnalysisByRaft, plot_oscan_correl_raft
 
 def main():
     """Hook for setup.py"""
-    argnames = ['raft', 'run', 'covar', 'db', 'outdir']
+    argnames = ['run', 'rafts',
+                'covar', 'db', 'outdir']
 
-    parser = setup_parser(argnames)
-    args = parser.parse_args()
-    arg_dict = args.__dict__.copy()
-
-    raft = arg_dict.pop('raft')
-    run_num = arg_dict.pop('run')
-
-    run_plot_oscan_correl(raft, run_num, **arg_dict)
-
+    functor = BiasAnalysisByRaft(plot_oscan_correl_raft, argnames)
+    functor.run()
 
 if __name__ == '__main__':
     main()

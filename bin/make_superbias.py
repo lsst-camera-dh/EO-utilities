@@ -1,26 +1,14 @@
 #!/usr/bin/env python
 
-from lsst.eo_utils.config_utils import setup_parser
-from lsst.eo_utils.bias_utils import run_make_superbias, ALL_SLOTS
+from lsst.eo_utils.bias_utils import BiasAnalysisBySlot, make_superbias_slot
 
 def main():
     """Hook for setup.py"""
-    argnames = ['raft', 'run', 'slots', 'bias', 'stat', 'plot',
+    argnames = ['run', 'rafts', 'slots', 'bias', 'stat', 'plot',
                 'skip', 'stats_hist', 'mask', 'db', 'outdir']
 
-    parser = setup_parser(argnames)
-    args = parser.parse_args()
-
-    arg_dict = args.__dict__.copy()
-
-    raft = arg_dict.pop('raft')
-    run_num = arg_dict.pop('run')
-    slot_list = arg_dict.pop('slots')
-
-    if slot_list is None:
-        slot_list = ALL_SLOTS
-
-    run_make_superbias(raft, run_num, slot_list, **arg_dict)
+    functor = BiasAnalysisBySlot(make_superbias_slot, argnames)
+    functor.run()
 
 
 if __name__ == '__main__':
