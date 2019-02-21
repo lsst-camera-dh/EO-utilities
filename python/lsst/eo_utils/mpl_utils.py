@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+
+# -*- python -*-
+
 """A standalone file with a function to initialize matplotlib that works for either
 interactive or batch processing"""
 
@@ -7,10 +11,7 @@ def init_matplotlib_backend(backend=None):
     """This function initializes the matplotlib backend.  When no
     DISPLAY is available the backend is automatically set to 'Agg'.
 
-    Parameters
-    ----------
-    backend : str
-       matplotlib backend name.
+    @param backend (str)  matplotlib backend name.
     """
 
     import matplotlib

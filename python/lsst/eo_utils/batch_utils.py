@@ -1,29 +1,24 @@
-"""Some utilities to interface to the slac batch system"""
+#!/usr/bin/env python
+
+# -*- python -*-
+
+"""This module contains functions to help use the SLAC batch system"""
+
+from __future__ import with_statement
 
 import os
 import sys
 
-def dispatch_job(jobname, raft, run_num, logfile, **kwargs):
-    """Stack the overscan region from all the amps on a sensor
-    to look for coherent read noise
+def dispatch_job(jobname, run_num, logfile, **kwargs):
+    """Dispatch a single job to the batch farm
 
-    Parameters
-    ----------
-    jobname:     str
-       The command to send to the batch
-    raft:        str
-       The raft name, i.e., 'RTM-004-Dev'
-    run_num:     str
-       The run number, i.e,. '6106D'
-    logfile:     str
-       The path to the logfile
-
-
-    Keyword arguments
-    -----------------
-    bsub_args:    str
-    optstring:    str
-    dry_run:      bool
+    @param jobname (str)    The command to send to the batch
+    @param run_num (str)    The run number, i.e,. '6106D'
+    @param logfile (str)    The path to the logfile
+    @param kwargs
+            bsub_args (str)    Arguments to pass to bsub command
+            optstring (str)    Additional arguments to pass to command
+            dry_run (bool)     Print batch command but do not run it
     """
     bsub_args = kwargs.get('bsub_args', None)
     optstring = kwargs.get('optstring', None)
@@ -33,7 +28,7 @@ def dispatch_job(jobname, raft, run_num, logfile, **kwargs):
     if bsub_args is not None:
         bsub_com += " %s" % bsub_args
 
-    bsub_com += " %s --raft %s --run %s" % (jobname, raft, run_num)
+    bsub_com += " %s --run %s" % (jobname, run_num)
 
     if optstring is not None:
         bsub_com += " %s" % optstring
@@ -47,14 +42,11 @@ def dispatch_job(jobname, raft, run_num, logfile, **kwargs):
 def read_runlist(filepath):
     """Read a list of runs from a txt file
 
-    Parameters
-    ----------
-    filepath:     str
+    @param filepath (str)    The input file with the list of runs.
+                             Each line should contain raft and run number, e.g.,
+                             RTM-004-Dev 6106D
 
-    Returns
-    -------
-    outlist:       list
-       A list of tuples with (raft, run_num)
+    @returns (list)          A list of tuples with (raft, run_num)
     """
     fin = open(filepath)
     lin = fin.readline()

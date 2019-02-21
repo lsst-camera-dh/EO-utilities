@@ -1,9 +1,13 @@
-"""Functions to find files of a particular type in the SLAC directory tree"""
+#!/usr/bin/env python
+
+# -*- python -*-
+
+"""This module contains functions to find files of a particular type in the SLAC directory tree"""
 
 import os
-import glob
 
 from get_EO_analysis_files import get_EO_analysis_files
+from exploreRun import exploreRun
 
 ACQ_TYPES_DEFAULT = ['fe55_raft_acq',
                      'flat_pair_raft_acq',
@@ -21,20 +25,49 @@ RAFT_ROOT_FOLDER = '/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive-test/LCA-11
 DEFAULT_DB = 'Dev'
 
 
+def makedir_safe(filepath):
+    """Make a directory needed to write a file
+
+    @param filepath (str)    The file we are going to write
+    """
+    try:
+        os.makedirs(os.path.dirname(filepath))
+    except OSError:
+        pass
+
+
+def get_hardware_type_and_id(db, run_num):
+    """Return the hardware type and hardware id for a given run
+
+    @param db(str)        The database we are reading from, either 'Dev' or 'Prod'
+    @param run_num(str)   The number number we are reading
+
+    @returns (tuple)
+      htype (str) The hardware type, eitherL
+                        'LCA-10134' (aka full crystat) or
+                        'LCA-11021' (single raft)
+      hid (str) The hardware id, e.g., RMT-004-Dev
+    """
+    er = exploreRun(db=db)
+    hsn = er.hardware_sn(run=run_num)
+    tokens = hsn.split('_')
+    htype = tokens[0]
+    hid = tokens[1]
+    return (htype, hid)
+
+
 def superbias_filename(outdir, raft, run_num, slot, bias_type):
     """Return the filename for a superbias file
 
-    Parameters
-    ----------
-    outdir:               str
-    raft:                 str
-    run_num:              str
-    slot:                 str
-    bias_type:            str
+    The format is {outdir}/{raft}/{raft}-{run_num}-{slot}_superbias_b-{bias_type}.fits
 
-    Returns
-    -------
-    outpath:              str
+    @param outdir(str)
+    @param raft(str)
+    @param run_num(str)
+    @param slot(str)
+    @param bias_type(str)
+
+    @returns (str) The path for the file.
     """
     outpath = os.path.join(outdir, raft,
                            '%s-%s-%s_superbias_b-%s.fits' % (raft, run_num, slot, bias_type))
@@ -42,20 +75,18 @@ def superbias_filename(outdir, raft, run_num, slot, bias_type):
 
 
 def superbias_stat_filename(outdir, raft, run_num, slot, stat_type, superbias_type):
-    """Return the filename for a superbias file
+    """Return the filename for a superbias-like statistics file
 
-    Parameters
-    ----------
-    outdir:               str
-    raft:                 str
-    run_num:              str
-    slot:                 str
-    stat_type:            str
-    superbias_type:       str
+    The format is {outdir}/{raft}/{raft}-{run_num}-{slot}_{stat_type}_b-{superbias_type}.fits
 
-    Returns
-    -------
-    outpath:              str
+    @param outdir(str)
+    @param raft(str)
+    @param run_num(str)
+    @param slot(str)
+    @param stat_type(str)
+    @param superbias_type(str)
+
+    @returns (str) The path for the file.
     """
     outpath = os.path.join(outdir, raft,
                            '%s-%s-%s_%s_b-%s.fits' %\
@@ -65,20 +96,19 @@ def superbias_stat_filename(outdir, raft, run_num, slot, stat_type, superbias_ty
 
 def bias_plot_basename(outdir, raft, run_num, slot, plotname,
                        bias_type=None, superbias_type=None):
-    """Return the filename for a superbias file
+    """Return the filename for a plot made from a bias file
 
-    Parameters
-    ----------
-    outdir:               str
-    raft:                 str
-    run_num:              str
-    slot:                 str
-    bias_type:            str
-    superbias_type:       str
+    The format is {outdir}/plots/{raft}/{raft}-{run_num}-{slot}_{plotname}_b-{bias_type}_s-{superbias_type}
 
-    Returns
-    -------
-    outpath:              str
+    @param outdir(str)
+    @param raft(str)
+    @param run_num(str)
+    @param slot(str)
+    @param plotname(str)
+    @param bias_type(str)
+    @param superbias_type(str)
+
+    @returns (str) The path for the file.
     """
     outpath = os.path.join(outdir, "plots", raft,
                            "%s-%s-%s_%s" % (raft, run_num, slot, plotname))
@@ -98,19 +128,18 @@ def bias_plot_basename(outdir, raft, run_num, slot, plotname,
 
 def superbias_plot_basename(outdir, raft, run_num, slot, plotname,
                             superbias_type=None):
-    """Return the filename for a superbias file
+    """Return the filename for a plot made from a superbias file
 
-    Parameters
-    ----------
-    outdir:               str
-    raft:                 str
-    run_num:              str
-    slot:                 str
-    superbias_type:       str
+    The format is {outdir}/plots/{raft}/{raft}-{run_num}-{slot}_{plotname}_b-{superbias_type}
 
-    Returns
-    -------
-    outpath:              str
+    @param outdir(str)
+    @param raft(str)
+    @param run_num(str)
+    @param slot(str)
+    @param plotname(str)
+    @param superbias_type(str)
+
+    @returns (str) The path for the file.
     """
     outpath = os.path.join(outdir, "plots", raft,
                            "%s-%s-%s_%s" % (raft, run_num, slot, plotname))
@@ -126,16 +155,11 @@ def superbias_plot_basename(outdir, raft, run_num, slot, plotname,
 def get_bias_files_run(run_id, acq_types=None, db=DEFAULT_DB):
     """Get a set of bias files out of a folder
 
-    Parameters
-    ----------
-    run_id:          str
-    acd_types:       list
-    db:              str
+    @param run_id (str)     The number number we are reading
+    @param acq_types (list) The types of acquistions we want to include
+    @param db (str)         The database we are reading from, either 'Dev' or 'Prod'
 
-    Returns
-    -------
-    outdict:  dict
-       Dictionary maping slot to bias file names
+    @returns (dict) Dictionary mapping slot to file names
     """
     outdict = {}
     if acq_types is None:
@@ -155,20 +179,16 @@ def get_bias_files_run(run_id, acq_types=None, db=DEFAULT_DB):
 def get_mask_files_run(run_id, mask_types=None, db=DEFAULT_DB):
     """Get a set of bias files out of a folder
 
-    Parameters
-    ----------
-    run_id:          str
-    mask_types:      list
-    db:              str
+    @param run_id (str)      The number number we are reading
+    @param mask_types (list) The types of masks we want to include
+    @param db (str)          The database we are reading from, either 'Dev' or 'Prod'
 
-    Returns
-    -------
-    outdict:  dict
-       Dictionary maping slot to bias file names
+    @returns (dict) Dictionary mapping slot to file names
     """
     outdict = {}
     if mask_types is None:
         mask_types = MASK_TYPES_DEFAULT
+
 
     handler = get_EO_analysis_files(db=db)
     for mask_type in mask_types:
@@ -181,108 +201,43 @@ def get_mask_files_run(run_id, mask_types=None, db=DEFAULT_DB):
     return outdict
 
 
-def get_bias_files_rd(raft, folder, root_data_path=RD_ROOT_FOLDER):
-    """Get a set of bias files out of a folder
 
-    Parameters
-    ----------
-    raft:        str
-    folder:          str
-    root_data_path:  str
+def get_bias_and_mask_files_run(run_id, **kwargs):
+    """Get a set of bias and mask files out of a folder
 
-    Returns
-    -------
-    bias_files:  dict
-       Dictionary maping slot to bias file name
+    @param run_id (str)      The number number we are reading
+    @param kwargs
+       acq_types (list)  The types of acquistions we want to include
+       mask_types (list) The types of masks we want to include
+       db (str)          The database we are reading from, either 'Dev' or 'Prod'
+       mask (bool)       Flag to include mask files
+
+    @returns (dict) Dictionary mapping slot to file names
     """
-    files = sorted(glob.glob(os.path.join(root_data_path, raft, folder,
-                                          'data', '*Bias*.fits*')))
-    bias_files = dict()
-    for item in files:
-        slot = "S%s" % os.path.basename(item).split('_')[0]
-        bias_files[slot] = item
-    return bias_files
-
-
-def get_bias_files_raft(raft, folder, acq_type='dark_raft_acq',
-                        root_data_path=RAFT_ROOT_FOLDER):
-    """Get a set of bias files out of a folder
-
-    Parameters
-    ----------
-    raft:        str
-    folder:          str
-    root_data_path:  str
-
-    Returns
-    -------
-    bias_files:  dict
-       Dictionary maping slot to bias file name
-    """
-    files = []
-
-    full_raft = "LCA-11021_%s"% raft
-    glob_string = os.path.join(root_data_path, full_raft, folder, acq_type,
-                               'v0', '*', '*', '*_bias_*.fits')
-    files = sorted(glob.glob(glob_string))
-    bias_files = dict()
-
-    for item in files:
-        slot = "%s" % os.path.dirname(item).split('/')[-1]
-        bias_files[slot] = item
-    return bias_files
-
-
-def get_bias_files_slot(raft, folder, slot,
-                        acq_types=None,
-                        root_data_path=RAFT_ROOT_FOLDER):
-    """Get a set of bias files out of a folder
-
-    Parameters
-    ----------
-    raft:        str
-    folder:          str
-    slot:            str
-    acq_types:       list
-    root_data_path:  str
-
-    Returns
-    -------
-    files:            list
-       All the files matching the request
-    """
-    if acq_types is None:
+    outdict = {}
+    if kwargs.get('acq_types', None) is None:
         acq_types = ACQ_TYPES_DEFAULT
-    files = []
+    if kwargs.get('mask', False):
+        if kwargs.get('mask_types', None) is None:
+            mask_types = MASK_TYPES_DEFAULT
+    else:
+        mask_types = []
+
+    handler = get_EO_analysis_files(db=kwargs.get('db', DEFAULT_DB))
     for acq_type in acq_types:
-        glob_string = os.path.join(root_data_path, "LCA-11021_%s" % raft, folder,
-                                   acq_type, 'v0', '*', slot, '*_bias_*.fits')
-        files += sorted(glob.glob(glob_string))
-    return files
+        r_dict = handler.get_files(testName=acq_type, run=run_id, imgtype='BIAS')
+        for key, val in r_dict.items():
+            if key in outdict:
+                outdict[key]["bias_files"] += val
+            else:
+                outdict[key] = dict(bias_files=val, mask_files=[])
 
+        for mask_type in mask_types:
+            r_dict = handler.get_files(testName=mask_type, run=run_id, imgtype='FLAT')
+            for key, val in r_dict.items():
+                if key in outdict:
+                    outdict[key]["mask_files"] += val
+                else:
+                    outdict[key] = dict(bias_files=[], mask_files=val)
 
-def get_mask_files_slot(raft, folder, sensor_id,
-                        mask_types=None,
-                        root_data_path=RAFT_ROOT_FOLDER):
-    """Get a set of mask files out of a folder
-
-    Parameters
-    ----------
-    raft:        str
-    folder:          str
-    sensor_id:       str
-    acq_types:       list
-    root_data_path:  str
-
-    Returns
-    -------
-    files:            list
-       All the files matching the request
-    """
-    if mask_types is None:
-        mask_types = MASK_TYPES_DEFAULT
-    files = []
-    for mask_type in mask_types:
-        files += sorted(glob.glob(os.path.join(root_data_path, "LCA-11021_%s" % raft, folder,
-                                               mask_type, 'v0', '*', '%s_*_mask.fits' % sensor_id)))
-    return files
+    return outdict

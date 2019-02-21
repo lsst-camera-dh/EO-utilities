@@ -1,53 +1,74 @@
-"""Functions to help manage configure"""
+#!/usr/bin/env python
+
+# -*- python -*-
+
+"""This module contains functions to help manage configuration """
 
 import sys
 import os
 import argparse
 from collections import OrderedDict
 
+import lsst.pex.config as pexConfig
+
 DEFAULT_DB = 'Dev'
 DEFAULT_OUTDIR = 'superbias'
+DEFAULT_STAT_TYPE = 'median'
+DEFAULT_BITPIX = -32
 
-DEFAULTS = OrderedDict(
-    input=(str, None, "Input file"),
-    output=(str, None, "Output file"),
-    raft=(str, None, "Raft Name"),
-    run=(str, None, "Run ID"),
-    slots=(list, None, "Slot ID(s)"),
-    bias=(str, None, "Method to use for unbiasing"),
-    superbias=(str, None, "Version of superbias frame to use"),
-    stat=(str, "Median", "Statistic to use to stack images"),
-    db=(str, DEFAULT_DB, "Data catalog database"),
-    outdir=(str, DEFAULT_OUTDIR, "Output file path root"),
-    vmin=(float, None, "Color scale minimum value"),
-    vmax=(float, None, "Color scale maximum value"),
-    nbins=(int, None, "Number of bins in histogram"),
-    mask=(bool, False, "Use the mask files"),
-    plot=(bool, False, "Make plots"),
-    std=(bool, False, "Plot standard deviation instead of mean"),
-    covar=(bool, False, "Plot covarience instead of correlation factor"),
-    skip=(bool, False, "Skip the main analysis and only make plots"),
-    subtract_mean=(bool, False, "Subtract the mean from all images frames"),
-    stats_hist=(bool, False, "Make a histogram of the distribution"),
-    )
 
+class EOUtilConfig(pexConfig.Config):
+    """Configuration for EOUtils tasks"""
+    input = pexConfig.Field("Input file", str, default=None)
+    output = pexConfig.Field("Output file", str, default=None)
+    logdir = pexConfig.Field("Log file directory", str, default="logs")
+    logsuffix = pexConfig.Field("Suffix to append to log files", str, default="")
+    batch = pexConfig.Field("Dispatch job to batch", str, default=None)
+    dry_run = pexConfig.Field("Print batch command, do not send job", bool, default=False)
+    bsub_args = pexConfig.Field("Arguments to pass to bsub command", str, default="-W 1200 -R bullet")
+    run = pexConfig.Field("Run ID", str, default=None)
+    slots = pexConfig.ListField("Slot ID(s)", str, default=None)
+    rafts = pexConfig.ListField("Raft Slot(s)", str, default=None)
+    bias = pexConfig.Field("Method to use for unbiasing", str, default=None)
+    superbias = pexConfig.Field("Version of superbias frame to use", str, default=None)
+    stat = pexConfig.Field("Statistic to use to stack images", str, default="Median")
+    db = pexConfig.Field("Data catalog database", str, default=DEFAULT_DB)
+    outdir = pexConfig.Field("Output file path root", str, default=DEFAULT_OUTDIR)
+    vmin = pexConfig.Field("Color scale minimum value", float, default=None)
+    vmax = pexConfig.Field("Color scale maximum value", float, default=None)
+    nbins = pexConfig.Field("Number of bins in histogram", int, default=100)
+    mask = pexConfig.Field("Use the mask files", bool, default=False)
+    plot = pexConfig.Field("Make plots", bool, default=False)
+    std = pexConfig.Field("Plot standard deviation instead of mean", bool, default=False)
+    covar = pexConfig.Field("Plot covarience instead of correlation factor", bool, default=False)
+    skip = pexConfig.Field("Skip the main analysis and only make plots", bool, default=False)
+    subtract_mean = pexConfig.Field("Subtract the mean from all images frames", bool, default=False)
+    stats_hist = pexConfig.Field("Make a histogram of the distribution", bool, default=False)
+
+
+    def to_odict(self):
+        """@returns (dict) the parameters as an OrderedDict
+        mapping name to a (type, default, doc) tuples"""
+        o_dict = OrderedDict()
+        for key, val in self._fields.items():
+            o_dict[key] = (val.dtype, val.default, val.__doc__)
+        return o_dict
+
+DEFAULT_CONFIG = EOUtilConfig()
+DEFAULTS = DEFAULT_CONFIG.to_odict()
 
 def add_arguments(parser, arg_dict):
     """Adds a set of arguments to the argument parser
 
-    Parameters
-    ----------
-    parser: `argparse.ArgumentParser`
-       The argument parser we are using
-
-    arg_dict:  `collections.OrderedDict`
-       The dictionary mapping argument name to (type, default, helpstring) tuple
+    @param parser (dict)    The argument parser we are using
+    @param arg_dict (dict)  The dictionary mapping argument name
+                            to (type, default, helpstring) tuple
     """
     for argname, argpars in arg_dict.items():
         argtype, argdefault, arghelp = argpars
         if argdefault is not None:
             arghelp += ": [%s]" % argdefault
-        if argtype in [list]:
+        if argtype in [pexConfig.listField.List]:
             parser.add_argument("--%s" % argname,
                                 action='append',
                                 default=argdefault,
@@ -63,6 +84,28 @@ def add_arguments(parser, arg_dict):
                                 default=argdefault,
                                 help=arghelp)
 
+def make_argstring(arg_dict):
+    """Turns a dictionary of arguments into string with command line options
+
+    @param arg_dict (dict)  The dictionary mapping argument name to value
+
+    @returns (str) The corresponding string for a command line
+    """
+    ostring = ""
+    for key, value in arg_dict.items():
+        if value is None:
+            continue
+        elif isinstance(value, bool):
+            if not value:
+                continue
+            else:
+                ostring += " --%s" % key
+        elif isinstance(value, (list, pexConfig.listField.List)):
+            for vv in value:
+                ostring += " --%s %s" % (key, vv)
+        else:
+            ostring += " --%s %s" % (key, value)
+    return ostring
 
 
 def copy_items(arg_dict, argnames):
@@ -70,17 +113,10 @@ def copy_items(arg_dict, argnames):
 
     Parameters
     ----------
-    arg_dict:  `collections.OrderedDict`
-       The dictionary mapping argument name to (type, default, helpstring) tuple
+    @param arg_dict (dict)  The dictionary mapping argument name to (type, default, helpstring) tuple
+    @param argnames (list)  List of keys to copy to the output dictionary
 
-    argnames:   list
-       List of keys to copy to the output dictionary
-
-
-    Returns
-    -------
-    outdict: `collections.OrderedDict`
-       Dictionary with only the arguments we have selected
+    @returns (dict) Dictionary with only the arguments we have selected
     """
     outdict = OrderedDict()
     for argname in argnames:
@@ -94,30 +130,16 @@ def copy_items(arg_dict, argnames):
 def setup_parser(argnames, arg_dict=None, **kwargs):
     """Creates an ArgumentParser and adds selected arguments
 
-    Parameters
-    ----------
-    argnames:   list
-       List of keys to copy to the output dictionary
+    @param argnames (list)  List of keys to copy to the output dictionary
+    @param arg_dict (dict)  The dictionary mapping argument name to (type, default, helpstring) tuple
+    @param kwargs
+            usage (str)       The usage string for the ArgumentParser
+            description (str) The description for the ArgumentParser
 
-    arg_dict:  `collections.OrderedDict`
-       The dictionary mapping argument name to (type, default, helpstring) tuple
+            All other keyword arguments will be treated as addtional
+            parameters and passed to the ArgumentParser
 
-    Keyword arguments
-    -----------------
-    usage:       str
-       The usage string for the ArgumentParser
-
-    description:  str
-       The description for the ArgumentParser
-
-    *: tuple
-       All other keyword arguments will be treated as addtional parameters and
-       passed to the ArgumentParser
-
-    Returns
-    -------
-    parser: `argparse.ArgumentParser`
-       Argument parser loaded with the requested arguments
+    @returns (argparse.ArgumentParser) Argument parser loaded with the requested arguments
     """
 
     usage = kwargs.pop('usage', None)
