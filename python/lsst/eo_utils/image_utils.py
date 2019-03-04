@@ -7,7 +7,28 @@
 import lsst.eotest.image_utils as imutil
 
 
-def get_image_frames_2d(img, amp_geom):
+def get_image_frames_2d_dm(ccd, amp_geom):
+    """Split out the arrays for the serial_overscan, parallel_overscan, and imaging regions
+
+    @param ccd (lsst.afw.image.maskedImage.maskedImage.MaskedImageF) Data from one ccd
+    @param amp_geom (lsst.afw.table.ampInfo.ampInfo.AmpInfoRecord) Geometry for that amp
+
+    @returns (dict)
+      i_array (numpy.narray) with the imaging section data
+      p_array (numpy.narray) with the parallel overscan section data
+      s_array (numpy.narray) with the serial overscan section data
+    """
+    s_array = ccd[amp_geom.getBBox()].image.array
+    p_array = ccd[amp_geom.getRawVerticalOverscanBBox()].image.array
+    i_array = ccd[amp_geom.getRawHorizontalOverscanBBox()].image.array
+
+    o_dict = dict(i_array=i_array,
+                  s_array=s_array,
+                  p_array=p_array)
+
+    return o_dict
+
+def get_image_frames_2d_eotest(img, amp_geom):
     """Split out the arrays for the serial_overscan, parallel_overscan, and imaging regions
 
     @param img (lsst.eotest.sensor.MaskedImageF) Data from one amplifier
@@ -62,7 +83,28 @@ def array_struct(i_array, clip=None, do_std=False):
 
 
 
-def unbias(ccd, amp, oscan, bias_type=None, superbias_frame=None):
+def unbias_dm(ccd, amp, bias_type=None, superbias_frame=None):
+    """Unbias the data from a particular amp
+
+    @param bias_type (str)                 Method of unbiasing to applly
+    @param superbias_frame (MaskedImageF)  Optional superbias frame to subtract off
+
+    @returns (MaskedImageF) The unbiased image
+    """
+    if bias_type is not None:
+        image = imutil.unbias_and_trim(ccd[amp], oscan.serial_overscan,
+                                       bias_method=bias_type)
+    else:
+        image = ccd[amp]
+
+    if superbias_frame is not None:
+        image -= superbias_frame[amp]
+
+    return image
+
+
+
+def unbias_eotest(ccd, amp, oscan, bias_type=None, superbias_frame=None):
     """Unbias the data from a particular amp
 
     @param ccd (MaskedImageF)              The data
@@ -83,3 +125,7 @@ def unbias(ccd, amp, oscan, bias_type=None, superbias_frame=None):
         image -= superbias_frame[amp]
 
     return image
+
+
+get_image_frames = get_image_frames_2d_eotest
+unbias = unbias_eotest

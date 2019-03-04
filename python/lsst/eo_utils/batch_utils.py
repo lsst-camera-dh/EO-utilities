@@ -58,3 +58,63 @@ def read_runlist(filepath):
             outlist.append(tokens)
         lin = fin.readline()
     return outlist
+
+
+
+
+
+
+
+class LSFBatch(Batch):
+    """Batch submission with lsf"""
+
+    def execution(self, command):
+        """Return execution string for script to be submitted"""
+        script = [exportEnv(),
+                  "umask %03o" % UMASK,
+                  "cd %s" % pipes.quote(os.getcwd()),
+                  ]
+        if self.verbose:
+            script += ["echo \"mpiexec is at: $(which mpiexec)\"",
+                       "ulimit -a",
+                       "echo 'umask: ' $(umask)",
+                       "eups list -s",
+                       "export",
+                       "date",
+                       ]
+        script += ["mpiexec %s %s" % (self.mpiexec, command)]
+        if self.verbose:
+            script += ["date",
+                       "echo Done.",
+                       ]
+        return "\n".join(script)
+    
+    
+    def preamble(self, walltime=None):
+        if walltime is None:
+            walltime = self.walltime
+        if walltime <= 0:
+            raise RuntimeError("Non-positive walltime: %s (did you forget '--time'?)" % (walltime,))
+        if (self.numNodes <= 0 or self.numProcsPerNode <= 0) and self.numCores <= 0:
+            raise RuntimeError(
+                "Number of nodes (--nodes=%d) and number of processors per node (--procs=%d) not set OR "
+                "number of cores (--cores=%d) not set" % (self.numNodes, self.numProcsPerNode, self.numCores))
+        if self.numCores > 0 and (self.numNodes > 0 or self.numProcsPerNode > 0):
+            raise RuntimeError("Must set either --nodes,--procs or --cores: not both")
+
+        outputDir = self.outputDir if self.outputDir is not None else os.getcwd()
+        filename = os.path.join(outputDir, (self.jobName if self.jobName is not None else "slurm") + ".o%j")
+        return "\n".join([("#BSUB --nodes=%d" % self.numNodes) if self.numNodes > 0 else "",
+                          ("#BSUB --ntasks-per-node=%d" % self.numProcsPerNode) if
+                          self.numProcsPerNode > 0 else "",
+                          ("#BSUB --ntasks=%d" % self.numCores) if self.numCores > 0 else "",
+                          "#BSUB -W=%s" % walltime,
+                          "#BSUB --job-name=%s" % self.jobName if self.jobName is not None else "",
+                          "#BSUB -o=%s" % filename,
+                          ])
+
+    
+    def submitCommand(self, scriptName):
+        return "bsub %s" % (scriptName)
+
+
