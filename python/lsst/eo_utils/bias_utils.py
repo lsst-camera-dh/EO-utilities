@@ -643,10 +643,11 @@ def plot_oscan_correl_raft(butler, raft_data, **kwargs):
             regions = get_geom_regions(butler, ccd, amp)
             bbox = regions['serial_overscan']
             im = get_raw_image(butler, ccd, amp)
-            bbox.grow(-boundry)
+            #bbox.grow(-boundry)
             oscan_data = im[bbox]
-            print (slot, amp, oscan_data.getArray().shape)
-            overscans.append(oscan_data.getArray())
+            step_x = regions['step_x']
+            step_y = regions['step_y']
+            overscans.append(oscan_data.getArray()[::step_x,::step_y])
     namps = len(overscans)
     if covar:
         data = np.array([np.cov(overscans[i[0]].ravel(),

@@ -79,6 +79,33 @@ def get_readout_frequencies_from_ccd(butler, ccd):
     return o_dict
 
 
+def get_geom_steps_from_amp(ccd, amp):
+    """Get x and y steps (+1 or -1) for a particular amp
+
+    @param ccd (ExposureF)          CCD data object
+    @param amp (int)                Amplifier number
+    
+    @returns (tuple) 
+        step_x (int)
+        step_y (int)
+    """
+    manu = ccd.getInfo().getMetadata().getString('CCD_MANU')
+    if manu == 'ITL':
+        flip_y = 1
+    elif manu == 'E2V':
+        flip_y = -1
+    else:
+        raise ValueError("Unknown CCD type %s" % manu)
+
+    if amp < 8:
+        step_x = 1
+        step_y = 1
+    else:
+        step_x = -1
+        step_y = flip_y
+    return (step_x, step_y)
+
+
 def get_geom_regions(butler, ccd, amp):
     """Get the ccd amp bounding boxes for a particular dataId or file
 
@@ -95,14 +122,19 @@ def get_geom_regions(butler, ccd, amp):
                       serial_overscan=geom.serial_overscan,
                       parallel_overscan=geom.parallel_overscan,
                       prescan=geom.prescan,
-                      offset=None)
+                      offset=None,
+                      step_x=1,
+                      step_y=1)
     else:
         geom = ccd.getDetector()[amp]
+        step_x, step_y = get_geom_steps_from_amp(ccd, amp)
         o_dict = dict(imaging=geom.getRawDataBBox(),
                       serial_overscan=geom.getRawHorizontalOverscanBBox(),
                       parallel_overscan=geom.getRawVerticalOverscanBBox(),
                       prescan=geom.getRawPrescanBBox(),
-                      offset=geom.getRawXYOffset())
+                      offset=geom.getRawXYOffset(),
+                      step_x=step_x,
+                      step_y=step_y)
     return o_dict
 
 
@@ -197,13 +229,12 @@ def get_image_frames_2d(img, regions):
       p_array (numpy.narray) with the parallel overscan section data
       s_array (numpy.narray) with the serial overscan section data
     """
-    i_array = img[regions['imaging']].getArray()
-    s_array = img[regions['serial_overscan']].getArray()
-    p_array = img[regions['parallel_overscan']].getArray()
+    step_x = regions['step_x']
+    step_y = regions['step_y']
 
-    o_dict = dict(i_array=i_array,
-                  s_array=s_array,
-                  p_array=p_array)
+    o_dict = dict(i_array=img[regions['imaging']].getArray()[::step_x,::step_y],
+                  s_array=img[regions['serial_overscan']].getArray()[::step_x,::step_y],
+                  p_array=img[regions['parallel_overscan']].getArray()[::step_x,::step_y])
 
     return o_dict
 
