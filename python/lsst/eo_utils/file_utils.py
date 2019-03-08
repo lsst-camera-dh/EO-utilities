@@ -9,11 +9,12 @@ import os
 from get_EO_analysis_files import get_EO_analysis_files
 from exploreRun import exploreRun
 
-ACQ_TYPES_DEFAULT = ['fe55_raft_acq',
-                     'flat_pair_raft_acq',
-                     'sflat_raft_acq',
-                     'qe_raft_acq',
-                     'dark_raft_acq']
+#ACQ_TYPES_DEFAULT = ['fe55_raft_acq',
+#                     'flat_pair_raft_acq',
+#                     'sflat_raft_acq',
+#                     'qe_raft_acq',
+#                     'dark_raft_acq']
+ACQ_TYPES_DEFAULT = ['dark_raft_acq']
 
 MASK_TYPES_DEFAULT = ['fe55_raft_analysis',
                       'dark_defects_raft',
@@ -158,55 +159,6 @@ def superbias_plot_basename(outdir, raft, run_num, slot, **kwargs):
         outpath += "_b-%s" % superbias_type
 
     return outpath
-
-
-def get_bias_files_run(run_id, acq_types=None, db=DEFAULT_DB):
-    """Get a set of bias files out of a folder
-
-    @param run_id (str)     The number number we are reading
-    @param acq_types (list) The types of acquistions we want to include
-    @param db (str)         The database we are reading from, either 'Dev' or 'Prod'
-
-    @returns (dict) Dictionary mapping slot to file names
-    """
-    outdict = {}
-    if acq_types is None:
-        acq_types = ACQ_TYPES_DEFAULT
-
-    handler = get_EO_analysis_files(db=db)
-    for acq_type in acq_types:
-        r_dict = handler.get_files(testName=acq_type, run=run_id, imgtype='BIAS')
-        for key, val in r_dict.items():
-            if key in outdict:
-                outdict[key] += val
-            else:
-                outdict[key] = val
-    return outdict
-
-
-def get_mask_files_run(run_id, mask_types=None, db=DEFAULT_DB):
-    """Get a set of bias files out of a folder
-
-    @param run_id (str)      The number number we are reading
-    @param mask_types (list) The types of masks we want to include
-    @param db (str)          The database we are reading from, either 'Dev' or 'Prod'
-
-    @returns (dict) Dictionary mapping slot to file names
-    """
-    outdict = {}
-    if mask_types is None:
-        mask_types = MASK_TYPES_DEFAULT
-
-
-    handler = get_EO_analysis_files(db=db)
-    for mask_type in mask_types:
-        r_dict = handler.get_files(testName=mask_type, run=run_id, imgtype='FLAT')
-        for key, val in r_dict.items():
-            if key in outdict:
-                outdict[key] += val
-            else:
-                outdict[key] = val
-    return outdict
 
 
 

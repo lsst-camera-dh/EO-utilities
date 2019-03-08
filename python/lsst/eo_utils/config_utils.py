@@ -32,6 +32,7 @@ class EOUtilConfig(pexConfig.Config):
     bias = pexConfig.Field("Method to use for unbiasing", str, default=None)
     superbias = pexConfig.Field("Version of superbias frame to use", str, default=None)
     stat = pexConfig.Field("Statistic to use to stack images", str, default="Median")
+    butler_repo = pexConfig.Field("Butler repository", str, default=None)
     db = pexConfig.Field("Data catalog database", str, default=DEFAULT_DB)
     outdir = pexConfig.Field("Output file path root", str, default=DEFAULT_OUTDIR)
     vmin = pexConfig.Field("Color scale minimum value", float, default=None)
@@ -47,8 +48,7 @@ class EOUtilConfig(pexConfig.Config):
 
 
     def to_odict(self):
-        """@returns (dict) the parameters as an OrderedDict
-        mapping name to a (type, default, doc) tuples"""
+        """@returns (dict) Parameters as an OrderedDict mapping name to (type, default, doc) tuple"""
         o_dict = OrderedDict()
         for key, val in self._fields.items():
             o_dict[key] = (val.dtype, val.default, val.__doc__)
@@ -111,8 +111,6 @@ def make_argstring(arg_dict):
 def copy_items(arg_dict, argnames):
     """Adds a set of arguments to the argument parser
 
-    Parameters
-    ----------
     @param arg_dict (dict)  The dictionary mapping argument name to (type, default, helpstring) tuple
     @param argnames (list)  List of keys to copy to the output dictionary
 
@@ -133,11 +131,10 @@ def setup_parser(argnames, arg_dict=None, **kwargs):
     @param argnames (list)  List of keys to copy to the output dictionary
     @param arg_dict (dict)  The dictionary mapping argument name to (type, default, helpstring) tuple
     @param kwargs
-            usage (str)       The usage string for the ArgumentParser
-            description (str) The description for the ArgumentParser
-
-            All other keyword arguments will be treated as addtional
-            parameters and passed to the ArgumentParser
+        usage (str)       The usage string for the ArgumentParser
+        description (str) The description for the ArgumentParser
+        All other keyword arguments will be treated as addtional
+        parameters and passed to the ArgumentParser
 
     @returns (argparse.ArgumentParser) Argument parser loaded with the requested arguments
     """

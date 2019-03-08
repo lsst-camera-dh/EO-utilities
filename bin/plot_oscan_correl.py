@@ -9,7 +9,7 @@ from lsst.eo_utils.bias_utils import BiasAnalysisByRaft, plot_oscan_correl_raft
 def main():
     """Hook for setup.py"""
     argnames = ['run', 'rafts',
-                'covar', 'db', 'outdir']
+                'covar', 'db', 'butler_repo', 'outdir']
 
     functor = BiasAnalysisByRaft(plot_oscan_correl_raft, argnames)
     functor.run()

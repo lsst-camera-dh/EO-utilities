@@ -1,10 +1,18 @@
 """Functions to help make plots"""
 
 import numpy as np
-import matplotlib.pyplot as plt
-import lsst.eotest.image_utils as imutil
 
-from lsst.eotest.sensor import MaskedCCD
+import astropy.visualization as viz
+from astropy.visualization.mpl_normalize import ImageNormalize
+
+import lsst.eotest.image_utils as imutil
+from .image_utils import get_ccd_from_id
+
+from .mpl_utils import init_matplotlib_backend
+init_matplotlib_backend()
+import matplotlib.pyplot as plt
+plt.ioff()
+from matplotlib import ticker
 
 
 class FigureDict(object):
@@ -154,7 +162,7 @@ class FigureDict(object):
         """
         n_row = len(fftpow)
         ax = self._fig_dict[key]['axs'].flat[iamp]
-        ax.plot(freqs[0:n_row/2], fftpow[0:n_row/2])
+        ax.plot(freqs[0:int(n_row/2)], fftpow[0:int(n_row/2)])
 
     def plot_hist(self, key, iamp, data, **kwargs):
         """Histograms data and plots it
@@ -198,17 +206,66 @@ class FigureDict(object):
         """
         self._fig_dict[key]['ax'].plot(xdata, ydata)
 
+
+    def plot_raft_correl_matrix(self, key, data, **kwargs):
+        """Plot x versus y data
+
+        @param key (str)               Key for the figure.
+        @param data (numpy.ndarray)    Data to histogram
+        @param kwargs
+           slots (list)          Names of the slots
+           title (str)           Title for the figure
+           figsize (tuple)       Figure width, height in inches
+           vmin (float)          minimum value for color axis
+           vmax (float)          maximum value for color axis
+        """
+        slots = kwargs.get('slots', None)
+        title = kwargs.get('title', None)
+        vmin = kwargs.get('vmin', None)
+        vmax = kwargs.get('vmax', None)
+        figsize = kwargs.get('figsize', (14, 8))
+        if vmin is not None and vmax is not None:
+            vrange = (vmin, vmax)
+        else:
+            interval = viz.PercentileInterval(98.)
+            vrange = interval.get_limits(np.abs(data.flatten()))
+
+        fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+
+        if title is not None:
+            ax.set_title(title)
+
+        norm = ImageNormalize(vmin=vrange[0], vmax=vrange[1])
+        im = ax.imshow(data, interpolation='none', norm=norm)
+        cbar = plt.colorbar(im)
+
+        if slots is not None:
+            amps = 16
+            major_locs = [i*amps - 0.5 for i in range(len(slots) + 1)]
+            minor_locs = [amps//2 + i*amps for i in range(len(slots))]
+            for axis in (ax.xaxis, ax.yaxis):
+                axis.set_tick_params(which='minor', length=0)
+                axis.set_major_locator(ticker.FixedLocator(major_locs))
+                axis.set_major_formatter(ticker.FixedFormatter(['']*len(major_locs)))
+                axis.set_minor_locator(ticker.FixedLocator(minor_locs))
+                axis.set_minor_formatter(ticker.FixedFormatter(slots))
+
+        o_dict = dict(fig=fig, ax=ax, im=im, cbar=cbar)
+        self._fig_dict[key] = o_dict
+        return o_dict
+
     def plot_stat_color(self, key, data, **kwargs):
         """Make a 2D color image of an array of data
 
         @param key (str)               Key for the figure.
         @param data (numpy.ndarray)    The data to be plotted
         @param kwargs
-          title (str)
-          clabel (str)
-          figsize (tuple)
-          xlabel (str)
-          ylabel (str)
+          title (str)                  Figure title
+          clabel (str)                 Label for the colorbar
+          figsize (tuple)              Figure width, height in inches
+          xlabel (str)                 x-axis label
+          ylabel (str)                 y-axis label
 
         @returns (dict)
            fig (matplotlib.figure.Figure)
@@ -254,14 +311,16 @@ class FigureDict(object):
         bias_method = kwargs.get('bias', None)
         superbias = kwargs.get('superbias', None)
         subtract_mean = kwargs.get('subtract_mean', False)
+        butler = kwargs.get('butler', None)
 
         all_amps = imutil.allAmps()
-        ccd = MaskedCCD(str(sensor_file), mask_files=mask_files)
+
+        ccd = get_ccd_from_id(butler, sensor_file, mask_files)
 
         if superbias is None:
             superbias_frame = None
         else:
-            superbias_frame = MaskedCCD(str(superbias))
+            superbias_frame = get_ccd_from_id(None, superbias, mask_files)
 
         fig, axs = plt.subplots(2, 8, figsize=(15, 10))
         axs = axs.ravel()
@@ -321,13 +380,14 @@ class FigureDict(object):
         superbias = kwargs.get('superbias', None)
         subtract_mean = kwargs.get('subtract_mean', False)
         region = kwargs.get('region', None)
+        butler = kwargs.get('butler', None)
 
-        ccd = MaskedCCD(str(sensor_file), mask_files=mask_files)
+        ccd = get_ccd_from_id(butler, sensor_file, mask_files)
 
         if superbias is None:
             superbias_frame = None
         else:
-            superbias_frame = MaskedCCD(str(superbias))
+            superbias_frame = get_ccd_from_id(None, superbias, mask_files)
 
         if region is None:
             region = ccd.amp_geom.imaging
@@ -351,7 +411,8 @@ class FigureDict(object):
             if subtract_mean:
                 dd -= dd.mean()
 
-            axs.flat[idx].hist(dd.flat, bins=nbins, range=(vmin, vmax))
+            ax = axs.flat[idx]
+            ax.hist(dd, bins=nbins, range=(vmin, vmax))
 
         plt.tight_layout()
 

@@ -9,7 +9,7 @@ def main():
 
     argnames = ['run', 'rafts', 'slots',
                 'bias', 'superbias',
-                'std', 'mask', 'db', 'outdir']
+                'std', 'mask', 'db', 'butler_repo', 'outdir']
 
     functor = BiasAnalysisBySlot(plot_bias_struct_slot, argnames)
     functor.run()

@@ -8,7 +8,7 @@ from lsst.eo_utils.bias_utils import BiasAnalysisBySlot, plot_correl_wrt_oscan_s
 def main():
     """Hook for setup.py"""
     argnames = ['run', 'rafts', 'slots',
-                'db', 'outdir']
+                'db', 'butler_repo', 'outdir']
 
     functor = BiasAnalysisBySlot(plot_correl_wrt_oscan_slot, argnames)
     functor.run()

@@ -8,6 +8,9 @@ from __future__ import with_statement
 
 import os
 import sys
+#import pipes
+
+#from lsst.ctrl.pool import Batch, exportEnv, UMASK
 
 def dispatch_job(jobname, run_num, logfile, **kwargs):
     """Dispatch a single job to the batch farm
@@ -62,35 +65,33 @@ def read_runlist(filepath):
 
 
 
-
+"""
 
 
 class LSFBatch(Batch):
-    """Batch submission with lsf"""
+    #Batch submission with lsf
 
     def execution(self, command):
-        """Return execution string for script to be submitted"""
+        #Return execution string for script to be submitted
         script = [exportEnv(),
                   "umask %03o" % UMASK,
-                  "cd %s" % pipes.quote(os.getcwd()),
-                  ]
+                  "cd %s" % pipes.quote(os.getcwd())]
         if self.verbose:
             script += ["echo \"mpiexec is at: $(which mpiexec)\"",
                        "ulimit -a",
                        "echo 'umask: ' $(umask)",
                        "eups list -s",
                        "export",
-                       "date",
-                       ]
+                       "date"]
         script += ["mpiexec %s %s" % (self.mpiexec, command)]
         if self.verbose:
             script += ["date",
-                       "echo Done.",
-                       ]
+                       "echo Done."]
         return "\n".join(script)
-    
-    
+
+
     def preamble(self, walltime=None):
+        #The stuff in the exectution script
         if walltime is None:
             walltime = self.walltime
         if walltime <= 0:
@@ -110,11 +111,11 @@ class LSFBatch(Batch):
                           ("#BSUB --ntasks=%d" % self.numCores) if self.numCores > 0 else "",
                           "#BSUB -W=%s" % walltime,
                           "#BSUB --job-name=%s" % self.jobName if self.jobName is not None else "",
-                          "#BSUB -o=%s" % filename,
-                          ])
+                          "#BSUB -o=%s" % filename])
 
-    
+
     def submitCommand(self, scriptName):
+        #The command to run the script
         return "bsub %s" % (scriptName)
 
-
+"""

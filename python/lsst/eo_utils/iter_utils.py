@@ -3,10 +3,6 @@
 import sys
 import os
 
-from .mpl_utils import init_matplotlib_backend
-init_matplotlib_backend()
-
-import matplotlib.pyplot as plt
 
 from lsst.eo_utils.config_utils import setup_parser, EOUtilConfig, make_argstring
 import lsst.pipe.base as pipeBase
@@ -32,18 +28,14 @@ class EO_AnalyzeSlotTask(pipeBase.Task):
         self.analysis_func = analysis_func
 
     @pipeBase.timeMethod
-    def run(self, raft, run_num, slot, slot_data, **kwargs):
+    def run(self, butler, slot_data, **kwargs):
         """Call the analysis function for one sensor
 
-        Parameters
-        ----------
-        @param raft (str)         The raft idenfier (used for the output file naming)
-        @param run_num (str)      The run identifier
-        @param slot (str)         The ccd slot (used for the output file naming)
+        @param butler (Butler)    The data butler
         @param slot_data (dict)   Dictionary with all the files need for analysis
         @param kwargs             Passed along to the analysis function
         """
-        self.analysis_func(raft, run_num, slot, slot_data, **kwargs)
+        self.analysis_func(butler, slot_data, **kwargs)
 
 
 class EO_AnalyzeRaftTask(pipeBase.Task):
@@ -60,17 +52,14 @@ class EO_AnalyzeRaftTask(pipeBase.Task):
         self.analysis_func = analysis_func
 
     @pipeBase.timeMethod
-    def run(self, raft, run_num, raft_data, **kwargs):
+    def run(self, butler, raft_data, **kwargs):
         """Call the analysis function for one raft
 
-        Parameters
-        ----------
-        @param raft (str)         The raft idenfier (used for the output file naming)
-        @param run_num (str)      The run identifier
+        @param butler (Butler)    The data butler
         @param raft_data (dict)   Dictionary with all the files need for analysis
         @param kwargs             Passed along to the analysis function
         """
-        self.analysis_func(raft, run_num, raft_data, **kwargs)
+        self.analysis_func(butler, raft_data, **kwargs)
 
 
 
@@ -131,12 +120,11 @@ class AnalysisIterator(object):
 
 
 
-def iterate_over_slots(task, raft, run_num, data_files, **kwargs):
+def iterate_over_slots(task, butler, data_files, **kwargs):
     """Run a task over a series of slots
 
     @param task (Task)        The pipeline task
-    @param raft (str)         The raft idenfier (used for the output file naming)
-    @param run_num (str)      The run identifier
+    @param butler (Butler)    The data butler
     @param data_files (dict)  Dictionary with all the files need for analysis
     @param kwargs             Passed along to the analysis function
     """
@@ -145,23 +133,18 @@ def iterate_over_slots(task, raft, run_num, data_files, **kwargs):
     if slot_list is None:
         slot_list = ALL_SLOTS
 
-    # If we are doing more that one slot, don't show the plots
-    if len(slot_list) > 1:
-        plt.ioff()
-    else:
-        plt.ion()
-
     for slot in slot_list:
         slot_data = data_files[slot]
-        task.run(raft, run_num, slot, slot_data, **kwargs)
+        kwargs['slot'] = slot
+        task.run(butler, slot_data, **kwargs)
 
 
 
-def iterate_over_rafts(task, run_num, data_files, **kwargs):
+def iterate_over_rafts(task, butler, data_files, **kwargs):
     """Run a task over a series of rafts
 
     @param task (Task)        The pipeline task
-    @param run_num (str)      The run identifier
+    @param butler (Butler)    The data butler
     @param data_files (dict)  Dictionary with all the files need for analysis
     @param kwargs             Passed along to the analysis function
     """
@@ -171,4 +154,4 @@ def iterate_over_rafts(task, run_num, data_files, **kwargs):
 
     for raft in raft_list:
         raft_data = data_files[raft]
-        iterate_over_slots(task, raft, run_num, raft_data, **kwargs)
+        iterate_over_slots(task, butler, raft_data, **kwargs)
