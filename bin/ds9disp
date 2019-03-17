@@ -13,17 +13,28 @@ from builtins import range
 def fname(run, acq, img, seq, raft, ccd=None):
     #prefix = '/gpfs/slac/kipac/fs1/g/lsst/test_data/archive/LCA-10134_Cryostat/LCA-10134_Cryostat-0001/BOT_acq_sim/'
     # For now ignore the raft specification and point at TS8 data for RTM-010
-    prefix = '/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive-test/LCA-11021_RTM/LCA-11021_RTM-010-Dev/'
 
+    # below is for raft test data (TS8)
+    #prefix = '/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive-test/LCA-11021_RTM/LCA-11021_RTM-010-Dev/'
+    #if ccd is None:
+        #ccd = '*'  # if ccd is not specified, return a file for each CCD in the raft
+
+    #if acq.lower() == 'flat':
+        #filepath = prefix + run + '/' + acq.lower() + '_pair_raft_acq/v0/'
+        #glob_str = filepath + '*/' + ccd + '/*' + acq.lower() + '_' + seq +'_' + img.lower() + '_*'
+    #else:
+        #filepath = prefix + run + '/' + acq.lower() + '_raft_acq/v0/'
+        #glob_str = filepath + '*/' + ccd + '/*' + acq.lower() + '_*' + img.lower() + '_' + seq.zfill(3) + '*'
+
+    prefix = '/gpfs/slac/lsst/fs3/g/data/jobHarness/jh_archive-test/LCA-10134_Cryostat/LCA-10134_Cryostat-0001/'
     if ccd is None:
         ccd = '*'  # if ccd is not specified, return a file for each CCD in the raft
 
-    if acq.lower() == 'flat':
-        filepath = prefix + run + '/' + acq.lower() + '_pair_raft_acq/v0/'
-        glob_str = filepath + '*/' + ccd + '/*' + acq.lower() + '_' + seq +'_' + img.lower() + '_*'
-    else:
-        filepath = prefix + run + '/' + acq.lower() + '_raft_acq/v0/'
-        glob_str = filepath + '*/' + ccd + '/*' + acq.lower() + '_*' + img.lower() + '_' + seq.zfill(3) + '*'
+    #if acq.lower() == 'flat':
+    #    filepath = prefix + run + '/' + acq.lower() + '_pair_raft_acq/v0/'
+    #    glob_str = filepath + '*/' + ccd + '/*' + acq.lower() + '_' + seq +'_' + img.lower() + '_*'
+    #else:
+    glob_str = prefix + run + '/BOT_acq/v0/*/' + acq.lower() + '_*' + img.lower() + '_' + seq.zfill(3) + '/MC_C*' + raft + '_' + ccd + '.fits'
     #print(glob_str)
     files = glob.glob(glob_str)
     files.sort()
@@ -37,7 +48,7 @@ tempfile = '/tmp/temp_' + os.environ['USER'] + '.fits'
 parser = argparse.ArgumentParser(description='Display a CCD image.')
 parser.add_argument('-run', help='run number')
 parser.add_argument('-acq', choices=['BIAS','DARK','FE55','FLAT','LAMBDA','SFLAT','FE55_FLAT','XTALK','CCOB','SPOT','SPOT_FLAT','PERSISTENCE','TRAP','SCAN'],help='acquisition type')
-parser.add_argument('-img', choices=['BIAS','DARK','FE55','FLAT1','FLAT2','PPUMP'],help='image type')
+parser.add_argument('-img', choices=['BIAS','DARK','FE55','FLAT_1','FLAT_2','PPUMP'],help='image type')
 parser.add_argument('-seq',help='sequence number')
 parser.add_argument('-raft',choices=['R10','R20','R30','R01','R11','R21','R31','R41','R02','R12','R22','R32','R42','R03','R13','R23','R33','R43','R14','R24','R34'], help='raft coordinates in focal plane')
 parser.add_argument('-ccd', choices=['S00','S01','S02','S10','S11','S12','S20','S21','S22'], help='CCD slot in raft')
@@ -218,7 +229,10 @@ for seq in args.seq.split(','):
 
                 for infile in files:
                     hdu = fits.open(infile)
-                    sensor_loc = 'S' + infile.split('/S')[1].split('/')[0]
+                    # below for raft-level data
+                    #sensor_loc = 'S' + infile.split('/S')[1].split('/')[0]
+                    # below for BOT data
+                    sensor_loc = 'S' + infile.split('_S')[1].split('.fi')[0]
                     for i in list(range(1,17)):
                         hdu[i].header.set('EXTNAME', sensor_loc + '_' +
                                           hdu[i].header['EXTNAME'])
