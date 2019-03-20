@@ -91,7 +91,10 @@ for seq in args.seq.split(','):
                 ccdtype = hdu[0].header['CCD_MANU']
                 hdulist.append(hdu[0])
 
-                sensor_loc = 'S' + files[0].split('/S')[1].split('/')[0]
+                #sensor_loc = 'S' + files[0].split('/S')[1].split('/')[0]
+                # below for BOT data
+                sensor_loc = 'S' + infile.split('_S')[1].split('.fi')[0]
+                print(sensor_loc)
 
                 for i in list(range(1,17)):
                     hdutemp = hdu[i]
@@ -163,7 +166,9 @@ for seq in args.seq.split(','):
                 preh, overh = 0, 0  # notation of LCA-13501 - no pre- or over-scan
                 overv = 0
 
-                sensor_loc = 'S' + files[0].split('/S')[1].split('/')[0]
+                #sensor_loc = 'S' + files[0].split('/S')[1].split('/')[0]
+                # below for BOT data
+                sensor_loc = 'S' + infile.split('_S')[1].split('.fi')[0]
 
                 for i in list(range(1,17)):
                     hdutemp = hdu[i]
@@ -262,10 +267,12 @@ for seq in args.seq.split(','):
                 count = 0
                 for count, infile in enumerate(files):
                     hdu = fits.open(infile)
-                    sensor_loc = 'S' + infile.split('/S')[1].split('/')[0]
+                    #sensor_loc = 'S' + infile.split('/S')[1].split('/')[0]
+                    # below for BOT data
+                    sensor_loc = 'S' + infile.split('_S')[1].split('.fi')[0]
 
                     # Notation below is from LCA-13501
-                    Cp = np.divide(count, 3)
+                    Cp = count // 3 
                     Cs = count - 3*Cp  # modulo
 
                     for i in list(range(1,17)):
