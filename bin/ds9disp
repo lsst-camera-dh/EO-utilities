@@ -10,7 +10,7 @@ import glob
 import numpy as np
 from builtins import range
 
-def fname(run, acq, img, seq, raft, ccd=None):
+def fname(run, acq, img, seq, raft, exptime=None, filt=None, ccd=None):
     #prefix = '/gpfs/slac/kipac/fs1/g/lsst/test_data/archive/LCA-10134_Cryostat/LCA-10134_Cryostat-0001/BOT_acq_sim/'
     # For now ignore the raft specification and point at TS8 data for RTM-010
 
@@ -34,10 +34,20 @@ def fname(run, acq, img, seq, raft, ccd=None):
     #    filepath = prefix + run + '/' + acq.lower() + '_pair_raft_acq/v0/'
     #    glob_str = filepath + '*/' + ccd + '/*' + acq.lower() + '_' + seq +'_' + img.lower() + '_*'
     #else:
-    glob_str = prefix + run + '/BOT_acq/v0/*/' + acq.lower() + '_*' + img.lower() + '_' + seq.zfill(3) + '/MC_C*' + raft + '_' + ccd + '.fits'
-    #print(glob_str)
+    if acq.lower() == 'lambda':
+        glob_str = prefix + run + '/BOT_acq/v0/*/' + acq.lower() + '_' + img.lower() + '_*' + seq.zfill(3) + '/MC_C*' + raft + '_' + ccd + '.fits'
+    elif acq.lower() == 'fe55_flat':
+        if filt is None:
+            filt = '*'
+        if exptime is None:
+            exptime = '*'
+        glob_str = prefix + run + '/BOT_acq/v0/*/' + acq.lower() + '_' + filt + '_' + img.lower() + '_' + exptime + '_' + seq.zfill(3) + '/MC_C*' + raft + '_' + ccd + '.fits'
+    else:
+        glob_str = prefix + run + '/BOT_acq/v0/*/' + acq.lower() + '_*' + img.lower() + '_' + seq.zfill(3) + '/MC_C*' + raft + '_' + ccd + '.fits'
+    print(glob_str)
     files = glob.glob(glob_str)
     files.sort()
+    
     return files 
     
 tempfile = '/tmp/temp_' + os.environ['USER'] + '.fits'
@@ -47,12 +57,14 @@ tempfile = '/tmp/temp_' + os.environ['USER'] + '.fits'
 
 parser = argparse.ArgumentParser(description='Display a CCD image.')
 parser.add_argument('-run', help='run number')
-parser.add_argument('-acq', choices=['BIAS','DARK','FE55','FLAT','LAMBDA','SFLAT','FE55_FLAT','XTALK','CCOB','SPOT','SPOT_FLAT','PERSISTENCE','TRAP','SCAN'],help='acquisition type')
-parser.add_argument('-img', choices=['BIAS','DARK','FE55','FLAT_1','FLAT_2','PPUMP'],help='image type')
-parser.add_argument('-seq',help='sequence number')
+parser.add_argument('-acq', choices=['bias','dark','flat','lambda','sflat','fe55_flat','xtalk','ccob','spot','spot_flat','persistence','trap','scan'],help='acquisition type', type=str.lower)
+parser.add_argument('-img', choices=['bias','dark','fe55','flat','flat_0','flat_1','flat_2','ppump'],help='image type', type=str.lower)
+parser.add_argument('-seq',help='sequence number', type=str.lower)
 parser.add_argument('-raft',choices=['R10','R20','R30','R01','R11','R21','R31','R41','R02','R12','R22','R32','R42','R03','R13','R23','R33','R43','R14','R24','R34'], help='raft coordinates in focal plane')
 parser.add_argument('-ccd', choices=['S00','S01','S02','S10','S11','S12','S20','S21','S22'], help='CCD slot in raft')
 parser.add_argument('-seg',choices=['01','02','03','04','05','06','07','10','11','12','13','14','15','16','17'], help='CCD segment number')
+parser.add_argument('-filter', choices=['480nm', '650nm', '750nm', '870nm', '950nm', '970nm', 'SDSSu', 'SDSSg', 'SDSSr', 'SDSSi',' SDSSz', 'SDSSY'])
+parser.add_argument('-exp', help='exposure time for flat in s (no units)', type=str)
 parser.add_argument('-over', action='store_const', const=1)
 
 args = parser.parse_args()
@@ -65,8 +77,7 @@ d = pyds9.DS9()  #start='--mosaicimage iraf')
 
 for seq in args.seq.split(','):
     for run in args.run.split(','):
-#---finish below here
-        files = fname(run, args.acq, args.img, seq, args.raft, args.ccd)
+        files = fname(run, args.acq, args.img, seq, args.raft, args.exp, args.filter, args.ccd)
 
         if len(files) == 0:
             print('No matching files found')
@@ -93,7 +104,7 @@ for seq in args.seq.split(','):
 
                 #sensor_loc = 'S' + files[0].split('/S')[1].split('/')[0]
                 # below for BOT data
-                sensor_loc = 'S' + infile.split('_S')[1].split('.fi')[0]
+                sensor_loc = 'S' + infile.split('.fits')[0][-2:]
                 print(sensor_loc)
 
                 for i in list(range(1,17)):
@@ -168,7 +179,7 @@ for seq in args.seq.split(','):
 
                 #sensor_loc = 'S' + files[0].split('/S')[1].split('/')[0]
                 # below for BOT data
-                sensor_loc = 'S' + infile.split('_S')[1].split('.fi')[0]
+                sensor_loc = 'S' + infile.split('.fits')[0][-2:]
 
                 for i in list(range(1,17)):
                     hdutemp = hdu[i]
@@ -237,7 +248,7 @@ for seq in args.seq.split(','):
                     # below for raft-level data
                     #sensor_loc = 'S' + infile.split('/S')[1].split('/')[0]
                     # below for BOT data
-                    sensor_loc = 'S' + infile.split('_S')[1].split('.fi')[0]
+                    sensor_loc = 'S' + infile.split('.fits')[0][-2:]
                     for i in list(range(1,17)):
                         hdu[i].header.set('EXTNAME', sensor_loc + '_' +
                                           hdu[i].header['EXTNAME'])
@@ -245,6 +256,8 @@ for seq in args.seq.split(','):
 
                 hdulist.writeto(tempfile, overwrite=True)
                 #d = pyds9.DS9()  #start='--mosaicimage iraf')
+                d.set('width 900')
+                d.set('height 800')
                 d.set('mosaicimage wcsq ' + tempfile)
                 d.set('scale mode zscale')
                 d.set('view wcsq')
@@ -269,7 +282,7 @@ for seq in args.seq.split(','):
                     hdu = fits.open(infile)
                     #sensor_loc = 'S' + infile.split('/S')[1].split('/')[0]
                     # below for BOT data
-                    sensor_loc = 'S' + infile.split('_S')[1].split('.fi')[0]
+                    sensor_loc = 'S' + infile.split('.fits')[0][-2:]
 
                     # Notation below is from LCA-13501
                     Cp = count // 3 
