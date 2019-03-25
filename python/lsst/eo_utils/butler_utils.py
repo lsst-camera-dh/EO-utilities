@@ -7,11 +7,11 @@
 from lsst.daf.persistence import Butler
 
 
-BIAS_TEST_TYPES = ["DARK", "FE55"]
+BIAS_TEST_TYPES = ["DARK"]
 
-MASK_TEST_TYPES = ["DARK"]
+MASK_TEST_TYPES = []
 
-BUTLER_TS8_REPO = '/gpfs/slac/lsst/fs1/u/echarles/DATA/butler_test/repo_RTM-004-Dev'
+BUTLER_TS8_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/ts8'
 BUTLER_BOT_REPO = ''
 
 BUTLER_REPO_DICT = dict(TS8=BUTLER_TS8_REPO,
@@ -35,6 +35,27 @@ def getButler(repo, **kwargs):
     butler = Butler(repo_path, **kwargs)
     return butler
 
+
+def get_hardware_info(butler, run_num):
+    """return the hardware type and hardware id for a given run
+
+    @param: butler (Bulter)  The data Butler
+    @param run_num(str)   The number number we are reading
+
+    @returns (tuple)
+      htype (str) The hardware type, either
+                        'LCA-10134' (aka full camera) or
+                        'LCA-11021' (single raft)
+      hid (str) The hardware id, e.g., RMT-004
+    """
+    rafts = butler.queryMetadata('raw', 'raftName', dict(run=run_num))
+    if len(rafts) > 1:
+        htype = 'LCA-10134'
+        hid = 'LCA-10134-0001'
+    else:
+        htype = 'LCA-11021'
+        hid = rafts[0]
+    return (htype, hid)
 
 
 def getVisitList(butler, run_id, **kwargs):
@@ -124,11 +145,13 @@ def get_bias_and_mask_files_butler(butler, run_id, **kwargs):
         mask_types = []
 
     bias_kwargs = dict(imageType='BIAS', testType=acq_types)
-    mask_kwargs = dict(imageType='DARK', testType=mask_types)
+    mask_kwargs = dict(imageType='MASK', testType=mask_types)
 
-    for slot in SLOT_LIST:
+    slots = butler.queryMetadata('raw', 'detectorName', dict(run=run_id))
+
+    for slot in slots:
         bias_kwargs['detectorName'] = slot
         mask_kwargs['detectorName'] = slot
-        outdict[slot] = dict(bias_files=getDataRefList(butler, run_id, **bias_kwargs),
-                             mask_files=getDataRefList(butler, run_id, **mask_kwargs))
+        outdict[slot] = dict(BIAS=getDataRefList(butler, run_id, **bias_kwargs),
+                             MASK=getDataRefList(butler, run_id, **mask_kwargs))
     return outdict

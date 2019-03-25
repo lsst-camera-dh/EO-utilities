@@ -10,14 +10,14 @@ from scipy import fftpack
 import lsst.afw.math as afwMath
 import lsst.eotest.image_utils as imutil
 
-from .file_utils import get_bias_and_mask_files_run, get_hardware_type_and_id,\
+from .file_utils import get_bias_and_mask_files_run,\
     superbias_filename, superbias_stat_filename,\
     bias_plot_basename, superbias_plot_basename,\
     makedir_safe
 
-from .butler_utils import getButler, get_bias_and_mask_files_butler
+from .butler_utils import get_bias_and_mask_files_butler
 
-from .config_utils import DEFAULT_DB, DEFAULT_OUTDIR,\
+from .config_utils import DEFAULT_OUTDIR,\
     DEFAULT_STAT_TYPE, DEFAULT_BITPIX
 
 from .plot_utils import FigureDict
@@ -28,16 +28,33 @@ from .image_utils import get_dims_from_ccd, get_readout_frequencies_from_ccd,\
     get_image_frames_2d,\
     array_struct, unbias_amp, make_superbias
 
-from .iter_utils import EO_AnalyzeSlotTask, EO_AnalyzeRaftTask,\
-    AnalysisIterator,\
-    iterate_over_slots, iterate_over_rafts
-
+from .iter_utils import AnalysisBySlot, AnalysisByRaft
 
 DEFAULT_BIAS_TYPE = 'spline'
 DEFAULT_SUPERBIAS_TYPE = None
 SBIAS_TEMPLATE = 'superbias/templates/sbias_template.fits'
 
-class BiasAnalysisBySlot(AnalysisIterator):
+
+def get_bias_data(butler, run_num, **kwargs):
+    """Get a set of bias and mask files out of a folder
+
+    @param: butler (Bulter)  The data Butler
+    @param run_num (str)      The number number we are reading
+    @param kwargs
+       acq_types (list)  The types of acquistions we want to include
+       mask_types (list) The types of masks we want to include
+       mask (bool)       Flag to include mask files
+
+    @returns (dict) Dictionary mapping slot to file names
+    """
+    kwargs.pop('run_num', None)
+    if butler is None:
+        return get_bias_and_mask_files_run(run_num, **kwargs)
+    else:
+        return get_bias_and_mask_files_butler(butler, run_num, **kwargs)
+
+
+class BiasAnalysisBySlot(AnalysisBySlot):
     """Small class to iterate an analysis task over all the slots in a raft"""
     def __init__(self, analysis_func, argnames):
         """C'tor
@@ -46,35 +63,10 @@ class BiasAnalysisBySlot(AnalysisIterator):
         @param argnames (list)          List of the keyword arguments need by that function.
                                         Used to look up defaults
         """
-        AnalysisIterator.__init__(self, EO_AnalyzeSlotTask(analysis_func), argnames)
-
-    def call_func(self, run_num, **kwargs):
-        """Call the analysis function for one run
-
-        @param run_num (str)  The run identifier
-        @param kwargs
-            db (str)    The database to look for the data
-            All the remaining keyword arguments are passed to the analysis function
-        """
-        htype, hid = get_hardware_type_and_id(kwargs.get('db', DEFAULT_DB), run_num)
-        butler_repo = kwargs.get('butler_repo', None)
-        kwargs['run_num'] = run_num
-        if butler_repo is None:
-            butler = None
-            data_files = get_bias_and_mask_files_run(run_num, **kwargs)
-        else:
-            butler = getButler(butler_repo)
-            data_files = get_bias_and_mask_files_butler(butler, run_num, **kwargs)
-        if htype == "LCA-10134":
-            iterate_over_rafts(self.task, butler, data_files, **kwargs)
-        elif htype == "LCA-11021":
-            kwargs['raft'] = hid
-            iterate_over_slots(self.task, butler, data_files, **kwargs)
-        else:
-            raise ValueError("Do not recognize hardware type for run %s: %s" % (run_num, htype))
+        super(BiasAnalysisBySlot, self).__init__(analysis_func, get_bias_data, argnames)
 
 
-class BiasAnalysisByRaft(AnalysisIterator):
+class BiasAnalysisByRaft(AnalysisByRaft):
     """Small class to iterate an analysis task over all the raft and then all the slots in a raft"""
     def __init__(self, analysis_func, argnames):
         """C'tor
@@ -83,33 +75,7 @@ class BiasAnalysisByRaft(AnalysisIterator):
         @param argnames (list)          List of the keyword arguments need by that function.
                                         Used to look up defaults
         """
-        AnalysisIterator.__init__(self, EO_AnalyzeRaftTask(analysis_func), argnames)
-
-    def call_func(self, run_num, **kwargs):
-        """Call the analysis function for one run
-
-        @param run_num (str)  The run identifier
-        @param kwargs
-            db (str)    The database to look for the data
-            All the remaining keyword arguments are passed to the analysis function
-        """
-        htype, hid = get_hardware_type_and_id(kwargs.get('db', DEFAULT_DB), run_num)
-        butler_repo = kwargs.get('butler_repo', None)
-        if butler_repo is None:
-            butler = None
-            data_files = get_bias_and_mask_files_run(run_num, **kwargs)
-        else:
-            butler = getButler(butler_repo)
-            data_files = get_bias_and_mask_files_butler(butler, run_num, **kwargs)
-
-        kwargs['run_num'] = run_num
-        if htype == "LCA-10134":
-            iterate_over_rafts(self.task, butler, data_files, **kwargs)
-        elif htype == "LCA-11021":
-            kwargs['raft'] = hid
-            self.task.run(butler, data_files, **kwargs)
-        else:
-            raise ValueError("Do not recognize hardware type for run %s: %s" % (run_num, htype))
+        super(BiasAnalysisByRaft, self).__init__(analysis_func, get_bias_data, argnames)
 
 
 def make_superbias_slot(butler, slot_data, **kwargs):
@@ -141,8 +107,8 @@ def make_superbias_slot(butler, slot_data, **kwargs):
     #plot = kwargs.get('plot', False)
     #stats_hist = kwargs.get('stats_hist', False)
 
-    bias_files = slot_data['bias_files']
-    mask_files = slot_data['mask_files']
+    bias_files = slot_data['BIAS']
+    mask_files = slot_data['MASK']
 
     sys.stdout.write("Working on %s, %i files.\n" % (slot, len(bias_files)))
 
@@ -197,8 +163,8 @@ def plot_bias_v_row_slot(butler, slot_data, **kwargs):
     bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
     outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
 
-    bias_files = slot_data['bias_files'][0:5]
-    mask_files = slot_data['mask_files']
+    bias_files = slot_data['BIAS']
+    mask_files = slot_data['MASK']
 
     sys.stdout.write("Working on %s, %i (mask %i) files: \n" % (slot, len(bias_files), len(mask_files)))
 
@@ -262,8 +228,8 @@ def plot_bias_fft_slot(butler, slot_data, **kwargs):
     superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
     outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
 
-    bias_files = slot_data['bias_files']
-    mask_files = slot_data['mask_files']
+    bias_files = slot_data['BIAS']
+    mask_files = slot_data['MASK']
 
     sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
     sys.stdout.flush()
@@ -305,9 +271,9 @@ def plot_bias_fft_slot(butler, slot_data, **kwargs):
             image = unbias_amp(im, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
             frames = get_image_frames_2d(image, regions)
 
-            for key in ['i', 's', 'p']:
+            for key, region in zip(['i', 's', 'p'], ['imaging', 'serial_overscan', 'parallel_overscan']):
                 freqs = freqs_dict["freqs_%s" % key]
-                struct = array_struct(frames['%s_array' % key], do_std=std)
+                struct = array_struct(frames[region], do_std=std)
                 fftpow = np.abs(fftpack.fft(struct['rows']-struct['rows'].mean()))
                 fftpow /= len(fftpow)/2
                 figs.plot_fft('%s_row' % key, i, freqs, np.sqrt(fftpow))
@@ -344,8 +310,8 @@ def plot_bias_struct_slot(butler, slot_data, **kwargs):
     superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
     outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
 
-    bias_files = slot_data['bias_files'][0:5]
-    mask_files = slot_data['mask_files']
+    bias_files = slot_data['BIAS']
+    mask_files = slot_data['MASK']
 
     sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
     sys.stdout.flush()
@@ -387,10 +353,10 @@ def plot_bias_struct_slot(butler, slot_data, **kwargs):
             image = unbias_amp(im, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
             frames = get_image_frames_2d(image, regions)
 
-            for key in ['i', 's', 'p']:
+            for key, region in zip(['i', 's', 'p'], ['imaging', 'serial_overscan', 'parallel_overscan']):
                 xrow = dim_array_dict["row_%s" % key]
                 xcol = dim_array_dict["col_%s" % key]
-                struct = array_struct(frames['%s_array' % key], do_std=std)
+                struct = array_struct(frames[region], do_std=std)
                 #print (key, xrow.shape, xcol.shape, struct['rows'].shape, struct['cols'].shape)
                 figs.plot("%s_row" % key, i, xrow, struct['rows'])
                 figs.plot("%s_col" % key, i, xcol, struct['cols'])
@@ -424,8 +390,8 @@ def plot_correl_wrt_oscan_slot(butler, slot_data, **kwargs):
     slot = kwargs['slot']
     outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
 
-    bias_files = slot_data['bias_files']
-    mask_files = slot_data['mask_files']
+    bias_files = slot_data['BIAS']
+    mask_files = slot_data['MASK']
 
     nfiles = len(bias_files)
 
@@ -469,13 +435,13 @@ def plot_correl_wrt_oscan_slot(butler, slot_data, **kwargs):
                 ref_frames[i] = frames
                 continue
 
-            ref_i_array = ref_frames[i]['i_array']
-            ref_s_array = ref_frames[i]['s_array']
-            ref_p_array = ref_frames[i]['p_array']
+            ref_i_array = ref_frames[i]['imaging']
+            ref_s_array = ref_frames[i]['serial_overscan']
+            ref_p_array = ref_frames[i]['parallel_overscan']
 
-            del_i_array = frames['i_array'] - ref_i_array
-            del_s_array = frames['s_array'] - ref_s_array
-            del_p_array = frames['p_array'] - ref_p_array
+            del_i_array = frames['imaging'] - ref_i_array
+            del_s_array = frames['serial_overscan'] - ref_s_array
+            del_p_array = frames['parallel_overscan'] - ref_p_array
 
             dd_s = del_s_array.mean(1)[0:nrow_i]-del_i_array.mean(1)
             dd_p = del_p_array.mean(0)[0:ncol_i]-del_i_array.mean(0)
@@ -520,8 +486,8 @@ def plot_oscan_amp_stack_slot(butler, slot_data, **kwargs):
     superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
     outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
 
-    bias_files = slot_data['bias_files']
-    mask_files = slot_data['mask_files']
+    bias_files = slot_data['BIAS']
+    mask_files = slot_data['MASK']
 
     sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
     sys.stdout.flush()
@@ -577,10 +543,10 @@ def plot_oscan_amp_stack_slot(butler, slot_data, **kwargs):
             image = unbias_amp(im, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
             frames = get_image_frames_2d(image, regions)
 
-            for key in ['i', 's', 'p']:
+            for key, region in zip(['i', 's', 'p'], ['imaging', 'serial_overscan', 'parallel_overscan']):
                 row_stack = stack_arrays["row_%s" % key]
                 col_stack = stack_arrays["col_%s" % key]
-                struct = array_struct(frames['%s_array' % key])
+                struct = array_struct(frames[region])
                 row_stack[ifile, i] = struct['rows']
                 col_stack[ifile, i] = struct['cols']
 
@@ -635,7 +601,7 @@ def plot_oscan_correl_raft(butler, raft_data, **kwargs):
     boundry = 10
 
     for slot in slots:
-        bias_files = raft_data[slot]['bias_files']
+        bias_files = raft_data[slot]['BIAS']
         ccd = get_ccd_from_id(butler, bias_files[0], [])
 
         amps = get_amp_list(butler, ccd)
@@ -643,11 +609,11 @@ def plot_oscan_correl_raft(butler, raft_data, **kwargs):
             regions = get_geom_regions(butler, ccd, amp)
             bbox = regions['serial_overscan']
             im = get_raw_image(butler, ccd, amp)
-            #bbox.grow(-boundry)
+            bbox.grow(-boundry)
             oscan_data = im[bbox]
             step_x = regions['step_x']
             step_y = regions['step_y']
-            overscans.append(oscan_data.getArray()[::step_x,::step_y])
+            overscans.append(oscan_data.getArray()[::step_x, ::step_y])
     namps = len(overscans)
     if covar:
         data = np.array([np.cov(overscans[i[0]].ravel(),
@@ -692,7 +658,7 @@ def plot_superbias_fft_slot(butler, slot_data, **kwargs):
     superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
     outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
 
-    mask_files = slot_data['mask_files']
+    mask_files = slot_data['MASK']
 
     if butler is not None:
         sys.stdout.write("Ignoring butler in plot_superbias_fft_slot")
@@ -717,8 +683,8 @@ def plot_superbias_fft_slot(butler, slot_data, **kwargs):
         regions = get_geom_regions(None, superbias, amp)
         frames = get_image_frames_2d(image, regions)
 
-        for key in ['i', 's', 'p']:
-            frame = frames["%s_array" % key]
+        for key, region in zip(['i', 's', 'p'], ['imaging', 'serial_overscan', 'parallel_overscan']):
+            frame = frames[region]
             freqs = freqs_dict["freqs_%s" % key]
             struct = array_struct(frame-frame.mean(), do_std=std)
             fftpow = np.abs(fftpack.fft(struct['rows']))
@@ -754,7 +720,7 @@ def plot_superbias_struct_slot(butler, slot_data, **kwargs):
     superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
     outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
 
-    mask_files = slot_data['mask_files']
+    mask_files = slot_data['MASK']
 
     if butler is not None:
         sys.stdout.write("Ignoring butler in plot_superbias_fft_slot")
@@ -780,10 +746,10 @@ def plot_superbias_struct_slot(butler, slot_data, **kwargs):
         regions = get_geom_regions(None, superbias, amp)
         frames = get_image_frames_2d(image, regions)
 
-        for key in ['i', 's', 'p']:
+        for key, region in zip(['i', 's', 'p'], ['imaging', 'serial_overscan', 'parallel_overscan']):
             xrow = dim_array_dict["row_%s" % key]
             xcol = dim_array_dict["col_%s" % key]
-            struct = array_struct(frames['%s_array' % key], do_std=std)
+            struct = array_struct(frames[region], do_std=std)
             figs.plot("%s_row" % key, i, xrow, struct['rows'])
             figs.plot("%s_col" % key, i, xcol, struct['cols'])
 

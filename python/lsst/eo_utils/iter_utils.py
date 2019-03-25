@@ -8,6 +8,8 @@ from lsst.eo_utils.config_utils import setup_parser, EOUtilConfig, make_argstrin
 import lsst.pipe.base as pipeBase
 
 from .file_utils import get_hardware_type_and_id
+from .butler_utils import getButler, get_hardware_info
+
 from .batch_utils import dispatch_job
 
 ALL_SLOTS = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
@@ -66,14 +68,16 @@ class EO_AnalyzeRaftTask(pipeBase.Task):
 class AnalysisIterator(object):
     """Small class to iterate an analysis, and provied an interface to the batch system"""
     batch_argnames = ['logdir', 'logsuffix', 'bsub_args', 'batch', 'dry_run']
-    def __init__(self, task, argnames):
+    def __init__(self, task, data_func, argnames):
         """C'tor
 
-        @param analysis_func (fuction)  The function that does that actual analysis
+        @param task (Task)              The task that does the actual analysis for one CCD
+        @param data_func (function)     Function that gets the data to analyze
         @param argnames (list)          List of the keyword arguments need by that function.
                                         Used to look up defaults
         """
         self.task = task
+        self.data_func = data_func
         self.argnames = argnames
         self.argnames += self.batch_argnames
 
@@ -81,13 +85,57 @@ class AnalysisIterator(object):
         """Needs to be implemented by sub-classes"""
         raise NotImplementedError("AnalysisIterator.call_func")
 
+    @staticmethod
+    def get_hardware(butler, run_num):
+        """return the hardware type and hardware id for a given run
+
+        @param: bulter (Bulter)  The data Butler
+        @param run_num(str)   The number number we are reading
+
+        @returns (tuple)
+            htype (str) The hardware type, either
+                        'LCA-10134' (aka full camera) or
+                        'LCA-11021' (single raft)
+            hid (str) The hardware id, e.g., RMT-004
+        """
+        if butler is None:
+            return get_hardware_type_and_id(run_num)
+        else:
+            return get_hardware_info(butler, run_num)
+
+    @staticmethod
+    def get_butler(butler_repo, **kwargs):
+        """Return a data Butler
+
+        @param: bulter_epo (str)  Key specifying the data repo
+        @param kwargs (dict)      Passed to the ctor
+        """
+        return getButler(butler_repo, **kwargs)
+
+    def get_data(self, butler, run_num, **kwargs):
+        """Call the function to get the data
+
+        @param: bulter (Bulter)  The data Butler
+        @param run_num (str)     The run identifier
+        @param kwargs (dict)     Passed to the data function
+        """
+        return self.data_func(butler, run_num, **kwargs)
+
+
     def run(self):
         """Run the analysis, this task the arguments from the command line using the argparse interface"""
         parser = setup_parser(self.argnames)
         args = parser.parse_args()
 
+        if args.butler_repo is None:
+            butler = None
+            hinfo = get_hardware_type_and_id(args.run)
+        else:
+            butler = self.get_butler(args.butler_repo)
+            hinfo = get_hardware_info(butler, args.run)
+
         jobname = os.path.basename(sys.argv[0])
-        hinfo = get_hardware_type_and_id(args.db, args.run)
+
         hid = hinfo[1]
         logfile = os.path.join(args.logdir, "%s_%s_%s%s.log" % (hid, args.run,
                                                                 jobname.replace('.py', ''), args.logsuffix))
@@ -99,6 +147,8 @@ class AnalysisIterator(object):
         arg_dict.pop('logsuffix')
 
         if batch is None:
+            arg_dict.pop('butler_repo')
+            arg_dict['butler'] = butler
             self.call_func(run_num, **arg_dict)
         elif batch == 'slot':
             slots = arg_dict.pop('slots')
@@ -117,7 +167,6 @@ class AnalysisIterator(object):
             arg_dict['optstring'] = make_argstring(arg_dict)
             arg_dict['bsub_args'] = bsub_args
             dispatch_job(jobname, run_num, logfile, **arg_dict)
-
 
 
 def iterate_over_slots(task, butler, data_files, **kwargs):
@@ -139,7 +188,6 @@ def iterate_over_slots(task, butler, data_files, **kwargs):
         task.run(butler, slot_data, **kwargs)
 
 
-
 def iterate_over_rafts(task, butler, data_files, **kwargs):
     """Run a task over a series of rafts
 
@@ -155,3 +203,71 @@ def iterate_over_rafts(task, butler, data_files, **kwargs):
     for raft in raft_list:
         raft_data = data_files[raft]
         iterate_over_slots(task, butler, raft_data, **kwargs)
+
+
+class AnalysisBySlot(AnalysisIterator):
+    """Small class to iterate an analysis task over all the slots in a raft"""
+    def __init__(self, analysis_func, data_func, argnames):
+        """C'tor
+
+        @param analysis_func (fuction)  The function that does that actual analysis
+        @param data_func (function)     Function that gets the data to analyze
+        @param argnames (list)          List of the keyword arguments need by that function.
+                                        Used to look up defaults
+        """
+        AnalysisIterator.__init__(self, EO_AnalyzeSlotTask(analysis_func), data_func, argnames)
+
+    def call_func(self, run_num, **kwargs):
+        """Call the analysis function for one run
+
+        @param run_num (str)  The run identifier
+        @param kwargs
+            db (str)    The database to look for the data
+            All the remaining keyword arguments are passed to the analysis function
+        """
+        butler = kwargs.pop('butler', None)
+        htype, hid = self.get_hardware(butler, run_num)
+        data_files = self.get_data(butler, run_num, **kwargs)
+
+        kwargs['run_num'] = run_num
+        if htype == "LCA-10134":
+            iterate_over_rafts(self.task, butler, data_files, **kwargs)
+        elif htype == "LCA-11021":
+            kwargs['raft'] = hid
+            iterate_over_slots(self.task, butler, data_files, **kwargs)
+        else:
+            raise ValueError("Do not recognize hardware type for run %s: %s" % (run_num, htype))
+
+
+class AnalysisByRaft(AnalysisIterator):
+    """Small class to iterate an analysis task over all the raft and then all the slots in a raft"""
+    def __init__(self, analysis_func, data_func, argnames):
+        """C'tor
+
+        @param analysis_func (fuction)  The function that does that actual analysis
+        @param data_func (function)     Function that gets the data to analyze
+        @param argnames (list)          List of the keyword arguments need by that function.
+                                        Used to look up defaults
+        """
+        AnalysisIterator.__init__(self, EO_AnalyzeRaftTask(analysis_func), data_func, argnames)
+
+    def call_func(self, run_num, **kwargs):
+        """Call the analysis function for one run
+
+        @param run_num (str)  The run identifier
+        @param kwargs
+            db (str)    The database to look for the data
+            All the remaining keyword arguments are passed to the analysis function
+        """
+        butler = kwargs.pop('butler', None)
+        htype, hid = self.get_hardware(butler, run_num)
+        data_files = self.get_data(butler, run_num, **kwargs)
+
+        kwargs['run_num'] = run_num
+        if htype == "LCA-10134":
+            iterate_over_rafts(self.task, butler, data_files, **kwargs)
+        elif htype == "LCA-11021":
+            kwargs['raft'] = hid
+            self.task.run(butler, data_files, **kwargs)
+        else:
+            raise ValueError("Do not recognize hardware type for run %s: %s" % (run_num, htype))

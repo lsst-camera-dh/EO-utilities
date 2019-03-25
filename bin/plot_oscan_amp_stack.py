@@ -10,7 +10,7 @@ def main():
     """Hook for setup.py"""
     argnames = ['run', 'rafts', 'slots',
                 'bias', 'superbias', 'mask',
-                'db', 'butler_repo', 'outdir']
+                'butler_repo', 'outdir']
 
     functor = BiasAnalysisBySlot(plot_oscan_amp_stack_slot, argnames)
     functor.run()

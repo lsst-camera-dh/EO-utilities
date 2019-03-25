@@ -16,14 +16,12 @@ from exploreRun import exploreRun
 #                     'dark_raft_acq']
 ACQ_TYPES_DEFAULT = ['dark_raft_acq']
 
-MASK_TYPES_DEFAULT = ['fe55_raft_analysis',
-                      'dark_defects_raft',
-                      'traps_raft',
-                      'bright_defects_raft']
+#MASK_TYPES_DEFAULT = ['fe55_raft_analysis',
+#                      'dark_defects_raft',
+#                      'traps_raft',
+#                      'bright_defects_raft']
 
-RD_ROOT_FOLDER = '/gpfs/slac/lsst/fs1/g/data/R_and_D/'
-RAFT_ROOT_FOLDER = '/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive-test/LCA-11021_RTM/'
-DEFAULT_DB = 'Dev'
+MASK_TYPES_DEFAULT = []
 
 
 def makedir_safe(filepath):
@@ -37,18 +35,21 @@ def makedir_safe(filepath):
         pass
 
 
-def get_hardware_type_and_id(db, run_num):
-    """Return the hardware type and hardware id for a given run
+def get_hardware_type_and_id(run_num):
+    """return the hardware type and hardware id for a given run
 
-    @param db(str)        The database we are reading from, either 'Dev' or 'Prod'
     @param run_num(str)   The number number we are reading
 
     @returns (tuple)
-      htype (str) The hardware type, eitherL
-                        'LCA-10134' (aka full crystat) or
+      htype (str) The hardware type, either
+                        'LCA-10134' (aka full camera) or
                         'LCA-11021' (single raft)
       hid (str) The hardware id, e.g., RMT-004-Dev
     """
+    if run_num.find('D') >= 0:
+        db = 'Dev'
+    else:
+        db = 'Prod'
     er = exploreRun(db=db)
     hsn = er.hardware_sn(run=run_num)
     tokens = hsn.split('_')
@@ -169,7 +170,6 @@ def get_bias_and_mask_files_run(run_id, **kwargs):
     @param kwargs
        acq_types (list)  The types of acquistions we want to include
        mask_types (list) The types of masks we want to include
-       db (str)          The database we are reading from, either 'Dev' or 'Prod'
        mask (bool)       Flag to include mask files
 
     @returns (dict) Dictionary mapping slot to file names
@@ -183,21 +183,26 @@ def get_bias_and_mask_files_run(run_id, **kwargs):
     else:
         mask_types = []
 
-    handler = get_EO_analysis_files(db=kwargs.get('db', DEFAULT_DB))
+    if run_id.find('D') >= 0:
+        db = 'Dev'
+    else:
+        db = 'Prod'
+    handler = get_EO_analysis_files(db=db)
+
     for acq_type in acq_types:
         r_dict = handler.get_files(testName=acq_type, run=run_id, imgtype='BIAS')
         for key, val in r_dict.items():
             if key in outdict:
-                outdict[key]["bias_files"] += val
+                outdict[key]["BIAS"] += val
             else:
-                outdict[key] = dict(bias_files=val, mask_files=[])
+                outdict[key] = dict(BIAS=val, MASK=[])
 
         for mask_type in mask_types:
             r_dict = handler.get_files(testName=mask_type, run=run_id, imgtype='FLAT')
             for key, val in r_dict.items():
                 if key in outdict:
-                    outdict[key]["mask_files"] += val
+                    outdict[key]["MASK"] += val
                 else:
-                    outdict[key] = dict(bias_files=[], mask_files=val)
+                    outdict[key] = dict(BIAS=[], MASK=val)
 
     return outdict

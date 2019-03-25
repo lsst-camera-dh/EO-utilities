@@ -84,22 +84,22 @@ def get_geom_steps_from_amp(ccd, amp):
 
     @param ccd (ExposureF)          CCD data object
     @param amp (int)                Amplifier number
-    
-    @returns (tuple) 
+
+    @returns (tuple)
         step_x (int)
         step_y (int)
     """
     manu = ccd.getInfo().getMetadata().getString('CCD_MANU')
     if manu == 'ITL':
-        flip_y = 1
-    elif manu == 'E2V':
         flip_y = -1
+    elif manu == 'E2V':
+        flip_y = 1
     else:
         raise ValueError("Unknown CCD type %s" % manu)
 
     if amp < 8:
         step_x = 1
-        step_y = 1
+        step_y = -1
     else:
         step_x = -1
         step_y = flip_y
@@ -218,26 +218,41 @@ def get_amp_list(butler, ccd):
         return [amp for amp in range(16)]
 
 
-def get_image_frames_2d(img, regions):
+def get_image_frames_2d(img, regions, regionlist=None):
     """Split out the arrays for the serial_overscan, parallel_overscan, and imaging regions
 
     @param img ()  Image Data
     @param regions (dict) Geometry Object
+    @param regionlist (list)   List of regions
 
     @returns (dict)
-      i_array (numpy.narray) with the imaging section data
-      p_array (numpy.narray) with the parallel overscan section data
-      s_array (numpy.narray) with the serial overscan section data
+      (str):(numpy.narray) with the data or each region
     """
     step_x = regions['step_x']
     step_y = regions['step_y']
 
-    o_dict = dict(i_array=img[regions['imaging']].getArray()[::step_x,::step_y],
-                  s_array=img[regions['serial_overscan']].getArray()[::step_x,::step_y],
-                  p_array=img[regions['parallel_overscan']].getArray()[::step_x,::step_y])
+    if regionlist is None:
+        regionlist = ['imaging', 'serial_overscan', 'parallel_overscan']
 
+    o_dict = {key:img[regions[key]].getArray()[::step_x, ::step_y] for key in regionlist}
     return o_dict
 
+
+def get_data_as_read(butler, ccd, amp, regionlist=None):
+    """Split out the arrays for the serial_overscan, parallel_overscan, and imaging regions
+
+    @param butler (Butler)       Data Butler (or none)
+    @param ccd (MaskedImageF)    Data identifier
+    @param amp (int)             Amplifier index
+    @param regionlist (list)   List of regions
+
+    @returns (dict)
+      (str):(numpy.narray) with the data or each region
+    """
+    raw_image = get_raw_image(butler, ccd, amp)
+    regions = get_geom_regions(butler, ccd, amp)
+    frames = get_image_frames_2d(raw_image, regions, regionlist)
+    return frames
 
 
 def array_struct(i_array, clip=None, do_std=False):

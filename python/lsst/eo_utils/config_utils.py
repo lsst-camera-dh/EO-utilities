@@ -33,7 +33,6 @@ class EOUtilConfig(pexConfig.Config):
     superbias = pexConfig.Field("Version of superbias frame to use", str, default=None)
     stat = pexConfig.Field("Statistic to use to stack images", str, default="Median")
     butler_repo = pexConfig.Field("Butler repository", str, default=None)
-    db = pexConfig.Field("Data catalog database", str, default=DEFAULT_DB)
     outdir = pexConfig.Field("Output file path root", str, default=DEFAULT_OUTDIR)
     vmin = pexConfig.Field("Color scale minimum value", float, default=None)
     vmax = pexConfig.Field("Color scale maximum value", float, default=None)
@@ -124,6 +123,40 @@ def copy_items(arg_dict, argnames):
     return outdict
 
 
+def get_config_defaults(argnames, arg_dict=None, **kwargs):
+    """Gets default values for selected arguments
+
+    @param argnames (list)  List of keys to copy to the output dictionary
+    @param arg_dict (dict)  The dictionary mapping argument name to (type, default, helpstring) tuple
+    @param kwargs
+        All other keyword arguments will be treated as used to update the defaults
+
+    @returns (argparse.ArgumentParser) Argument parser loaded with the requested arguments
+    """
+    if arg_dict is None:
+        arg_dict = DEFAULTS
+
+    use_arg_dict = copy_items(arg_dict, argnames)
+    use_arg_dict.update(**kwargs)
+    return use_arg_dict
+
+
+def get_config_values(argnames, arg_dict=None, **kwargs):
+    """Gets default values for selected arguments
+
+    @param argnames (list)  List of keys to copy to the output dictionary
+    @param arg_dict (dict)  The dictionary mapping argument name to (type, default, helpstring) tuple
+    @param kwargs
+        All other keyword arguments will be treated as used to update the defaults
+
+    @returns (argparse.ArgumentParser) Argument parser loaded with the requested arguments
+    """
+    defaults = get_config_defaults(argnames, arg_dict)
+    outdict = {}
+    for argname, argpars in defaults.items():
+        outdict[argname] = argpars[1]
+    outdict.update(**kwargs)
+    return outdict
 
 def setup_parser(argnames, arg_dict=None, **kwargs):
     """Creates an ArgumentParser and adds selected arguments
@@ -141,17 +174,14 @@ def setup_parser(argnames, arg_dict=None, **kwargs):
 
     usage = kwargs.pop('usage', None)
     description = kwargs.pop('description', None)
-
-    if arg_dict is None:
-        arg_dict = DEFAULTS
-
     if usage is None:
         usage = "%s [options]" % os.path.basename(sys.argv[0])
 
-    use_arg_dict = copy_items(arg_dict, argnames)
-    use_arg_dict.update(**kwargs)
-
     parser = argparse.ArgumentParser(usage=usage,
                                      description=description)
+
+    use_arg_dict = get_config_defaults(argnames, arg_dict, **kwargs)
     add_arguments(parser, use_arg_dict)
     return parser
+
+
