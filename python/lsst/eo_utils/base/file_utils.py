@@ -47,7 +47,7 @@ def get_hardware_type_and_id(run_num):
     hsn = er.hardware_sn(run=run_num)
     tokens = hsn.split('_')
     htype = tokens[0]
-    hid = tokens[1]
+    hid = tokens[1].replace('-Dev', '')
     return (htype, hid)
 
 

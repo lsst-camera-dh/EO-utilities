@@ -27,9 +27,9 @@ REGION_NAMES = ['imaging', 'serial_overscan', 'parallel_overscan']
 REGION_LABELS = ['Imaging region', 'Serial overscan', 'Parallel overscan']
 
 try:
-    afwImage_Mask = afwImage.Mask
-except AttributeError:
     afwImage_Mask = afwImage.MaskU
+except AttributeError:
+    afwImage_Mask = afwImage.Mask
 
 
 def get_dims_from_ccd(butler, ccd):

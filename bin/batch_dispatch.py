@@ -20,12 +20,10 @@ def main():
                         help="Name of job to execute")
     parser.add_argument("--logsuffix", default='',
                         help="Suffix to appned to log files")
-    parser.add_argument("--bsub_args", default="-W 1200 -R bullet",
+    parser.add_argument("--bsub_args", default="-W 1200 -R bubble",
                         help="Arguents to pass to bsub command")
     parser.add_argument("--optstring", default=None,
                         help="Arguments to pass to job")
-    parser.add_argument("--db", default='Dev',
-                        help="Data catalog DB")
     parser.add_argument("--dry_run", default=False, action='store_true',
                         help="Print command, do not run job")
 
@@ -39,8 +37,8 @@ def main():
 
     for run in run_list:
 
-        run_num = run[0]
-        hinfo = get_hardware_type_and_id(args.db, run_num)
+        run_num = run[1]
+        hinfo = get_hardware_type_and_id(run_num)
         hid = hinfo[0]
 
         logfile = os.path.join(args.logdir, "%s_%s_%s%s.log" %\
