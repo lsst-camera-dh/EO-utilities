@@ -5,8 +5,8 @@
 import os
 import argparse
 
-from lsst.eo_utils.batch_utils import read_runlist, dispatch_job
-from lsst.eo_utils.file_utils import get_hardware_type_and_id
+from lsst.eo_utils.base.batch_utils import read_runlist, dispatch_job
+from lsst.eo_utils.base.file_utils import get_hardware_type_and_id
 
 def main():
     """Hook for setup.py"""

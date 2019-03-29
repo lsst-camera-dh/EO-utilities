@@ -10,13 +10,26 @@ import numpy as np
 
 from scipy import fftpack
 
+from astropy.io import fits
+
 import lsst.afw.math as afwMath
+import lsst.afw.image as afwImage
 
 import lsst.eotest.image_utils as imutil
 from lsst.eotest.sensor import MaskedCCD
 
 T_SERIAL = 2e-06
 T_PARALLEL = 40e-06
+
+
+REGION_KEYS = ['i', 's', 'p']
+REGION_NAMES = ['imaging', 'serial_overscan', 'parallel_overscan']
+REGION_LABELS = ['Imaging region', 'Serial overscan', 'Parallel overscan']
+
+try:
+    afwImage_Mask = afwImage.Mask
+except AttributeError:
+    afwImage_Mask = afwImage.MaskU
 
 
 def get_dims_from_ccd(butler, ccd):
@@ -78,6 +91,31 @@ def get_readout_frequencies_from_ccd(butler, ccd):
                   freqs_p=fftpack.fftfreq(nrow_p)*f_s)
     return o_dict
 
+def get_geom_steps_manu_hdu(manu, amp):
+    """Get x and y steps (+1 or -1) for a particular amp
+
+    @param manu (str)              ITL or E2V
+    @param amp (int)               HDU index
+
+    @returns (tuple)
+        step_x (int)
+        step_y (int)
+    """
+    if manu == 'ITL':
+        flip_y = -1
+    elif manu == 'E2V':
+        flip_y = 1
+    else:
+        raise ValueError("Unknown CCD type %s" % manu)
+
+    if amp <= 8:
+        step_x = 1
+        step_y = -1
+    else:
+        step_x = -1
+        step_y = flip_y
+    return (step_x, step_y)
+
 
 def get_geom_steps_from_amp(ccd, amp):
     """Get x and y steps (+1 or -1) for a particular amp
@@ -104,6 +142,19 @@ def get_geom_steps_from_amp(ccd, amp):
         step_x = -1
         step_y = flip_y
     return (step_x, step_y)
+
+
+def flip_data_in_place(filepath):
+    """Flip the data in a FITS file in place
+
+    @param filepath
+    """
+    hdus = fits.open(filepath)
+    manu = hdus[0].header['CCD_MANU']
+    for amp in range(1, 17):
+        (step_x, step_y) = get_geom_steps_manu_hdu(manu, amp)
+        hdus[amp].data = hdus[amp].data[::step_x, ::step_y]
+    hdus.writeto(filepath, overwrite=True)
 
 
 def get_geom_regions(butler, ccd, amp):
@@ -164,12 +215,12 @@ def get_dimension_arrays_from_ccd(butler, ccd):
         ncol_s = geom.getRawHorizontalOverscanBBox().getWidth()
         ncol_p = geom.getRawVerticalOverscanBBox().getWidth()
 
-    o_dict = dict(row_i=np.linspace(0, nrow_i-1, nrow_i),
-                  row_s=np.linspace(0, nrow_s-1, nrow_s),
-                  row_p=np.linspace(0, nrow_p-1, nrow_p),
-                  col_i=np.linspace(0, ncol_i-1, ncol_i),
-                  col_s=np.linspace(0, ncol_s-1, ncol_s),
-                  col_p=np.linspace(0, ncol_p-1, ncol_p))
+    o_dict = {'row_i':np.linspace(0, nrow_i-1, nrow_i),
+              'row_s':np.linspace(0, nrow_s-1, nrow_s),
+              'row_p':np.linspace(0, nrow_p-1, nrow_p),
+              'col_i':np.linspace(0, ncol_i-1, ncol_i),
+              'col_s':np.linspace(0, ncol_s-1, ncol_s),
+              'col_p':np.linspace(0, ncol_p-1, ncol_p)}
     return o_dict
 
 
@@ -184,7 +235,7 @@ def get_raw_image(butler, ccd, amp):
         im = ccd[amp].getImage()
     else:
         geom = ccd.getDetector()
-        im = ccd.image[geom[amp].getRawBBox()]
+        im = ccd.maskedImage[geom[amp].getRawBBox()].image
     return im
 
 
@@ -198,10 +249,11 @@ def get_ccd_from_id(butler, dataId, mask_files):
     @returns (MaskedCCD or ExposureF) CCD image
     """
     if butler is None:
-        return MaskedCCD(str(dataId), mask_files=mask_files)
+        exposure = MaskedCCD(str(dataId), mask_files=mask_files)
     else:
         exposure = butler.get('raw', dataId)
-        return exposure
+        apply_masks(butler, exposure, mask_files)
+    return exposure
 
 
 def get_amp_list(butler, ccd):
@@ -213,9 +265,10 @@ def get_amp_list(butler, ccd):
     @returns (list) list of amplifier indices
     """
     if butler is None:
-        return [amp for amp in ccd]
+        amplist = [amp for amp in ccd]
     else:
-        return [amp for amp in range(16)]
+        amplist = [amp for amp in range(16)]
+    return amplist
 
 
 def get_image_frames_2d(img, regions, regionlist=None):
@@ -234,7 +287,10 @@ def get_image_frames_2d(img, regions, regionlist=None):
     if regionlist is None:
         regionlist = ['imaging', 'serial_overscan', 'parallel_overscan']
 
-    o_dict = {key:img[regions[key]].getArray()[::step_x, ::step_y] for key in regionlist}
+    try:
+        o_dict = {key:img[regions[key]].array[::step_x, ::step_y] for key in regionlist}
+    except AttributeError:
+        o_dict = {key:img[regions[key]].image.array[::step_x, ::step_y] for key in regionlist}        
     return o_dict
 
 
@@ -340,11 +396,44 @@ def make_superbias(butler, bias_files, statistic=afwMath.MEDIAN, **kwargs):
             else:
                 amp_stack_dict[amp].append(unbias_amp(im, serial_oscan, bias_type=bias_type))
 
+
     for key, val in amp_stack_dict.items():
         if butler is None:
             outkey = key
         else:
             outkey = key + 1
-        sbias_dict[outkey] = imutil.stack(val, statistic)
+        stackimage = imutil.stack(val, statistic)
+        sbias_dict[outkey] = stackimage
 
     return sbias_dict
+
+
+def read_masks(maskfile):
+    """Read a list of masks
+
+    @param maskfile (str)  The file we are reading
+
+    @returns (list) Dictionary mapping slot to file names
+    """
+    mask_list = []
+    for i in range(16):
+        amask = afwImage_Mask(maskfile, i+1)
+        mask_list.append(amask)
+    return mask_list
+
+
+def apply_masks(butler, ccd, maskfiles):
+    """Make a set of superbias images
+
+    @param butler (Butler)       Data Butler (or none)
+    @param ccd (MaskedImageF)    Data identifier
+    @param maskfiles (list)      Amplifier index
+    """
+    if butler is None:
+        return 
+    geom = ccd.getDetector()
+    for mfile in maskfiles:
+        mask_list = read_masks(mfile)
+        for amp, mask in enumerate(mask_list):
+            (step_x, step_y) = get_geom_steps_from_amp(ccd, amp)
+            ccd.mask[geom[amp].getRawBBox()].array = mask.array[::step_x,::step_y]

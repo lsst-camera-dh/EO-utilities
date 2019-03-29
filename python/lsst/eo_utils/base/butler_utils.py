@@ -7,12 +7,8 @@
 from lsst.daf.persistence import Butler
 
 
-BIAS_TEST_TYPES = ["DARK"]
-
-MASK_TEST_TYPES = []
-
 BUTLER_TS8_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/ts8'
-BUTLER_BOT_REPO = ''
+BUTLER_BOT_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/bot'
 
 BUTLER_REPO_DICT = dict(TS8=BUTLER_TS8_REPO,
                         BOT=BUTLER_BOT_REPO)
@@ -122,36 +118,29 @@ def getDataRefList(butler, run_id, **kwargs):
     return dataRefList
 
 
-
-def get_bias_and_mask_files_butler(butler, run_id, **kwargs):
+def make_file_dict(butler, runlist, varlist=None):
     """Get a set of bias and mask files out of a folder
 
     @param butler (Butler)    The bulter we are using
-    @param run_id (str)      The number number we are reading
-    @param kwargs
-       acq_types (list)  The types of acquistions we want to include
-       mask_types (list) The types of masks we want to include
-       mask (bool)       Flag to include mask files
-
-    @returns (dict) Dictionary mapping slot to file names
+    @param runlist (list)     List of complete data IDs
+    @param varlist (list)     List of variables 
     """
-    outdict = {}
-    if kwargs.get('acq_types', None) is None:
-        acq_types = BIAS_TEST_TYPES
-    if kwargs.get('mask', False):
-        if kwargs.get('mask_types', None) is None:
-            mask_types = MASK_TEST_TYPES
-    else:
-        mask_types = []
+    if varlist is None:
+        varlist = ['testtype', 'visit']
 
-    bias_kwargs = dict(imageType='BIAS', testType=acq_types)
-    mask_kwargs = dict(imageType='MASK', testType=mask_types)
-
-    slots = butler.queryMetadata('raw', 'detectorName', dict(run=run_id))
-
-    for slot in slots:
-        bias_kwargs['detectorName'] = slot
-        mask_kwargs['detectorName'] = slot
-        outdict[slot] = dict(BIAS=getDataRefList(butler, run_id, **bias_kwargs),
-                             MASK=getDataRefList(butler, run_id, **mask_kwargs))
-    return outdict
+    odict = {var:[] for var in varlist}
+    
+    for run in runlist:
+        for var in varlist:
+            if butler is None:
+                value = -1
+            else:
+                if var in run:
+                    value = run[var]
+                else:
+                    vallist = butler.queryMetadata('raw', var, run)
+                    if len(vallist) != 1:
+                        raise ValueError("Could not get %s for run %s")
+                    value = vallist[0]
+            odict[var].append(value)
+    return odict

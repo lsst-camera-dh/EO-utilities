@@ -4,9 +4,9 @@ import sys
 import os
 
 
-from lsst.eo_utils.config_utils import setup_parser, EOUtilConfig, make_argstring
 import lsst.pipe.base as pipeBase
 
+from .config_utils import setup_parser, EOUtilConfig, make_argstring
 from .file_utils import get_hardware_type_and_id
 from .butler_utils import getButler, get_hardware_info
 
@@ -65,7 +65,7 @@ class EO_AnalyzeRaftTask(pipeBase.Task):
 
 
 
-class AnalysisIterator(object):
+class AnalysisIterator:
     """Small class to iterate an analysis, and provied an interface to the batch system"""
     batch_argnames = ['logdir', 'logsuffix', 'bsub_args', 'batch', 'dry_run']
     def __init__(self, task, data_func, argnames):
@@ -99,9 +99,10 @@ class AnalysisIterator(object):
             hid (str) The hardware id, e.g., RMT-004
         """
         if butler is None:
-            return get_hardware_type_and_id(run_num)
+            retval = get_hardware_type_and_id(run_num)
         else:
-            return get_hardware_info(butler, run_num)
+            retval = get_hardware_info(butler, run_num)
+        return retval
 
     @staticmethod
     def get_butler(butler_repo, **kwargs):
@@ -231,9 +232,11 @@ class AnalysisBySlot(AnalysisIterator):
 
         kwargs['run_num'] = run_num
         if htype == "LCA-10134":
+            data_files = self.get_data(butler, **kwargs)
             iterate_over_rafts(self.task, butler, data_files, **kwargs)
         elif htype == "LCA-11021":
             kwargs['raft'] = hid
+            data_files = self.get_data(butler, **kwargs)
             iterate_over_slots(self.task, butler, data_files, **kwargs)
         else:
             raise ValueError("Do not recognize hardware type for run %s: %s" % (run_num, htype))

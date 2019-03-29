@@ -16,6 +16,11 @@ DEFAULT_OUTDIR = 'superbias'
 DEFAULT_STAT_TYPE = 'median'
 DEFAULT_BITPIX = -32
 
+STANDARD_SLOT_ARGS = ['run', 'slots', 'butler_repo', 'outdir',
+                      'plot', 'skip']
+STANDARD_RAFT_ARGS = ['run', 'butler_repo', 'outdir',
+                      'plot', 'skip']
+
 
 class EOUtilConfig(pexConfig.Config):
     """Configuration for EOUtils tasks"""
@@ -183,5 +188,3 @@ def setup_parser(argnames, arg_dict=None, **kwargs):
     use_arg_dict = get_config_defaults(argnames, arg_dict, **kwargs)
     add_arguments(parser, use_arg_dict)
     return parser
-
-

@@ -15,7 +15,16 @@ plt.ioff()
 from matplotlib import ticker
 
 
-class FigureDict(object):
+TESTCOLORMAP = dict(DARK="black",
+                    FLAT="blue",
+                    TRAP="red",
+                    LAMBDA="magenta",
+                    SFLAT="green",
+                    SFLAT_500="green",
+                    FE55="cyan")
+
+
+class FigureDict:
     """Object to store figures"""
     def __init__(self):
         """C'tor"""
@@ -112,6 +121,47 @@ class FigureDict(object):
         return o_dict
 
 
+    def setup_region_plots_grid(self, key, **kwargs):
+        """Set up a 3x2 grid of plots with requested labeling
+
+        @param key (str)   Key for the figure.
+        @param kwargs (dict)
+            title (str)    Figure title
+            xlabel (str)   X-axis label
+            ylabel (str)   Y-axis label
+            figsize (str)  Figure width, height in inches
+
+        @returns (dict)
+            fig (matplotlib.figure.Figure)
+            axs (array if matplotlib.Axes._subplots.AxesSubplot)
+        """
+        title = kwargs.get('title', None)
+        xlabel = kwargs.get('xlabel', None)
+        ylabel = kwargs.get('ylabel', None)
+        figsize = kwargs.get('figsize', (15, 10))
+
+        fig_nrow = 2
+        fig_ncol = 3
+        fig, axs = plt.subplots(nrows=fig_nrow, ncols=fig_ncol, figsize=figsize)
+
+        if title is not None:
+            fig.suptitle(title)
+
+        if ylabel is not None:
+            for i_row in range(fig_nrow):
+                ax_row = axs[i_row, 0]
+                ax_row.set_ylabel(ylabel)
+
+        if xlabel is not None:
+            for i_col in range(fig_ncol):
+                ax_col = axs[1, i_col]
+                ax_col.set_xlabel(xlabel)
+
+        o_dict = dict(fig=fig, axs=axs)
+        self._fig_dict[key] = o_dict
+        return o_dict
+
+
     def setup_raft_plots_grid(self, key, **kwargs):
         """Set up a 3x3 grid of plots with requested labeling
 
@@ -187,15 +237,16 @@ class FigureDict(object):
         ax = self._fig_dict[key]['axs'].flat[iamp]
         ax.plot(bins, hist[0])
 
-    def plot(self, key, iamp, xdata, ydata):
+    def plot(self, key, iamp, xdata, ydata, **kwargs):
         """Plot x versus y data for one amp
 
         @param key (str)               Key for the figure.
         @param iamp (int)              Amp index
         @param xdata (numpy.ndarray)   Data to histogram
         @param ydata (numpy.ndarray)   Data to histogram
+        @param kwargs                  Passed to matplotlib
         """
-        self._fig_dict[key]['axs'].flat[iamp].plot(xdata, ydata)
+        self._fig_dict[key]['axs'].flat[iamp].plot(xdata, ydata, **kwargs)
 
     def plot_single(self, key, xdata, ydata):
         """Plot x versus y data
@@ -205,6 +256,84 @@ class FigureDict(object):
         @param ydata (numpy.ndarray)   Data to histogram
         """
         self._fig_dict[key]['ax'].plot(xdata, ydata)
+
+    def plot_xy_axs_from_tabledict(self, fd, key, idx, plotkey, **kwargs):
+        """Plot x versus y data
+
+        @param fd (TableDict)          Data
+        @param key (str)               Key for the data
+        @param idx (int)               Axes index
+        @param plotkey (str)           Key for the plot
+        @param kwargs:
+           x_name (str) Name for the x-axis data
+           y_name (str) Start of the name for the y-axis data
+        """
+        x_name = kwargs.get('x_name', 'x')
+        y_name = kwargs.get('y_name', 'y')
+
+        file_data = fd.get_table('files')
+        df = fd.get_table(key)
+        xcol = df[x_name]
+        for col in df.columns:
+            if col.find(y_name) != 0:
+                continue
+            valarray = df[col]
+            for row, test_type in zip(valarray.T, file_data['testtype']):
+                try:
+                    color = TESTCOLORMAP[test_type]
+                except KeyError:
+                    color = "gray"
+                self.plot(plotkey, idx, xcol, row, color=lcolor)
+
+
+    def plot_xy_from_tabledict(self, fd, key, plotkey, **kwargs):
+        """Plot x versus y data
+
+        @param fd (TableDict)          Data
+        @param key (str)               Key for the data
+        @param plotkey (str)           Key for the plot
+        @param kwargs:
+           x_name (str) Name for the x-axis data
+           y_name (str) Start of the name for the y-axis data
+        """
+        x_name = kwargs.get('x_name', 'x')
+        y_name = kwargs.get('y_name', 'y')
+
+        df = fd.get_table(key)
+        xcol = df[x_name]
+        for col in df.columns:
+            if col.find(y_name) != 0:
+                continue
+            self.plot_single(plotkey, xcol, df[col])
+
+
+    def plot_xy_amps_from_tabledict(self, fd, key, plotkey, **kwargs):
+        """Plot x versus y data
+
+        @param fd (TableDict)          Data
+        @param key (str)               Key for the data
+        @param plotkey (str)           Key for the plot
+        @param kwargs:
+           x_name (str) Name for the x-axis data
+           y_name (str) Start of the name for the y-axis data
+        """
+        x_name = kwargs.get('x_name', 'x')
+        y_name = kwargs.get('y_name', 'y')
+
+        file_data = fd.get_table('files')
+        df = fd.get_table(key)
+        xcol = df[x_name]
+        for col in df.columns:
+            if col.find(y_name) != 0:
+                continue
+            amp = int(col.split('_')[-1][1:])
+            valarray = df[col]
+            for row, test_type in zip(valarray.T, file_data['testtype']):
+                try:
+                    color = TESTCOLORMAP[test_type]
+                except KeyError:
+                    color = "gray"
+                self.plot(plotkey, amp, xcol, row, color=color)
 
 
     def plot_raft_correl_matrix(self, key, data, **kwargs):
@@ -412,7 +541,7 @@ class FigureDict(object):
                 dd -= dd.mean()
 
             ax = axs.flat[idx]
-            ax.hist(dd, bins=nbins, range=(vmin, vmax))
+            ax.hist(dd.flat, bins=nbins, range=(vmin, vmax))
 
         plt.tight_layout()
 
@@ -437,6 +566,11 @@ class FigureDict(object):
 
         @param basename (str)     Base of the output file names
         """
+        if basename is None:
+            plt.ion()
+            plt.show()
+            return
+
         for key, val in self._fig_dict.items():
             fig = val['fig']
             fig.savefig("%s_%s.png" % (basename, key))
