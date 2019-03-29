@@ -6,7 +6,8 @@
 
 import os
 
-from get_EO_analysis_files import get_EO_analysis_files
+from lsst.eo_utils.base.file_utils import get_files_for_run
+from lsst.eo_utils.base.image_utils import get_ccd_from_id
 
 #ACQ_TYPES_DEFAULT = ['fe55_raft_acq',
 #                     'flat_pair_raft_acq',
@@ -15,6 +16,7 @@ from get_EO_analysis_files import get_EO_analysis_files
 #                     'dark_raft_acq']
 ACQ_TYPES_DEFAULT = ['dark_raft_acq']
 
+DEFAULT_SUPERBIAS_TYPE = None
 
 
 
@@ -84,6 +86,9 @@ def raft_basename(outdir, raft, run_num, **kwargs):
     """
     outbase = os.path.join(outdir, "plots", raft,
                            "%s-%s" % (raft, run_num))
+    suffix = kwargs.get('suffix', None)
+    if suffix is not None:
+        outbase += "_%s" % suffix
     return outbase
 
 
@@ -156,34 +161,39 @@ def superbias_basename(outdir, raft, run_num, slot, **kwargs):
     return outpath
 
 
-
 def get_bias_files_run(run_id, **kwargs):
     """Get a set of bias and mask files out of a folder
 
     @param run_id (str)      The number number we are reading
     @param kwargs
        acq_types (list)  The types of acquistions we want to include
- 
+
     @returns (dict) Dictionary mapping slot to file names
     """
-    outdict = {}
-    if kwargs.get('acq_types', None) is None:
+    acq_types = kwargs.get('acq_types', None)
+    if acq_types is None:
         acq_types = ACQ_TYPES_DEFAULT
 
-    if run_id.find('D') >= 0:
-        db = 'Dev'
-    else:
-        db = 'Prod'
-    handler = get_EO_analysis_files(db=db)
-
-    for acq_type in acq_types:
-        r_dict = handler.get_files(testName=acq_type, run=run_id, imgtype='BIAS')
-        for key, val in r_dict.items():
-            if key in outdict:
-                outdict[key]["BIAS"] += val
-            else:
-                outdict[key] = dict(BIAS=val)
-
-    return outdict
+    return get_files_for_run(run_id,
+                             testTypes=acq_types,
+                             outkey='BIAS')
 
 
+def get_superbias_frame(**kwargs):
+    """Get the superbias frame
+
+    @param kwargs
+       acq_types (list)  The types of acquistions we want to include
+
+   @param run_id (str)      The number number we are reading
+
+    @returns (dict) Dictionary mapping slot to file names
+    """
+    superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
+    mask_files = kwargs['mask_files']
+
+    if superbias_type is None:
+        return None
+
+    superbias_file = superbias_filename(**kwargs)
+    return get_ccd_from_id(None, superbias_file, mask_files)

@@ -9,9 +9,9 @@ import lsst.afw.math as afwMath
 import lsst.eotest.image_utils as imutil
 
 from lsst.eo_utils.base.file_utils import makedir_safe,\
-    mask_filename
+    get_mask_files
 
-from lsst.eo_utils.base.butler_utils import make_file_dict 
+from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.config_utils import DEFAULT_OUTDIR,\
     DEFAULT_STAT_TYPE, DEFAULT_BITPIX
@@ -29,7 +29,7 @@ from lsst.eo_utils.base.iter_utils import AnalysisBySlot, AnalysisByRaft
 from .file_utils import get_bias_files_run,\
     superbias_filename, superbias_stat_filename,\
     bias_basename, superbias_basename,\
-    raft_basename
+    raft_basename, get_superbias_frame
 
 from .plot_utils import plot_superbias,\
     plot_bias_v_row_slot, plot_bias_fft_slot,\
@@ -44,7 +44,6 @@ from .butler_utils import get_bias_files_butler
 
 
 DEFAULT_BIAS_TYPE = 'spline'
-DEFAULT_SUPERBIAS_TYPE = None
 SBIAS_TEMPLATE = 'superbias/templates/sbias_template.fits'
 ALL_SLOTS = 'S00 S01 S02 S10 S11 S12 S20 S21 S22'.split()
 
@@ -64,7 +63,7 @@ def get_bias_data(butler, run_num, **kwargs):
         retval = get_bias_files_run(run_num, **kwargs)
     else:
         retval = get_bias_files_butler(butler, run_num, **kwargs)
-            
+
     return retval
 
 
@@ -109,7 +108,7 @@ def extract_bias_v_row_slot(butler, slot_data, **kwargs):
 
     bias_files = slot_data['BIAS']
 
-    sys.stdout.write("Working on %s, %i (mask %i) files: \n" % (slot, len(bias_files), len(mask_files)))
+    sys.stdout.write("Working on %s, %i files: \n" % (slot, len(bias_files)))
 
     biasval_data = {}
 
@@ -135,7 +134,7 @@ def extract_bias_v_row_slot(butler, slot_data, **kwargs):
     sys.stdout.flush()
 
     dtables = TableDict()
-    dtables.make_datatable('files', make_file_dict(butler, bias_files)) 
+    dtables.make_datatable('files', make_file_dict(butler, bias_files))
     dtables.make_datatable('biasval', biasval_data)
     return dtables
 
@@ -157,24 +156,15 @@ def extract_bias_fft_slot(butler, slot_data, **kwargs):
     slot = kwargs['slot']
     std = kwargs.get('std', False)
     bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
-    superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
 
     bias_files = slot_data['BIAS']
-    if kwargs.get('mask', False):
-        mask_files = [mask_filename('masks', **kwargs)]
-    else:
-        mask_files = None
+    mask_files = get_mask_files(**kwargs)
+    superbias_frame = get_superbias_frame(mask_files=mask_files, **kwargs)
 
     sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
     sys.stdout.flush()
 
     fft_data = {}
-
-    if superbias_type is None:
-        superbias_frame = None
-    else:
-        superbias_file = superbias_filename(**kwargs)
-        superbias_frame = get_ccd_from_id(None, superbias_file, mask_files)
 
     for ifile, bias_file in enumerate(bias_files):
         if ifile % 10 == 0:
@@ -198,7 +188,7 @@ def extract_bias_fft_slot(butler, slot_data, **kwargs):
     sys.stdout.flush()
 
     dtables = TableDict()
-    dtables.make_datatable('files', make_file_dict(butler, bias_files)) 
+    dtables.make_datatable('files', make_file_dict(butler, bias_files))
     for key in REGION_KEYS:
         dtables.make_datatable('biasfft-%s' % key, fft_data[key])
 
@@ -220,24 +210,15 @@ def extract_bias_struct_slot(butler, slot_data, **kwargs):
     slot = kwargs['slot']
     std = kwargs.get('std', False)
     bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
-    superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
 
     bias_files = slot_data['BIAS']
-    if kwargs.get('mask', False):
-        mask_files = [mask_filename('masks', **kwargs)]
-    else:
-        mask_files = None
+    mask_files = get_mask_files(**kwargs)
+    superbias_frame = get_superbias_frame(mask_files=mask_files, **kwargs)
 
     sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
     sys.stdout.flush()
 
     biasstruct_data = {}
-
-    if superbias_type is None:
-        superbias_frame = None
-    else:
-        superbias_file = superbias_filename(**kwargs)
-        superbias_frame = get_ccd_from_id(None, superbias_file, mask_files)
 
     for ifile, bias_file in enumerate(bias_files):
         if ifile % 10 == 0:
@@ -260,7 +241,7 @@ def extract_bias_struct_slot(butler, slot_data, **kwargs):
     sys.stdout.flush()
 
     dtables = TableDict()
-    dtables.make_datatable('files', make_file_dict(butler, bias_files)) 
+    dtables.make_datatable('files', make_file_dict(butler, bias_files))
     for key, val in biasstruct_data.items():
         dtables.make_datatable('biasst-%s' % key, val)
     return dtables
@@ -280,18 +261,15 @@ def extract_correl_wrt_oscan_slot(butler, slot_data, **kwargs):
     slot = kwargs['slot']
 
     bias_files = slot_data['BIAS']
-    if kwargs.get('mask', False):
-        mask_files = [mask_filename('masks', **kwargs)]
-    else:
-        mask_files = None
+    mask_files = get_mask_files(**kwargs)
 
-    nfiles = len(bias_files)
 
     sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
     sys.stdout.flush()
 
     ref_frames = {}
 
+    nfiles = len(bias_files)
     s_correl = np.ndarray((16, nfiles-1))
     p_correl = np.ndarray((16, nfiles-1))
 
@@ -324,9 +302,39 @@ def extract_correl_wrt_oscan_slot(butler, slot_data, **kwargs):
         data['p_correl_a%02i' % i] = p_correl[i]
 
     dtables = TableDict()
-    dtables.make_datatable('files', make_file_dict(butler, bias_files)) 
+    dtables.make_datatable('files', make_file_dict(butler, bias_files))
     dtables.make_datatable("correl", data)
     return dtables
+
+
+def convert_stack_arrays_to_dict(stack_arrays, dim_array_dict, nfiles):
+    """Convert the stack arrays to a dictionary
+
+    @param stack_arrays (dict)   The stacked data
+    @param dim_array_dict (dict) The array shapes
+    @param nfiles (int)          Number of input files
+
+    @returns (dict) the re-organized data
+    """
+    stackdata_dict = {}
+
+    for key, xvals in dim_array_dict.items():
+        stack = stack_arrays[key]
+        amp_mean = stack.mean(0).mean(1)
+        stackdata_dict[key] = {key:xvals}
+
+        for i in range(nfiles):
+            amp_stack = (stack[i].T - amp_mean).T
+            mean_val = amp_stack.mean(0)
+            std_val = amp_stack.std(0)
+            signif_val = mean_val / std_val
+            for stat, val in zip(['mean', 'std', 'signif'], [mean_val, std_val, signif_val]):
+                keystr = "stack_%s" % stat
+                if keystr not in stackdata_dict[key]:
+                    stackdata_dict[key][keystr] = np.ndarray((len(val), nfiles))
+                stackdata_dict[key][keystr][:, i] = val
+    return stackdata_dict
+
 
 
 def extract_oscan_amp_stack_slot(butler, slot_data, **kwargs):
@@ -342,25 +350,15 @@ def extract_oscan_amp_stack_slot(butler, slot_data, **kwargs):
     """
     slot = kwargs['slot']
     bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
-    superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
 
     bias_files = slot_data['BIAS']
-    if kwargs.get('mask', False):
-        mask_files = [mask_filename('masks', **kwargs)]
-    else:
-        mask_files = None
+    mask_files = get_mask_files(**kwargs)
+    superbias_frame = get_superbias_frame(mask_files=mask_files, **kwargs)
 
     sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
     sys.stdout.flush()
 
-    stackdata_dict = {}
     stack_arrays = {}
-
-    if superbias_type is None:
-        superbias_frame = None
-    else:
-        superbias_file = superbias_filename(**kwargs)
-        superbias_frame = get_ccd_from_id(None, superbias_file, mask_files)
 
     nfiles = len(bias_files)
 
@@ -384,24 +382,10 @@ def extract_oscan_amp_stack_slot(butler, slot_data, **kwargs):
     sys.stdout.write("!\n")
     sys.stdout.flush()
 
-    for key, xvals in dim_array_dict.items():
-        stack = stack_arrays[key]
-        amp_mean = stack.mean(0).mean(1)
-        stackdata_dict[key] = {key:xvals}
-
-        for i in range(nfiles):
-            amp_stack = (stack[i].T - amp_mean).T
-            mean_val = amp_stack.mean(0)
-            std_val = amp_stack.std(0)
-            signif_val = mean_val / std_val
-            for stat, val in zip(['mean', 'std', 'signif'], [mean_val, std_val, signif_val]):
-                keystr = "stack_%s" % stat
-                if keystr not in stackdata_dict[key]:
-                    stackdata_dict[key][keystr] = np.ndarray((len(val), nfiles))
-                stackdata_dict[key][keystr][:, i] = val
+    stackdata_dict = convert_stack_arrays_to_dict(stack_arrays, dim_array_dict, nfiles)
 
     dtables = TableDict()
-    dtables.make_datatable('files', make_file_dict(butler, bias_files)) 
+    dtables.make_datatable('files', make_file_dict(butler, bias_files))
     for key, val in stackdata_dict.items():
         dtables.make_datatable('stack-%s' % key, val)
     return dtables
@@ -441,7 +425,7 @@ def extract_oscan_correl_raft(butler, raft_data, **kwargs):
     data = data.reshape(namps, namps)
 
     dtables = TableDict()
-    dtables.make_datatable('files', make_file_dict(butler, bias_files)) 
+    dtables.make_datatable('files', make_file_dict(butler, bias_files))
     dtables.make_datatable('correl', dict(correl=data))
     return dtables
 
@@ -462,18 +446,13 @@ def extract_superbias_fft_slot(butler, slot_data, **kwargs):
     """
     slot = kwargs['slot']
     std = kwargs.get('std', False)
-    superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
-    if kwargs.get('mask', False):
-        mask_files = [mask_filename('masks', **kwargs)]
-    else:
-        mask_files = None
-
 
     if butler is not None:
         sys.stdout.write("Ignoring butler in plot_superbias_fft_slot")
 
-    superbias_file = superbias_filename(**kwargs)
-    superbias = get_ccd_from_id(None, superbias_file, mask_files)
+    bias_files = slot_data['BIAS']
+    mask_files = get_mask_files(**kwargs)
+    superbias = get_superbias_frame(mask_files=mask_files, **kwargs)
 
     fft_data = {}
 
@@ -484,14 +463,14 @@ def extract_superbias_fft_slot(butler, slot_data, **kwargs):
         fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
 
     get_bias_fft_data(None, superbias, fft_data,
-                      slot=slot, bias_type=superbias_type,
+                      slot=slot, bias_type=kwargs.get('superbias'),
                       std=std, superbias_frame=None)
 
     sys.stdout.write("!\n")
     sys.stdout.flush()
 
     dtables = TableDict()
-    dtables.make_datatable('files', make_file_dict(butler, bias_files)) 
+    dtables.make_datatable('files', make_file_dict(butler, bias_files))
     for key in REGION_KEYS:
         dtables.make_datatable('biasfft-%s' % key, fft_data[key])
     return dtables
@@ -510,23 +489,15 @@ def extract_superbias_struct_slot(butler, slot_data, **kwargs):
         outdir (str)         Output directory
         std (bool)           Plot standard deviation instead of median
     """
-    raft = kwargs['raft']
-    run_num = kwargs['run_num']
     slot = kwargs['slot']
     std = kwargs.get('std', False)
-    superbias_type = kwargs.get('superbias', DEFAULT_SUPERBIAS_TYPE)
-    outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
-
-    if kwargs.get('mask', False):
-        mask_files = [mask_filename('masks', **kwargs)]
-    else:
-        mask_files = None
 
     if butler is not None:
         sys.stdout.write("Ignoring butler in plot_superbias_fft_slot")
 
-    superbias_file = superbias_filename(outdir, raft, run_num, slot, superbias_type)
-    superbias = get_ccd_from_id(None, superbias_file, mask_files)
+    bias_files = slot_data['BIAS']
+    mask_files = get_mask_files(**kwargs)
+    superbias = get_superbias_frame(mask_files=mask_files, **kwargs)
 
     biasstruct_data = {}
 
@@ -534,16 +505,15 @@ def extract_superbias_struct_slot(butler, slot_data, **kwargs):
     for key, val in dim_array_dict.items():
         biasstruct_data[key] = {key:val}
 
-
     get_bias_struct_data(None, superbias, biasstruct_data,
-                         slot=slot, bias_type=superbias_type,
+                         slot=slot, bias_type=kwargs.get('superbias'),
                          std=std, superbias_frame=None)
 
     sys.stdout.write("!\n")
     sys.stdout.flush()
 
     dtables = TableDict()
-    dtables.make_datatable('files', make_file_dict(butler, bias_files)) 
+    dtables.make_datatable('files', make_file_dict(butler, bias_files))
     for key, val in biasstruct_data.items():
         dtables.make_datatable('biasst-%s' % key, val)
     return dtables
@@ -574,10 +544,7 @@ def make_superbias_slot(butler, slot_data, **kwargs):
     stat_type = kwargs.get('stat', DEFAULT_STAT_TYPE)
 
     bias_files = slot_data['BIAS']
-    if kwargs.get('mask', False):
-        mask_files = [mask_filename('masks', **kwargs)]
-    else:
-        mask_files = None
+    mask_files = get_mask_files(**kwargs)
 
     sys.stdout.write("Working on %s, %i files.\n" % (slot, len(bias_files)))
 

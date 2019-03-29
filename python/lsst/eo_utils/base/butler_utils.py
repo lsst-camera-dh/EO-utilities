@@ -123,13 +123,13 @@ def make_file_dict(butler, runlist, varlist=None):
 
     @param butler (Butler)    The bulter we are using
     @param runlist (list)     List of complete data IDs
-    @param varlist (list)     List of variables 
+    @param varlist (list)     List of variables
     """
     if varlist is None:
         varlist = ['testtype', 'visit']
 
     odict = {var:[] for var in varlist}
-    
+
     for run in runlist:
         for var in varlist:
             if butler is None:

@@ -17,7 +17,7 @@ def get_biasval_data(butler, ccd, data, **kwargs):
 
     @param butler (Butler)   The data butler
     @param ccd (MaskedCCD)   The ccd we are getting data from
-    @param data (dict)       The data we are updatign
+    @param data (dict)       The data we are updating
     @param kwargs:
       slot  (str)       The slot number
       ifile (int)       The file index

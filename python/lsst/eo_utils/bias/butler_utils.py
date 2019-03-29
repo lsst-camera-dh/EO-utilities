@@ -4,8 +4,6 @@
 
 """This module contains functions to find files of a particular type using the data Butler"""
 
-from lsst.daf.persistence import Butler
-
 from lsst.eo_utils.base.butler_utils import getDataRefList
 
 BIAS_TEST_TYPES = ["DARK", "FLAT", "FE55", "PPUMP", "SFLAT", "SFLAT", "LAMBDA", "TRAP"]
@@ -34,4 +32,3 @@ def get_bias_files_butler(butler, run_id, **kwargs):
         bias_kwargs['detectorName'] = slot
         outdict[slot] = dict(BIAS=getDataRefList(butler, run_id, **bias_kwargs))
     return outdict
-

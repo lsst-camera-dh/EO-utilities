@@ -97,4 +97,3 @@ class TableDict:
                 self._table_dict[hdu.name.lower()] = Table.read(filepath, hdu=hdu.name)
         else:
             raise ValueError("Can only write pickle and hdf5 files for now, not %s" % extype)
-

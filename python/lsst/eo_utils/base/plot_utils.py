@@ -279,11 +279,8 @@ class FigureDict:
                 continue
             valarray = df[col]
             for row, test_type in zip(valarray.T, file_data['testtype']):
-                try:
-                    color = TESTCOLORMAP[test_type]
-                except KeyError:
-                    color = "gray"
-                self.plot(plotkey, idx, xcol, row, color=lcolor)
+                self.plot(plotkey, idx, xcol, row,
+                          color=TESTCOLORMAP.get(test_type, 'gray'))
 
 
     def plot_xy_from_tabledict(self, fd, key, plotkey, **kwargs):

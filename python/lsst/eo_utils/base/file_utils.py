@@ -66,22 +66,32 @@ def mask_filename(maskdir, raft, run_num, slot, **kwargs):
     outpath = os.path.join(maskdir, raft,
                            '%s-%s-%s_mask' % (raft, run_num, slot))
 
+    suffix = kwargs.get('suffix', None)
+    if suffix is not None:
+        outpath += '_suffix'
+
     outpath += '.fits'
     return outpath
 
 
-def get_mask_files_run(run_id, **kwargs):
+def get_files_for_run(run_id, **kwargs):
     """Get a set of bias and mask files out of a folder
 
     @param run_id (str)      The number number we are reading
     @param kwargs
-       mask_types (list)  The types of acquistions we want to include
- 
+       testTypes (list)  The types of acquistions we want to include
+       imageType (str)   The image type we want
+       outkey (str)      Where to put the output file
+       matchstr (str)    If set, only inlcude files with this string
+
     @returns (dict) Dictionary mapping slot to file names
     """
+    testTypes = kwargs.get('testTypes')
+    imageType = kwargs.get('imageType')
+    outkey = kwargs.get('outkey')
+    matchstr = kwargs.get('matchstr', None)
+
     outdict = {}
-    if kwargs.get('mask_types', None) is None:
-        mask_types = MASK_TYPES_DEFAULT
 
     if run_id.find('D') >= 0:
         db = 'Dev'
@@ -89,19 +99,52 @@ def get_mask_files_run(run_id, **kwargs):
         db = 'Prod'
     handler = get_EO_analysis_files(db=db)
 
-    for mask_type in mask_types:
-        r_dict = handler.get_files(testName=mask_type, run=run_id, imgtype='FLAT')
+    for test_type in testTypes:
+        r_dict = handler.get_files(testName=test_type, run=run_id, imgtype=imageType)
         for key, val in r_dict.items():
-            maskfiles = []
-            for fname in val:
-                if fname.find('_mask') < 0:
-                    continue
-                maskfiles.append(fname)
+            matchfiles = []
+            if matchstr is not None:
+                for fname in val:
+                    if fname.find(matchstr) < 0:
+                        continue
+                    matchfiles.append(fname)
             if key in outdict:
-                outdict[key]["MASK"] += maskfiles
+                outdict[key][outkey] += matchfiles
             else:
-                outdict[key] = dict(MASK=maskfiles)
+                outdict[key] = {outkey:matchfiles}
 
     return outdict
 
 
+def get_mask_files_run(run_id, **kwargs):
+    """Get a set of mask files out of a folder
+
+    @param run_id (str)      The number number we are reading
+    @param kwargs
+       mask_types (list)  The types of acquistions we want to include
+
+    @returns (dict) Dictionary mapping slot to file names
+    """
+    mask_types = kwargs.get('mask_types', None)
+    if mask_types is None:
+        mask_types = MASK_TYPES_DEFAULT
+
+    return get_files_for_run(run_id,
+                             testTypes=mask_types,
+                             outkey='MASK',
+                             matchstr='_mask')
+
+
+def get_mask_files(**kwargs):
+    """Get a set of mask files based on the kwargs
+
+    @param kwargs
+       mask (bool)  Flag to actually get the mask files
+
+    @return (list) List of files
+    """
+    if kwargs.get('mask', False):
+        mask_files = [mask_filename('masks', **kwargs)]
+    else:
+        mask_files = None
+    return mask_files

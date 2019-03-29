@@ -290,7 +290,7 @@ def get_image_frames_2d(img, regions, regionlist=None):
     try:
         o_dict = {key:img[regions[key]].array[::step_x, ::step_y] for key in regionlist}
     except AttributeError:
-        o_dict = {key:img[regions[key]].image.array[::step_x, ::step_y] for key in regionlist}        
+        o_dict = {key:img[regions[key]].image.array[::step_x, ::step_y] for key in regionlist}
     return o_dict
 
 
@@ -430,10 +430,10 @@ def apply_masks(butler, ccd, maskfiles):
     @param maskfiles (list)      Amplifier index
     """
     if butler is None:
-        return 
+        return
     geom = ccd.getDetector()
     for mfile in maskfiles:
         mask_list = read_masks(mfile)
         for amp, mask in enumerate(mask_list):
             (step_x, step_y) = get_geom_steps_from_amp(ccd, amp)
-            ccd.mask[geom[amp].getRawBBox()].array = mask.array[::step_x,::step_y]
+            ccd.mask[geom[amp].getRawBBox()].array = mask.array[::step_x, ::step_y]

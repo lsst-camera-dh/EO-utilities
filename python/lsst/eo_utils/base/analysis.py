@@ -1,8 +1,11 @@
 """Functions to analyse some data"""
 
-from .iter_utils import AnalysisBySlot
 
-from .file_utils import get_mask_files_run, mask_filename
+from lsst.eotest.sensor import add_mask_files
+
+
+from .iter_utils import AnalysisBySlot
+from .file_utils import makedir_safe, get_mask_files_run, mask_filename
 
 
 
@@ -20,8 +23,8 @@ def get_mask_data(butler, run_num, **kwargs):
     if butler is None:
         retval = get_mask_files_run(run_num, **kwargs)
     else:
-        retval = get_mask_files_butler(butler, run_num, **kwargs)
-            
+        raise NotImplementedError("Can't get mask files from Butler")
+
     return retval
 
 
@@ -34,9 +37,11 @@ def make_mask(butler, slot_data, **kwargs):
         outdir (str)         Output directory
     """
     mask_files = slot_data['MASK']
+    if butler is not None:
+        print("Ignoring Butler to get mask files")
     outfile = mask_filename(kwargs.get('outdir', 'masks'), **kwargs)
+    makedir_safe(outfile)
     add_mask_files(mask_files, outfile)
-
 
 
 class MaskAnalysisBySlot(AnalysisBySlot):
