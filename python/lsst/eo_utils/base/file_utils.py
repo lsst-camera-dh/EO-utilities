@@ -69,3 +69,39 @@ def mask_filename(maskdir, raft, run_num, slot, **kwargs):
     outpath += '.fits'
     return outpath
 
+
+def get_mask_files_run(run_id, **kwargs):
+    """Get a set of bias and mask files out of a folder
+
+    @param run_id (str)      The number number we are reading
+    @param kwargs
+       mask_types (list)  The types of acquistions we want to include
+ 
+    @returns (dict) Dictionary mapping slot to file names
+    """
+    outdict = {}
+    if kwargs.get('mask_types', None) is None:
+        mask_types = MASK_TYPES_DEFAULT
+
+    if run_id.find('D') >= 0:
+        db = 'Dev'
+    else:
+        db = 'Prod'
+    handler = get_EO_analysis_files(db=db)
+
+    for mask_type in mask_types:
+        r_dict = handler.get_files(testName=mask_type, run=run_id, imgtype='FLAT')
+        for key, val in r_dict.items():
+            maskfiles = []
+            for fname in val:
+                if fname.find('_mask') < 0:
+                    continue
+                maskfiles.append(fname)
+            if key in outdict:
+                outdict[key]["MASK"] += maskfiles
+            else:
+                outdict[key] = dict(MASK=maskfiles)
+
+    return outdict
+
+
