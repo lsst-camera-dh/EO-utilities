@@ -15,7 +15,7 @@ from lsst.eotest.sensor import parse_geom_kwd, makeAmplifierGeometry
 from deferredChargePlots import *
 import lsst.eotest.image_utils as imutils
 
-def main(directory, output_dir, plot=False):
+def main(directory, output_dir, plot=False, no_gains=False):
 
     ccd_names = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
 
@@ -47,20 +47,24 @@ def main(directory, output_dir, plot=False):
         oscan = amp_geom.serial_overscan
         bias_frame = join(output_dir, 
                           '{0}_superbias.fits'.format(sensor_id))
-        imutils.superbias_file(bias_files[:4], oscan, bias_frame)
+        imutils.superbias_file(bias_files, oscan, bias_frame)
         
-        ## Get amplifier gains
         with fits.open(flat1_files[0]) as hdulist:
             lsst_num = hdulist[0].header['LSST_NUM']
             datasec = parse_geom_kwd(hdulist[1].header['DATASEC'])
             xmin = datasec['xmin']
-            xmax = datasec['xmax']                                     
-        results = glob.glob(join(directory, 'collect_raft_results', 
-                                 'v0', '*', 
-                                 '{0}_eotest_results.fits'.format(lsst_num)))[0]
-        with fits.open(results) as hdulist:
-            gains_array = hdulist[1].data['GAIN']
-            gains = dict((i+1, gains_array[i]) for i in range(16))
+            xmax = datasec['xmax']
+
+        ## Get amplifier gains
+        if no_gains:
+            gains = dict((i+1, 1.0) for i in range(16))
+        else:   
+            results = glob.glob(join(directory, 'collect_raft_results', 
+                                'v0', '*', 
+                                '{0}_eotest_results.fits'.format(lsst_num)))[0]
+            with fits.open(results) as hdulist:
+                gains_array = hdulist[1].data['GAIN']
+                gains = dict((i+1, gains_array[i]) for i in range(16))
 
         ## Run overscan task
         overscantask = OverscanTask()
@@ -84,12 +88,14 @@ if __name__ == '__main__':
                         help='File path to eotest job harness directory')
     parser.add_argument('-o', '--output_dir', default='./', type=str,
                         help = "Output directory for FITs results.")
-    parser.add_argument('-n', '--plots', action='store_true')
+    parser.add_argument('-p', '--plots', action='store_true')
+    parser.add_argument('--no_gains', action='store_true')
     args = parser.parse_args()
 
     directory = args.eotest_dir
     output_dir = args.output_dir
     plots = args.plots
+    no_gains = args.no_gains
     
-    main(directory, output_dir, plots)
+    main(directory, output_dir, plots, no_gains)
 

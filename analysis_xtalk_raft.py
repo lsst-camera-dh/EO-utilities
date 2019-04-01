@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
@@ -45,22 +47,22 @@ def stamp(amp, ay, ax, l=300):
     maxy, maxx = amp.shape
 
     ## Truncate at amplifier edges
-    if ay-l/2 < 0: 
+    if ay-l//2 < 0: 
         y0 = 0
     else:
-        y0 = ay-l/2
-    if ay+l/2 >= maxy: 
+        y0 = ay-l//2
+    if ay+l//2 >= maxy: 
         y1 = maxy
     else:
-        y1 = ay+l/2
-    if ax-l/2 < 0: 
+        y1 = ay+l//2
+    if ax-l//2 < 0: 
         x0 = 0
     else:
-        x0 = ax-l/2
-    if ax+l/2 >= maxx: 
+        x0 = ax-l//2
+    if ax+l//2 >= maxx: 
         x1 = maxx
     else:
-        x1 = ax+l/2
+        x1 = ax+l//2
 
     stamp = deepcopy(amp[y0:y1, x0:x1])
 
@@ -138,7 +140,7 @@ def main(image_dir = './', length=200, sigma=50, num_pos=36,
     for pos in range(num_pos):
 
         logger.debug("Starting position {0:03d}".format(pos))
-        print "Starting position {0:03d}".format(pos)
+        print("Starting position {0:03d}".format(pos))
 
         raft_array = np.zeros((144, yhigh-ylow, xhigh-xlow))
 
@@ -176,7 +178,7 @@ def main(image_dir = './', length=200, sigma=50, num_pos=36,
 
             agg_amp_pos = get_amp_pos(agg_amp)
             logger.info("Aggressor found at {0}, amplifier {1}".format(*agg_amp_pos))
-            print "Aggressor found at {0}, amplifier {1}".format(*agg_amp_pos)
+            print("Aggressor found at {0}, amplifier {1}".format(*agg_amp_pos))
             lookup_dict[agg_amp] = (pos, agg_amp_pos[0], agg_amp_pos[1])
             aggressor_stamp = stamp(aggressor, ay, ax, length)
 

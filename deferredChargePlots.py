@@ -59,7 +59,7 @@ def eper_plot(sensor_id, results_file, xmax=512, output_dir='./'):
     plt.close()
     hdulist.close()
 
-def overscan1_plot(sensor_id, results_file, xmax=521, maxflux=150000., 
+def overscan1_plot(sensor_id, results_file, xmax=512, maxflux=150000., 
                         output_dir='./'):
     """Plot of the first overscan as a function of flux."""
 
@@ -82,10 +82,12 @@ def overscan1_plot(sensor_id, results_file, xmax=521, maxflux=150000.,
         overscan1 = data['MEANROW_DATA'][sorted_indices, xmax] - offset
         flux = data['FLUX'][sorted_indices] - offset
         
-        ax.loglog(flux[flux <= maxflux], overscan1[flux <= maxflux], 
+        ax.plot(flux[flux <= maxflux], overscan1[flux <= maxflux], 
                   label="Amp {0}".format(i+1), marker=marker)
         
-    ax.set_ylim(bottom=0.01)
+    ax.set_yscale('symlog', threshold=1.0)
+    ax.set_xscale('log')
+    ax.set_ylim(bottom=-1.0)
     ax.set_xlim(left=50)
     ax.grid(True, which='major', axis='both')
     ax.set_xlabel('Flux [e-]', fontsize=14)
@@ -99,7 +101,7 @@ def overscan1_plot(sensor_id, results_file, xmax=521, maxflux=150000.,
     plt.close()
     hdulist.close()
 
-def overscan2_plot(sensor_id, results_file, xmax=521, maxflux=150000., output_dir='./'):
+def overscan2_plot(sensor_id, results_file, xmax=512, maxflux=150000., output_dir='./'):
     """Plot of the second overscan as a function of flux."""
 
     ## Create and save overscan pixel ratio vs flux graphs
@@ -121,10 +123,12 @@ def overscan2_plot(sensor_id, results_file, xmax=521, maxflux=150000., output_di
         overscan2 = data['MEANROW_DATA'][sorted_indices, xmax+1] - offset
         flux = data['FLUX'][sorted_indices] - offset
         
-        ax.loglog(flux[flux <= maxflux], overscan2[flux <= maxflux], 
+        ax.plot(flux[flux <= maxflux], overscan2[flux <= maxflux], 
                   label="Amp {0}".format(i+1), marker=marker)
         
-    ax.set_ylim(bottom=0.01)
+    ax.set_yscale('symlog', threshold=1.0)
+    ax.set_xscale('log')
+    ax.set_ylim(bottom=-1.0)
     ax.set_xlim(left=50)
     ax.grid(True, which='major', axis='both')
     ax.set_xlabel('Flux [e-]', fontsize=14)
@@ -138,7 +142,48 @@ def overscan2_plot(sensor_id, results_file, xmax=521, maxflux=150000., output_di
     plt.close()
     hdulist.close()
 
-def cti_plot(sensor_id, results_file, xmax=521, maxflux=150000., output_dir='./'):
+def summedoverscan_plot(sensor_id, results_file, xmax=512, maxflux=150000., 
+                        output_dir='./'):
+    """Plot of the first overscan as a function of flux."""
+
+    ## Create and save overscan pixel ratio vs flux graphs
+    fig, ax = plt.subplots(1,1, figsize=(10, 8))
+    fig.patch.set_facecolor('white')
+    fig.patch.set_alpha(1.0)
+    
+    hdulist = fits.open(results_file)
+    
+    for i in range(16):
+        
+        if i >= 10: marker = 's'
+        else: marker = '^'
+            
+        data = hdulist[i+1].data        
+        sorted_indices = np.argsort(data['FLUX'])
+        
+        offset = np.mean(data['MEANROW_DATA'][sorted_indices, -20:], axis=1)        
+        summedoverscan = np.sum(data['MEANROW_DATA'][sorted_indices, xmax+8:xmax+18], axis=1) - offset
+        flux = data['FLUX'][sorted_indices] - offset
+        
+        ax.plot(flux[flux <= maxflux], summedoverscan[flux <= maxflux], 
+                  label="Amp {0}".format(i+1), marker=marker)
+        
+    ax.set_xscale('log')
+    ax.set_ylim(-2.0)
+    ax.set_xlim(left=50)
+    ax.grid(True, which='major', axis='both')
+    ax.set_xlabel('Flux [e-]', fontsize=14)
+    ax.set_ylabel('Summed Overscan [e-]', fontsize=14)
+
+    h, l = ax.get_legend_handles_labels()
+    ax.legend(h, l, loc = 'upper left', ncol=4, fontsize=12)
+    ax.set_title('Summed Overscan[8:18] vs. Flux', fontsize=18)
+    plt.savefig(os.path.join(output_dir, 
+                             '{0}_summed_overscan.png'.format(sensor_id)))
+    plt.close()
+    hdulist.close()
+
+def cti_plot(sensor_id, results_file, xmax=512, maxflux=150000., output_dir='./'):
     """Plot of the first overscan as a function of flux."""
 
     ## Create and save overscan pixel ratio vs flux graphs
@@ -213,7 +258,7 @@ def noise_plot(sensor_id, results_file, maxflux=150000., output_dir='./'):
     ax.set_ylim(0.0, 10.0)
 
     h, l = ax.get_legend_handles_labels()
-    ax.legend(h, l, loc = 'upper left', ncol=4, fontsize=12)
+    ax.legend(h, l, loc = 'lower right', ncol=4, fontsize=12)
     ax.set_title('Overscan Noise vs. Flux', fontsize=18)
     plt.savefig(os.path.join(output_dir, 
                              '{0}_overscan_noise.png'.format(sensor_id)))
@@ -223,23 +268,27 @@ def noise_plot(sensor_id, results_file, maxflux=150000., output_dir='./'):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('sensor_id', type=str)
-    parser.add_argument('results_file', type=str)
+    parser.add_argument('results_dir', type=str)
     parser.add_argument('-x', '--xmax', type=int, default=512)
     parser.add_argument('-f', '--maxflux', type=float, default=150000.0)
-    parser.add_argument('-o', '--output_dir', type=str, default='./')
     args = parser.parse_args()
 
-    sensor_id = args.sensor_id
-    results_file = args.results_file
+    results_dir = args.results_dir
     xmax = args.xmax
     maxflux = args.maxflux
-    output_dir = args.output_dir
 
-    eper_plot(sensor_id, results_file, xmax=xmax, output_dir=output_dir)
-    overscan1_plot(sensor_id, results_file, xmax=xmax, maxflux=maxflux, output_dir=output_dir)
-    overscan2_plot(sensor_id, results_file, xmax=xmax, maxflux=maxflux, output_dir=output_dir)
-    cti_plot(sensor_id, results_file, xmax=xmax, maxflux=maxflux, output_dir=output_dir)
-    noise_plot(sensor_id, results_file, maxflux=maxflux, output_dir=output_dir)
+    sensor_ids = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
+
+    for sensor_id in sensor_ids:
+        output_dir = os.path.join(results_dir, sensor_id)
+        results_file = os.path.join(results_dir, sensor_id, 
+                                    '{0}_overscan_results.fits'.format(sensor_id))
+
+        eper_plot(sensor_id, results_file, xmax=xmax, output_dir=output_dir)
+        overscan1_plot(sensor_id, results_file, xmax=xmax, maxflux=maxflux, output_dir=output_dir)
+        overscan2_plot(sensor_id, results_file, xmax=xmax, maxflux=maxflux, output_dir=output_dir)
+        cti_plot(sensor_id, results_file, xmax=xmax, maxflux=maxflux, output_dir=output_dir)
+        noise_plot(sensor_id, results_file, maxflux=maxflux, output_dir=output_dir)
+        summedoverscan_plot(sensor_id, results_file, xmax=xmax, maxflux=maxflux, output_dir=output_dir)
 
     

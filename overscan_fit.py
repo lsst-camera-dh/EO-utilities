@@ -54,6 +54,7 @@ class OverscanFit(object):
         self.cti_std = {i : [] for i in range(1, 17)}
 
     def process_image(self, ccd, i, gains):
+        """Process an specific amplifier image."""
 
         image = ccd.bias_subtracted_image(i)
 
@@ -67,7 +68,7 @@ class OverscanFit(object):
         imarr = image.getImage().getArray()*gains[i]
 
         meanrow = np.mean(imarr[ymin-1:ymax, :], axis=0)
-        noise = np.std(imarr[ymin-1:ymax, xmax+2:xmax+28])
+        noise = np.mean(np.std(imarr[ymin-1:ymax, xmax+2:xmax+28], axis=1))
         flux = np.mean(imarr[ymin-1:ymax, xmin-1:xmax])
         flux_std = np.std(imarr[ymin-1:ymax, xmin-1:xmax])
         amp = np.nan
@@ -77,6 +78,7 @@ class OverscanFit(object):
         tau_std = np.nan
         cti_std = np.nan
         
+        ## Perform overscan exponential function fit
         if self.minflux <= flux <= self.maxflux:
             y = copy.deepcopy(meanrow[xmax:xmax+self.num_pixels])
             x = np.arange(1, y.shape[0]+1)
@@ -106,6 +108,7 @@ class OverscanFit(object):
         self.cti_std[i].append(cti_std)
 
     def write_results(self, outfile):
+        """Export results as a FITs file."""
         
         for i in range(1, 17):
             extname = 'Amp{0:02d}'.format(i)
