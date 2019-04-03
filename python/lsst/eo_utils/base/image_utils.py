@@ -288,9 +288,9 @@ def get_image_frames_2d(img, regions, regionlist=None):
         regionlist = ['imaging', 'serial_overscan', 'parallel_overscan']
 
     try:
-        o_dict = {key:img[regions[key]].array[::step_x, ::step_y] for key in regionlist}
+        o_dict = {key:img[regions[key]].getArray()[::step_x, ::step_y] for key in regionlist}
     except AttributeError:
-        o_dict = {key:img[regions[key]].image.array[::step_x, ::step_y] for key in regionlist}
+        o_dict = {key:img[regions[key]].getImage().getArray()[::step_x, ::step_y] for key in regionlist}
     return o_dict
 
 

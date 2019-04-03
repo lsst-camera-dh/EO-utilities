@@ -6,7 +6,7 @@ import os
 
 import lsst.pipe.base as pipeBase
 
-from .config_utils import setup_parser, EOUtilConfig, make_argstring
+from .config_utils import setup_parser, EOUtilConfig, make_argstring, get_config_values
 from .file_utils import get_hardware_type_and_id
 from .butler_utils import getButler, get_hardware_info
 
@@ -123,29 +123,39 @@ class AnalysisIterator(object):
         return self.data_func(butler, run_num, **kwargs)
 
 
-    def run(self):
+    def run(self, **kwargs):
         """Run the analysis, this task the arguments from the command line using the argparse interface"""
-        parser = setup_parser(self.argnames)
-        args = parser.parse_args()
+        interactive = kwargs.get('interactive', False)
 
-        if args.butler_repo is None:
-            butler = None
-            hinfo = get_hardware_type_and_id(args.run)
+        if interactive:
+            arg_dict = get_config_values(self.argnames, **kwargs)
+            jobname = None
         else:
-            butler = self.get_butler(args.butler_repo)
-            hinfo = get_hardware_info(butler, args.run)
+            jobname = os.path.basename(sys.argv[0])
+            parser = setup_parser(self.argnames)
+            args = parser.parse_args()
+            arg_dict = args.__dict__.copy()
+            arg_dict.update(**kwargs)
 
-        jobname = os.path.basename(sys.argv[0])
-
-        hid = hinfo[1]
-        logfile = os.path.join(args.logdir, "%s_%s_%s%s.log" % (hid, args.run,
-                                                                jobname.replace('.py', ''), args.logsuffix))
-
-        arg_dict = args.__dict__.copy()
         run_num = arg_dict.pop('run')
         batch = arg_dict.pop('batch')
-        arg_dict.pop('logdir')
-        arg_dict.pop('logsuffix')
+        logdir = arg_dict.pop('logdir')
+        logsuffix = arg_dict.pop('logsuffix')
+        butler_repo = arg_dict.get('butler_repo', None)
+
+        if butler_repo is None:
+            butler = None
+            hinfo = get_hardware_type_and_id(run_num)
+        else:
+            butler = self.get_butler(butler_repo)
+            hinfo = get_hardware_info(butler, run_num)
+
+        hid = hinfo[1]
+        if interactive:
+            logfile = None
+        else:
+            logfile = os.path.join(logdir, "%s_%s_%s%s.log" % (hid, run_num,
+                                                               jobname.replace('.py', ''), logsuffix))
 
         if batch is None:
             arg_dict.pop('butler_repo')
@@ -181,8 +191,7 @@ def iterate_over_slots(task, butler, data_files, **kwargs):
 
     slot_list = kwargs.get('slots', None)
     if slot_list is None:
-        slot_list = ALL_SLOTS
-
+        slot_list = sorted(data_files.keys())
     for slot in slot_list:
         slot_data = data_files[slot]
         kwargs['slot'] = slot
@@ -199,10 +208,10 @@ def iterate_over_rafts(task, butler, data_files, **kwargs):
     """
     raft_list = kwargs.get('rafts', None)
     if raft_list is None:
-        raft_list = ALL_RAFTS
-
+        raft_list = sorted(data_files.keys())
     for raft in raft_list:
         raft_data = data_files[raft]
+        kwargs['raft'] = raft
         iterate_over_slots(task, butler, raft_data, **kwargs)
 
 
@@ -232,12 +241,10 @@ class AnalysisBySlot(AnalysisIterator):
 
         kwargs['run_num'] = run_num
         if htype == "LCA-10134":
-            data_files = self.get_data(butler, **kwargs)
             iterate_over_rafts(self.task, butler, data_files, **kwargs)
         elif htype == "LCA-11021":
             kwargs['raft'] = hid
-            data_files = self.get_data(butler, **kwargs)
-            iterate_over_slots(self.task, butler, data_files, **kwargs)
+            iterate_over_slots(self.task, butler, data_files[hid], **kwargs)
         else:
             raise ValueError("Do not recognize hardware type for run %s: %s" % (run_num, htype))
 
@@ -271,6 +278,6 @@ class AnalysisByRaft(AnalysisIterator):
             iterate_over_rafts(self.task, butler, data_files, **kwargs)
         elif htype == "LCA-11021":
             kwargs['raft'] = hid
-            self.task.run(butler, data_files, **kwargs)
+            self.task.run(butler, data_files[hid], **kwargs)
         else:
             raise ValueError("Do not recognize hardware type for run %s: %s" % (run_num, htype))

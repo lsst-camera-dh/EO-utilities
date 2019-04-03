@@ -10,7 +10,7 @@ def main():
     argnames = STANDARD_SLOT_ARGS + ['mask', 'bias', 'stat', 'stats_hist']
 
     functor = BiasAnalysisBySlot(make_superbias_slot, argnames)
-    functor.run()
+    functor.run(acq_types=["DARK", "FLAT", "FE55"])
 
 
 if __name__ == '__main__':

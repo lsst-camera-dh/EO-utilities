@@ -23,3 +23,12 @@ def init_matplotlib_backend(backend=None):
     else:
         if backend is not None:
             matplotlib.use(backend)
+
+
+def set_plt_ioff():
+    """Set interactive plotting off"""
+    import matplotlib.pyplot as plt
+    plt.ioff()
+
+
+init_matplotlib_backend()

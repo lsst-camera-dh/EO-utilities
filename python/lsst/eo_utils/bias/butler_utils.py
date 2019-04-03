@@ -4,9 +4,9 @@
 
 """This module contains functions to find files of a particular type using the data Butler"""
 
-from lsst.eo_utils.base.butler_utils import getDataRefList
+from lsst.eo_utils.base.butler_utils import get_files_butler
 
-BIAS_TEST_TYPES = ["DARK", "FLAT", "FE55", "PPUMP", "SFLAT", "SFLAT", "LAMBDA", "TRAP"]
+BIAS_TEST_TYPES = ['DARK', 'FLAT', 'FE55', 'PPUMP', 'SFLAT', 'LAMBDA', 'TRAP']
 
 
 def get_bias_files_butler(butler, run_id, **kwargs):
@@ -16,19 +16,17 @@ def get_bias_files_butler(butler, run_id, **kwargs):
     @param run_id (str)      The number number we are reading
     @param kwargs
        acq_types (list)  The types of acquistions we want to include
-       mask (bool)       Flag to include mask files
+                         The remaining kwargs are passed to get_files_butler
 
     @returns (dict) Dictionary mapping slot to file names
     """
-    outdict = {}
-    if kwargs.get('acq_types', None) is None:
+    acq_types = kwargs.get('acq_types', None)
+
+    if acq_types is None:
         acq_types = BIAS_TEST_TYPES
 
-    bias_kwargs = dict(imageType='BIAS', testType=acq_types)
-
-    slots = butler.queryMetadata('raw', 'detectorName', dict(run=run_id))
-
-    for slot in slots:
-        bias_kwargs['detectorName'] = slot
-        outdict[slot] = dict(BIAS=getDataRefList(butler, run_id, **bias_kwargs))
-    return outdict
+    return get_files_butler(butler, run_id,
+                            testTypes=acq_types,
+                            imageType="BIAS",
+                            outkey='BIAS',
+                            **kwargs)

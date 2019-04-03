@@ -5,8 +5,8 @@
 import os
 import argparse
 
-from lsst.eo_utils.base.batch_utils import read_runlist, dispatch_job
-from lsst.eo_utils.base.file_utils import get_hardware_type_and_id
+from lsst.eo_utils.base.batch_utils import dispatch_job
+from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, read_runlist
 
 def main():
     """Hook for setup.py"""
@@ -39,7 +39,7 @@ def main():
 
         run_num = run[1]
         hinfo = get_hardware_type_and_id(run_num)
-        hid = hinfo[0]
+        hid = run[0].replace('-Dev','')
 
         logfile = os.path.join(args.logdir, "%s_%s_%s%s.log" %\
                                    (hid, run_num, args.jobname.replace('.py', ''), args.logsuffix))

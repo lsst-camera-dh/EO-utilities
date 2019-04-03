@@ -8,6 +8,9 @@ from __future__ import with_statement
 
 import os
 import sys
+
+from .file_utils import read_runlist
+
 #import pipes
 
 #from lsst.ctrl.pool import Batch, exportEnv, UMASK
@@ -41,26 +44,6 @@ def dispatch_job(jobname, run_num, logfile, **kwargs):
     else:
         os.system(bsub_com)
 
-
-def read_runlist(filepath):
-    """Read a list of runs from a txt file
-
-    @param filepath (str)    The input file with the list of runs.
-                             Each line should contain raft and run number, e.g.,
-                             RTM-004-Dev 6106D
-
-    @returns (list)          A list of tuples with (raft, run_num)
-    """
-    fin = open(filepath)
-    lin = fin.readline()
-
-    outlist = []
-    while lin:
-        tokens = lin.split()
-        if len(tokens) == 2:
-            outlist.append(tokens)
-        lin = fin.readline()
-    return outlist
 
 
 

@@ -12,11 +12,11 @@ FITS_SUFFIXS = ['.fit', '.fits']
 
 class TableDict:
     """Object to store astropy Table objects"""
-    def __init__(self, filepath=None):
+    def __init__(self, filepath=None, tablelist=None):
         """C'tor"""
         self._table_dict = {}
         if filepath is not None:
-            self.load_datatables(filepath)
+            self.load_datatables(filepath, tablelist=tablelist)
 
     def keys(self):
         """Return the set of keys"""
@@ -86,14 +86,17 @@ class TableDict:
         @param kwargs             Passed to Table.to_hdf
         """
         extype = os.path.splitext(filepath)[1]
+        tablelist = kwargs.get('tablelist', None)
         if extype in HDF5_SUFFIXS:
             hdffile = h5py.File(filepath)
             keys = hdffile.keys()
             for key in keys:
-                self._table_dict[key] = Table.read(filepath, key, **kwargs)
+                if tablelist is None or key in tablelist:
+                    self._table_dict[key] = Table.read(filepath, key, **kwargs)
         elif extype in FITS_SUFFIXS:
             hdulist = fits.open(filepath)
             for hdu in hdulist[1:]:
-                self._table_dict[hdu.name.lower()] = Table.read(filepath, hdu=hdu.name)
+                if tablelist is None or hdu.name.lower() in tablelist:
+                    self._table_dict[hdu.name.lower()] = Table.read(filepath, hdu=hdu.name)
         else:
             raise ValueError("Can only write pickle and hdf5 files for now, not %s" % extype)

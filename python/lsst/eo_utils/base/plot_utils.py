@@ -8,12 +8,12 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 import lsst.eotest.image_utils as imutil
 from .image_utils import get_ccd_from_id
 
-from .mpl_utils import init_matplotlib_backend
-init_matplotlib_backend()
-import matplotlib.pyplot as plt
-plt.ioff()
-from matplotlib import ticker
+from . import mpl_utils
 
+from matplotlib import ticker
+import matplotlib.pyplot as plt
+
+mpl_utils.set_plt_ioff()
 
 TESTCOLORMAP = dict(DARK="black",
                     FLAT="blue",
@@ -400,8 +400,8 @@ class FigureDict:
            cbar
         """
         title = kwargs.get('title', None)
-        clabel = kwargs.get('clabel', None)
-        figsize = kwargs.get('figsize', (14, 8))
+        clabel = kwargs.pop('clabel', None)
+        figsize = kwargs.pop('figsize', (14, 8))
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
         ax.set_xlabel(kwargs.pop('xlabel', "Amp. Index"))
         ax.set_ylabel(kwargs.pop('ylabel', "Slot Index"))
@@ -572,3 +572,5 @@ class FigureDict:
             fig = val['fig']
             fig.savefig("%s_%s.png" % (basename, key))
             plt.close(fig)
+
+

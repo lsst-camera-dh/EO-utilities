@@ -8,6 +8,8 @@ import numpy as np
 import lsst.afw.math as afwMath
 import lsst.eotest.image_utils as imutil
 
+from lsst.eo_utils.base import mpl_utils
+
 from lsst.eo_utils.base.file_utils import makedir_safe,\
     get_mask_files
 
@@ -34,7 +36,8 @@ from .file_utils import get_bias_files_run,\
 from .plot_utils import plot_superbias,\
     plot_bias_v_row_slot, plot_bias_fft_slot,\
     plot_correl_wrt_oscan_slot, plot_oscan_amp_stack_slot,\
-    plot_bias_struct_slot, plot_oscan_correl_raft
+    plot_bias_struct_slot, plot_oscan_correl_raft,\
+    plot_bias_data_slot
 
 from .data_utils import get_biasval_data, get_bias_fft_data,\
     get_bias_struct_data, get_correl_wrt_oscan_data, stack_by_amps,\
@@ -47,6 +50,7 @@ DEFAULT_BIAS_TYPE = 'spline'
 SBIAS_TEMPLATE = 'superbias/templates/sbias_template.fits'
 ALL_SLOTS = 'S00 S01 S02 S10 S11 S12 S20 S21 S22'.split()
 
+mpl_utils.set_plt_ioff()
 
 def get_bias_data(butler, run_num, **kwargs):
     """Get a set of bias and mask files out of a folder
@@ -69,7 +73,7 @@ def get_bias_data(butler, run_num, **kwargs):
 
 class BiasAnalysisBySlot(AnalysisBySlot):
     """Small class to iterate an analysis task over all the slots in a raft"""
-    def __init__(self, analysis_func, argnames):
+    def __init__(self, analysis_func, argnames=[]):
         """C'tor
 
         @param analysis_func (fuction)  The function that does that actual analysis
@@ -81,7 +85,7 @@ class BiasAnalysisBySlot(AnalysisBySlot):
 
 class BiasAnalysisByRaft(AnalysisByRaft):
     """Small class to iterate an analysis task over all the raft and then all the slots in a raft"""
-    def __init__(self, analysis_func, argnames):
+    def __init__(self, analysis_func, argnames=[]):
         """C'tor
 
         @param analysis_func (fuction)  The function that does that actual analysis
@@ -371,7 +375,6 @@ def extract_oscan_amp_stack_slot(butler, slot_data, **kwargs):
 
         if ifile == 0:
             dim_array_dict = get_dimension_arrays_from_ccd(butler, ccd)
-
             for key, val in dim_array_dict.items():
                 stack_arrays[key] = np.zeros((nfiles, 16, len(val)))
 
@@ -389,6 +392,120 @@ def extract_oscan_amp_stack_slot(butler, slot_data, **kwargs):
     for key, val in stackdata_dict.items():
         dtables.make_datatable('stack-%s' % key, val)
     return dtables
+
+
+def extract_bias_data_slot(butler, slot_data, **kwargs):
+    """Stack the overscan region from all the amps on a sensor
+    to look for coherent read noise
+
+    @param butler (Butler)   The data butler
+    @param slot_data (dict)  Dictionary pointing to the bias and mask files
+    @param kwargs
+        slot (str)           Slot in question, i.e., 'S00'
+        raft (str)           Raft in question, i.e., 'RTM-004-Dev'
+        bias (str)           Method to use for unbiasing
+        superbias (str)      Type of superbias frame
+        std (bool)           Plot standard deviation instead of median
+        superbias (str)      Method to use for superbias subtraction
+    """
+    slot = kwargs['slot']
+    bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
+    std = kwargs.get('std', False)
+
+    bias_files = slot_data['BIAS']
+    mask_files = get_mask_files(**kwargs)
+    superbias_frame = get_superbias_frame(mask_files=mask_files, **kwargs)
+
+    sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
+    sys.stdout.flush()
+
+    biasval_data = {}
+    fft_data = {}
+    biasstruct_data = {}
+    stack_arrays = {}
+    ref_frames = {}
+
+    nfiles = len(bias_files)
+    s_correl = np.ndarray((16, nfiles-1))
+    p_correl = np.ndarray((16, nfiles-1))
+
+    nfiles = len(bias_files)
+    for ifile, bias_file in enumerate(bias_files):
+        if ifile % 10 == 0:
+            sys.stdout.write('.')
+            sys.stdout.flush()
+
+        ccd = get_ccd_from_id(butler, bias_file, mask_files)
+
+        if ifile == 0:
+            dims = get_dims_from_ccd(butler, ccd)
+            dim_array_dict = get_dimension_arrays_from_ccd(butler, ccd)
+            xrow_s = dim_array_dict['row_s']
+            nrow_i = dims['nrow_i']
+            ncol_i = dims['ncol_i']
+            freqs_dict = get_readout_frequencies_from_ccd(butler, ccd)
+            amps = get_amp_list(butler, ccd)
+            for key in REGION_KEYS:
+                freqs = freqs_dict['freqs_%s' % key]
+                nfreqs = len(freqs)
+                fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
+            for key, val in dim_array_dict.items():
+                stack_arrays[key] = np.zeros((nfiles, 16, len(val)))
+                biasstruct_data[key] = {key:val}
+            for i, amp in enumerate(amps):
+                regions = get_geom_regions(butler, ccd, amp)
+                image = get_raw_image(butler, ccd, amp)
+                ref_frames[i] = get_image_frames_2d(image, regions)
+                continue
+
+        get_biasval_data(butler, ccd, biasval_data,
+                         ifile=ifile, nfiles=len(bias_files),
+                         slot=slot, bias_type=bias_type)
+
+        #Need to truncate the row array to match the data
+        a_row = biasval_data[sorted(biasval_data.keys())[0]]
+        biasval_data['row_s'] = xrow_s[0:len(a_row)]
+
+        get_bias_fft_data(butler, ccd, fft_data,
+                          ifile=ifile, nfiles=len(bias_files),
+                          slot=slot, bias_type=bias_type,
+                          std=std, superbias_frame=superbias_frame)
+ 
+        get_bias_struct_data(butler, ccd, biasstruct_data,
+                             ifile=ifile, nfiles=len(bias_files),
+                             slot=slot, bias_type=bias_type,
+                             std=std, superbias_frame=superbias_frame)
+ 
+        get_correl_wrt_oscan_data(butler, ccd, ref_frames,
+                                  ifile=ifile, s_correl=s_correl, p_correl=p_correl,
+                                  nrow_i=nrow_i, ncol_i=ncol_i)
+
+        stack_by_amps(stack_arrays, butler, ccd,
+                      ifile=ifile, bias_type=bias_type,
+                      superbias_frame=superbias_frame)
+
+    sys.stdout.write("!\n")
+    sys.stdout.flush()
+
+    data = {}
+    for i in range(16):
+        data['s_correl_a%02i' % i] = s_correl[i]
+        data['p_correl_a%02i' % i] = p_correl[i]
+
+    stackdata_dict = convert_stack_arrays_to_dict(stack_arrays, dim_array_dict, nfiles)
+
+    dtables = TableDict()
+    dtables.make_datatable('files', make_file_dict(butler, bias_files))
+    dtables.make_datatable('biasval', biasval_data)
+    dtables.make_datatable("correl", data)
+    for key in REGION_KEYS:
+        dtables.make_datatable('biasfft-%s' % key, fft_data[key])
+    for key, val in biasstruct_data.items():
+        dtables.make_datatable('biasst-%s' % key, val)
+    for key, val in stackdata_dict.items():
+        dtables.make_datatable('stack-%s' % key, val)
+    return dtables
+
 
 
 def extract_oscan_correl_raft(butler, raft_data, **kwargs):
@@ -614,7 +731,12 @@ class BiasAnalysisFunc:
             dtables.save_datatables(output_data)
 
         if kwargs.get('plot', False):
-            self.plot_func(dtables, outbase)
+            figs = FigureDict()
+            self.plot_func(dtables, figs)
+            if kwargs.get('interactive', False):
+                outbase = None
+            figs.save_all(outbase)
+
 
 
 def make_bias_v_row_slot(butler, slot_data, **kwargs):
@@ -769,3 +891,22 @@ def make_superbias_struct_slot(butler, slot_data, **kwargs):
     ba = BiasAnalysisFunc(superbias_basename, "sbiasst",
                           extract_superbias_struct_slot, plot_bias_struct_slot)
     ba(butler, slot_data, **kwargs)
+
+
+def make_bias_data_slot(butler, slot_data, **kwargs):
+    """Plot the row-wise and col-wise struture  in a superbias frame
+
+    @param butler (Butler)   The data butler
+    @param slot_data (dict)  Dictionary pointing to the bias and mask files
+    @param kwargs
+        raft (str)           Raft in question, i.e., 'RTM-004-Dev'
+        run_num (str)        Run number, i.e,. '6106D'
+        slot (str)           Slot in question, i.e., 'S00'
+        superbias (str)      Method to use for superbias subtraction
+        outdir (str)         Output directory
+        std (bool)           Plot standard deviation instead of median
+    """
+    ba = BiasAnalysisFunc(superbias_basename, "biasdata",
+                           extract_bias_data_slot, plot_bias_data_slot)
+    ba(butler, slot_data, **kwargs)
+   

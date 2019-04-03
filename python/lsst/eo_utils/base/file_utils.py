@@ -71,7 +71,7 @@ def mask_filename(maskdir, raft, run_num, slot, **kwargs):
         outpath += '_suffix'
 
     outpath += '.fits'
-    return outpath
+    return str(outpath)
 
 
 def get_files_for_run(run_id, **kwargs):
@@ -83,13 +83,15 @@ def get_files_for_run(run_id, **kwargs):
        imageType (str)   The image type we want
        outkey (str)      Where to put the output file
        matchstr (str)    If set, only inlcude files with this string
+       nfiles (int)      Number of files to include per test
 
     @returns (dict) Dictionary mapping slot to file names
     """
     testTypes = kwargs.get('testTypes')
     imageType = kwargs.get('imageType')
-    outkey = kwargs.get('outkey')
+    outkey = kwargs.get('outkey', imageType)
     matchstr = kwargs.get('matchstr', None)
+    nfiles = kwargs.get('nfiles', None)
 
     outdict = {}
 
@@ -98,20 +100,37 @@ def get_files_for_run(run_id, **kwargs):
     else:
         db = 'Prod'
     handler = get_EO_analysis_files(db=db)
+    hinfo = get_hardware_type_and_id(run_id)
 
     for test_type in testTypes:
-        r_dict = handler.get_files(testName=test_type, run=run_id, imgtype=imageType)
+        r_dict = handler.get_files(testName=test_type, run=run_id, imgtype=imageType, matchstr=matchstr)
         for key, val in r_dict.items():
-            matchfiles = []
-            if matchstr is not None:
-                for fname in val:
-                    if fname.find(matchstr) < 0:
-                        continue
-                    matchfiles.append(fname)
-            if key in outdict:
-                outdict[key][outkey] += matchfiles
+            if hinfo[0] == 'LCA-11021':
+                # Raft level data
+                if nfiles is None:
+                    filelist = val
+                else:
+                    filelist = val[0:min(nfiles, len(val))]
+                if key in outdict:
+                    outdict[key][outkey] += filelist
+                else:
+                    outdict[key] = {outkey:filelist}
             else:
-                outdict[key] = {outkey:matchfiles}
+                # BOT level data, need to add extra layer
+                if key not in outdict:
+                    outdict[key] = {}
+                for key2, val2 in val.items():
+                    if nfiles is None:
+                        filelist = val2
+                    else:
+                        filelist = val2[0:min(nfiles, len(val2))]
+                    if key2 in outdict[key]:
+                        outdict[key][key2][outkey] += filelist
+                    else:
+                        outdict[key][key2] = {outkey:filelist}
+
+    if hinfo[0] == 'LCA-11021':
+        return {hinfo[1]:outdict}
 
     return outdict
 
@@ -146,5 +165,27 @@ def get_mask_files(**kwargs):
     if kwargs.get('mask', False):
         mask_files = [mask_filename('masks', **kwargs)]
     else:
-        mask_files = None
+        mask_files = []
     return mask_files
+
+
+def read_runlist(filepath):
+    """Read a list of runs from a txt file
+
+    @param filepath (str)    The input file with the list of runs.
+                             Each line should contain raft and run number, e.g.,
+                             RTM-004-Dev 6106D
+
+    @returns (list)          A list of tuples with (raft, run_num)
+    """
+    fin = open(filepath)
+    lin = fin.readline()
+
+    outlist = []
+    while lin:
+        tokens = lin.split()
+        if len(tokens) == 2:
+            outlist.append(tokens)
+        lin = fin.readline()
+    return outlist
+

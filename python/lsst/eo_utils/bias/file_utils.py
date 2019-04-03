@@ -6,15 +6,16 @@
 
 import os
 
-from lsst.eo_utils.base.file_utils import get_files_for_run
+from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_for_run
 from lsst.eo_utils.base.image_utils import get_ccd_from_id
 
-#ACQ_TYPES_DEFAULT = ['fe55_raft_acq',
-#                     'flat_pair_raft_acq',
-#                     'sflat_raft_acq',
-#                     'qe_raft_acq',
-#                     'dark_raft_acq']
-ACQ_TYPES_DEFAULT = ['dark_raft_acq']
+ACQ_TYPES_RAFT = ['fe55_raft_acq',
+                  'flat_pair_raft_acq',
+                  'sflat_raft_acq',
+                  'qe_raft_acq',
+                  'dark_raft_acq']
+
+ACQ_TYPES_BOT = ['DARK', 'FLAT', 'FE55', 'PPUMP', 'SFLAT', 'LAMBDA', 'TRAP']
 
 DEFAULT_SUPERBIAS_TYPE = None
 
@@ -42,7 +43,7 @@ def superbias_filename(outdir, raft, run_num, slot, superbias, **kwargs):
         outpath += "_std"
 
     outpath += '.fits'
-    return outpath
+    return str(outpath)
 
 
 def superbias_stat_filename(outdir, raft, run_num, slot, **kwargs):
@@ -72,7 +73,7 @@ def superbias_stat_filename(outdir, raft, run_num, slot, **kwargs):
         outpath += "_std"
 
     outpath += '.fits'
-    return outpath
+    return str(outpath)
 
 
 def raft_basename(outdir, raft, run_num, **kwargs):
@@ -89,14 +90,14 @@ def raft_basename(outdir, raft, run_num, **kwargs):
     suffix = kwargs.get('suffix', None)
     if suffix is not None:
         outbase += "_%s" % suffix
-    return outbase
+    return str(outbase)
 
 
 
 def bias_basename(outdir, raft, run_num, slot, **kwargs):
     """Return the filename for a plot made from a bias file
 
-    The format is {outdir}/plots/{raft}/{raft}-{run_num}-{slot}_{plotname}_b-{bias_type}_s-{superbias_type}
+    The format is {outdir}/plots/{raft}/{raft}-{run_num}-{slot}_b-{bias_type}_s-{superbias_type}
 
     @param outdir (str)
     @param raft (str)
@@ -128,7 +129,7 @@ def bias_basename(outdir, raft, run_num, slot, **kwargs):
     if kwargs.get('std', False):
         outpath += "_std"
 
-    return outpath
+    return str(outpath)
 
 
 def superbias_basename(outdir, raft, run_num, slot, **kwargs):
@@ -158,7 +159,7 @@ def superbias_basename(outdir, raft, run_num, slot, **kwargs):
     if kwargs.get('std', False):
         outpath += "_std"
 
-    return outpath
+    return str(outpath)
 
 
 def get_bias_files_run(run_id, **kwargs):
@@ -171,10 +172,16 @@ def get_bias_files_run(run_id, **kwargs):
     @returns (dict) Dictionary mapping slot to file names
     """
     acq_types = kwargs.get('acq_types', None)
+    hinfo = get_hardware_type_and_id(run_id)
+
     if acq_types is None:
-        acq_types = ACQ_TYPES_DEFAULT
+        if hinfo[0] == 'LCA-11021':
+            acq_types = ACQ_TYPES_RAFT
+        else:
+            acq_types = ACQ_TYPES_BOT
 
     return get_files_for_run(run_id,
+                             imageType="BIAS",
                              testTypes=acq_types,
                              outkey='BIAS')
 

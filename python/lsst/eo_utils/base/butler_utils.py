@@ -92,12 +92,16 @@ def getDataRefList(butler, run_id, **kwargs):
     @param: kwargs (dict):
         imageType (str)         The type of image
         testType (str or list)  The type of tests to collect visits from
-        detectorName (str)      The
+        detectorName (str)      The name of the slot
+        nfiles (int)      Number of files per test to use
 
     @returns (list) a list of the visit IDs
     """
     testType = kwargs.get('testType', None)
     detectorName = kwargs.get('detectorName', None)
+    raftName = kwargs.get('raftName', None)
+    nfiles = kwargs.get('nfiles', None)
+
     if isinstance(testType, str):
         testTypes = [testType]
     elif isinstance(testType, list):
@@ -110,11 +114,17 @@ def getDataRefList(butler, run_id, **kwargs):
     dataId = dict(run=run_id, imageType=kwargs.get('imageType', 'BIAS'))
     if detectorName is not None:
         dataId['detectorName'] = detectorName
+    if raftName is not None:
+        dataId['raftName'] = raftName
+
     dataRefList = []
     for testType in testTypes:
         dataId['testType'] = testType
         subset = butler.subset("raw", '', dataId)
-        dataRefList += subset.cache
+        if nfiles is None:
+            dataRefList += subset.cache
+        else:
+            dataRefList += subset.cache[0:min(nfiles, len(subset.cache))]
     return dataRefList
 
 
@@ -144,3 +154,46 @@ def make_file_dict(butler, runlist, varlist=None):
                     value = vallist[0]
             odict[var].append(value)
     return odict
+
+
+
+def get_files_butler(butler, run_id, **kwargs):
+    """Get a set of bias and mask files out of a folder
+
+    @param butler (Butler)    The bulter we are using
+    @param run_id (str)      The number number we are reading
+    @param kwargs
+       rafts (str)       The rafts we want data for
+       testTypes (list)  The types of acquistions we want to include
+       imageType (str)   The image type we want
+       nfiles (int)      Number of files per test to use
+       outkey (str)      Where to put the output file
+       nfiles (int)      Number of files to include per test
+
+    @returns (dict) Dictionary mapping slot to file names
+    """
+    testTypes = kwargs.get('testTypes')
+    imageType = kwargs.get('imageType')
+    nfiles = kwargs.get('nfiles', None)
+    rafts = kwargs.get('rafts', None)
+    outkey = kwargs.get('outkey', imageType)
+
+    outdict = {}
+    if rafts is None:
+        rafts = butler.queryMetadata('raw', 'raftName', dict(run=run_id, imageType=imageType))
+
+    bias_kwargs = dict(imageType=imageType, testType=testTypes, nfiles=nfiles)
+    for raft in rafts:
+        bias_kwargs['raftName'] = raft
+        if raft not in outdict:
+            outdict[raft] = {}
+
+        slots = butler.queryMetadata('raw', 'detectorName', dict(run=run_id,
+                                                                 imageType=imageType,
+                                                                 raftName=raft))
+
+        for slot in slots:
+            bias_kwargs['detectorName'] = slot
+            outdict[raft][slot] = {outkey:getDataRefList(butler, run_id, **bias_kwargs)}
+
+    return outdict

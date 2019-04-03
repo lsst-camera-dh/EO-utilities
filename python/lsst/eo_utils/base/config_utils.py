@@ -17,9 +17,9 @@ DEFAULT_STAT_TYPE = 'median'
 DEFAULT_BITPIX = -32
 
 STANDARD_SLOT_ARGS = ['run', 'slots', 'butler_repo', 'outdir',
-                      'plot', 'skip']
+                      'plot', 'skip', 'nfiles']
 STANDARD_RAFT_ARGS = ['run', 'butler_repo', 'outdir',
-                      'plot', 'skip']
+                      'plot', 'skip', 'nfiles']
 
 
 class EOUtilConfig(pexConfig.Config):
@@ -38,6 +38,7 @@ class EOUtilConfig(pexConfig.Config):
     superbias = pexConfig.Field("Version of superbias frame to use", str, default=None)
     stat = pexConfig.Field("Statistic to use to stack images", str, default="Median")
     butler_repo = pexConfig.Field("Butler repository", str, default=None)
+    nfiles = pexConfig.Field("Number of files to use", int, default=None)
     outdir = pexConfig.Field("Output file path root", str, default=DEFAULT_OUTDIR)
     vmin = pexConfig.Field("Color scale minimum value", float, default=None)
     vmax = pexConfig.Field("Color scale maximum value", float, default=None)

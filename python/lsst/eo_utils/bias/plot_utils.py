@@ -19,7 +19,6 @@ def plot_superbias(output_file, mask_files, **kwargs):
     """
     figs = FigureDict()
 
-
     if kwargs.get('plot', False):
         figs.plot_sensor("img", output_file, mask_files)
 
@@ -36,43 +35,38 @@ def plot_superbias(output_file, mask_files, **kwargs):
 
 
 
-def plot_bias_v_row_slot(dtables, outbase):
+def plot_bias_v_row_slot(dtables, figs):
     """Plot the bias as function of row
 
     @param dtables (TableDict)  The data
-    @param outbase (str)        The output file prefix
+    @param figs (FigureDict)    Object to store the figues
     """
-    figs = FigureDict()
     figs.setup_amp_plots_grid("biasval", title="Bias by row",
                               xlabel="row", ylabel="Magnitude [ADU]")
     figs.plot_xy_amps_from_tabledict(dtables, 'biasval', 'biasval',
                                      x_name='row_s', y_name='biasval')
-    figs.save_all(outbase)
 
 
-def plot_bias_fft_slot(dtables, outbase):
+def plot_bias_fft_slot(dtables, figs):
     """Plot the bias fft
 
     @param dtables (TableDict)  The data
-    @param outbase (str)        The output file prefix
+    @param figs (FigureDict)    Object to store the figues
     """
-    figs = FigureDict()
     for key, region in zip(REGION_KEYS, REGION_NAMES):
         datakey = 'biasfft-%s' % key
         figs.setup_amp_plots_grid(datakey, title="FFT of %s region mean by row" % region,
                                   xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]")
         figs.plot_xy_amps_from_tabledict(dtables, datakey, datakey,
                                          x_name='freqs', y_name='fftpow')
-    figs.save_all(outbase)
 
 
-def plot_bias_struct_slot(dtables, outbase):
+def plot_bias_struct_slot(dtables, figs):
     """Plot the bias structure
 
     @param dtables (TableDict)  The data
-    @param outbase (str)        The output file prefix
+    @param figs (FigureDict)    Object to store the figues
     """
-    figs = FigureDict()
     for rkey, rlabel in zip(REGION_KEYS, REGION_LABELS):
         for dkey in ['row', 'col']:
             datakey = "biasst-%s_%s" % (dkey, rkey)
@@ -80,17 +74,14 @@ def plot_bias_struct_slot(dtables, outbase):
                                       xlabel=dkey, ylabel="ADU")
             figs.plot_xy_amps_from_tabledict(dtables, datakey, datakey,
                                              x_name="%s_%s" % (dkey, rkey), y_name="biasst")
-    figs.save_all(outbase)
 
 
-def plot_correl_wrt_oscan_slot(dtables, outbase):
+def plot_correl_wrt_oscan_slot(dtables, figs):
     """Plot the bias fft
 
     @param dtables (TableDict)  The data
-    @param outbase (str)        The output file prefix
+    @param figs (FigureDict)    Object to store the figues
     """
-    figs = FigureDict()
-
     figs.setup_amp_plots_grid("oscorr-row", title="Correlation: imaging region and serial overscan",
                               xlabel="Correlation",
                               ylabel="Number of frames")
@@ -104,16 +95,14 @@ def plot_correl_wrt_oscan_slot(dtables, outbase):
         p_correl = df['p_correl_a%02i' % i]
         figs.get_obj('oscorr-row', 'axs').flat[i].hist(s_correl, bins=100, range=(-1., 1.))
         figs.get_obj('oscorr-col', 'axs').flat[i].hist(p_correl, bins=100, range=(-1., 1.))
-    figs.save_all(outbase)
 
 
-def plot_oscan_amp_stack_slot(dtables, outbase):
+def plot_oscan_amp_stack_slot(dtables, figs):
     """Plot the bias structure
 
     @param dtables (TableDict)  The data
-    @param outbase (str)        The output file prefix
+    @param figs (FigureDict)    Object to store the figues
     """
-    figs = FigureDict()
     stats = ['mean', 'std', 'signif']
     stats_labels = ['Mean [ADU]', 'Std [ADU]', 'Significance [sigma]']
     for skey, slabel in zip(stats, stats_labels):
@@ -130,18 +119,26 @@ def plot_oscan_amp_stack_slot(dtables, outbase):
                 figs.plot_xy_axs_from_tabledict(dtables, datakey, idx, figkey,
                                                 x_name=xkey, y_name=y_name)
                 idx += 1
-    figs.save_all(outbase)
 
 
-def plot_oscan_correl_raft(dtables, outbase):
+def plot_oscan_correl_raft(dtables, figs):
     """Plot the bias fft
 
     @param dtables (TableDict)  The data
-    @param outbase (str)        The output file prefix
+    @param figs (FigureDict)    Object to store the figues
     """
-    figs = FigureDict()
-
     data = dtables.get_table('correl')['correl']
-
     figs.plot_raft_correl_matrix("oscorr", data, title="Overscan Correlations", slots=ALL_SLOTS)
-    figs.save_all(outbase)
+
+
+
+def plot_bias_data_slot(dtables, figs):
+    """Plot the all the bias data
+    @param dtables (TableDict)  The data
+    @param figs (FigureDict)    Object to store the figues
+    """
+    plot_bias_v_row_slot(dtables, figs)
+    plot_bias_fft_slot(dtables, figs)
+    plot_bias_struct_slot(dtables, figs)
+    plot_correl_wrt_oscan_slot(dtables, figs)
+    plot_oscan_amp_stack_slot(dtables, figs)
