@@ -9,9 +9,9 @@ from lsst.eo_utils.bias.analysis import BiasAnalysisBySlot, make_bias_v_row_slot
 def main():
     """Hook for setup.py"""
     argnames = STANDARD_SLOT_ARGS + ['bias', 'rafts']
-    
+
     functor = BiasAnalysisBySlot(make_bias_v_row_slot, argnames)
-    functor.run(acq_types=["DARK"])
+    functor.run()
 
 if __name__ == '__main__':
     main()

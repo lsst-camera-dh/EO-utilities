@@ -2,9 +2,8 @@
 
 """This module is just a command line interface to plot bias images"""
 
-from lsst.eo_utils.file_utils import FileRef
-from lsst.eo_utils.config_utils import setup_parser
-from lsst.eo_utils.plot_utils import FigureDict
+from lsst.eo_utils.base.config_utils import setup_parser
+from lsst.eo_utils.base.plot_utils import FigureDict
 
 def main():
     """Hook for setup.py"""
@@ -35,7 +34,6 @@ def main():
                              vmin=args.vmin, vmax=args.vmax,
                              nbins=args.nbins, region=None,
                              subtract_mean=args.subtract_mean)
-        output_file_stat = output_file.replace('.png', '_hist.png')
 
     figs.save_all(output_file.replace('.fits', ''))
 
