@@ -39,7 +39,7 @@ def make_mask(butler, slot_data, **kwargs):
     mask_files = slot_data['MASK']
     if butler is not None:
         print("Ignoring Butler to get mask files")
-    outfile = mask_filename(kwargs.get('outdir', 'masks'), **kwargs)
+    outfile = mask_filename(**kwargs)
     makedir_safe(outfile)
     add_mask_files(mask_files, outfile)
 

@@ -496,9 +496,6 @@ class FigureDict:
             axs (Array of `matplotlib.Axes._subplots.AxesSubplot)
 
         """
-        title = kwargs.get('title', None)
-        xlabel = kwargs.get('xlabel', None)
-        ylabel = kwargs.get('ylabel', None)
         vmin = kwargs.get('vmin', -10.)
         vmax = kwargs.get('vmax', 10.)
         nbins = kwargs.get('nbins', 200)
@@ -521,7 +518,8 @@ class FigureDict:
         if bias_method is not None:
             oscan = ccd.amp_geom.serial_overscan
 
-        o_dict = self.setup_amp_plots_grid(key, title=title, xlabel=xlabel, ylabel=ylabel)
+        o_dict = self.setup_amp_plots_grid(key, **kwargs)
+
         axs = o_dict['axs']
 
         for idx, amp in enumerate(ccd):
@@ -572,5 +570,3 @@ class FigureDict:
             fig = val['fig']
             fig.savefig("%s_%s.png" % (basename, key))
             plt.close(fig)
-
-

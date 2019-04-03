@@ -9,8 +9,6 @@ from __future__ import with_statement
 import os
 import sys
 
-from .file_utils import read_runlist
-
 #import pipes
 
 #from lsst.ctrl.pool import Batch, exportEnv, UMASK

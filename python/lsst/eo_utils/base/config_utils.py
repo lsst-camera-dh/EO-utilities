@@ -12,7 +12,7 @@ from collections import OrderedDict
 import lsst.pex.config as pexConfig
 
 DEFAULT_DB = 'Dev'
-DEFAULT_OUTDIR = 'superbias'
+DEFAULT_OUTDIR = 'analysis'
 DEFAULT_STAT_TYPE = 'median'
 DEFAULT_BITPIX = -32
 

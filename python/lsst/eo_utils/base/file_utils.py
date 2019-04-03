@@ -16,6 +16,8 @@ MASK_TYPES_DEFAULT = ['fe55_raft_analysis',
 
 #MASK_TYPES_DEFAULT = []
 
+SLOT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}-{slot}{suffix}'
+RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}{suffix}'
 
 def makedir_safe(filepath):
     """Make a directory needed to write a file
@@ -51,27 +53,54 @@ def get_hardware_type_and_id(run_num):
     return (htype, hid)
 
 
-def mask_filename(maskdir, raft, run_num, slot, **kwargs):
+def get_slot_file_basename(**kwargs):
     """Return the filename for a mask file
 
-    The format is {maskdir}/{raft}/{raft}-{run_num}-{slot}_mask.fits
+    The format is {outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}-{slot}{suffix}
 
-    @param maskdir(str)
-    @param raft(str)
-    @param run_num(str)
-    @param slot(str)
+    @param kwargs:
+        outdir (str)
+        fileType (str)
+        raft (str)
+        testType (str)
+        run_num (str)
+        slot (str)
+        suffix (str)
 
     @returns (str) The path for the file.
     """
-    outpath = os.path.join(maskdir, raft,
-                           '%s-%s-%s_mask' % (raft, run_num, slot))
+    return str(SLOT_FORMAT_STRING.format(**kwargs))
 
-    suffix = kwargs.get('suffix', None)
-    if suffix is not None:
-        outpath += '_suffix'
 
-    outpath += '.fits'
-    return str(outpath)
+def get_raft_file_basename(**kwargs):
+    """Return the filename for a mask file
+
+    The format is {outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}{suffix}
+
+    @param kwargs:
+        outdir (str)
+        fileType (str)
+        raft (str)
+        testType (str)
+        run_num (str)
+        suffix (str)
+
+    @returns (str) The path for the file.
+    """
+    return str(RAFT_FORMAT_STRING.format(**kwargs))
+
+
+
+def mask_filename(outdir, raft, run_num, slot, **kwargs):
+    """Return the filename for a mask file
+
+    The format is {outdir}/masks/{raft}/{raft}-{run_num}-{slot}_mask.fits
+
+    @returns (str) The path for the file.
+    """
+    return get_slot_file_basename(outdir=outdir, fileType='masks',
+                                  raft=raft, testType='', run_num=run_num,
+                                  slot=slot, suffix=kwargs.get('suffix', '_mask.fits'))
 
 
 def get_files_for_run(run_id, **kwargs):
@@ -163,7 +192,7 @@ def get_mask_files(**kwargs):
     @return (list) List of files
     """
     if kwargs.get('mask', False):
-        mask_files = [mask_filename('masks', **kwargs)]
+        mask_files = [mask_filename(**kwargs)]
     else:
         mask_files = []
     return mask_files
@@ -188,4 +217,3 @@ def read_runlist(filepath):
             outlist.append(tokens)
         lin = fin.readline()
     return outlist
-

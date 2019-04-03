@@ -65,7 +65,7 @@ class EO_AnalyzeRaftTask(pipeBase.Task):
 
 
 
-class AnalysisIterator(object):
+class AnalysisIterator:
     """Small class to iterate an analysis, and provied an interface to the batch system"""
     batch_argnames = ['logdir', 'logsuffix', 'bsub_args', 'batch', 'dry_run']
     def __init__(self, task, data_func, argnames):
@@ -78,7 +78,10 @@ class AnalysisIterator(object):
         """
         self.task = task
         self.data_func = data_func
-        self.argnames = argnames
+        if argnames is None:
+            self.argnames = []
+        else:
+            self.argnames = argnames
         self.argnames += self.batch_argnames
 
     def call_func(self, run_num, **kwargs):

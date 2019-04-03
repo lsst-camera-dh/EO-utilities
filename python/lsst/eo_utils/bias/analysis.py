@@ -20,6 +20,8 @@ from lsst.eo_utils.base.config_utils import DEFAULT_OUTDIR,\
 
 from lsst.eo_utils.base.data_utils import TableDict
 
+from lsst.eo_utils.base.plot_utils import FigureDict
+
 from lsst.eo_utils.base.image_utils import REGION_KEYS,\
     get_dims_from_ccd, get_readout_frequencies_from_ccd,\
     get_geom_regions, get_dimension_arrays_from_ccd,\
@@ -30,8 +32,10 @@ from lsst.eo_utils.base.iter_utils import AnalysisBySlot, AnalysisByRaft
 
 from .file_utils import get_bias_files_run,\
     superbias_filename, superbias_stat_filename,\
-    bias_basename, superbias_basename,\
-    raft_basename, get_superbias_frame
+    raft_bias_tablename, raft_bias_plotname,\
+    slot_bias_tablename, slot_bias_plotname,\
+    superbias_tablename, superbias_plotname,\
+    get_superbias_frame
 
 from .plot_utils import plot_superbias,\
     plot_bias_v_row_slot, plot_bias_fft_slot,\
@@ -47,7 +51,7 @@ from .butler_utils import get_bias_files_butler
 
 
 DEFAULT_BIAS_TYPE = 'spline'
-SBIAS_TEMPLATE = 'superbias/templates/sbias_template.fits'
+SBIAS_TEMPLATE = 'analysis/superbias/templates/sbias_template.fits'
 ALL_SLOTS = 'S00 S01 S02 S10 S11 S12 S20 S21 S22'.split()
 
 mpl_utils.set_plt_ioff()
@@ -73,7 +77,7 @@ def get_bias_data(butler, run_num, **kwargs):
 
 class BiasAnalysisBySlot(AnalysisBySlot):
     """Small class to iterate an analysis task over all the slots in a raft"""
-    def __init__(self, analysis_func, argnames=[]):
+    def __init__(self, analysis_func, argnames=None):
         """C'tor
 
         @param analysis_func (fuction)  The function that does that actual analysis
@@ -85,7 +89,7 @@ class BiasAnalysisBySlot(AnalysisBySlot):
 
 class BiasAnalysisByRaft(AnalysisByRaft):
     """Small class to iterate an analysis task over all the raft and then all the slots in a raft"""
-    def __init__(self, analysis_func, argnames=[]):
+    def __init__(self, analysis_func, argnames=None):
         """C'tor
 
         @param analysis_func (fuction)  The function that does that actual analysis
@@ -470,12 +474,12 @@ def extract_bias_data_slot(butler, slot_data, **kwargs):
                           ifile=ifile, nfiles=len(bias_files),
                           slot=slot, bias_type=bias_type,
                           std=std, superbias_frame=superbias_frame)
- 
+
         get_bias_struct_data(butler, ccd, biasstruct_data,
                              ifile=ifile, nfiles=len(bias_files),
                              slot=slot, bias_type=bias_type,
                              std=std, superbias_frame=superbias_frame)
- 
+
         get_correl_wrt_oscan_data(butler, ccd, ref_frames,
                                   ifile=ifile, s_correl=s_correl, p_correl=p_correl,
                                   nrow_i=nrow_i, ncol_i=ncol_i)
@@ -701,18 +705,50 @@ def make_superbias_slot(butler, slot_data, **kwargs):
 class BiasAnalysisFunc:
     """Simple functor class to tie together standard bias data analysis
     """
-    def __init__(self, outbase_func, datasuffix, extract_func, plot_func):
+    def __init__(self, datasuffix, extract_func, plot_func, **kwargs):
         """ C'tor
-
-        @param outbase_func (func)  Function to get output path
-        @param datasuffix (func)    Suffix for data file
-        @param extract_func (func)  Function to extract data
-        @param plot_func (func)     Function to plot data
+        @param datasuffix (func)        Suffix for filenames
+        @param extract_func (func)      Function to extract table data
+        @param plot_func (func)         Function to make plots
+        @param kwargs:
+           tablename_func (func)     Function to get output path for tables
+           plotname_func (func)      Function to get output path for plots
         """
-        self.outbase_func = outbase_func
         self.datasuffix = datasuffix
         self.extract_func = extract_func
         self.plot_func = plot_func
+        self.tablename_func = kwargs.get('tablename_func', slot_bias_tablename)
+        self.plotname_func = kwargs.get('plotname_func', slot_bias_plotname)
+
+
+    def make_datatables(self, butler, slot_data, **kwargs):
+        """Tie together the functions to make the data tables
+        @param butler (Butler)   The data butler
+        @param slot_data (dict)  Dictionary pointing to the bias and mask files
+        @param kwargs
+
+        @return (TableDict)
+        """
+        tablebase = self.tablename_func(suffix=self.datasuffix, **kwargs)
+        makedir_safe(tablebase)
+        output_data = tablebase + ".fits"
+
+        if kwargs.get('skip', False):
+            dtables = TableDict(output_data)
+        else:
+            dtables = self.extract_func(butler, slot_data, **kwargs)
+            dtables.save_datatables(output_data)
+        return dtables
+
+    def make_plots(self, dtables):
+        """Tie together the functions to make the data tables
+        @param dtables (TableDict)   The data tables
+
+        @return (FigureDict)
+        """
+        figs = FigureDict()
+        self.plot_func(dtables, figs)
+        return figs
 
     def __call__(self, butler, slot_data, **kwargs):
         """Tie together the functions
@@ -720,22 +756,14 @@ class BiasAnalysisFunc:
         @param slot_data (dict)  Dictionary pointing to the bias and mask files
         @param kwargs
         """
-        outbase = self.outbase_func(**kwargs)
-        makedir_safe(outbase)
-        output_data = outbase + "_data_%s.fits" % self.datasuffix
-
-        if kwargs.get('skip', False):
-            dtables = TableDict(output_data)
-        else:
-            dtables = self.extract_func(butler, slot_data, **kwargs)
-            dtables.save_datatables(output_data)
-
+        dtables = self.make_datatables(butler, slot_data, **kwargs)
         if kwargs.get('plot', False):
-            figs = FigureDict()
-            self.plot_func(dtables, figs)
+            figs = self.make_plots(dtables)
             if kwargs.get('interactive', False):
-                outbase = None
-            figs.save_all(outbase)
+                figs.save_all(None)
+            else:
+                plotbase = self.plotname_func(suffix=self.datasuffix, **kwargs)
+                figs.save_all(plotbase)
 
 
 
@@ -752,8 +780,7 @@ def make_bias_v_row_slot(butler, slot_data, **kwargs):
         outdir (str)         Output directory
         plot (bool)          Make plots
     """
-    ba = BiasAnalysisFunc(bias_basename, "biasval",
-                          extract_bias_v_row_slot, plot_bias_v_row_slot)
+    ba = BiasAnalysisFunc("biasval", extract_bias_v_row_slot, plot_bias_v_row_slot)
     ba(butler, slot_data, **kwargs)
 
 
@@ -772,8 +799,7 @@ def make_bias_fft_slot(butler, slot_data, **kwargs):
         outdir (str)         Output directory
         std (bool)           Plot standard deviation instead of median
     """
-    ba = BiasAnalysisFunc(bias_basename, "biasfft",
-                          extract_bias_fft_slot, plot_bias_fft_slot)
+    ba = BiasAnalysisFunc("biasfft", extract_bias_fft_slot, plot_bias_fft_slot)
     ba(butler, slot_data, **kwargs)
 
 
@@ -793,8 +819,7 @@ def make_bias_struct_slot(butler, slot_data, **kwargs):
         outdir (str)         Output directory
         std (bool)           Plot standard deviation instead of median
     """
-    ba = BiasAnalysisFunc(bias_basename, "biasst",
-                          extract_bias_struct_slot, plot_bias_struct_slot)
+    ba = BiasAnalysisFunc("biasst", extract_bias_struct_slot, plot_bias_struct_slot)
     ba(butler, slot_data, **kwargs)
 
 
@@ -810,8 +835,7 @@ def make_correl_wrt_oscan_slot(butler, slot_data, **kwargs):
         slot (str)           Slot in question, i.e., 'S00'
         outdir (str)         Output directory
     """
-    ba = BiasAnalysisFunc(bias_basename, "biasoscorr",
-                          extract_correl_wrt_oscan_slot, plot_correl_wrt_oscan_slot)
+    ba = BiasAnalysisFunc("biasoscorr", extract_correl_wrt_oscan_slot, plot_correl_wrt_oscan_slot)
     ba(butler, slot_data, **kwargs)
 
 
@@ -830,8 +854,7 @@ def make_oscan_amp_stack_slot(butler, slot_data, **kwargs):
         superbias (str)      Method to use for superbias subtraction
         outdir (str)         Output directory
     """
-    ba = BiasAnalysisFunc(bias_basename, "biasosstack",
-                          extract_oscan_amp_stack_slot, plot_oscan_amp_stack_slot)
+    ba = BiasAnalysisFunc("biasosstack", extract_oscan_amp_stack_slot, plot_oscan_amp_stack_slot)
     ba(butler, slot_data, **kwargs)
 
 
@@ -851,8 +874,9 @@ def make_oscan_correl_raft(butler, raft_data, **kwargs):
         suffix = "oscov"
     else:
         suffix = "oscorr"
-    ba = BiasAnalysisFunc(raft_basename, suffix,
-                          extract_oscan_correl_raft, plot_oscan_correl_raft)
+    ba = BiasAnalysisFunc(suffix, extract_oscan_correl_raft, plot_oscan_correl_raft,
+                          tablename_func=raft_bias_tablename,
+                          plotname_func=raft_bias_plotname)
     ba(butler, raft_data, **kwargs)
 
 
@@ -870,8 +894,10 @@ def make_superbias_fft_slot(butler, slot_data, **kwargs):
         outdir (str)         Output directory
         std (bool)           Plot standard deviation instead of median
     """
-    ba = BiasAnalysisFunc(superbias_basename, "sbiasfft",
-                          extract_superbias_fft_slot, plot_bias_fft_slot)
+    ba = BiasAnalysisFunc("sbiasfft", extract_superbias_fft_slot, plot_bias_fft_slot,
+                          tablename_func=superbias_tablename,
+                          plotname_func=superbias_plotname)
+
     ba(butler, slot_data, **kwargs)
 
 
@@ -888,8 +914,9 @@ def make_superbias_struct_slot(butler, slot_data, **kwargs):
         outdir (str)         Output directory
         std (bool)           Plot standard deviation instead of median
     """
-    ba = BiasAnalysisFunc(superbias_basename, "sbiasst",
-                          extract_superbias_struct_slot, plot_bias_struct_slot)
+    ba = BiasAnalysisFunc("sbiasst", extract_superbias_struct_slot, plot_bias_struct_slot,
+                          tablename_func=superbias_tablename,
+                          plotname_func=superbias_plotname)
     ba(butler, slot_data, **kwargs)
 
 
@@ -906,7 +933,5 @@ def make_bias_data_slot(butler, slot_data, **kwargs):
         outdir (str)         Output directory
         std (bool)           Plot standard deviation instead of median
     """
-    ba = BiasAnalysisFunc(superbias_basename, "biasdata",
-                           extract_bias_data_slot, plot_bias_data_slot)
+    ba = BiasAnalysisFunc("biasdata", extract_bias_data_slot, plot_bias_data_slot)
     ba(butler, slot_data, **kwargs)
-   
