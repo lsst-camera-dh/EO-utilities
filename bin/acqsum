@@ -1,0 +1,193 @@
+#!/usr/bin/env python
+# 7 Apr 2019
+# Generates a summary of the current day's BOT EO acquisition.  Optionally generates one
+# for a specified day or all days.  The format is old Confluence table style, suitable for
+# pasting in https://confluence.slac.stanford.edu/display/LSSTCAM/Index+of+rawData+files+for+two+ETU+EO+runs
+# If an argument with a + is given, it is interpreted as a minimum acquisition number for a
+# current-day table
+
+import astropy.io.fits as fits
+import glob
+import numpy as np
+import re
+import sys
+
+rawRoot = '/gpfs/slac/lsst/fs3/g/data/rawData/focal-plane/'
+all_dates = glob.glob(rawRoot + '*')
+all_dates.sort()
+all_dates = all_dates[::-1]  # reverse sort
+minacq = 0
+
+try:
+    dates = [sys.argv[1]]
+    if dates[0] == 'all':
+        dates = all_dates
+    if dates[0][0] == '+':
+        minacq = int(dates[0][1:])
+        dates = [all_dates[0]]
+except:
+    dates = [all_dates[0]]
+
+for date in dates:
+    datestr = date.split('/')[-1]
+    print('[' + datestr + '|#' + rawRoot + datestr + ']')
+
+for date in dates:
+    datestr = date.split('/')[-1]
+    files = glob.glob(rawRoot + datestr + '/*/*R22_S11.fits')
+    files.sort()
+
+    d = ' | '
+    dd = ' || '
+    exptime = []
+    exptime2 = []
+    imgtype = []
+    testtype = []
+    filt = []
+    filt2 = []
+    seqnum = []
+    tseqnum = []
+    runnum = []
+    median = []
+    bias = []
+    signal = []
+    noise = []
+    adus = []
+
+    for file in files[minacq:]:
+        hdu = fits.open(file)
+        try:
+            runnum.append(hdu[0].header['RUNNUM'])
+        except:
+            runnum.append(' ')
+
+        exptime1 = hdu[0].header['EXPTIME']
+        exptime.append(exptime1)
+        try:
+            exptime2.append(hdu[0].header['EXPTIME2'])
+        except:
+            exptime2.append(0)
+        imgtype.append(hdu[0].header['IMGTYPE'])
+        testtype.append(hdu[0].header['TESTTYPE'])
+        try:
+            filt.append(hdu[0].header['FILTER'])
+        except:
+            filt.append(' ')
+        try:
+            filt2.append(hdu[0].header['FILTER2'])
+        except:
+            filt2.append(' ')
+        seqnum.append(hdu[0].header['SEQNUM'])
+        tseqnum.append(hdu[0].header['TSEQNUM'])
+
+        im = hdu[11].data
+        # below from Stuart Marshall
+        res = re.match(r"\[?([0-9]*):([0-9]+),([0-9]+):([0-9]+)\]?",
+                                       hdu[11].header['datasec'])
+        datasec = res.groups()
+        x1 = int(datasec[0]) - 1
+        x2 = int(datasec[1])
+        y1 = int(datasec[2]) - 1
+        y2 = int(datasec[3])
+        signal_im = im[y1:y2, x1:x2]
+
+        x1 = int(datasec[1]) + 1
+        x2 = hdu[11].header['naxis1']
+        y1 = int(datasec[2]) - 1
+        y2 = int(datasec[3])
+        bias_im = im[y1:y2, x1:x2]
+
+        med = np.median(signal_im)
+        bias_med = np.median(bias_im)
+        sig = med - bias_med
+        median.append(str(int(med)))
+        bias.append(str(int(bias_med)))
+        signal.append(str(int(sig)))
+        (nrows, ncols) = np.shape(bias_im)
+        noise.append(str('%5.1f' % np.std(bias_im[int(nrows/2-nrows/20):int(nrows/2+nrows/20), 3:ncols-2])))
+        if exptime1 != 0:
+            adus.append(str('%7.1f' % (sig/exptime1)))
+        else:
+            adus.append('NA')
+
+    # Look for sequences of the same measurement (everything the same except seqnum and tseqnum)
+    seqnumd = []
+    runnumd = []
+    testtyped = []
+    imgtyped = []
+    tseqnumd = []
+    exptimed = []
+    exptime2d = []
+    filtd = []
+    filt2d = []
+    mediand = []
+    biasd = []
+    signald = []
+    noised = []
+    adusd = []
+
+    seqnumd.append(str(seqnum[0]))
+    runnumd.append(runnum[0])
+    testtyped.append(testtype[0])
+    imgtyped.append(imgtype[0])
+    tseqnumd.append(str(tseqnum[0]))
+    exptimed.append(exptime[0])
+    exptime2d.append(exptime2[0])
+    filtd.append(filt[0])
+    filt2d.append(filt2[0])
+    mediand.append(median[0])
+    biasd.append(bias[0])
+    signald.append(signal[0])
+    noised.append(noise[0])
+    adusd.append(adus[0])
+
+
+    ind = 1
+    cou = 0
+    seqlen = 0
+    while ind < len(seqnum):
+        if runnum[ind] == runnum[ind-1] and testtype[ind] == testtype[ind-1] and imgtype[ind] == imgtype[ind-1] and exptime[ind] == exptime[ind-1] and exptime2[ind] == exptime2[ind-1] and filt[ind] == filt[ind-1] and filt2[ind] == filt2[ind-1]:
+            seqlen += 1
+            if seqlen == 1:
+                indsave = ind-1
+        else:
+            # update the last entry for the sequence information and add the next entry
+            if seqlen > 0:
+                seqnumd[cou] = str(seqnum[indsave]) + '-' + str(seqnum[ind-1])
+                tseqnumd[cou] = str(tseqnum[indsave]) + '-' + str(tseqnum[ind-1])
+                seqlen = 0
+
+            cou += 1
+            seqnumd.append(str(seqnum[ind]))
+            runnumd.append(runnum[ind])
+            testtyped.append(testtype[ind])
+            imgtyped.append(imgtype[ind])
+            tseqnumd.append(str(tseqnum[ind]))
+            exptimed.append(exptime[ind])
+            exptime2d.append(exptime2[ind])
+            filtd.append(filt[ind])
+            filt2d.append(filt2[ind])
+            mediand.append(median[ind])
+            biasd.append(bias[ind])
+            signald.append(signal[ind])
+            noised.append(noise[ind])
+            adusd.append(adus[ind])
+        ind += 1
+
+    # Fix last entry if it is part of an ongoing sequence
+    if seqlen > 0:
+        seqnumd[cou] = str(seqnum[indsave]) + '-' + str(seqnum[ind-1])
+        tseqnumd[cou] = str(tseqnum[indsave]) + '-' + str(tseqnum[ind-1])
+
+    outlines = []
+
+    for i in range(len(seqnumd)):
+        outlines.append(d + seqnumd[i] + d + runnumd[i] + d + testtyped[i] + d + imgtyped[i] +d + tseqnumd[i] + d + str(exptimed[i]) + d + str(exptime2d[i]) + d + filtd[i] + d + filt2d[i] + d + mediand[i] + d + biasd[i] + d + signald[i] + d + noised[i] + d + adusd[i] + d)
+
+    outlines.reverse()
+
+    # add headings
+    outlines = ['h2. ' + rawRoot + datestr, ' ', dd + 'SEQNUM' + dd + 'RUNNUM' + dd + 'TESTTYPE' + dd + 'IMGTYPE' + dd + 'TSEQNUM' + dd + 'EXPTIME' + dd + 'EXPTIME2' + dd + 'FILTER' + dd + 'FILTER2' + dd + 'Median' + dd + 'Bias' + dd + 'Signal' + dd + 'Noise' + dd + 'ADU/s' + dd] + outlines
+
+    for line in outlines:
+        print(line)
