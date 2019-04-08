@@ -117,7 +117,7 @@ class AnalysisIterator:
 
         @param: bulter_repo (str)  Key specifying the data repo
         @param kwargs (dict)       Passed to the ctor
-        
+
         @returns (`Butler`)        The requested data Butler
         """
         return getButler(butler_repo, **kwargs)
@@ -134,8 +134,8 @@ class AnalysisIterator:
 
     def run(self, **kwargs):
         """Run the analysis over all of the requested objects.
-        
-        By default this takes the arguments from the command line 
+
+        By default this takes the arguments from the command line
         and overrides those with any kwargs that have been provided.
 
         If interactive==True then it will not use the command line

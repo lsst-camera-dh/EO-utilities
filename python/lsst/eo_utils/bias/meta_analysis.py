@@ -2,16 +2,16 @@
 
 import sys
 import numpy as np
-from astropy.table import vstack as vstack_table
-from astropy.table import Table, Column
 
-from lsst.eo_utils.base.file_utils import read_runlist
+from lsst.eo_utils.base.file_utils import read_runlist, makedir_safe
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 from lsst.eo_utils.base.plot_utils import FigureDict
 from lsst.eo_utils.bias.file_utils import slot_bias_tablename,\
     raft_bias_tablename, raft_superbias_tablename,\
     bias_summary_tablename, bias_summary_plotname,\
     superbias_summary_tablename, superbias_summary_plotname
+
+from .analysis import BiasAnalysisFunc
 
 SLOT_LIST = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
 
@@ -94,7 +94,7 @@ def extract_fft_stats_runlist(infile, **kwargs):
         raft = runinfo[0].replace('-Dev', '')
         run_num = runinfo[1]
 
-        outtables= extract_fft_stats_run(run_num, raft, **kwargs)
+        outtables = extract_fft_stats_run(run_num, raft, **kwargs)
         outfile = raft_bias_tablename('analysis', raft, run_num,
                                       suffix='biasfft_sum', **kwargs)
         outfile += ".fits"
@@ -115,8 +115,8 @@ def get_raft_bias_tablefiles(infile, **kwargs):
     filedict = {}
     for runinfo in run_list:
         raft = runinfo[0].replace('-Dev', '')
-        run_num = runinfo[1]       
-        run_key = "%s_%s" % (raft, run_num) 
+        run_num = runinfo[1]
+        run_key = "%s_%s" % (raft, run_num)
         filedict[run_key] = raft_bias_tablename('analysis', raft, run_num, **kwargs) + '.fits'
 
     return filedict
@@ -135,18 +135,18 @@ def get_raft_superbias_tablefiles(infile, **kwargs):
     filedict = {}
     for runinfo in run_list:
         raft = runinfo[0].replace('-Dev', '')
-        run_num = runinfo[1]       
-        run_key = "%s_%s" % (raft, run_num) 
+        run_num = runinfo[1]
+        run_key = "%s_%s" % (raft, run_num)
         filedict[run_key] = raft_superbias_tablename('analysis', raft, run_num, **kwargs) + '.fits'
 
     return filedict
 
 
 
-class BiasSummaryAnalysisFunc:
+class BiasSummaryAnalysisFunc(BiasAnalysisFunc):
     """Simple functor class to tie together standard bias data analysis
     """
-    def __init__(self, datasuffix, extract_func, plot_func, **kwargs):
+    def __init__(self, datasuffix="", extract_func=None, plot_func=None, **kwargs):
         """ C'tor
         @param datasuffix (func)        Suffix for filenames
         @param extract_func (func)      Function to extract table data
@@ -155,11 +155,9 @@ class BiasSummaryAnalysisFunc:
            tablename_func (func)     Function to get output path for tables
            plotname_func (func)      Function to get output path for plots
         """
-        self.datasuffix = datasuffix
-        self.extract_func = extract_func
-        self.plot_func = plot_func
-        self.tablename_func = kwargs.get('tablename_func', bias_summary_tablename)
-        self.plotname_func = kwargs.get('plotname_func', bias_summary_plotname)
+        kwargs.setdefault('tablename_func', bias_summary_tablename)
+        kwargs.setdefault('plotname_func', bias_summary_plotname)
+        BiasAnalysisFunc.__init__(self, datasuffix, extract_func, plot_func, **kwargs)
 
 
     def make_datatables(self, dataset, **kwargs):
@@ -212,14 +210,14 @@ class BiasSummaryAnalysisFunc:
 
 
 def extract_summary_table_bias_fft(dataset, **kwargs):
-    """Make a summry table of the bias FFT data 
+    """Make a summry table of the bias FFT data
 
     @param dataset (str)      The name of the dataset
     @param kwargs
         bias (str)
         superbias (str)
 
-    @returns (TableDict) 
+    @returns (TableDict)
     """
     infile = '%s_runs.txt' % dataset
     keep_cols = ['fftpow_maxval', 'fftpow_argmax', 'slot', 'amp']
@@ -234,18 +232,18 @@ def extract_summary_table_bias_fft(dataset, **kwargs):
 
 
 def extract_summary_table_superbias_stats(dataset, **kwargs):
-    """Make a summry table of the bias FFT data 
+    """Make a summry table of the bias FFT data
 
     @param dataset (str)      The name of the dataset
     @param kwargs
         bias (str)
         superbias (str)
 
-    @returns (TableDict) 
+    @returns (TableDict)
     """
     infile = '%s_runs.txt' % dataset
 
-    filedict = get_raft_superbias_tablefiles(args.input, 
+    filedict = get_raft_superbias_tablefiles(infile,
                                              suffix='stats'
                                              **kwargs)
     outtable = vstack_tables(filedict, tablename='stats')
@@ -265,14 +263,14 @@ def plot_summary_table_bias_fft(dtables, figs):
     """
     sumtable = dtables['biasfft_sum']
     runtable = dtables['runs']
-    
+
     yvals = sumtable['fftpow_maxval'].flatten().clip(0., 2.)
     runs = runtable['runs']
 
     figs.plot_run_chart("fftpow_maxval", runs, yvals, ylabel="Maximum FFT Power [ADU]")
 
 
-def plot_summary_table_superbias_stats(dataset, **kwargs):
+def plot_summary_table_superbias_stats(dtables, figs):
     """Plot the summary data from the superbias statistics study
 
     @param dtables (TableDict)    The data we are ploting
@@ -288,14 +286,14 @@ def plot_summary_table_superbias_stats(dataset, **kwargs):
 
 
 def make_summary_table_bias_fft(dataset, **kwargs):
-    """Make a summry table of the bias FFT data 
+    """Make a summry table of the bias FFT data
 
     @param dataset (str)      The name of the dataset
     @param kwargs
         bias (str)
         superbias (str)
 
-    @returns (TableDict) 
+    @returns (TableDict)
     """
     functor = BiasSummaryAnalysisFunc('biasfft_sum',
                                       extract_summary_table_bias_fft,
@@ -304,14 +302,14 @@ def make_summary_table_bias_fft(dataset, **kwargs):
 
 
 def make_summary_table_superbias_stats(dataset, **kwargs):
-    """Make a summry table of the bias FFT data 
+    """Make a summry table of the bias FFT data
 
     @param dataset (str)      The name of the dataset
     @param kwargs
         bias (str)
         superbias (str)
 
-    @returns (TableDict) 
+    @returns (TableDict)
     """
     functor = BiasSummaryAnalysisFunc('biasfft_sum',
                                       extract_summary_table_superbias_stats,

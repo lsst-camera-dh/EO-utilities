@@ -28,7 +28,7 @@ class FigureDict:
     """Object to make and collect figures.
 
     This is implemented as a dictionary of dictionaries,
-    
+
     Each value is a dictionary with `matplotlib` objects for each figure
     """
     def __init__(self):
@@ -50,7 +50,7 @@ class FigureDict:
     def items(self):
         """Return the figure keys and values"""
         return self._fig_dict.items()
-    
+
     def __getitem__(self, key):
         """Return a particular sub-dictionary
 
@@ -59,7 +59,7 @@ class FigureDict:
         """
         return self._fig_dict[key]
 
-    
+
     def get_obj(self, key, key2):
         """Return some other object besides a figures
 

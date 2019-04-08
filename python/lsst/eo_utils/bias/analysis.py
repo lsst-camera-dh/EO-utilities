@@ -1,7 +1,6 @@
 """Functions to analyse bias and superbias frames"""
 
 import sys
-import itertools
 
 import numpy as np
 
@@ -33,20 +32,13 @@ from lsst.eo_utils.base.iter_utils import AnalysisBySlot, AnalysisByRaft
 from .file_utils import get_bias_files_run,\
     superbias_filename, superbias_stat_filename,\
     slot_bias_tablename, slot_bias_plotname,\
-    raft_bias_tablename, raft_bias_plotname,\
-    slot_superbias_tablename, slot_superbias_plotname,\
     raft_superbias_tablename, raft_superbias_plotname,\
     get_superbias_frame
 
-from .plot_utils import plot_superbias,\
-    plot_bias_v_row_slot, plot_bias_fft_slot,\
-    plot_correl_wrt_oscan_slot, plot_oscan_amp_stack_slot,\
-    plot_bias_struct_slot, plot_oscan_correl_raft,\
-    plot_bias_data_slot, plot_superbias_stats_raft
+from .plot_utils import plot_superbias
 
-from .data_utils import get_biasval_data, get_bias_fft_data,\
-    get_bias_struct_data, get_correl_wrt_oscan_data, stack_by_amps,\
-    get_serial_oscan_data, get_superbias_stats
+from .data_utils import stack_by_amps,\
+    get_superbias_stats, convert_stack_arrays_to_dict
 
 from .butler_utils import get_bias_files_butler
 
@@ -103,7 +95,12 @@ class BiasAnalysisByRaft(AnalysisByRaft):
 class BiasAnalysisFunc:
     """Simple functor class to tie together standard bias data analysis
     """
-    def __init__(self, datasuffix, extract_func, plot_func, **kwargs):
+
+    # These need to be overridden by the sub-class
+    analysisClass = None
+    argnames = []
+
+    def __init__(self, datasuffix="", extract_func=None, plot_func=None, **kwargs):
         """ C'tor
         @param datasuffix (func)        Suffix for filenames
         @param extract_func (func)      Function to extract table data
@@ -131,7 +128,7 @@ class BiasAnalysisFunc:
         makedir_safe(tablebase)
         output_data = tablebase + ".fits"
 
-        if kwargs.get('skip', False):
+        if kwargs.get('skip', False) or self.extract_func is None:
             dtables = TableDict(output_data)
         else:
             dtables = self.extract_func(butler, slot_data, **kwargs)
@@ -145,7 +142,8 @@ class BiasAnalysisFunc:
         @return (FigureDict)
         """
         figs = FigureDict()
-        self.plot_func(dtables, figs)
+        if self.plot_func is not None:
+            self.plot_func(dtables, figs)
         return figs
 
     def __call__(self, butler, slot_data, **kwargs):
@@ -176,6 +174,7 @@ class BiasAnalysisFunc:
 
     @classmethod
     def run(cls):
+        """Run the analysis"""
         functor = cls.analysisClass(cls.make, cls.argnames)
         functor.run()
 

@@ -33,7 +33,7 @@ def make_mask(butler, slot_data, **kwargs):
 
     @param: butler (Bulter)  The data Butler
     @param slot_data (dict)  Dictionary pointing to the mask files
-    @param kwargs:           Passed to the `mask_filename` function to get the 
+    @param kwargs:           Passed to the `mask_filename` function to get the
                              output filename
     """
     mask_files = slot_data['MASK']

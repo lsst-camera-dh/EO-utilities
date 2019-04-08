@@ -2,8 +2,6 @@
 
 from lsst.eo_utils.base.plot_utils import FigureDict
 
-from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES, REGION_LABELS
-
 
 ALL_SLOTS = 'S00 S01 S02 S10 S11 S12 S20 S21 S22'.split()
 

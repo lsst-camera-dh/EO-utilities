@@ -1,9 +1,6 @@
 """Functions to analyse bias and superbias frames"""
 
 import numpy as np
-from scipy import fftpack
-
-import lsst.eotest.image_utils as imutil
 
 from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES,\
     get_geom_regions, get_raw_image, get_amp_list,\
@@ -80,43 +77,6 @@ def convert_stack_arrays_to_dict(stack_arrays, dim_array_dict, nfiles):
                     stackdata_dict[key][keystr] = np.ndarray((len(val), nfiles))
                 stackdata_dict[key][keystr][:, i] = val
     return stackdata_dict
-
-
-def get_serial_oscan_data(butler, ccd, **kwargs):
-    """Get the serial overscan data
-
-    @param butler (Butler)   The data butler
-    @param ccd (MaskedCCD)   The ccd we are getting data from
-    @param kwargs:
-      boundry  (int)              Size of buffer around edge of overscan region
-      bias_type (str)             Method to use to construct bias
-      superbias_frame (MaskedCCD) The superbias
-
-    @returns (list) the overscan data
-    """
-    boundry = kwargs.get('boundry', 10)
-    amps = get_amp_list(butler, ccd)
-    superbias_frame = kwargs.get('superbias_frame', None)
-    overscans = []
-    for amp in amps:
-        if superbias_frame is not None:
-            if butler is not None:
-                superbias_im = get_raw_image(None, superbias_frame, amp+1)
-            else:
-                superbias_im = get_raw_image(None, superbias_frame, amp)
-        else:
-            superbias_im = None
-
-        regions = get_geom_regions(butler, ccd, amp)
-        serial_oscan = regions['serial_overscan']
-        im = get_raw_image(butler, ccd, amp)
-        image = unbias_amp(im, serial_oscan, bias_type=None, superbias_im=superbias_im)
-        serial_oscan.grow(-boundry)
-        oscan_data = image[serial_oscan]
-        step_x = regions['step_x']
-        step_y = regions['step_y']
-        overscans.append(oscan_data.getArray()[::step_x, ::step_y])
-    return overscans
 
 
 def get_superbias_stats(butler, superbias, stats_data, **kwargs):

@@ -1,4 +1,4 @@
-"""This module contains functions to help manage configuration for the 
+"""This module contains functions to help manage configuration for the
 offline analysis of LSST Electrical-Optical testing"""
 
 import sys
@@ -61,7 +61,7 @@ class EOUtilConfig(pexConfig.Config):
         return o_dict
 
 
-# Turn the object about into an ordered dictionary    
+# Turn the object about into an ordered dictionary
 DEFAULT_CONFIG = EOUtilConfig()
 DEFAULTS = DEFAULT_CONFIG.to_odict()
 

@@ -43,7 +43,7 @@ class TableDict:
         @returns (`Table`) requested Table
         """
         return self._table_dict[key]
-    
+
     def get_table(self, key):
         """Return a Table"
 
@@ -148,6 +148,7 @@ def vstack_tables(filedict, **kwargs):
     tables = []
 
     for irun, (key, val) in enumerate(sorted(filedict.items())):
+        print ("Stackiing %s" % key)
         dtables = TableDict(val, [tablename])
         table = dtables[tablename]
         if keep_cols is not None:
@@ -155,6 +156,5 @@ def vstack_tables(filedict, **kwargs):
         table.add_column(Column(name='run', data=irun*np.ones((len(table)), int)))
         tables.append(table)
 
-    runtable = Table(data=dict(runs=sorted(filedict.keys())))
     outtable = vstack_table(tables)
     return outtable

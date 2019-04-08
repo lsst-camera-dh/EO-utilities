@@ -136,7 +136,7 @@ def make_file_dict(butler, runlist, varlist=None):
     @param runlist (list)     List of complete dataIDs
     @param varlist (list)     List of variables values to use as keys for the output dictionary
 
-    @returns (dict)           A dictionary of dataIDs, 
+    @returns (dict)           A dictionary of dataIDs,
     """
     if varlist is None:
         varlist = ['testtype', 'visit']

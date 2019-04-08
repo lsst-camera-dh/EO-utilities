@@ -1,6 +1,6 @@
-"""This module contains functions to: 
- 1) find files of a particular type in the SLAC directory tree using the data catalog, 
- 2) define output filenames in a standard way 
+"""This module contains functions to:
+ 1) find files of a particular type in the SLAC directory tree using the data catalog,
+ 2) define output filenames in a standard way
 """
 
 import os
@@ -13,7 +13,7 @@ MASK_TYPES_DEFAULT = ['fe55_raft_analysis',
                       'traps_raft',
                       'bright_defects_raft']
 
-    
+
 # These strings define the standard output filenames
 SLOT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}-{slot}{suffix}'
 RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}-RFT{suffix}'

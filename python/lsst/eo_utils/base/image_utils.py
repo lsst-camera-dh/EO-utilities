@@ -94,8 +94,8 @@ def get_readout_frequencies_from_ccd(butler, ccd):
 
 
 def get_geom_steps_manu_hdu(manu, amp):
-    """Get x and y steps (+1 or -1) to convert between 
-    readout and physical orientation for a particular amp    
+    """Get x and y steps (+1 or -1) to convert between
+    readout and physical orientation for a particular amp
 
     @param manu (str)              ITL or E2V
     @param amp (int)               HDU index
@@ -121,8 +121,8 @@ def get_geom_steps_manu_hdu(manu, amp):
 
 
 def get_geom_steps_from_amp(ccd, amp):
-    """Get x and y steps (+1 or -1) to convert between 
-    readout and physical orientation for a particular amp  
+    """Get x and y steps (+1 or -1) to convert between
+    readout and physical orientation for a particular amp
 
     @param ccd (`ExposureF`)        CCD data object
     @param amp (int)                Amplifier number
