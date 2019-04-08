@@ -32,18 +32,6 @@ def plot_superbias(output_file, mask_files, **kwargs):
     figs.save_all(output_file.replace('.fits', ''))
 
 
-def plot_bias_data_slot(dtables, figs):
-    """Plot the all the bias data
-    @param dtables (TableDict)  The data
-    @param figs (FigureDict)    Object to store the figues
-    """
-    plot_bias_v_row_slot(dtables, figs)
-    plot_bias_fft_slot(dtables, figs)
-    plot_bias_struct_slot(dtables, figs)
-    plot_correl_wrt_oscan_slot(dtables, figs)
-    plot_oscan_amp_stack_slot(dtables, figs)
-
-
 def plot_superbias_stats_raft(dtables, figs):
     """Plot the bias fft
 
