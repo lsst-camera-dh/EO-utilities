@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-
-# -*- python -*-
-
 """This module contains functions to help use the SLAC batch system"""
 
 from __future__ import with_statement

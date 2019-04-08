@@ -1,4 +1,4 @@
-"""Functions to convert objects objects to and from panda """
+"""Functions to convert objects objects to and from astropy data tables  """
 
 import os
 
@@ -10,11 +10,18 @@ from astropy.io import fits
 from astropy.table import Table, Column
 from astropy.table import vstack as vstack_table
 
+# Make sure we can recognize usual suffixes
 HDF5_SUFFIXS = ['.hdf', '.h5', '.hd5', '.hdf5']
 FITS_SUFFIXS = ['.fit', '.fits']
 
+
 class TableDict:
-    """Object to store astropy Table objects"""
+    """Object to collect `astropy.table.Table` objects
+
+    This class is a dictionary mapping name to `Table`
+    and a few helper functions add new tables to the dictionary
+    and to read and write files, either as FITS or HDF5 files.
+    """
     def __init__(self, filepath=None, tablelist=None):
         """C'tor"""
         self._table_dict = {}
@@ -30,14 +37,18 @@ class TableDict:
         return self._table_dict.items()
 
     def __getitem__(self, key):
-        """Return a particular Table"""
-        return self._table_dict[key]
+        """Return a particular Table
 
+        @param key (str)   Key for the table.
+        @returns (`Table`) requested Table
+        """
+        return self._table_dict[key]
+    
     def get_table(self, key):
         """Return a Table"
 
         @param key (str)   Key for the table.
-        @returns (Table) requested Table
+        @returns (`Table`) requested Table
         """
         return self._table_dict[key]
 
@@ -47,7 +58,7 @@ class TableDict:
         @param key (str)        Key for this Table
         @param data (dict)      Data for this Table
 
-        @returns (Table) Astropy Table
+        @returns (`Table`) newly created table
         """
         df = Table(data)
         self._table_dict[key] = df
@@ -65,19 +76,19 @@ class TableDict:
     def make_datatables(self, data):
         """Make a set of Table
 
-        @param data (dict)      Data for these Table objects
+        @param data (dict)      Data for these `Table` objects
 
-        @returns (dict)         Dictionary of Astropy Table objects
+        @returns (dict)         Dictionary of `Table` objects
         """
         o_dict = {self.make_datatable(key, val) for key, val in data.items()}
         return o_dict
 
 
     def save_datatables(self, filepath, **kwargs):
-        """Save a Table to disk
+        """Save all of the `Table` objects in this object to a file
 
         @param filepath (str)     The file to save it to
-        @param kwargs             Passed to Table.to_hdf
+        @param kwargs             Passed to write functions
         """
         extype = os.path.splitext(filepath)[1]
         if extype in HDF5_SUFFIXS:
@@ -96,10 +107,10 @@ class TableDict:
 
 
     def load_datatables(self, filepath, **kwargs):
-        """Read Tables from a file
+        """Read a set of `Table` objects from a file into this object
 
-        @param filepath (str)     The file to save it to
-        @param kwargs             Passed to Table.to_hdf
+        @param filepath (str)     The file to read the `Table` objects
+        @param kwargs             Passed to read functions
         """
         extype = os.path.splitext(filepath)[1]
         tablelist = kwargs.get('tablelist', None)
