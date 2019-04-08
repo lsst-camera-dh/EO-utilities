@@ -48,11 +48,6 @@ for date in dates:
     seqnum = []
     tseqnum = []
     runnum = []
-    median = []
-    bias = []
-    signal = []
-    noise = []
-    adus = []
 
     for file in files[minacq:]:
         hdu = fits.open(file)
@@ -80,36 +75,6 @@ for date in dates:
         seqnum.append(hdu[0].header['SEQNUM'])
         tseqnum.append(hdu[0].header['TSEQNUM'])
 
-        im = hdu[11].data
-        # below from Stuart Marshall
-        res = re.match(r"\[?([0-9]*):([0-9]+),([0-9]+):([0-9]+)\]?",
-                                       hdu[11].header['datasec'])
-        datasec = res.groups()
-        x1 = int(datasec[0]) - 1
-        x2 = int(datasec[1])
-        y1 = int(datasec[2]) - 1
-        y2 = int(datasec[3])
-        signal_im = im[y1:y2, x1:x2]
-
-        x1 = int(datasec[1]) + 1
-        x2 = hdu[11].header['naxis1']
-        y1 = int(datasec[2]) - 1
-        y2 = int(datasec[3])
-        bias_im = im[y1:y2, x1:x2]
-
-        med = np.median(signal_im)
-        bias_med = np.median(bias_im)
-        sig = med - bias_med
-        median.append(str(int(med)))
-        bias.append(str(int(bias_med)))
-        signal.append(str(int(sig)))
-        (nrows, ncols) = np.shape(bias_im)
-        noise.append(str('%5.1f' % np.std(bias_im[int(nrows/2-nrows/20):int(nrows/2+nrows/20), 3:ncols-2])))
-        if exptime1 != 0:
-            adus.append(str('%7.1f' % (sig/exptime1)))
-        else:
-            adus.append('NA')
-
     # Look for sequences of the same measurement (everything the same except seqnum and tseqnum)
     seqnumd = []
     runnumd = []
@@ -135,11 +100,6 @@ for date in dates:
     exptime2d.append(exptime2[0])
     filtd.append(filt[0])
     filt2d.append(filt2[0])
-    mediand.append(median[0])
-    biasd.append(bias[0])
-    signald.append(signal[0])
-    noised.append(noise[0])
-    adusd.append(adus[0])
 
 
     ind = 1
@@ -167,17 +127,51 @@ for date in dates:
             exptime2d.append(exptime2[ind])
             filtd.append(filt[ind])
             filt2d.append(filt2[ind])
-            mediand.append(median[ind])
-            biasd.append(bias[ind])
-            signald.append(signal[ind])
-            noised.append(noise[ind])
-            adusd.append(adus[ind])
         ind += 1
 
     # Fix last entry if it is part of an ongoing sequence
     if seqlen > 0:
         seqnumd[cou] = str(seqnum[indsave]) + '-' + str(seqnum[ind-1])
         tseqnumd[cou] = str(tseqnum[indsave]) + '-' + str(tseqnum[ind-1])
+
+    # Loop over the de-duplicated list, reading one file from each sequence and calculating
+    # simple quicklook-style summary statistics
+    for seq in seqnumd:
+        if '-' in seq:
+            seqx = seq.split('-')[1]
+        else:
+            seqx = seq
+
+        hdu = fits.open(files[int(seqx)-1])  # open the last file in the list
+        im = hdu[11].data
+        # below from Stuart Marshall
+        res = re.match(r"\[?([0-9]*):([0-9]+),([0-9]+):([0-9]+)\]?",
+                                       hdu[11].header['datasec'])
+        datasec = res.groups()
+        x1 = int(datasec[0]) - 1
+        x2 = int(datasec[1])
+        y1 = int(datasec[2]) - 1
+        y2 = int(datasec[3])
+        signal_im = im[y1:y2, x1:x2]
+
+        x1 = int(datasec[1]) + 1
+        x2 = hdu[11].header['naxis1']
+        y1 = int(datasec[2]) - 1
+        y2 = int(datasec[3])
+        bias_im = im[y1:y2, x1:x2]
+
+        med = np.median(signal_im)
+        bias_med = np.median(bias_im)
+        sig = med - bias_med
+        mediand.append(str(int(med)))
+        biasd.append(str(int(bias_med)))
+        signald.append(str(int(sig)))
+        (nrows, ncols) = np.shape(bias_im)
+        noised.append(str('%5.1f' % np.std(bias_im[int(nrows/2-nrows/20):int(nrows/2+nrows/20), 3:ncols-2])))
+        if exptime1 != 0:
+            adusd.append(str('%7.1f' % (sig/exptime1)))
+        else:
+            adusd.append('NA')
 
     outlines = []
 
