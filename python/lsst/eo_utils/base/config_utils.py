@@ -1,8 +1,5 @@
-#!/usr/bin/env python
-
-# -*- python -*-
-
-"""This module contains functions to help manage configuration """
+"""This module contains functions to help manage configuration for the 
+offline analysis of LSST Electrical-Optical testing"""
 
 import sys
 import os
@@ -11,11 +8,15 @@ from collections import OrderedDict
 
 import lsst.pex.config as pexConfig
 
+
+# Some default values
 DEFAULT_DB = 'Dev'
 DEFAULT_OUTDIR = 'analysis'
 DEFAULT_STAT_TYPE = 'median'
 DEFAULT_BITPIX = -32
 
+
+# Some standard set of argument names
 STANDARD_SLOT_ARGS = ['run', 'slots', 'butler_repo', 'outdir',
                       'plot', 'skip', 'nfiles']
 STANDARD_RAFT_ARGS = ['run', 'butler_repo', 'outdir',
@@ -23,7 +24,7 @@ STANDARD_RAFT_ARGS = ['run', 'butler_repo', 'outdir',
 
 
 class EOUtilConfig(pexConfig.Config):
-    """Configuration for EOUtils tasks"""
+    """A simple class to manage configuration parameters for EO analysis tasks"""
     input = pexConfig.Field("Input file", str, default=None)
     output = pexConfig.Field("Output file", str, default=None)
     logdir = pexConfig.Field("Log file directory", str, default="logs")
@@ -59,8 +60,11 @@ class EOUtilConfig(pexConfig.Config):
             o_dict[key] = (val.dtype, val.default, val.__doc__)
         return o_dict
 
+
+# Turn the object about into an ordered dictionary    
 DEFAULT_CONFIG = EOUtilConfig()
 DEFAULTS = DEFAULT_CONFIG.to_odict()
+
 
 def add_arguments(parser, arg_dict):
     """Adds a set of arguments to the argument parser
@@ -114,7 +118,7 @@ def make_argstring(arg_dict):
 
 
 def copy_items(arg_dict, argnames):
-    """Adds a set of arguments to the argument parser
+    """Copy a set of parameters tuples to an smaller dictionary
 
     @param arg_dict (dict)  The dictionary mapping argument name to (type, default, helpstring) tuple
     @param argnames (list)  List of keys to copy to the output dictionary
@@ -134,10 +138,10 @@ def get_config_defaults(argnames, arg_dict=None, **kwargs):
 
     @param argnames (list)  List of keys to copy to the output dictionary
     @param arg_dict (dict)  The dictionary mapping argument name to (type, default, helpstring) tuple
-    @param kwargs
+    @param kwargs:
         All other keyword arguments will be treated as used to update the defaults
 
-    @returns (argparse.ArgumentParser) Argument parser loaded with the requested arguments
+    @returns (dict) mapping parameter name to (type, default, helpstring) tuple
     """
     if arg_dict is None:
         arg_dict = DEFAULTS
@@ -152,10 +156,10 @@ def get_config_values(argnames, arg_dict=None, **kwargs):
 
     @param argnames (list)  List of keys to copy to the output dictionary
     @param arg_dict (dict)  The dictionary mapping argument name to (type, default, helpstring) tuple
-    @param kwargs
-        All other keyword arguments will be treated as used to update the defaults
+    @param kwargs:
+        All other keyword arguments will be treated as used to update the values
 
-    @returns (argparse.ArgumentParser) Argument parser loaded with the requested arguments
+    @returns (dict) mapping parameter name to value
     """
     defaults = get_config_defaults(argnames, arg_dict)
     outdict = {}
@@ -164,14 +168,15 @@ def get_config_values(argnames, arg_dict=None, **kwargs):
     outdict.update(**kwargs)
     return outdict
 
+
 def setup_parser(argnames, arg_dict=None, **kwargs):
     """Creates an ArgumentParser and adds selected arguments
 
     @param argnames (list)  List of keys to copy to the output dictionary
     @param arg_dict (dict)  The dictionary mapping argument name to (type, default, helpstring) tuple
-    @param kwargs
-        usage (str)       The usage string for the ArgumentParser
-        description (str) The description for the ArgumentParser
+    @param kwargs:
+        usage (str)             The usage string for the ArgumentParser
+        description (str)       The description for the ArgumentParser
         All other keyword arguments will be treated as addtional
         parameters and passed to the ArgumentParser
 

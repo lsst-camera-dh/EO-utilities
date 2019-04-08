@@ -1,4 +1,4 @@
-"""Functions to iterate over sensor and rafts"""
+"""Tools to iterate analyzes functions over sensor and rafts"""
 
 import sys
 import os
@@ -12,6 +12,7 @@ from .butler_utils import getButler, get_hardware_info
 
 from .batch_utils import dispatch_job
 
+# These should be taken from somewhere, not hardcoded here
 ALL_SLOTS = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
 ALL_RAFTS = ['R11', 'R12']
 
@@ -67,7 +68,10 @@ class EO_AnalyzeRaftTask(pipeBase.Task):
 
 class AnalysisIterator:
     """Small class to iterate an analysis, and provied an interface to the batch system"""
+
+    # These are arguement that control batch job submission
     batch_argnames = ['logdir', 'logsuffix', 'bsub_args', 'batch', 'dry_run']
+
     def __init__(self, task, data_func, argnames):
         """C'tor
 
@@ -92,8 +96,8 @@ class AnalysisIterator:
     def get_hardware(butler, run_num):
         """return the hardware type and hardware id for a given run
 
-        @param: bulter (Bulter)  The data Butler
-        @param run_num(str)   The number number we are reading
+        @param: bulter (`Bulter`)  The data Butler
+        @param run_num(str)        The number number we are reading
 
         @returns (tuple)
             htype (str) The hardware type, either
@@ -111,23 +115,34 @@ class AnalysisIterator:
     def get_butler(butler_repo, **kwargs):
         """Return a data Butler
 
-        @param: bulter_epo (str)  Key specifying the data repo
-        @param kwargs (dict)      Passed to the ctor
+        @param: bulter_repo (str)  Key specifying the data repo
+        @param kwargs (dict)       Passed to the ctor
+        
+        @returns (`Butler`)        The requested data Butler
         """
         return getButler(butler_repo, **kwargs)
 
     def get_data(self, butler, run_num, **kwargs):
         """Call the function to get the data
 
-        @param: bulter (Bulter)  The data Butler
-        @param run_num (str)     The run identifier
-        @param kwargs (dict)     Passed to the data function
+        @param: bulter (`Butler`)    The data Butler
+        @param run_num (str)         The run identifier
+        @param kwargs (dict)         Passed to the data function
         """
         return self.data_func(butler, run_num, **kwargs)
 
 
     def run(self, **kwargs):
-        """Run the analysis, this task the arguments from the command line using the argparse interface"""
+        """Run the analysis over all of the requested objects.
+        
+        By default this takes the arguments from the command line 
+        and overrides those with any kwargs that have been provided.
+
+        If interactive==True then it will not use the command line
+        arguments.
+
+        If batch is not None then it will send the jobs the the batch.
+        """
         interactive = kwargs.get('interactive', False)
 
         if interactive:
@@ -186,10 +201,10 @@ class AnalysisIterator:
 def iterate_over_slots(task, butler, data_files, **kwargs):
     """Run a task over a series of slots
 
-    @param task (Task)        The pipeline task
-    @param butler (Butler)    The data butler
-    @param data_files (dict)  Dictionary with all the files need for analysis
-    @param kwargs             Passed along to the analysis function
+    @param task (`Task`)          The pipeline task
+    @param butler (`Butler`)      The data butler
+    @param data_files (dict)      Dictionary with all the files need for analysis
+    @param kwargs                 Passed along to the analysis function
     """
 
     slot_list = kwargs.get('slots', None)
@@ -204,10 +219,10 @@ def iterate_over_slots(task, butler, data_files, **kwargs):
 def iterate_over_rafts(task, butler, data_files, **kwargs):
     """Run a task over a series of rafts
 
-    @param task (Task)        The pipeline task
-    @param butler (Butler)    The data butler
-    @param data_files (dict)  Dictionary with all the files need for analysis
-    @param kwargs             Passed along to the analysis function
+    @param task (`Task`)        The pipeline task
+    @param butler (`Butler`)    The data butler
+    @param data_files (dict)    Dictionary with all the files need for analysis
+    @param kwargs               Passed along to the analysis function
     """
     raft_list = kwargs.get('rafts', None)
     if raft_list is None:
@@ -234,9 +249,7 @@ class AnalysisBySlot(AnalysisIterator):
         """Call the analysis function for one run
 
         @param run_num (str)  The run identifier
-        @param kwargs
-            db (str)    The database to look for the data
-            All the remaining keyword arguments are passed to the analysis function
+        @param kwargs         Passed to the analysis function
         """
         butler = kwargs.pop('butler', None)
         htype, hid = self.get_hardware(butler, run_num)
@@ -253,7 +266,7 @@ class AnalysisBySlot(AnalysisIterator):
 
 
 class AnalysisByRaft(AnalysisIterator):
-    """Small class to iterate an analysis task over all the raft and then all the slots in a raft"""
+    """Small class to iterate an analysis task over all the rafts"""
     def __init__(self, analysis_func, data_func, argnames):
         """C'tor
 
@@ -268,9 +281,7 @@ class AnalysisByRaft(AnalysisIterator):
         """Call the analysis function for one run
 
         @param run_num (str)  The run identifier
-        @param kwargs
-            db (str)    The database to look for the data
-            All the remaining keyword arguments are passed to the analysis function
+        @param kwargs         Passed to the analysis functions
         """
         butler = kwargs.pop('butler', None)
         htype, hid = self.get_hardware(butler, run_num)

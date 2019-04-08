@@ -1,18 +1,19 @@
-#!/usr/bin/env python
-
-# -*- python -*-
-
 """This module contains functions to find files of a particular type using the data Butler"""
 
 from lsst.daf.persistence import Butler
 
 
+# This is the location of the Teststand 8 runs at SLAC
 BUTLER_TS8_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/ts8'
+# This is the location of the BOT runs at SLAC
 BUTLER_BOT_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/bot'
 
+# Map the Butler repos to simple names
 BUTLER_REPO_DICT = dict(TS8=BUTLER_TS8_REPO,
                         BOT=BUTLER_BOT_REPO)
 
+
+# FIXME, we should get this from a single place
 SLOT_LIST = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
 
 
@@ -33,10 +34,10 @@ def getButler(repo, **kwargs):
 
 
 def get_hardware_info(butler, run_num):
-    """return the hardware type and hardware id for a given run
+    """Return the hardware type and hardware id for a given run
 
     @param: butler (Bulter)  The data Butler
-    @param run_num(str)   The number number we are reading
+    @param run_num(str)      The number number we are reading
 
     @returns (tuple)
       htype (str) The hardware type, either
@@ -60,7 +61,7 @@ def getVisitList(butler, run_id, **kwargs):
     @param: bulter (Bulter)  The data Butler
     @param: run_id (str)     The run ID
     @param: kwargs (dict):
-        imageType (str)         The type of image
+        imageType (str)         The type of image, e.g., BIAS or DARK or FLAT
         testType (str or list)  The type of tests to collect visits from
 
     @returns (list) a list of the visit IDs
@@ -85,15 +86,15 @@ def getVisitList(butler, run_id, **kwargs):
 
 
 def getDataRefList(butler, run_id, **kwargs):
-    """Construct and return a list of visit IDs.
+    """Construct and return a list of dataIds.
 
     @param: bulter (Bulter)  The data Butler
     @param: run_id (str)     The run ID
     @param: kwargs (dict):
-        imageType (str)         The type of image
+        imageType (str)         The type of image, e.g., BIAS or DARK or FLAT
         testType (str or list)  The type of tests to collect visits from
-        detectorName (str)      The name of the slot
-        nfiles (int)      Number of files per test to use
+        detectorName (str)      The name of the slot, e.g., S00, S11, ...
+        nfiles (int)            Number of files per test to use, default is to use all
 
     @returns (list) a list of the visit IDs
     """
@@ -129,11 +130,13 @@ def getDataRefList(butler, run_id, **kwargs):
 
 
 def make_file_dict(butler, runlist, varlist=None):
-    """Get a set of bias and mask files out of a folder
+    """Get a set of dataIds of the Butler and sort them into a dictionary
 
     @param butler (Butler)    The bulter we are using
-    @param runlist (list)     List of complete data IDs
-    @param varlist (list)     List of variables
+    @param runlist (list)     List of complete dataIDs
+    @param varlist (list)     List of variables values to use as keys for the output dictionary
+
+    @returns (dict)           A dictionary of dataIDs, 
     """
     if varlist is None:
         varlist = ['testtype', 'visit']
@@ -158,19 +161,19 @@ def make_file_dict(butler, runlist, varlist=None):
 
 
 def get_files_butler(butler, run_id, **kwargs):
-    """Get a set of bias and mask files out of a folder
+    """Get a set of files out of a folder
 
-    @param butler (Butler)    The bulter we are using
+    @param butler (Butler)   The bulter we are using
     @param run_id (str)      The number number we are reading
     @param kwargs
-       rafts (str)       The rafts we want data for
-       testTypes (list)  The types of acquistions we want to include
-       imageType (str)   The image type we want
-       nfiles (int)      Number of files per test to use
-       outkey (str)      Where to put the output file
-       nfiles (int)      Number of files to include per test
+       rafts (str)              The rafts we want data for
+       testTypes (list)         The types of acquistions we want to include
+       imageType (str)          The image type we want
+       nfiles (int)             Number of files per test to use
+       outkey (str)             Where to put the output file
+       nfiles (int)             Number of files to include per test
 
-    @returns (dict) Dictionary mapping slot to file names
+    @returns (dict)          Dictionary mapping the dataIds from raft, slot, and file type
     """
     testTypes = kwargs.get('testTypes')
     imageType = kwargs.get('imageType')

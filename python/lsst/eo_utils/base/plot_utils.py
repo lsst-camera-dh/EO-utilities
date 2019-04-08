@@ -1,4 +1,4 @@
-"""Functions to help make plots"""
+"""Functions to help make plots and collect figures"""
 
 import numpy as np
 
@@ -25,7 +25,12 @@ TESTCOLORMAP = dict(DARK="black",
 
 
 class FigureDict:
-    """Object to store figures"""
+    """Object to make and collect figures.
+
+    This is implemented as a dictionary of dictionaries,
+    
+    Each value is a dictionary with `matplotlib` objects for each figure
+    """
     def __init__(self):
         """C'tor"""
         self._fig_dict = {}
@@ -33,11 +38,28 @@ class FigureDict:
     def get_figure(self, key):
         """Return a figure
 
-        @param key (str)   Key for the figure.
-        @returns (matplotlib.figure.Figure) requested Figure
+        @param key (str)                       Key for the figure.
+        @returns (`matplotlib.figure.Figure`)  requested Figure
         """
         return self._fig_dict[key]['fig']
 
+    def keys(self):
+        """Return the figure keys"""
+        return self._fig_dict.keys()
+
+    def items(self):
+        """Return the figure keys and values"""
+        return self._fig_dict.items()
+    
+    def __getitem__(self, key):
+        """Return a particular sub-dictionary
+
+        @param key (str)   Key for the sub-dictionary.
+        @returns (dict)    Requested sub-dictionary
+        """
+        return self._fig_dict[key]
+
+    
     def get_obj(self, key, key2):
         """Return some other object besides a figures
 
@@ -52,7 +74,7 @@ class FigureDict:
         """Set up a figure with requested labeling
 
         @param key (str)   Key for the figure.
-        @param kwargs (dict)
+        @param kwargs:
             title (str)    Figure title
             xlabel (str)   X-axis label
             ylabel (str)   Y-axis label
@@ -249,7 +271,7 @@ class FigureDict:
         self._fig_dict[key]['axs'].flat[iamp].plot(xdata, ydata, **kwargs)
 
     def plot_single(self, key, xdata, ydata):
-        """Plot x versus y data
+        """Plot x versus y data in a single figure
 
         @param key (str)               Key for the figure.
         @param xdata (numpy.ndarray)   Data to histogram
@@ -258,7 +280,7 @@ class FigureDict:
         self._fig_dict[key]['ax'].plot(xdata, ydata)
 
     def plot_xy_axs_from_tabledict(self, fd, key, idx, plotkey, **kwargs):
-        """Plot x versus y data
+        """Plot x versus y data for each sub-figure using data in a table
 
         @param fd (TableDict)          Data
         @param key (str)               Key for the data
@@ -284,7 +306,7 @@ class FigureDict:
 
 
     def plot_xy_from_tabledict(self, fd, key, plotkey, **kwargs):
-        """Plot x versus y data
+        """Plot x versus y data for each column in a table on a single plot
 
         @param fd (TableDict)          Data
         @param key (str)               Key for the data
@@ -305,7 +327,7 @@ class FigureDict:
 
 
     def plot_xy_amps_from_tabledict(self, fd, key, plotkey, **kwargs):
-        """Plot x versus y data
+        """Plot x versus y data for each column in a table for each sub-plot
 
         @param fd (TableDict)          Data
         @param key (str)               Key for the data
@@ -334,7 +356,7 @@ class FigureDict:
 
 
     def plot_raft_correl_matrix(self, key, data, **kwargs):
-        """Plot x versus y data
+        """Plot a correlation matrix
 
         @param key (str)               Key for the figure.
         @param data (numpy.ndarray)    Data to histogram

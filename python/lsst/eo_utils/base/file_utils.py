@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-
-# -*- python -*-
-
-"""This module contains functions to find files of a particular type in the SLAC directory tree"""
+"""This module contains functions to: 
+ 1) find files of a particular type in the SLAC directory tree using the data catalog, 
+ 2) define output filenames in a standard way 
+"""
 
 import os
 
@@ -14,10 +13,11 @@ MASK_TYPES_DEFAULT = ['fe55_raft_analysis',
                       'traps_raft',
                       'bright_defects_raft']
 
-#MASK_TYPES_DEFAULT = []
-
+    
+# These strings define the standard output filenames
 SLOT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}-{slot}{suffix}'
 RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}{suffix}'
+
 
 def makedir_safe(filepath):
     """Make a directory needed to write a file
@@ -31,7 +31,7 @@ def makedir_safe(filepath):
 
 
 def get_hardware_type_and_id(run_num):
-    """return the hardware type and hardware id for a given run
+    """Return the hardware type and hardware id for a given run
 
     @param run_num(str)   The number number we are reading
 
@@ -54,18 +54,11 @@ def get_hardware_type_and_id(run_num):
 
 
 def get_slot_file_basename(**kwargs):
-    """Return the filename for a mask file
+    """Return the filename for an output file from a slot-level analysis
 
     The format is {outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}-{slot}{suffix}
 
-    @param kwargs:
-        outdir (str)
-        fileType (str)
-        raft (str)
-        testType (str)
-        run_num (str)
-        slot (str)
-        suffix (str)
+    @param kwargs       Passed to the SLOT_FORMAT_STRING.format statement
 
     @returns (str) The path for the file.
     """
@@ -73,28 +66,28 @@ def get_slot_file_basename(**kwargs):
 
 
 def get_raft_file_basename(**kwargs):
-    """Return the filename for a mask file
+    """Return the filename for an output file from a raft-level analysis
 
     The format is {outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}{suffix}
 
-    @param kwargs:
-        outdir (str)
-        fileType (str)
-        raft (str)
-        testType (str)
-        run_num (str)
-        suffix (str)
+    @param kwargs       Passed to the RAFT_FORMAT_STRING.format statement
 
     @returns (str) The path for the file.
     """
     return str(RAFT_FORMAT_STRING.format(**kwargs))
 
 
-
 def mask_filename(outdir, raft, run_num, slot, **kwargs):
     """Return the filename for a mask file
 
-    The format is {outdir}/masks/{raft}/{raft}-{run_num}-{slot}_mask.fits
+    The following parameters are passed to the SLOT_FORMAT_STRING.format statement
+
+    @param outdir (str)
+    @param raft (str)
+    @param run_num (str)
+    @param slot (str)
+    @param kwargs:
+        suffix (str)
 
     @returns (str) The path for the file.
     """
@@ -103,16 +96,17 @@ def mask_filename(outdir, raft, run_num, slot, **kwargs):
                                   slot=slot, suffix=kwargs.get('suffix', '_mask.fits'))
 
 
+
 def get_files_for_run(run_id, **kwargs):
-    """Get a set of bias and mask files out of a folder
+    """Get a set of data files of a particular type for a particular run
 
     @param run_id (str)      The number number we are reading
-    @param kwargs
-       testTypes (list)  The types of acquistions we want to include
-       imageType (str)   The image type we want
-       outkey (str)      Where to put the output file
-       matchstr (str)    If set, only inlcude files with this string
-       nfiles (int)      Number of files to include per test
+    @param kwargs:
+       testTypes (list)          The types of acquistions we want to include
+       imageType (str)           The image type we want
+       outkey (str)              Where to put the output file
+       matchstr (str)            If set, only inlcude files with this string
+       nfiles (int)              Number of files to include per test
 
     @returns (dict) Dictionary mapping slot to file names
     """
@@ -165,11 +159,11 @@ def get_files_for_run(run_id, **kwargs):
 
 
 def get_mask_files_run(run_id, **kwargs):
-    """Get a set of mask files out of a folder
+    """Get a set of mask for a particular run
 
     @param run_id (str)      The number number we are reading
-    @param kwargs
-       mask_types (list)  The types of acquistions we want to include
+    @param kwargs:
+       mask_types (list)         The types of acquistions we want to include
 
     @returns (dict) Dictionary mapping slot to file names
     """
@@ -184,12 +178,12 @@ def get_mask_files_run(run_id, **kwargs):
 
 
 def get_mask_files(**kwargs):
-    """Get a set of mask files based on the kwargs
+    """Get the name of the merged mask file
 
     @param kwargs
        mask (bool)  Flag to actually get the mask files
 
-    @return (list) List of files
+    @return (list) List of files containing only the one mask file name
     """
     if kwargs.get('mask', False):
         mask_files = [mask_filename(**kwargs)]
