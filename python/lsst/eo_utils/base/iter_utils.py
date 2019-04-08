@@ -146,7 +146,7 @@ class AnalysisIterator:
         logsuffix = arg_dict.pop('logsuffix')
         butler_repo = arg_dict.get('butler_repo', None)
 
-        if butler_repo is None:
+        if butler_repo is None or kwargs.get('skip', False):
             butler = None
             hinfo = get_hardware_type_and_id(run_num)
         else:

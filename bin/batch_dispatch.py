@@ -26,6 +26,8 @@ def main():
                         help="Arguments to pass to job")
     parser.add_argument("--dry_run", default=False, action='store_true',
                         help="Print command, do not run job")
+    parser.add_argument("--use_batch", default=False, action='store_true',
+                        help="Print command, do not run job")
 
     args = parser.parse_args()
 

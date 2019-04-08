@@ -2,10 +2,13 @@
 
 import os
 
+import numpy as np
+
 import h5py
 
 from astropy.io import fits
-from astropy.table import Table
+from astropy.table import Table, Column
+from astropy.table import vstack as vstack_table
 
 HDF5_SUFFIXS = ['.hdf', '.h5', '.hd5', '.hdf5']
 FITS_SUFFIXS = ['.fit', '.fits']
@@ -21,6 +24,10 @@ class TableDict:
     def keys(self):
         """Return the set of keys"""
         return self._table_dict.keys()
+
+    def items(self):
+        """Return the set of keys"""
+        return self._table_dict.items()
 
     def __getitem__(self, key):
         """Return a particular Table"""
@@ -45,6 +52,15 @@ class TableDict:
         df = Table(data)
         self._table_dict[key] = df
         return df
+
+    def add_datatable(self, key, df):
+        """Add a Table
+
+        @param key (str)        Key for this Table
+        @param df (dict)        Table we are adding
+        """
+        self._table_dict[key] = df
+
 
     def make_datatables(self, data):
         """Make a set of Table
@@ -100,3 +116,34 @@ class TableDict:
                     self._table_dict[hdu.name.lower()] = Table.read(filepath, hdu=hdu.name)
         else:
             raise ValueError("Can only write pickle and hdf5 files for now, not %s" % extype)
+
+
+
+def vstack_tables(filedict, **kwargs):
+    """Stack a bunch of tables
+
+    @param filedict (dict)    Dictionary pointing to the files with the tables
+    @param kwargs
+        tablename (str)
+        keep_cols (str)
+
+    @returns (Table)
+    """
+
+    kwcopy = kwargs.copy()
+    tablename = kwcopy.pop('tablename')
+    keep_cols = kwcopy.pop('keep_cols', None)
+
+    tables = []
+
+    for irun, (key, val) in enumerate(sorted(filedict.items())):
+        dtables = TableDict(val, [tablename])
+        table = dtables[tablename]
+        if keep_cols is not None:
+            table.keep_columns(keep_cols)
+        table.add_column(Column(name='run', data=irun*np.ones((len(table)), int)))
+        tables.append(table)
+
+    runtable = Table(data=dict(runs=sorted(filedict.keys())))
+    outtable = vstack_table(tables)
+    return outtable

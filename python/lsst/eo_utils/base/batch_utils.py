@@ -28,19 +28,21 @@ def dispatch_job(jobname, run_num, logfile, **kwargs):
     optstring = kwargs.get('optstring', None)
     dry_run = kwargs.get('dry_run', False)
 
-    bsub_com = "bsub -o %s" % logfile
-    if bsub_args is not None:
-        bsub_com += " %s" % bsub_args
+    if kwargs.get('use_batch', False):
+        sub_com = "bsub -o %s" % logfile
+        if bsub_args is not None:
+            sub_com += " %s " % bsub_args
+    else:
+        sub_com = ""
 
-    bsub_com += " %s --run %s" % (jobname, run_num)
-
+    sub_com += " %s --run %s" % (jobname, run_num)
     if optstring is not None:
-        bsub_com += " %s" % optstring
+        sub_com += " %s" % optstring
 
     if dry_run:
-        sys.stdout.write("%s\n" % bsub_com)
+        sys.stdout.write("%s\n" % sub_com)
     else:
-        os.system(bsub_com)
+        os.system(sub_com)
 
 
 

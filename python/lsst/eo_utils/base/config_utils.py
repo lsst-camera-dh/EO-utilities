@@ -36,7 +36,7 @@ class EOUtilConfig(pexConfig.Config):
     rafts = pexConfig.ListField("Raft Slot(s)", str, default=None)
     bias = pexConfig.Field("Method to use for unbiasing", str, default=None)
     superbias = pexConfig.Field("Version of superbias frame to use", str, default=None)
-    stat = pexConfig.Field("Statistic to use to stack images", str, default="Median")
+    stat = pexConfig.Field("Statistic to use to stack images", str, default=None)
     butler_repo = pexConfig.Field("Butler repository", str, default=None)
     nfiles = pexConfig.Field("Number of files to use", int, default=None)
     outdir = pexConfig.Field("Output file path root", str, default=DEFAULT_OUTDIR)

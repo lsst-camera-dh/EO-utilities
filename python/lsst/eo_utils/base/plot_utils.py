@@ -248,6 +248,28 @@ class FigureDict:
         """
         self._fig_dict[key]['axs'].flat[iamp].plot(xdata, ydata, **kwargs)
 
+
+    def plot_stats_band_amp(self, key, iamp, xvals, **kwargs):
+        """Plot the data each amp in a set of runs in a single chart
+
+        @param key (str)          Key for the figure.
+        @param iamp (int)         Amp index
+        @param kwargs:
+            mean (array)
+            median (array)
+            std (array)
+            min (array)
+            max (array)
+        """
+        means = kwargs.pop('means')
+        stds = kwargs.pop('stds')
+
+        ax = self._fig_dict[key]['axs'].flat[iamp]
+        ax.fill_between(xvals, kwargs.pop('mins'), kwargs.pop('maxs'), color='green')
+        ax.fill_between(xvals, means-stds, means+stds, color='yellow')
+        ax.plot(xvals, kwargs.pop('medians'), '.')
+
+
     def plot_single(self, key, xdata, ydata):
         """Plot x versus y data
 
@@ -325,11 +347,18 @@ class FigureDict:
                 continue
             amp = int(col.split('_')[-1][1:])
             valarray = df[col]
-            for row, test_type in zip(valarray.T, file_data['testtype']):
+            if len(valarray.shape) == 1:
+                rows = [valarray]
+                ttypes = [file_data['testtype'][0]]
+            else:
+                rows = valarray.T
+                ttypes = file_data['testtype']
+            for row, test_type in zip(rows, ttypes):
                 try:
                     color = TESTCOLORMAP[test_type]
                 except KeyError:
                     color = "gray"
+
                 self.plot(plotkey, amp, xcol, row, color=color)
 
 
@@ -540,6 +569,52 @@ class FigureDict:
 
         plt.tight_layout()
 
+        self._fig_dict[key] = o_dict
+        return o_dict
+
+
+    def plot_run_chart(self, key, runs, yvals, **kwargs):
+        """Plot the data each amp in a set of runs in a single chart
+
+        @param key (str)          Key for the figure.
+        @param runs (array)       Aray of the run info
+        @param yvals (list)       Values being plotted
+        @param kwargs
+            title (str)           Figure title
+            clabel (str)          Label for the colorbar
+            figsize (tuple)       Figure width, height in inches
+            ylabel (str)          y-axis label
+            vmin (float)          minimum value for color axis
+            vmax (float)          maximum value for color axis
+            bias (str)            method used to subtract bias 'none', 'mean', 'row', 'func' or 'spline'.
+        """
+        kwcopy = kwargs.copy()
+        yerrs = kwcopy.pop('yerrs', None)
+        title = kwcopy.pop('title', None)
+        fig = plt.figure(figsize=kwcopy.pop('figsize', (14, 8)))
+        ax = fig.add_subplot(111)
+
+        if title is not None:
+            ax.set_title(title)
+
+        ax.set_ylabel(kwcopy.pop('ylabel', "Value"))
+        n_runs = len(runs)
+        n_data = yvals.size
+        n_amps = int(n_data / n_runs)
+
+        xvals = np.linspace(0, n_data-1, n_data)
+
+        if yerrs is None:
+            ax.plot(xvals, yvals, 'b.', **kwcopy)
+        else:
+            ax.errorbar(xvals, yvals, yerr=yerrs, fmt='b.', **kwcopy)
+
+        locs = [n_amps//2 + i*n_amps for i in range(n_runs)]
+        ax.set_xticks(locs)
+        ax.set_xticklabels(runs, rotation=90)
+        fig.tight_layout()
+
+        o_dict = dict(fig=fig, ax=ax)
         self._fig_dict[key] = o_dict
         return o_dict
 

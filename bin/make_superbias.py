@@ -7,7 +7,7 @@ from lsst.eo_utils.bias.analysis import BiasAnalysisBySlot, make_superbias_slot
 
 def main():
     """Hook for setup.py"""
-    argnames = STANDARD_SLOT_ARGS + ['mask', 'bias', 'stat', 'stats_hist']
+    argnames = STANDARD_SLOT_ARGS + ['mask', 'bias', 'stat', 'stats_hist', 'vmin', 'vmax']
 
     functor = BiasAnalysisBySlot(make_superbias_slot, argnames)
 

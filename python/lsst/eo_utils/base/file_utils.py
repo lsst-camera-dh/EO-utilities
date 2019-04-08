@@ -17,7 +17,8 @@ MASK_TYPES_DEFAULT = ['fe55_raft_analysis',
 #MASK_TYPES_DEFAULT = []
 
 SLOT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}-{slot}{suffix}'
-RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}{suffix}'
+RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}-RFT{suffix}'
+SUMMARY_FORMAT_STRING = '{outdir}/{fileType}/summary/{testType}/{dataset}{suffix}'
 
 def makedir_safe(filepath):
     """Make a directory needed to write a file
@@ -54,18 +55,10 @@ def get_hardware_type_and_id(run_num):
 
 
 def get_slot_file_basename(**kwargs):
-    """Return the filename for a mask file
+    """Return the filename for a slot-level file
 
     The format is {outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}-{slot}{suffix}
-
-    @param kwargs:
-        outdir (str)
-        fileType (str)
-        raft (str)
-        testType (str)
-        run_num (str)
-        slot (str)
-        suffix (str)
+    @param kwargs:     These are passed to the string format statement
 
     @returns (str) The path for the file.
     """
@@ -73,28 +66,36 @@ def get_slot_file_basename(**kwargs):
 
 
 def get_raft_file_basename(**kwargs):
-    """Return the filename for a mask file
+    """Return the filename for a raft-level file
 
-    The format is {outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}{suffix}
-
-    @param kwargs:
-        outdir (str)
-        fileType (str)
-        raft (str)
-        testType (str)
-        run_num (str)
-        suffix (str)
+    The format is {outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}-RFT{suffix}
+    @param kwargs:     These are passed to the string format statement
 
     @returns (str) The path for the file.
     """
     return str(RAFT_FORMAT_STRING.format(**kwargs))
 
 
+def get_summary_file_basename(**kwargs):
+    """Return the filename for a raft-level file
+
+    The format is {outdir}/{fileType}/summary/{testType}/{dataset}{suffix}
+    @param kwargs:     These are passed to the string format statement
+
+    @returns (str) The path for the file.
+    """
+    return str(SUMMARY_FORMAT_STRING.format(**kwargs))
+
 
 def mask_filename(outdir, raft, run_num, slot, **kwargs):
     """Return the filename for a mask file
 
     The format is {outdir}/masks/{raft}/{raft}-{run_num}-{slot}_mask.fits
+    @param outdir (str)
+    @param raft (str)
+    @param run_num (str)
+    @param slot (str)
+    @param kwargs:       These are passed to the string format statement
 
     @returns (str) The path for the file.
     """
@@ -186,7 +187,7 @@ def get_mask_files_run(run_id, **kwargs):
 def get_mask_files(**kwargs):
     """Get a set of mask files based on the kwargs
 
-    @param kwargs
+    @param kwargs   These are passed to mask_filename execpt for:
        mask (bool)  Flag to actually get the mask files
 
     @return (list) List of files
