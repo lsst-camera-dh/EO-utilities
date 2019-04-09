@@ -522,7 +522,7 @@ class FigureDict:
         return o_dict
 
 
-    def histogram_array(self, key, butler ccd, **kwargs):
+    def histogram_array(self, key, butler, ccd, **kwargs):
         """Plot the data from all 16 amps on a sensor in a single figure
 
         @param key (str)          Key for the figure.
