@@ -1,7 +1,5 @@
 """Functions to analyse bias and superbias frames"""
 
-import sys
-
 import numpy as np
 
 import lsst.afw.math as afwMath
@@ -35,10 +33,8 @@ from .file_utils import get_bias_files_run,\
     raft_superbias_tablename, raft_superbias_plotname,\
     get_superbias_frame
 
-from .plot_utils import plot_superbias
-
 from .data_utils import stack_by_amps,\
-    get_superbias_stats, convert_stack_arrays_to_dict
+    convert_stack_arrays_to_dict
 
 from .butler_utils import get_bias_files_butler
 

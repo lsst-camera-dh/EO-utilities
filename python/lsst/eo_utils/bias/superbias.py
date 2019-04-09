@@ -8,13 +8,24 @@ import lsst.eotest.image_utils as imutil
 
 from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
 
+from lsst.eo_utils.base.config_utils import DEFAULT_OUTDIR,\
+    DEFAULT_STAT_TYPE, DEFAULT_BITPIX
+
 from lsst.eo_utils.base.data_utils import TableDict
+
+from lsst.eo_utils.base.plot_utils import FigureDict
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import get_dims_from_ccd,\
     get_ccd_from_id, get_raw_image, get_geom_regions, get_amp_list
 
+from .file_utils import get_bias_files_run,\
+    superbias_filename, superbias_stat_filename,\
+    slot_bias_tablename, slot_bias_plotname,\
+    raft_superbias_tablename, raft_superbias_plotname,\
+    get_superbias_frame
+    
 from .analysis import BiasAnalysisFunc, BiasAnalysisBySlot
 
 DEFAULT_BIAS_TYPE = 'spline'
