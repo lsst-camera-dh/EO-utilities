@@ -32,14 +32,15 @@ class bias_fft(BiasAnalysisFunc):
     analysisClass = BiasAnalysisBySlot
 
     def __init__(self):
+        """C'tor """
         BiasAnalysisFunc.__init__(self, "biasval", bias_fft.extract, bias_fft.plot)
 
     @staticmethod
     def extract(butler, slot_data, **kwargs):
         """Extract the bias as function of row
 
-        @param butler (Butler)   The data butler
-        @param slot_data (dict)  Dictionary pointing to the bias and mask files
+        @param butler (`Butler`)   The data butler
+        @param slot_data (dict)    Dictionary pointing to the bias and mask files
         @param kwargs
             slot (str)           Slot in question, i.e., 'S00'
             bias (str)           Method to use for unbiasing
@@ -92,8 +93,8 @@ class bias_fft(BiasAnalysisFunc):
     def plot(dtables, figs):
         """Plot the bias as function of row
 
-        @param dtables (TableDict)  The data
-        @param figs (FigureDict)    Object to store the figues
+        @param dtables (`TableDict`)  The data
+        @param figs (`FigureDict`)    Object to store the figues
         """
         for key, region in zip(REGION_KEYS, REGION_NAMES):
             datakey = 'biasfft-%s' % key
@@ -107,9 +108,9 @@ class bias_fft(BiasAnalysisFunc):
 
         """Get the fft of the overscan values and update the data dictionary
 
-        @param butler (Butler)   The data butler
-        @param ccd (MaskedCCD)   The ccd we are getting data from
-        @param data (dict)       The data we are updatign
+        @param butler (`Butler`)   The data butler
+        @param ccd (`MaskedCCD`)   The ccd we are getting data from
+        @param data (dict)         The data we are updatign
         @param kwargs:
             slot  (str)                 The slot number
             ifile (int)                 The file index

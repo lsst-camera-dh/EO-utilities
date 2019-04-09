@@ -17,6 +17,7 @@ from lsst.eo_utils.base.image_utils import get_dims_from_ccd,\
 
 from .analysis import BiasAnalysisFunc, BiasAnalysisBySlot
 
+# FIXME, this should come from somewhere else
 DEFAULT_BIAS_TYPE = 'spline'
 
 class bias_v_row(BiasAnalysisFunc):
@@ -30,10 +31,11 @@ class bias_v_row(BiasAnalysisFunc):
 
     @staticmethod
     def extract(butler, slot_data, **kwargs):
-
+        extract_bias_data_slot(butler, slot_data, **kwargs)
 
     @staticmethod
     def plot(dtables, figs):
+        plot_bias_data_slot(dtables, figs)
 
 
 

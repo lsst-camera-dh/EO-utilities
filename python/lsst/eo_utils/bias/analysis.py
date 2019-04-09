@@ -52,8 +52,8 @@ mpl_utils.set_plt_ioff()
 def get_bias_data(butler, run_num, **kwargs):
     """Get a set of bias and mask files out of a folder
 
-    @param: butler (Bulter)  The data Butler
-    @param run_num (str)      The number number we are reading
+    @param: butler (`Bulter`)  The data Butler
+    @param run_num (str)        The number number we are reading
     @param kwargs
        acq_types (list)  The types of acquistions we want to include
 
@@ -118,8 +118,8 @@ class BiasAnalysisFunc:
 
     def make_datatables(self, butler, slot_data, **kwargs):
         """Tie together the functions to make the data tables
-        @param butler (Butler)   The data butler
-        @param slot_data (dict)  Dictionary pointing to the bias and mask files
+        @param butler (`Butler`)   The data butler
+        @param slot_data (dict)    Dictionary pointing to the bias and mask files
         @param kwargs
 
         @return (TableDict)
@@ -137,9 +137,9 @@ class BiasAnalysisFunc:
 
     def make_plots(self, dtables):
         """Tie together the functions to make the data tables
-        @param dtables (TableDict)   The data tables
+        @param dtables (`TableDict`)   The data tables
 
-        @return (FigureDict)
+        @return (`FigureDict`) the figues we produced
         """
         figs = FigureDict()
         if self.plot_func is not None:
@@ -148,9 +148,9 @@ class BiasAnalysisFunc:
 
     def __call__(self, butler, slot_data, **kwargs):
         """Tie together the functions
-        @param butler (Butler)   The data butler
-        @param slot_data (dict)  Dictionary pointing to the bias and mask files
-        @param kwargs
+        @param butler (`Butler`)   The data butler
+        @param slot_data (dict)    Dictionary pointing to the bias and mask files
+        @param kwargs              Passed to the functions that do the actual work
         """
         dtables = self.make_datatables(butler, slot_data, **kwargs)
         if kwargs.get('plot', False):
@@ -165,9 +165,9 @@ class BiasAnalysisFunc:
     @classmethod
     def make(cls, butler, data, **kwargs):
         """Tie together the functions
-        @param butler (Butler)   The data butler
-        @param data (dict)  Dictionary pointing to the bias and mask files
-        @param kwargs
+        @param butler (`Butler`)   The data butler
+        @param data (dict)         Dictionary pointing to the bias and mask files
+        @param kwargs              Passed to the functions that do the actual work
         """
         obj = cls()
         obj(butler, data, **kwargs)
@@ -178,114 +178,3 @@ class BiasAnalysisFunc:
         functor = cls.analysisClass(cls.make, cls.argnames)
         functor.run()
 
-
-def extract_superbias_stats_raft(butler, raft_data, **kwargs):
-    """Extract the correlations between the serial overscan for each amp on a raft
-
-    @param butler (Butler)   The data butler
-    @param raft_data (dict)  Dictionary pointing to the bias and mask files
-    @param kwargs
-        raft (str)           Raft in question, i.e., 'RTM-004-Dev'
-        run_num (str)        Run number, i.e,. '6106D'
-        outdir (str)         Output directory
-    """
-    slots = ALL_SLOTS
-
-    kwcopy = kwargs.copy()
-    if butler is not None:
-        sys.stdout.write("Ignoring butler in extract_superbias_stats_raft")
-    if raft_data is not None:
-        sys.stdout.write("Ignoring raft_data in extract_superbias_stats_raft")
-
-    stats_data = {}
-    for islot, slot in enumerate(slots):
-        kwcopy['slot'] = slot
-        mask_files = get_mask_files(**kwcopy)
-        superbias = get_superbias_frame(mask_files=mask_files, **kwcopy)
-        get_superbias_stats(None, superbias, stats_data,
-                            islot=islot, slot=slot)
-
-    dtables = TableDict()
-    dtables.make_datatable('files', make_file_dict(None, slots))
-    dtables.make_datatable('slots', dict(slots=slots))
-    dtables.make_datatable('stats', stats_data)
-    return dtables
-
-
-def make_superbias_slot(butler, slot_data, **kwargs):
-    """Make superbias frame for one slot
-
-    @param butler (Butler)   The data butler
-    @param slot_data (dict)  Dictionary pointing to the bias and mask files
-    @param kwargs
-        raft (str)           Raft in question, i.e., 'RTM-004-Dev'
-        run_num (str)        Run number, i.e,. '6106D'
-        slot (str)           Slot in question, i.e., 'S00'
-        bias (str)           Method to use for unbiasing
-        stat (str)           Statistic to use to stack data
-        outdir (str)         Output directory
-        bitpix (int)         Output data format BITPIX field
-        skip (bool)          Flag to skip making superbias, only produce plots
-        plot (bool)          Plot superbias images
-        stats_hist (bool)    Plot superbias summary histograms
-    """
-    raft = kwargs['raft']
-    run_num = kwargs['run_num']
-    slot = kwargs['slot']
-    bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
-    outdir = kwargs.get('outdir', DEFAULT_OUTDIR)
-    stat_type = kwargs.get('stat', None)
-    if stat_type is None:
-        stat_type = DEFAULT_STAT_TYPE
-
-    bias_files = slot_data['BIAS']
-    mask_files = get_mask_files(**kwargs)
-
-    sys.stdout.write("Working on %s, %i files.\n" % (slot, len(bias_files)))
-
-    if stat_type.upper() in afwMath.__dict__:
-        statistic = afwMath.__dict__[stat_type.upper()]
-    else:
-        raise ValueError("Can not convert %s to a valid statistic to perform stacking" % stat_type)
-
-    if statistic == afwMath.MEDIAN:
-        output_file = superbias_filename(outdir, raft, run_num, slot, bias_type)
-        subtract_mean = True
-    else:
-        output_file = superbias_stat_filename(outdir, raft, run_num, slot,
-                                              stat_type=stat_type, bias_type=bias_type)
-        subtract_mean = False
-
-    makedir_safe(output_file)
-
-    if not kwargs.get('skip', False):
-        sbias = make_superbias(butler, bias_files,
-                               statistic=statistic,
-                               bias_type=bias_type)
-        imutil.writeFits(sbias, output_file, SBIAS_TEMPLATE, kwargs.get('bitpix', DEFAULT_BITPIX))
-        if butler is not None:
-            flip_data_in_place(output_file)
-
-    if subtract_mean:
-        plot_superbias(output_file, mask_files,
-                       subtract_mean=True,
-                       **kwargs)
-    else:
-        plot_superbias(output_file, mask_files, **kwargs)
-
-
-
-def make_superbias_stats_raft(butler, raft_data, **kwargs):
-    """Extract the correlations between the serial overscan for each amp on a raft
-
-    @param butler (Butler)   The data butler
-    @param raft_data (dict)  Dictionary pointing to the bias and mask files
-    @param kwargs
-        raft (str)           Raft in question, i.e., 'RTM-004-Dev'
-        run_num (str)        Run number, i.e,. '6106D'
-        outdir (str)         Output directory
-    """
-    ba = BiasAnalysisFunc('_stats', extract_superbias_stats_raft, plot_superbias_stats_raft,
-                          tablename_func=raft_superbias_tablename,
-                          plotname_func=raft_superbias_plotname)
-    ba(butler, raft_data, **kwargs)

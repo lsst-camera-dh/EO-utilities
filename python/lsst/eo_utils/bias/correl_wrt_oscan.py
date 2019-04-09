@@ -27,6 +27,7 @@ class correl_wrt_oscan(BiasAnalysisFunc):
     analysisClass = BiasAnalysisBySlot
 
     def __init__(self):
+        """C'tor"""
         BiasAnalysisFunc.__init__(self, "biasoscorr", self.extract, self.plot)
 
     @staticmethod
@@ -34,12 +35,12 @@ class correl_wrt_oscan(BiasAnalysisFunc):
         """Extract the correlations between the imaging section
         and the overscan regions in a series of bias frames
 
-        @param butler (Butler)   The data butler
-        @param slot_data (dict)  Dictionary pointing to the bias and mask files
-        @param kwargs
-        slot (str)           Slot in question, i.e., 'S00'
+        @param butler (`Butler`)   The data butler
+        @param slot_data (dict)    Dictionary pointing to the bias and mask files
+        @param kwargs:
+            slot (str)           Slot in question, i.e., 'S00'
 
-        @returns (TableDict) with the extracted data
+        @returns (`TableDict`) with the extracted data
         """
         slot = kwargs['slot']
 
@@ -93,8 +94,8 @@ class correl_wrt_oscan(BiasAnalysisFunc):
     def plot(dtables, figs):
         """Plot the bias structure
 
-        @param dtables (TableDict)  The data
-        @param figs (FigureDict)    Object to store the figues
+        @param dtables (`TableDict`)  The data
+        @param figs (`FigureDict`)    Object to store the figues
         """
         figs.setup_amp_plots_grid("oscorr-row", title="Correlation: imaging region and serial overscan",
                                   xlabel="Correlation",
@@ -115,9 +116,9 @@ class correl_wrt_oscan(BiasAnalysisFunc):
     def get_ccd_data(butler, ccd, ref_frames, **kwargs):
         """Get the bias values and update the data dictionary
 
-        @param butler (Butler)   The data butler
-        @param ccd (MaskedCCD)   The ccd we are getting data from
-        @param ref_frames (dict) Reference data
+        @param butler (`Butler`)   The data butler
+        @param ccd (`MaskedCCD`)   The ccd we are getting data from
+        @param ref_frames (dict)   Reference data
         @param kwargs:
           ifile (int)                 The file index
           s_correl (np.array)         Serial overscan correlations

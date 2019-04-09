@@ -2,18 +2,11 @@
 
 """This module is just a command line interface to make superbias files"""
 
-from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
-from lsst.eo_utils.bias.analysis import BiasAnalysisBySlot, make_superbias_slot
+from lsst.eo_utils.bias.superbias import superbias
 
 def main():
     """Hook for setup.py"""
-    argnames = STANDARD_SLOT_ARGS + ['mask', 'bias', 'stat', 'stats_hist', 'vmin', 'vmax']
-
-    functor = BiasAnalysisBySlot(make_superbias_slot, argnames)
-
-    functor.run(acq_types=["dark_raft_acq", "flat_pair_raft_acq", "fe55_raft_acq"])
-    #functor.run(acq_types=["DARK", "FLAT", "FE55"])
-
+    superbias.run()
 
 if __name__ == '__main__':
     main()

@@ -13,13 +13,13 @@ DEFAULT_BIAS_TYPE = 'spline'
 def stack_by_amps(stack_arrays, butler, ccd, **kwargs):
     """Stack arrays for all the amps to look for coherent noise
 
-    @param stack_arrays (dict) Dictionary of arrays with stacked data
-    @param butler (Butler)     The data butler
-    @param ccd (MaskedCCD)     The ccd we are getting data from
+    @param stack_arrays (dict)   Dictionary of arrays with stacked data
+    @param butler (`Butler`)     The data butler
+    @param ccd (`MaskedCCD`)     The ccd we are getting data from
     @param kwargs:
-      ifile (int)                 File index
-      bias_type (str)             Method to use to construct bias
-      superbias_frame (MaskedCCD) The superbias
+      ifile (int)                    File index
+      bias_type (str)                Method to use to construct bias
+      superbias_frame (`MaskedCCD`)  The superbias
     """
     bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
     ifile = kwargs['ifile']
@@ -77,31 +77,3 @@ def convert_stack_arrays_to_dict(stack_arrays, dim_array_dict, nfiles):
                     stackdata_dict[key][keystr] = np.ndarray((len(val), nfiles))
                 stackdata_dict[key][keystr][:, i] = val
     return stackdata_dict
-
-
-def get_superbias_stats(butler, superbias, stats_data, **kwargs):
-    """Get the serial overscan data
-
-    @param butler (Butler)         The data butler
-    @param superbias (MaskedCCD)   The ccd we are getting data from
-    @param stats_data (dict)       The dictionary we are filling
-    @param kwargs:
-      islot (int)              Index of the slot in question
-    """
-    amps = get_amp_list(butler, superbias)
-    islot = kwargs.get('islot')
-
-    if 'mean' not in stats_data:
-        stats_data['mean'] = np.ndarray((9, 16))
-        stats_data['median'] = np.ndarray((9, 16))
-        stats_data['std'] = np.ndarray((9, 16))
-        stats_data['min'] = np.ndarray((9, 16))
-        stats_data['max'] = np.ndarray((9, 16))
-
-    for i, amp in enumerate(amps):
-        im = get_raw_image(butler, superbias, amp)
-        stats_data['mean'][islot, i] = im.array.mean()
-        stats_data['median'][islot, i] = np.median(im.array)
-        stats_data['std'][islot, i] = im.array.std()
-        stats_data['min'][islot, i] = im.array.min()
-        stats_data['max'][islot, i] = im.array.max()

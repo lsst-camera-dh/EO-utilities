@@ -26,19 +26,20 @@ class bias_v_row(BiasAnalysisFunc):
     analysisClass = BiasAnalysisBySlot
 
     def __init__(self):
+        """C'tor"""
         BiasAnalysisFunc.__init__(self, "biasval", bias_v_row.extract, bias_v_row.plot)
 
     @staticmethod
     def extract(butler, slot_data, **kwargs):
         """Extract the bias as function of row
 
-        @param butler (Butler)   The data butler
-        @param slot_data (dict)  Dictionary pointing to the bias and mask files
+        @param butler (`Butler`)   The data butler
+        @param slot_data (dict)    Dictionary pointing to the bias and mask files
         @param kwargs
             slot (str)           Slot in question, i.e., 'S00'
             bias (str)           Method to use for unbiasing
 
-        @returns (TableDict) with the extracted data
+        @returns (`TableDict`) with the extracted data
         """
         slot = kwargs['slot']
         bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
@@ -80,8 +81,8 @@ class bias_v_row(BiasAnalysisFunc):
     def plot(dtables, figs):
         """Plot the bias as function of row
 
-        @param dtables (TableDict)  The data
-        @param figs (FigureDict)    Object to store the figues
+        @param dtables (`TableDict`)  The data
+        @param figs (`FigureDict`)    Object to store the figues
         """
         figs.setup_amp_plots_grid("biasval", title="Bias by row",
                                   xlabel="row", ylabel="Magnitude [ADU]")
@@ -93,9 +94,9 @@ class bias_v_row(BiasAnalysisFunc):
     def get_ccd_data(butler, ccd, data, **kwargs):
         """Get the bias values and update the data dictionary
 
-        @param butler (Butler)   The data butler
-        @param ccd (MaskedCCD)   The ccd we are getting data from
-        @param data (dict)       The data we are updating
+        @param butler (`Butler`)   The data butler
+        @param ccd (`MaskedCCD`)   The ccd we are getting data from
+        @param data (dict)         The data we are updating
         @param kwargs:
         slot  (str)       The slot number
         ifile (int)       The file index

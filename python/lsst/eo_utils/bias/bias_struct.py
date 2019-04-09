@@ -37,8 +37,8 @@ class bias_struct(BiasAnalysisFunc):
         """Plot the row-wise and col-wise struture
         in a series of bias frames
 
-        @param butler (Butler)   The data butler
-        @param slot_data (dict)  Dictionary pointing to the bias and mask files
+        @param butler (`Butler`)   The data butler
+        @param slot_data (dict)    Dictionary pointing to the bias and mask files
         @param kwargs
         slot (str)           Slot in question, i.e., 'S00'
         bias (str)           Method to use for unbiasing
@@ -88,8 +88,8 @@ class bias_struct(BiasAnalysisFunc):
     def plot(dtables, figs):
         """Plot the bias structure
 
-        @param dtables (TableDict)  The data
-        @param figs (FigureDict)    Object to store the figues
+        @param dtables (`TableDict`)  The data
+        @param figs (`FigureDict`)    Object to store the figues
         """
         for rkey, rlabel in zip(REGION_KEYS, REGION_LABELS):
             for dkey in ['row', 'col']:
@@ -103,16 +103,16 @@ class bias_struct(BiasAnalysisFunc):
     def get_ccd_data(butler, ccd, data, **kwargs):
         """Get the bias values and update the data dictionary
 
-        @param butler (Butler)   The data butler
-        @param ccd (MaskedCCD)   The ccd we are getting data from
-        @param data (dict)       The data we are updating
+        @param butler (`Butler`)   The data butler
+        @param ccd (`MaskedCCD`)   The ccd we are getting data from
+        @param data (dict)         The data we are updating
         @param kwargs:
-        slot  (str)                 The slot number
-        ifile (int)                 The file index
-        nfiles (int)                Total number of files
-        bias_type (str)             Method to use to construct bias
-        std (bool)                  Used standard deviasion instead of mean
-        superbias_frame (MaskedCCD) The superbias
+        slot  (str)                    The slot number
+        ifile (int)                    The file index
+        nfiles (int)                   Total number of files
+        bias_type (str)                Method to use to construct bias
+        std (bool)                     Used standard deviasion instead of mean
+        superbias_frame (`MaskedCCD`)  The superbias
         """
         slot = kwargs['slot']
         bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
@@ -153,6 +153,7 @@ class superbias_struct(BiasAnalysisFunc):
     analysisClass = BiasAnalysisBySlot
 
     def __init__(self):
+        """C'tor"""
         BiasAnalysisFunc.__init__(self, "sbiasst", self.extract, bias_struct.plot,
                                   tablename_func=slot_superbias_tablename,
                                   plotname_func=slot_superbias_plotname)
@@ -161,8 +162,8 @@ class superbias_struct(BiasAnalysisFunc):
     def extract(butler, slot_data, **kwargs):
         """Extract the row-wise and col-wise struture  in a superbias frame
 
-        @param butler (Butler)   The data butler
-        @param slot_data (dict)  Dictionary pointing to the bias and mask files
+        @param butler (`Butler`)   The data butler
+        @param slot_data (dict)    Dictionary pointing to the bias and mask files
         @param kwargs
             raft (str)           Raft in question, i.e., 'RTM-004-Dev'
             run_num (str)        Run number, i.e,. '6106D'

@@ -466,12 +466,13 @@ class FigureDict:
         self._fig_dict[key] = o_dict
         return o_dict
 
-    def plot_sensor(self, key, sensor_file, mask_files, **kwargs):
+    
+    def plot_sensor(self, key, bulter, ccd, **kwargs):
         """Plot the data from all 16 amps on a sensor in a single figure
 
         @param key (str)          Key for the figure.
-        @param sensor_file (str)  name of the file containing data to be plotted
-        @param mask_files (list)  names of files used to construct the mask
+        @param butler (`Butler`)  The data butler
+        @param ccd (`MaskedCCD`)  name of the file containing data to be plotted
         @param kwargs
             vmin (float)          minimum value for color axis
             vmax (float)          maximum value for color axis
@@ -485,19 +486,9 @@ class FigureDict:
         """
         vmin = kwargs.get('vmin', -10)
         vmax = kwargs.get('vmax', 10)
-        bias_method = kwargs.get('bias', None)
-        superbias = kwargs.get('superbias', None)
+        bias_type = kwargs.get('bias', None)
+        superbias_frame = kwargs.get('superbias_frame', None)
         subtract_mean = kwargs.get('subtract_mean', False)
-        butler = kwargs.get('butler', None)
-
-        all_amps = imutil.allAmps()
-
-        ccd = get_ccd_from_id(butler, sensor_file, mask_files)
-
-        if superbias is None:
-            superbias_frame = None
-        else:
-            superbias_frame = get_ccd_from_id(None, superbias, mask_files)
 
         fig, axs = plt.subplots(2, 8, figsize=(15, 10))
         axs = axs.ravel()
@@ -505,17 +496,20 @@ class FigureDict:
         if bias_method is not None:
             oscan = ccd.amp_geom.serial_overscan
 
+        amps = get_amp_list(butler, ccd)
         for amp in all_amps:
-            idx = amp - 1
-            if bias_method is not None:
-                im = imutil.unbias_and_trim(ccd[amp], oscan, bias_method=bias_method)
-            else:
-                im = ccd[amp]
-
             if superbias_frame is not None:
-                im -= superbias_frame[amp]
+                if butler is not None:
+                    superbias_im = get_raw_image(None, superbias_frame, amp+1)
+                else:
+                    superbias_im = get_raw_image(None, superbias_frame, amp)
+            else:
+                superbias_im = None
 
-            dd = im.getImage().getArray()
+            im = get_raw_image(butler, ccd, amp)
+            image = unbias_amp(im, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+
+            dd = image.array
             if subtract_mean:
                 dd -= dd.mean()
 
@@ -528,12 +522,12 @@ class FigureDict:
         return o_dict
 
 
-    def histogram_array(self, key, sensor_file, mask_files, **kwargs):
+    def histogram_array(self, key, butler ccd, **kwargs):
         """Plot the data from all 16 amps on a sensor in a single figure
 
         @param key (str)          Key for the figure.
-        @param sensor_file (str)  name of the file containing data to be plotted
-        @param mask_files (list)  names of files used to construct the mask
+        @param butler (`Butler`)  The data butler
+        @param ccd (`MaskedCCD`)  name of the file containing data to be plotted
         @param kwargs
             vmin (float)          minimum value for x-axis
             vmax (float)          maximum value for x-axis
@@ -551,38 +545,33 @@ class FigureDict:
         vmax = kwargs.get('vmax', 10.)
         nbins = kwargs.get('nbins', 200)
         bias_method = kwargs.get('bias', None)
-        superbias = kwargs.get('superbias', None)
+        superbias_frame = kwargs.get('superbias_frame', None)
         subtract_mean = kwargs.get('subtract_mean', False)
-        region = kwargs.get('region', None)
-        butler = kwargs.get('butler', None)
-
-        ccd = get_ccd_from_id(butler, sensor_file, mask_files)
-
-        if superbias is None:
-            superbias_frame = None
-        else:
-            superbias_frame = get_ccd_from_id(None, superbias, mask_files)
-
-        if region is None:
-            region = ccd.amp_geom.imaging
-
-        if bias_method is not None:
-            oscan = ccd.amp_geom.serial_overscan
+        region = kwargs.get('region', 'imaging')
 
         o_dict = self.setup_amp_plots_grid(key, **kwargs)
 
         axs = o_dict['axs']
-
-        for idx, amp in enumerate(ccd):
-            if bias_method is not None:
-                im = imutil.unbias_and_trim(ccd[amp], oscan, bias_method=bias_method)
-            else:
-                im = ccd[amp]
-
+        amps = get_amp_list(butler, ccd)
+        for i, amp in enumerate(amps):
+            
+            regions = get_geom_regions(butler, ccd, amp)
+            serial_oscan = regions['serial_overscan']
+            im = get_raw_image(butler, ccd, amp)
             if superbias_frame is not None:
-                im -= superbias_frame[amp]
+                if butler is not None:
+                    superbias_im = get_raw_image(None, superbias_frame, amp+1)
+                else:
+                    superbias_im = get_raw_image(None, superbias_frame, amp)
+            else:
+                superbias_im = None
+                
+            image = unbias_amp(im, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+            regions = get_geom_regions(butler, ccd, amp)
+            frames = get_image_frames_2d(image, regions)
 
-            dd = im.Factory(im, region).getImage().getArray()
+            dd = frames[region]
+
             if subtract_mean:
                 dd -= dd.mean()
 
