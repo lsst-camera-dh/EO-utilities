@@ -4,28 +4,30 @@ import sys
 
 import numpy as np
 
-import lsst.eotest.image_utils as imutil
+from lsst.eo_utils.base.file_utils import get_mask_files
 
-from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
+from lsst.eo_utils.base.config_utils import STANDARD_RAFT_ARGS
 
 from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
-from lsst.eo_utils.base.image_utils import get_dims_from_ccd,\
-    get_ccd_from_id, get_raw_image, get_geom_regions, get_amp_list
+from lsst.eo_utils.base.image_utils import get_raw_image, get_amp_list
 
-from .analysis import BiasAnalysisFunc, BiasAnalysisBySlot
+from .analysis import BiasAnalysisFunc, BiasAnalysisByRaft
 
-from .file_utils import raft_superbias_tablename, raft_superbias_plotname
+from .file_utils import raft_superbias_tablename, raft_superbias_plotname,\
+    get_superbias_frame
 
 DEFAULT_BIAS_TYPE = 'spline'
+
+ALL_SLOTS = 'S00 S01 S02 S10 S11 S12 S20 S21 S22'.split()
 
 class superbias_stats(BiasAnalysisFunc):
     """Class to analyze the overscan bias as a function of row number"""
 
     argnames = STANDARD_RAFT_ARGS + ['stat', 'mask']
-    analysisClass = BiasAnalysisByRAFT
+    analysisClass = BiasAnalysisByRaft
 
     def __init__(self):
         """C'tor"""

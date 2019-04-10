@@ -1,46 +1,22 @@
 """Functions to analyse bias and superbias frames"""
 
-import numpy as np
-
-import lsst.afw.math as afwMath
-import lsst.eotest.image_utils as imutil
-
 from lsst.eo_utils.base import mpl_utils
 
-from lsst.eo_utils.base.file_utils import makedir_safe,\
-    get_mask_files
-
-from lsst.eo_utils.base.butler_utils import make_file_dict
-
-from lsst.eo_utils.base.config_utils import DEFAULT_OUTDIR,\
-    DEFAULT_STAT_TYPE, DEFAULT_BITPIX
+from lsst.eo_utils.base.file_utils import makedir_safe
 
 from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.plot_utils import FigureDict
 
-from lsst.eo_utils.base.image_utils import REGION_KEYS,\
-    get_dims_from_ccd, get_readout_frequencies_from_ccd,\
-    get_geom_regions, get_dimension_arrays_from_ccd,\
-    get_raw_image, get_ccd_from_id, get_amp_list,\
-    get_image_frames_2d, make_superbias, flip_data_in_place
-
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot, AnalysisByRaft
 
 from .file_utils import get_bias_files_run,\
-    superbias_filename, superbias_stat_filename,\
-    slot_bias_tablename, slot_bias_plotname,\
-    raft_superbias_tablename, raft_superbias_plotname,\
-    get_superbias_frame
-
-from .data_utils import stack_by_amps,\
-    convert_stack_arrays_to_dict
+    slot_bias_tablename, slot_bias_plotname
 
 from .butler_utils import get_bias_files_butler
 
 
 DEFAULT_BIAS_TYPE = 'spline'
-SBIAS_TEMPLATE = 'analysis/superbias/templates/sbias_template.fits'
 ALL_SLOTS = 'S00 S01 S02 S10 S11 S12 S20 S21 S22'.split()
 
 mpl_utils.set_plt_ioff()
@@ -173,4 +149,3 @@ class BiasAnalysisFunc:
         """Run the analysis"""
         functor = cls.analysisClass(cls.make, cls.argnames)
         functor.run()
-

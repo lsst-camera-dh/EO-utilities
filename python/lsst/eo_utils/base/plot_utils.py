@@ -5,8 +5,9 @@ import numpy as np
 import astropy.visualization as viz
 from astropy.visualization.mpl_normalize import ImageNormalize
 
-import lsst.eotest.image_utils as imutil
-from .image_utils import get_ccd_from_id
+from .image_utils import get_raw_image,\
+    get_amp_list, unbias_amp, get_geom_regions,\
+    get_image_frames_2d
 
 from . import mpl_utils
 
@@ -466,8 +467,8 @@ class FigureDict:
         self._fig_dict[key] = o_dict
         return o_dict
 
-    
-    def plot_sensor(self, key, bulter, ccd, **kwargs):
+
+    def plot_sensor(self, key, butler, ccd, **kwargs):
         """Plot the data from all 16 amps on a sensor in a single figure
 
         @param key (str)          Key for the figure.
@@ -493,11 +494,12 @@ class FigureDict:
         fig, axs = plt.subplots(2, 8, figsize=(15, 10))
         axs = axs.ravel()
 
-        if bias_method is not None:
-            oscan = ccd.amp_geom.serial_overscan
-
         amps = get_amp_list(butler, ccd)
-        for amp in all_amps:
+        for idx, amp in enumerate(amps):
+
+            regions = get_geom_regions(butler, ccd, amp)
+            serial_oscan = regions['serial_overscan']
+
             if superbias_frame is not None:
                 if butler is not None:
                     superbias_im = get_raw_image(None, superbias_frame, amp+1)
@@ -544,7 +546,7 @@ class FigureDict:
         vmin = kwargs.get('vmin', -10.)
         vmax = kwargs.get('vmax', 10.)
         nbins = kwargs.get('nbins', 200)
-        bias_method = kwargs.get('bias', None)
+        bias_type = kwargs.get('bias', None)
         superbias_frame = kwargs.get('superbias_frame', None)
         subtract_mean = kwargs.get('subtract_mean', False)
         region = kwargs.get('region', 'imaging')
@@ -553,8 +555,8 @@ class FigureDict:
 
         axs = o_dict['axs']
         amps = get_amp_list(butler, ccd)
-        for i, amp in enumerate(amps):
-            
+        for idx, amp in enumerate(amps):
+
             regions = get_geom_regions(butler, ccd, amp)
             serial_oscan = regions['serial_overscan']
             im = get_raw_image(butler, ccd, amp)
@@ -565,7 +567,7 @@ class FigureDict:
                     superbias_im = get_raw_image(None, superbias_frame, amp)
             else:
                 superbias_im = None
-                
+
             image = unbias_amp(im, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
             regions = get_geom_regions(butler, ccd, amp)
             frames = get_image_frames_2d(image, regions)

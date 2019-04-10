@@ -19,17 +19,22 @@ def main():
     else:
         output_file = args.output
 
+    ccd = get_ccd_from_id(None, args.input, mask_files=[])
+    if args.superbias is not None:
+        superbias_frame = get_ccd_from_id(None, args.superbias, mask_files=[])
+    else:
+        superbias_frame = None
 
     figs = FigureDict()
 
-    figs.plot_sensor("img", args.input, mask_files=[],
+    figs.plot_sensor("img", None, ccd,
                      vmin=args.vmin, vmax=args.vmax,
-                     bias=args.bias, superbias=args.superbias,
+                     bias=args.bias, superbias_frame=superbias_frame,
                      subtract_mean=args.subtract_mean)
 
     if args.stats_hist:
-        figs.histogram_array("hist", args.input, mask_files=[],
-                             bias=args.bias, superbias=args.superbias,
+        figs.histogram_array("hist", None, ccd,
+                             bias=args.bias, superbias_frame=superbias_frame,
                              xlabel="Counts", ylabel="Pixels / bin",
                              vmin=args.vmin, vmax=args.vmax,
                              nbins=args.nbins, region=None,

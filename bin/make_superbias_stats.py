@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """This module is just a command line interface to plot the statistics
-from as set up superbias runs"""
+from a set of superbias runs"""
 
 from lsst.eo_utils.bias.superbias_stats import superbias_stats
 

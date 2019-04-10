@@ -148,7 +148,6 @@ def vstack_tables(filedict, **kwargs):
     tables = []
 
     for irun, (key, val) in enumerate(sorted(filedict.items())):
-        print ("Stackiing %s" % key)
         dtables = TableDict(val, [tablename])
         table = dtables[tablename]
         if keep_cols is not None:

@@ -209,26 +209,6 @@ class BiasSummaryAnalysisFunc(BiasAnalysisFunc):
 
 
 
-def extract_summary_table_bias_fft(dataset, **kwargs):
-    """Make a summry table of the bias FFT data
-
-    @param dataset (str)      The name of the dataset
-    @param kwargs
-        bias (str)
-        superbias (str)
-
-    @returns (TableDict)
-    """
-    infile = '%s_runs.txt' % dataset
-    keep_cols = ['fftpow_maxval', 'fftpow_argmax', 'slot', 'amp']
-
-    filedict = get_raft_bias_tablefiles(infile, suffix='biasfft_sum', **kwargs)
-    outtable = vstack_tables(filedict, tablename='biasfft_sum', keep_cols=keep_cols)
-
-    dtables = TableDict()
-    dtables.add_datatable('biasfft_sum', outtable)
-    dtables.make_datatable('runs', dict(runs=sorted(filedict.keys())))
-    return dtables
 
 
 def extract_summary_table_superbias_stats(dataset, **kwargs):
@@ -284,21 +264,6 @@ def plot_summary_table_superbias_stats(dtables, figs):
 
     figs.plot_run_chart("stats", runs, yvals, yerrs=yerrs, ylabel="Superbias STD [ADU]")
 
-
-def make_summary_table_bias_fft(dataset, **kwargs):
-    """Make a summry table of the bias FFT data
-
-    @param dataset (str)      The name of the dataset
-    @param kwargs
-        bias (str)
-        superbias (str)
-
-    @returns (TableDict)
-    """
-    functor = BiasSummaryAnalysisFunc('biasfft_sum',
-                                      extract_summary_table_bias_fft,
-                                      plot_summary_table_bias_fft)
-    functor.run(dataset, **kwargs)
 
 
 def make_summary_table_superbias_stats(dataset, **kwargs):
