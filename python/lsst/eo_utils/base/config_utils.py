@@ -27,8 +27,7 @@ class EOUtilConfig(pexConfig.Config):
     """A simple class to manage configuration parameters for EO analysis tasks"""
     input = pexConfig.Field("Input file", str, default=None)
     output = pexConfig.Field("Output file", str, default=None)
-    logdir = pexConfig.Field("Log file directory", str, default="logs")
-    logsuffix = pexConfig.Field("Suffix to append to log files", str, default="")
+    logfile = pexConfig.Field("Log file", str, default="temp.log")
     batch = pexConfig.Field("Dispatch job to batch", str, default=None)
     dry_run = pexConfig.Field("Print batch command, do not send job", bool, default=False)
     bsub_args = pexConfig.Field("Arguments to pass to bsub command", str, default="-W 1200 -R bullet")
