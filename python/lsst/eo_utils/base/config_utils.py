@@ -30,7 +30,7 @@ class EOUtilConfig(pexConfig.Config):
     logfile = pexConfig.Field("Log file", str, default="temp.log")
     batch = pexConfig.Field("Dispatch job to batch", str, default=None)
     dry_run = pexConfig.Field("Print batch command, do not send job", bool, default=False)
-    bsub_args = pexConfig.Field("Arguments to pass to bsub command", str, default="-W 1200 -R bullet")
+    batch_args = pexConfig.Field("Arguments to pass to batch command", str, default="-W 1200 -R bullet")
     run = pexConfig.Field("Run ID", str, default=None)
     slots = pexConfig.ListField("Slot ID(s)", str, default=None)
     rafts = pexConfig.ListField("Raft Slot(s)", str, default=None)
