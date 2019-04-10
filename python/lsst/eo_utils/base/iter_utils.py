@@ -4,89 +4,130 @@ import sys
 import os
 
 
-import lsst.pipe.base as pipeBase
-
-from .config_utils import setup_parser, EOUtilConfig, make_argstring, get_config_values
-from .file_utils import get_hardware_type_and_id
-from .butler_utils import getButler, get_hardware_info
+from .config_utils import setup_parser, make_argstring, get_config_values
+from .file_utils import get_hardware_type_and_id, get_raft_names_dc
+from .butler_utils import getButler, get_hardware_info, get_raft_names_butler
 
 from .batch_utils import dispatch_job
 
 # These should be taken from somewhere, not hardcoded here
 ALL_SLOTS = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
-ALL_RAFTS = ['R11', 'R12']
+ALL_RAFTS = ['R10', 'R22']
 
 
-class EO_AnalyzeSlotTask(pipeBase.Task):
-    """A small class to wrap an analysis function as a pipeline task"""
-    ConfigClass = EOUtilConfig
-    _DefaultName = "EO_AnalyzeSlot"
+class AnalysisBase:
+    """Small class to iterate run an analysis, and provied an interface to the batch system
 
-    def __init__(self, analysis_func):
-        """C'tor
+    @param argnames (list)          List of the keyword arguments need by that function.
+                                    Used to look up defaults
+    """
+    # These are arguments that control batch job submission
+    batch_argnames = ['logfile', 'batch_args', 'batch', 'dry_run']
 
-        @param analysis_func (function)  The function that does that actual analysis
+    argnames = None
+
+    def __init__(self):
+        """C'tor """
+        self.all_argnames = []
+        if self.argnames is not None:
+            self.all_argnames += self.argnames
+        self.all_argnames += self.batch_argnames
+
+    @staticmethod
+    def get_butler(butler_repo, **kwargs):
+        """Return a data Butler
+
+        @param: bulter_repo (str)  Key specifying the data repo
+        @param kwargs (dict)       Passed to the ctor
+
+        @returns (`Butler`)        The requested data Butler
         """
-        super(EO_AnalyzeSlotTask, self).__init__()
-        self.analysis_func = analysis_func
+        return getButler(butler_repo, **kwargs)
 
-    @pipeBase.timeMethod
-    def run(self, butler, slot_data, **kwargs):
-        """Call the analysis function for one sensor
 
-        @param butler (Butler)    The data butler
-        @param slot_data (dict)   Dictionary with all the files need for analysis
-        @param kwargs             Passed along to the analysis function
+    def run(self, **kwargs):
+        """Run the analysis over all of the requested objects.
+
+        By default this takes the arguments from the command line
+        and overrides those with any kwargs that have been provided.
+
+        If interactive==True then it will not use the command line
+        arguments.
+
+        If batch is not None then it will send the jobs the the batch.
         """
-        self.analysis_func(butler, slot_data, **kwargs)
+        interactive = kwargs.get('interactive', False)
 
-
-class EO_AnalyzeRaftTask(pipeBase.Task):
-    """A small class to wrap an analysis function as a pipeline task"""
-    ConfigClass = EOUtilConfig
-    _DefaultName = "EO_AnalyzeRaft"
-
-    def __init__(self, analysis_func):
-        """C'tor
-
-        @param analysis_func (function)  The function that does that actual analysis
-        """
-        super(EO_AnalyzeRaftTask, self).__init__()
-        self.analysis_func = analysis_func
-
-    @pipeBase.timeMethod
-    def run(self, butler, raft_data, **kwargs):
-        """Call the analysis function for one raft
-
-        @param butler (Butler)    The data butler
-        @param raft_data (dict)   Dictionary with all the files need for analysis
-        @param kwargs             Passed along to the analysis function
-        """
-        self.analysis_func(butler, raft_data, **kwargs)
-
-
-
-class AnalysisIterator:
-    """Small class to iterate an analysis, and provied an interface to the batch system"""
-
-    # These are arguement that control batch job submission
-    batch_argnames = ['logdir', 'logsuffix', 'bsub_args', 'batch', 'dry_run']
-
-    def __init__(self, task, data_func, argnames):
-        """C'tor
-
-        @param task (Task)              The task that does the actual analysis for one CCD
-        @param data_func (function)     Function that gets the data to analyze
-        @param argnames (list)          List of the keyword arguments need by that function.
-                                        Used to look up defaults
-        """
-        self.task = task
-        self.data_func = data_func
-        if argnames is None:
-            self.argnames = []
+        if interactive:
+            arg_dict = get_config_values(self.all_argnames, **kwargs)
         else:
-            self.argnames = argnames
-        self.argnames += self.batch_argnames
+            parser = setup_parser(self.all_argnames)
+            args = parser.parse_args()
+            arg_dict = args.__dict__.copy()
+            arg_dict.update(**kwargs)
+
+        self.run_with_args(**arg_dict)
+
+
+    def run_with_args(self, **kwargs):
+        """Run the analysis over all of the requested objects.
+
+        @param kwargs    Passed to the analysis
+        """
+        raise NotImplementedError("AnalysisBase.call_func")
+
+
+class SimpleAnalysis(AnalysisBase):
+    """Small class to iterate an analysis, and provied an interface to the batch system
+
+    @param analysis_func (function) Function that does the actual analysis for one CCD
+    @param data_func (function)     Function that gets the data to analyze
+    @param argnames (list)          List of the keyword arguments need by that function.
+                                    Used to look up defaults
+    """
+    data_func = None
+
+    def __init__(self):
+        """C'tor """
+        AnalysisBase.__init__(self)
+
+    def call_func(self, **kwargs):
+        """Needs to be implemented by sub-classes"""
+        raise NotImplementedError("SimpoleAnalysis.call_func")
+
+    def run_with_args(self, **kwargs):
+        """Run the analysis over all of the requested objects.
+
+        @param kwargs    Passed to the analysis
+        """
+        batch = kwargs.pop('batch')
+
+        if batch is None:
+            self.call_func(**kwargs)
+        else:
+            jobname = os.path.basename(sys.argv[0])
+            logfile = kwargs.pop('logfile', 'temp.log')
+            batch_args = kwargs.pop('batch_args')
+            kwargs['optstring'] = make_argstring(kwargs)
+            kwargs['bsatch_args'] = batch_args
+            dispatch_job(jobname, logfile, **kwargs)
+
+
+
+
+class AnalysisIterator(AnalysisBase):
+    """Small class to iterate an analysis, and provied an interface to the batch system
+
+    @param analysis_func (function) Function that does the actual analysis for one CCD
+    @param data_func (function)     Function that gets the data to analyze
+    @param argnames (list)          List of the keyword arguments need by that function.
+                                    Used to look up defaults
+    """
+    data_func = None
+
+    def __init__(self):
+        """C'tor """
+        AnalysisBase.__init__(self)
 
     def call_func(self, run_num, **kwargs):
         """Needs to be implemented by sub-classes"""
@@ -112,15 +153,20 @@ class AnalysisIterator:
         return retval
 
     @staticmethod
-    def get_butler(butler_repo, **kwargs):
-        """Return a data Butler
+    def get_raft_list(butler, run_num):
+        """return the list of raft id for a given run
 
-        @param: bulter_repo (str)  Key specifying the data repo
-        @param kwargs (dict)       Passed to the ctor
+        @param: bulter (`Bulter`)  The data Butler
+        @param run_num(str)        The number number we are reading
 
-        @returns (`Butler`)        The requested data Butler
+        @returns (list) of raft names
         """
-        return getButler(butler_repo, **kwargs)
+        if butler is None:
+            retval = get_raft_names_dc(run_num)
+        else:
+            retval = get_raft_names_butler(butler, run_num)
+        return retval
+
 
     def get_data(self, butler, run_num, **kwargs):
         """Call the function to get the data
@@ -129,10 +175,12 @@ class AnalysisIterator:
         @param run_num (str)         The run identifier
         @param kwargs (dict)         Passed to the data function
         """
+        if self.data_func is None:
+            return None
         return self.data_func(butler, run_num, **kwargs)
 
 
-    def run(self, **kwargs):
+    def run_with_args(self, **kwargs):
         """Run the analysis over all of the requested objects.
 
         By default this takes the arguments from the command line
@@ -143,68 +191,50 @@ class AnalysisIterator:
 
         If batch is not None then it will send the jobs the the batch.
         """
-        interactive = kwargs.get('interactive', False)
-
-        if interactive:
-            arg_dict = get_config_values(self.argnames, **kwargs)
-            jobname = None
-        else:
-            jobname = os.path.basename(sys.argv[0])
-            parser = setup_parser(self.argnames)
-            args = parser.parse_args()
-            arg_dict = args.__dict__.copy()
-            arg_dict.update(**kwargs)
-
-        run_num = arg_dict.pop('run')
-        batch = arg_dict.pop('batch')
-        logdir = arg_dict.pop('logdir')
-        logsuffix = arg_dict.pop('logsuffix')
-        butler_repo = arg_dict.get('butler_repo', None)
+        run_num = kwargs.pop('run')
+        batch = kwargs.pop('batch')
+        butler_repo = kwargs.get('butler_repo', None)
 
         if butler_repo is None or kwargs.get('skip', False):
             butler = None
-            hinfo = get_hardware_type_and_id(run_num)
         else:
             butler = self.get_butler(butler_repo)
-            hinfo = get_hardware_info(butler, run_num)
-
-        hid = hinfo[1]
-        if interactive:
-            logfile = None
-        else:
-            logfile = os.path.join(logdir, "%s_%s_%s%s.log" % (hid, run_num,
-                                                               jobname.replace('.py', ''), logsuffix))
 
         if batch is None:
-            arg_dict.pop('butler_repo')
-            arg_dict['butler'] = butler
-            self.call_func(run_num, **arg_dict)
+            kwargs.pop('butler_repo')
+            kwargs['butler'] = butler
+            self.call_func(run_num, **kwargs)
         elif batch == 'slot':
-            slots = arg_dict.pop('slots')
+            jobname = os.path.basename(sys.argv[0])
+            logfile = kwargs.get('logfile', 'temp.log')
+            slots = kwargs.pop('slots')
+            run = kwargs.pop('run')
             if slots is None:
                 slots = ALL_SLOTS
             for slot in slots:
-                arg_dict['slots'] = slot
-                arg_dict.pop('optstring', None)
-                bsub_args = arg_dict.pop('bsub_args')
-                arg_dict['optstring'] = make_argstring(arg_dict)
-                arg_dict['bsub_args'] = bsub_args
+                kwargs['slots'] = slot
+                kwargs.pop('optstring', None)
+                batch_args = kwargs.pop('batch_args')
+                kwargs['optstring'] = make_argstring(kwargs)
+                kwargs['batch_args'] = batch_args
                 logfile_slot = logfile.replace('.log', '_%s.log' % slot)
-                dispatch_job(jobname, run_num, logfile_slot, **arg_dict)
+                dispatch_job(jobname, logfile_slot, run=run, **kwargs)
         else:
-            bsub_args = arg_dict.pop('bsub_args')
-            arg_dict['optstring'] = make_argstring(arg_dict)
-            arg_dict['bsub_args'] = bsub_args
-            dispatch_job(jobname, run_num, logfile, **arg_dict)
+            jobname = os.path.basename(sys.argv[0])
+            logfile = kwargs.get('logfile', 'temp.log')
+            batch_args = kwargs.pop('batch_args')
+            kwargs['optstring'] = make_argstring(kwargs)
+            kwargs['batch_args'] = batch_args
+            dispatch_job(jobname, logfile, run=run, **kwargs)
 
 
-def iterate_over_slots(task, butler, data_files, **kwargs):
+def iterate_over_slots(analysis_func, butler, data_files, **kwargs):
     """Run a task over a series of slots
 
-    @param task (`Task`)          The pipeline task
-    @param butler (`Butler`)      The data butler
-    @param data_files (dict)      Dictionary with all the files need for analysis
-    @param kwargs                 Passed along to the analysis function
+    @param analysis_func (function)  Function that does the the analysis
+    @param butler (`Butler`)         The data butler
+    @param data_files (dict)         Dictionary with all the files need for analysis
+    @param kwargs                    Passed along to the analysis function
     """
 
     slot_list = kwargs.get('slots', None)
@@ -213,16 +243,16 @@ def iterate_over_slots(task, butler, data_files, **kwargs):
     for slot in slot_list:
         slot_data = data_files[slot]
         kwargs['slot'] = slot
-        task.run(butler, slot_data, **kwargs)
+        analysis_func(butler, slot_data, **kwargs)
 
 
-def iterate_over_rafts(task, butler, data_files, **kwargs):
+def iterate_over_rafts(analysis_func, butler, data_files, **kwargs):
     """Run a task over a series of rafts
 
-    @param task (`Task`)        The pipeline task
-    @param butler (`Butler`)    The data butler
-    @param data_files (dict)    Dictionary with all the files need for analysis
-    @param kwargs               Passed along to the analysis function
+    @param analysis_func (function)  Function that does the the analysis
+    @param butler (`Butler`)         The data butler
+    @param data_files (dict)         Dictionary with all the files need for analysis
+    @param kwargs                    Passed along to the analysis function
     """
     raft_list = kwargs.get('rafts', None)
     if raft_list is None:
@@ -230,20 +260,19 @@ def iterate_over_rafts(task, butler, data_files, **kwargs):
     for raft in raft_list:
         raft_data = data_files[raft]
         kwargs['raft'] = raft
-        iterate_over_slots(task, butler, raft_data, **kwargs)
+        iterate_over_slots(analysis_func, butler, raft_data, **kwargs)
 
 
 class AnalysisBySlot(AnalysisIterator):
     """Small class to iterate an analysis task over all the slots in a raft"""
-    def __init__(self, analysis_func, data_func, argnames):
+
+    def __init__(self, analysis_func):
         """C'tor
 
-        @param analysis_func (fuction)  The function that does that actual analysis
-        @param data_func (function)     Function that gets the data to analyze
-        @param argnames (list)          List of the keyword arguments need by that function.
-                                        Used to look up defaults
+        @param analysis_func (function) Function that does the actual analysis for one CCD
         """
-        AnalysisIterator.__init__(self, EO_AnalyzeSlotTask(analysis_func), data_func, argnames)
+        AnalysisIterator.__init__(self)
+        self.analysis_func = analysis_func
 
     def call_func(self, run_num, **kwargs):
         """Call the analysis function for one run
@@ -257,25 +286,24 @@ class AnalysisBySlot(AnalysisIterator):
 
         kwargs['run_num'] = run_num
         if htype == "LCA-10134":
-            iterate_over_rafts(self.task, butler, data_files, **kwargs)
+            iterate_over_rafts(self.analysis_func, butler, data_files, **kwargs)
         elif htype == "LCA-11021":
             kwargs['raft'] = hid
-            iterate_over_slots(self.task, butler, data_files[hid], **kwargs)
+            iterate_over_slots(self.analysis_func, butler, data_files[hid], **kwargs)
         else:
             raise ValueError("Do not recognize hardware type for run %s: %s" % (run_num, htype))
 
 
 class AnalysisByRaft(AnalysisIterator):
     """Small class to iterate an analysis task over all the rafts"""
-    def __init__(self, analysis_func, data_func, argnames):
+
+    def __init__(self, analysis_func):
         """C'tor
 
-        @param analysis_func (fuction)  The function that does that actual analysis
-        @param data_func (function)     Function that gets the data to analyze
-        @param argnames (list)          List of the keyword arguments need by that function.
-                                        Used to look up defaults
+        @param analysis_func (function) Function that does the actual analysis for one CCD
         """
-        AnalysisIterator.__init__(self, EO_AnalyzeRaftTask(analysis_func), data_func, argnames)
+        AnalysisIterator.__init__(self)
+        self.analysis_func = analysis_func
 
     def call_func(self, run_num, **kwargs):
         """Call the analysis function for one run
@@ -289,9 +317,71 @@ class AnalysisByRaft(AnalysisIterator):
 
         kwargs['run_num'] = run_num
         if htype == "LCA-10134":
-            iterate_over_rafts(self.task, butler, data_files, **kwargs)
+            iterate_over_rafts(self.analysis_func, butler, data_files, **kwargs)
         elif htype == "LCA-11021":
             kwargs['raft'] = hid
-            self.task.run(butler, data_files[hid], **kwargs)
+            if self.analysis_func is not None:
+                self.analysis_func(butler, data_files[hid], **kwargs)
         else:
             raise ValueError("Do not recognize hardware type for run %s: %s" % (run_num, htype))
+
+
+class SummaryAnalysisIterator(AnalysisBase):
+    """Small class to iterate an analysis, and provied an interface to the batch system
+
+    @param data_func (function)     Function that gets the data to analyze
+    @param argnames (list)          List of the keyword arguments need by that function.
+                                    Used to look up defaults
+    """
+    data_func = None
+
+    def __init__(self, analysis_func):
+        """C'tor """
+        AnalysisBase.__init__(self)
+        self.analysis_func = analysis_func
+
+    def call_func(self, dataset, **kwargs):
+        """Call the analysis function for one run
+
+        @param run_num (str)  The run identifier
+        @param kwargs         Passed to the analysis functions
+        """
+        data_files = self.get_data(dataset, **kwargs)
+
+        if self.analysis_func is not None:
+            self.analysis_func(data_files, **kwargs)
+
+    def get_data(self, dataset, **kwargs):
+        """Call the function to get the data
+
+        @param: dataset (str)        The dataset set are looking at
+        @param kwargs (dict)         Passed to the data function
+        """
+        if self.data_func is None:
+            return None
+        return self.data_func(dataset, **kwargs)
+
+
+    def run_with_args(self, **kwargs):
+        """Run the analysis over all of the requested objects.
+
+        By default this takes the arguments from the command line
+        and overrides those with any kwargs that have been provided.
+
+        If interactive==True then it will not use the command line
+        arguments.
+
+        If batch is not None then it will send the jobs the the batch.
+        """
+        batch = kwargs.pop('batch')
+        dataset = kwargs.pop('dataset')
+
+        if batch is None:
+            self.call_func(dataset, **kwargs)
+        else:
+            jobname = os.path.basename(sys.argv[0])
+            logfile = kwargs.get('logfile', 'temp.log')
+            batch_args = kwargs.pop('batch_args')
+            kwargs['optstring'] = make_argstring(kwargs)
+            kwargs['batch_args'] = batch_args
+            dispatch_job(jobname, logfile, dataset=dataset, **kwargs)

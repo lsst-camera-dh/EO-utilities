@@ -23,18 +23,18 @@ class bias_v_row(BiasAnalysisFunc):
     """Class to analyze the overscan bias as a function of row number"""
 
     argnames = STANDARD_SLOT_ARGS + ['bias', 'rafts']
-    analysisClass = BiasAnalysisBySlot
+    iteratorClass = BiasAnalysisBySlot
 
     def __init__(self):
         """C'tor"""
-        BiasAnalysisFunc.__init__(self, "biasval", bias_v_row.extract, bias_v_row.plot)
+        BiasAnalysisFunc.__init__(self, "biasval")
 
     @staticmethod
-    def extract(butler, slot_data, **kwargs):
+    def extract(butler, data, **kwargs):
         """Extract the bias as function of row
 
         @param butler (`Butler`)   The data butler
-        @param slot_data (dict)    Dictionary pointing to the bias and mask files
+        @param data (dict)         Dictionary pointing to the bias and mask files
         @param kwargs
             slot (str)           Slot in question, i.e., 'S00'
             bias (str)           Method to use for unbiasing
@@ -44,7 +44,7 @@ class bias_v_row(BiasAnalysisFunc):
         slot = kwargs['slot']
         bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
 
-        bias_files = slot_data['BIAS']
+        bias_files = data['BIAS']
 
         sys.stdout.write("Working on %s, %i files: \n" % (slot, len(bias_files)))
 

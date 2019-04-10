@@ -24,19 +24,19 @@ class correl_wrt_oscan(BiasAnalysisFunc):
     and the overscan regions in a series of bias frames"""
 
     argnames = STANDARD_SLOT_ARGS + ['covar', 'superbias']
-    analysisClass = BiasAnalysisBySlot
+    iteratorClass = BiasAnalysisBySlot
 
     def __init__(self):
         """C'tor"""
-        BiasAnalysisFunc.__init__(self, "biasoscorr", self.extract, self.plot)
+        BiasAnalysisFunc.__init__(self, "biasoscorr")
 
     @staticmethod
-    def extract(butler, slot_data, **kwargs):
+    def extract(butler, data, **kwargs):
         """Extract the correlations between the imaging section
         and the overscan regions in a series of bias frames
 
         @param butler (`Butler`)   The data butler
-        @param slot_data (dict)    Dictionary pointing to the bias and mask files
+        @param data (dict)         Dictionary pointing to the bias and mask files
         @param kwargs:
             slot (str)           Slot in question, i.e., 'S00'
 
@@ -44,7 +44,7 @@ class correl_wrt_oscan(BiasAnalysisFunc):
         """
         slot = kwargs['slot']
 
-        bias_files = slot_data['BIAS']
+        bias_files = data['BIAS']
         mask_files = get_mask_files(**kwargs)
 
         sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))

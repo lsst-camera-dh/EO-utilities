@@ -19,6 +19,8 @@ SLOT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}-{sl
 RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}-RFT{suffix}'
 SUMMARY_FORMAT_STRING = '{outdir}/{fileType}/summary/{testType}/{dataset}{suffix}'
 
+ALL_RAFTS = ["R10", "R22"]
+
 
 def makedir_safe(filepath):
     """Make a directory needed to write a file
@@ -222,3 +224,21 @@ def read_runlist(filepath):
             outlist.append(tokens)
         lin = fin.readline()
     return outlist
+
+
+def get_raft_names_dc(run_num):
+    """Get the list of rafts used for a particular run
+
+    @param run_num(str)   The number number we are reading
+
+    @returns (list) of raft names
+    """
+    hinfo = get_hardware_type_and_id(run_num)
+
+    htype = hinfo[0]
+    hid = hinfo[1]
+    if htype == 'LCA-11021':
+        return [hid]
+    if htype == 'LCA-10134':
+        return ALL_RAFTS
+    raise ValueError("Unrecognized hardware type %s" % htype)

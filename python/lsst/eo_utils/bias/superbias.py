@@ -30,14 +30,14 @@ class superbias:
     """Class to analyze the overscan bias as a function of row number"""
 
     argnames = STANDARD_SLOT_ARGS + ['bias', 'rafts']
-    analysisClass = BiasAnalysisBySlot
+    iteratorClass = BiasAnalysisBySlot
 
     @staticmethod
-    def extract(butler, slot_data, **kwargs):
+    def extract(butler, data, **kwargs):
         """Make superbias frame for one slot
 
         @param butler (`Butler`)   The data butler
-        @param slot_data (dict)    Dictionary pointing to the bias and mask files
+        @param data (dict)         Dictionary pointing to the bias and mask files
         @param kwargs
             raft (str)           Raft in question, i.e., 'RTM-004-Dev'
             run_num (str)        Run number, i.e,. '6106D'
@@ -56,7 +56,7 @@ class superbias:
         if stat_type is None:
             stat_type = DEFAULT_STAT_TYPE
 
-        bias_files = slot_data['BIAS']
+        bias_files = data['BIAS']
 
         sys.stdout.write("Working on %s, %i files.\n" % (slot, len(bias_files)))
 
@@ -77,7 +77,7 @@ class superbias:
 
         @return (dict)
         """
-        
+
         mask_files = get_mask_files(**kwargs)
         if kwargs.get('stat', DEFAULT_STAT_TYPE) == DEFAULT_STAT_TYPE:
             output_file = superbias_filename(bias_type=kwargs.get('bias'), **kwargs)
@@ -87,7 +87,6 @@ class superbias:
         makedir_safe(output_file)
 
         if not kwargs.get('skip', False):
-            print ("here", slot_data.keys())
             out_data = self.extract(butler, slot_data, **kwargs)
             imutil.writeFits(out_data, output_file, SBIAS_TEMPLATE, kwargs.get('bitpix', DEFAULT_BITPIX))
             if butler is not None:
@@ -162,5 +161,5 @@ class superbias:
     @classmethod
     def run(cls):
         """Run the analysis"""
-        functor = cls.analysisClass(cls.make, cls.argnames)
+        functor = cls.iteratorClass(cls.make)
         functor.run()

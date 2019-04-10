@@ -19,6 +19,7 @@ from .file_utils import get_superbias_frame
 
 from .analysis import BiasAnalysisFunc, BiasAnalysisByRaft
 
+#FIXME get these from standard location
 DEFAULT_BIAS_TYPE = 'spline'
 ALL_SLOTS = 'S00 S01 S02 S10 S11 S12 S20 S21 S22'.split()
 
@@ -29,14 +30,14 @@ class oscan_correl(BiasAnalysisFunc):
     analysisClass = BiasAnalysisByRaft
 
     def __init__(self):
-        BiasAnalysisFunc.__init__(self, "oscorr", self.extract, self.plot)
+        BiasAnalysisFunc.__init__(self, "oscorr")
 
     @staticmethod
-    def extract(butler, raft_data, **kwargs):
+    def extract(butler, data, **kwargs):
         """Extract the correlations between the serial overscan for each amp on a raft
 
         @param butler (Butler)   The data butler
-        @param raft_data (dict)  Dictionary pointing to the bias and mask files
+        @param data (dict)       Dictionary pointing to the bias and mask files
         @param kwargs
             raft (str)           Raft in question, i.e., 'RTM-004-Dev'
             run_num (str)        Run number, i.e,. '6106D'
@@ -50,7 +51,7 @@ class oscan_correl(BiasAnalysisFunc):
         boundry = 10
 
         for slot in slots:
-            bias_files = raft_data[slot]['BIAS']
+            bias_files = data[slot]['BIAS']
 
             mask_files = get_mask_files(slot=slot, **kwargs)
             superbias_frame = get_superbias_frame(mask_files=mask_files, slot=slot, **kwargs)

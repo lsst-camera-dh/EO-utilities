@@ -3,6 +3,7 @@
 """This module is just a command line interface to plot bias images"""
 
 from lsst.eo_utils.base.config_utils import setup_parser
+from lsst.eo_utils.base.image_utils import get_ccd_from_id
 from lsst.eo_utils.base.plot_utils import FigureDict
 
 def main():

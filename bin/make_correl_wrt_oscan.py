@@ -3,7 +3,7 @@
 """This module is just a command line interface to plot the correlaction between
 the overscan and imaging regions in bias images"""
 
-from lsst.eo_utils.bias.bias_fft import correl_wrt_oscan
+from lsst.eo_utils.bias.correl_wrt_oscan import correl_wrt_oscan
 
 def main():
     """Hook for setup.py"""

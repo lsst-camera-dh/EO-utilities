@@ -55,6 +55,18 @@ def get_hardware_info(butler, run_num):
     return (htype, hid)
 
 
+def get_raft_names_butler(butler, run_num):
+    """Return the list of rafts from a given run
+
+    @param: butler (Bulter)  The data Butler
+    @param run_num(str)      The number number we are reading
+
+    @returns (list) the raft names for that run
+    """
+    rafts = butler.queryMetadata('raw', 'raftName', dict(run=run_num))
+    return rafts
+
+
 def getVisitList(butler, run_id, **kwargs):
     """Construct and return a list of visit IDs.
 

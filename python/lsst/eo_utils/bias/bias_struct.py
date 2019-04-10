@@ -27,18 +27,18 @@ class bias_struct(BiasAnalysisFunc):
     """Class to analyze the overscan bias as a function of row number"""
 
     argnames = STANDARD_SLOT_ARGS + ['mask', 'bias', 'std', 'mask']
-    analysisClass = BiasAnalysisBySlot
+    iteratorClass = BiasAnalysisBySlot
 
     def __init__(self):
-        BiasAnalysisFunc.__init__(self, "biasval", self.extract, self.plot)
+        BiasAnalysisFunc.__init__(self, "biasval")
 
     @staticmethod
-    def extract(butler, slot_data, **kwargs):
+    def extract(butler, data, **kwargs):
         """Plot the row-wise and col-wise struture
         in a series of bias frames
 
         @param butler (`Butler`)   The data butler
-        @param slot_data (dict)    Dictionary pointing to the bias and mask files
+        @param data (dict)         Dictionary pointing to the bias and mask files
         @param kwargs
         slot (str)           Slot in question, i.e., 'S00'
         bias (str)           Method to use for unbiasing
@@ -49,7 +49,7 @@ class bias_struct(BiasAnalysisFunc):
         std = kwargs.get('std', False)
         bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
 
-        bias_files = slot_data['BIAS']
+        bias_files = data['BIAS']
         mask_files = get_mask_files(**kwargs)
         superbias_frame = get_superbias_frame(mask_files=mask_files, **kwargs)
 
@@ -150,20 +150,20 @@ class superbias_struct(BiasAnalysisFunc):
     """Class to analyze the overscan bias as a function of row number"""
 
     argnames = STANDARD_SLOT_ARGS + ['mask', 'superbias', 'std', 'stat']
-    analysisClass = BiasAnalysisBySlot
+    iteratorClass = BiasAnalysisBySlot
+    tablename_func = slot_superbias_tablename
+    plotname_func = slot_superbias_plotname
 
     def __init__(self):
         """C'tor"""
-        BiasAnalysisFunc.__init__(self, "sbiasst", self.extract, bias_struct.plot,
-                                  tablename_func=slot_superbias_tablename,
-                                  plotname_func=slot_superbias_plotname)
+        BiasAnalysisFunc.__init__(self, "sbiasst")
 
     @staticmethod
-    def extract(butler, slot_data, **kwargs):
+    def extract(butler, data, **kwargs):
         """Extract the row-wise and col-wise struture  in a superbias frame
 
         @param butler (`Butler`)   The data butler
-        @param slot_data (dict)    Dictionary pointing to the bias and mask files
+        @param data (dict)         Dictionary pointing to the bias and mask files
         @param kwargs
             raft (str)           Raft in question, i.e., 'RTM-004-Dev'
             run_num (str)        Run number, i.e,. '6106D'
@@ -176,9 +176,9 @@ class superbias_struct(BiasAnalysisFunc):
         std = kwargs.get('std', False)
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in extract_superbias_struct_slot")
-        if slot_data is not None:
-            sys.stdout.write("Ignoring butler in extract_superbias_struct_slot")
+            sys.stdout.write("Ignoring butler in superbias_struct.extract")
+        if data is not None:
+            sys.stdout.write("Ignoring butler in superbias_struct.extract")
 
         mask_files = get_mask_files(**kwargs)
         superbias = get_superbias_frame(mask_files=mask_files, **kwargs)

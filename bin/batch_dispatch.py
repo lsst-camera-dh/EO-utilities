@@ -44,7 +44,7 @@ def main():
 
         logfile = os.path.join(args.logdir, "%s_%s_%s%s.log" %\
                                    (hid, run_num, args.jobname.replace('.py', ''), args.logsuffix))
-        dispatch_job(args.jobname, run_num, logfile, **opt_dict)
+        dispatch_job(args.jobname, logfile, run=run_num, **opt_dict)
 
 
 if __name__ == '__main__':

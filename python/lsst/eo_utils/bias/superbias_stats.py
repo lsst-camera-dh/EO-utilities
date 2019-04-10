@@ -8,7 +8,7 @@ from lsst.eo_utils.base.file_utils import get_mask_files
 
 from lsst.eo_utils.base.config_utils import STANDARD_RAFT_ARGS
 
-from lsst.eo_utils.base.data_utils import TableDict
+from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
@@ -17,10 +17,13 @@ from lsst.eo_utils.base.image_utils import get_raw_image, get_amp_list
 from .analysis import BiasAnalysisFunc, BiasAnalysisByRaft
 
 from .file_utils import raft_superbias_tablename, raft_superbias_plotname,\
-    get_superbias_frame
+    get_superbias_frame, superbias_summary_tablename, superbias_summary_plotname
 
+
+from .meta_analysis import SuperbiasSummaryByRaft, BiasSummaryAnalysisFunc
+
+#FIXME get these from elsewhere
 DEFAULT_BIAS_TYPE = 'spline'
-
 ALL_SLOTS = 'S00 S01 S02 S10 S11 S12 S20 S21 S22'.split()
 
 class superbias_stats(BiasAnalysisFunc):
@@ -28,19 +31,19 @@ class superbias_stats(BiasAnalysisFunc):
 
     argnames = STANDARD_RAFT_ARGS + ['stat', 'mask']
     analysisClass = BiasAnalysisByRaft
+    tablename_func = raft_superbias_tablename
+    plotname_func = raft_superbias_plotname
 
     def __init__(self):
         """C'tor"""
-        BiasAnalysisFunc.__init__(self, "stats", self.extract, self.plot,
-                                  tablename_func=raft_superbias_tablename,
-                                  plotname_func=raft_superbias_plotname)
+        BiasAnalysisFunc.__init__(self, "stats")
 
     @staticmethod
-    def extract(butler, raft_data, **kwargs):
+    def extract(butler, data, **kwargs):
         """Extract the correlations between the serial overscan for each amp on a raft
 
         @param butler (`Butler`)   The data butler
-        @param raft_data (dict)    Dictionary pointing to the bias and mask files
+        @param data (dict)         Dictionary pointing to the bias and mask files
         @param kwargs:
         raft (str)                 Raft in question, i.e., 'RTM-004-Dev'
         run_num (str)              Run number, i.e,. '6106D'
@@ -50,9 +53,9 @@ class superbias_stats(BiasAnalysisFunc):
 
         kwcopy = kwargs.copy()
         if butler is not None:
-            sys.stdout.write("Ignoring butler in extract_superbias_stats_raft")
-        if raft_data is not None:
-            sys.stdout.write("Ignoring raft_data in extract_superbias_stats_raft")
+            sys.stdout.write("Ignoring butler in superbias_stats.extract")
+        if data is not None:
+            sys.stdout.write("Ignoring raft_data in superbias_stats.extract")
 
         stats_data = {}
         for islot, slot in enumerate(slots):
@@ -109,3 +112,51 @@ class superbias_stats(BiasAnalysisFunc):
             stats_data['std'][islot, i] = im.array.std()
             stats_data['min'][islot, i] = im.array.min()
             stats_data['max'][islot, i] = im.array.max()
+
+
+
+class superbias_stats_summary(BiasSummaryAnalysisFunc):
+    """Class to analyze the overscan bias as a function of row number"""
+
+    argnames = ['dataset']
+    iteratorClass = SuperbiasSummaryByRaft
+    tablename_func = superbias_summary_tablename
+    plotname_func = superbias_summary_plotname
+
+    def __init__(self):
+        """C'tor"""
+        BiasSummaryAnalysisFunc.__init__(self, "stats")
+
+    @staticmethod
+    def extract(filedict, **kwargs):
+        """Make a summry table of the bias FFT data
+
+        @param filedict (dict)      The files we are analyzing
+        @param kwargs
+            bias (str)
+            superbias (str)
+
+        @returns (TableDict)
+        """
+        outtable = vstack_tables(filedict, tablename='stats')
+
+        dtables = TableDict()
+        dtables.add_datatable('stats', outtable)
+        dtables.make_datatable('runs', dict(runs=sorted(filedict.keys())))
+        return dtables
+
+
+    @staticmethod
+    def plot(dtables, figs):
+        """Plot the summary data from the superbias statistics study
+
+        @param dtables (TableDict)    The data we are ploting
+        @param fgs (FigureDict)       Keeps track of the figures
+        """
+        sumtable = dtables['stats']
+        runtable = dtables['runs']
+        yvals = sumtable['mean'].flatten().clip(0., 30.)
+        yerrs = sumtable['std'].flatten().clip(0., 10.)
+        runs = runtable['runs']
+
+        figs.plot_run_chart("stats", runs, yvals, yerrs=yerrs, ylabel="Superbias STD [ADU]")

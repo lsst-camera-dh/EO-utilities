@@ -10,7 +10,7 @@ from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
 
 from lsst.eo_utils.base.file_utils import get_mask_files
 
-from lsst.eo_utils.base.data_utils import TableDict
+from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
@@ -19,28 +19,33 @@ from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES,\
     get_geom_regions, get_amp_list, get_image_frames_2d, array_struct, unbias_amp
 
 from .file_utils import get_superbias_frame,\
-    slot_superbias_tablename, slot_superbias_plotname
+    slot_superbias_tablename, slot_superbias_plotname,\
+    bias_summary_tablename, bias_summary_plotname
 
 from .analysis import BiasAnalysisFunc, BiasAnalysisBySlot
 
+from .meta_analysis import BiasSummaryByRaft, BiasSummaryAnalysisFunc
+
+#FIXME, get these from elsewhere
 DEFAULT_BIAS_TYPE = 'spline'
+SLOT_LIST = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
 
 class bias_fft(BiasAnalysisFunc):
     """Class to analyze the overscan bias as a function of row number"""
 
     argnames = STANDARD_SLOT_ARGS + ['mask', 'bias', 'superbias', 'std']
-    analysisClass = BiasAnalysisBySlot
+    iteratorClass = BiasAnalysisBySlot
 
     def __init__(self):
         """C'tor """
-        BiasAnalysisFunc.__init__(self, "biasval", bias_fft.extract, bias_fft.plot)
+        BiasAnalysisFunc.__init__(self, "biasval")
 
     @staticmethod
-    def extract(butler, slot_data, **kwargs):
+    def extract(butler, data, **kwargs):
         """Extract the bias as function of row
 
         @param butler (`Butler`)   The data butler
-        @param slot_data (dict)    Dictionary pointing to the bias and mask files
+        @param data (dict)         Dictionary pointing to the bias and mask files
         @param kwargs
             slot (str)           Slot in question, i.e., 'S00'
             bias (str)           Method to use for unbiasing
@@ -51,7 +56,7 @@ class bias_fft(BiasAnalysisFunc):
         std = kwargs.get('std', False)
         bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
 
-        bias_files = slot_data['BIAS']
+        bias_files = data['BIAS']
         mask_files = get_mask_files(**kwargs)
         superbias_frame = get_superbias_frame(mask_files=mask_files, **kwargs)
 
@@ -157,20 +162,21 @@ class superbias_fft(BiasAnalysisFunc):
     """Class to analyze the overscan bias as a function of row number"""
 
     argnames = STANDARD_SLOT_ARGS + ['mask', 'superbias', 'std']
-    analysisClass = BiasAnalysisBySlot
+    iteratorClass = BiasAnalysisBySlot
+
+    tablename_func = slot_superbias_tablename
+    plotname_func = slot_superbias_plotname
 
     def __init__(self):
-        BiasAnalysisFunc.__init__(self, "sbiasfft", self.extract, bias_fft.plot,
-                                  tablename_func=slot_superbias_tablename,
-                                  plotname_func=slot_superbias_plotname)
+        BiasAnalysisFunc.__init__(self, "sbiasfft")
 
     @staticmethod
-    def extract(butler, slot_data, **kwargs):
+    def extract(butler, data, **kwargs):
         """Extract the FFTs of the row-wise and col-wise struture
         in a superbias frame
 
         @param butler (Butler)   The data butler
-        @param slot_data (dict)  Dictionary pointing to the bias and mask files
+        @param data (dict)       Dictionary pointing to the bias and mask files
         @param kwargs
             raft (str)           Raft in question, i.e., 'RTM-004-Dev'
             run_num (str)        Run number, i.e,. '6106D'
@@ -184,7 +190,7 @@ class superbias_fft(BiasAnalysisFunc):
 
         if butler is not None:
             sys.stdout.write("Ignoring butler in extract_superbias_fft_slot")
-        if slot_data is not None:
+        if data is not None:
             sys.stdout.write("Ignoring raft_data in extract_superbias_fft_raft")
 
         mask_files = get_mask_files(**kwargs)
@@ -210,3 +216,125 @@ class superbias_fft(BiasAnalysisFunc):
         for key in REGION_KEYS:
             dtables.make_datatable('biasfft-%s' % key, fft_data[key])
         return dtables
+
+
+
+class bias_fft_stats(BiasAnalysisFunc):
+    """Class to analyze the overscan bias as a function of row number"""
+
+    argnames = STANDARD_SLOT_ARGS + ['mask', 'bias', 'superbias', 'std']
+    iteratorClass = BiasSummaryByRaft
+
+    def __init__(self):
+        """C'tor """
+        BiasAnalysisFunc.__init__(self, "biasval")
+
+    @staticmethod
+    def extract(butler, data, **kwargs):
+        """Extract the bias as function of row
+
+        @param butler (`Butler`)   The data butler
+        @param data (dict)         Dictionary pointing to the bias and mask files
+        @param kwargs
+
+        @returns (TableDict) with the extracted data
+        """
+        datakey = 'biasfft-s'
+
+        data_dict = dict(fftpow_mean=[],
+                         fftpow_median=[],
+                         fftpow_std=[],
+                         fftpow_min=[],
+                         fftpow_max=[],
+                         fftpow_maxval=[],
+                         fftpow_argmax=[],
+                         slot=[],
+                         amp=[])
+
+        freqs = None
+
+        sys.stdout.write("Working on %s:")
+        sys.stdout.flush()
+
+        for islot, slot in enumerate(SLOT_LIST):
+
+            sys.stdout.write(" %s" % slot)
+            sys.stdout.flush()
+
+            basename = data[slot]
+            datapath = basename + '.fits'
+
+            dtables = TableDict(datapath, [datakey])
+            table = dtables[datakey]
+
+            if freqs is None:
+                freqs = table['freqs']
+
+            for amp in range(16):
+                tablevals = table['fftpow_%s_a%02i' % (slot, amp)]
+                meanvals = np.mean(tablevals, axis=1)
+                data_dict['fftpow_mean'].append(meanvals)
+                data_dict['fftpow_median'].append(np.median(tablevals, axis=1))
+                data_dict['fftpow_std'].append(np.std(tablevals, axis=1))
+                data_dict['fftpow_min'].append(np.min(tablevals, axis=1))
+                data_dict['fftpow_max'].append(np.max(tablevals, axis=1))
+                data_dict['fftpow_maxval'].append(meanvals[100:].max())
+                data_dict['fftpow_argmax'].append(meanvals[100:].argmax())
+                data_dict['slot'].append(islot)
+                data_dict['amp'].append(amp)
+
+        sys.stdout.write(".\n")
+        sys.stdout.flush()
+
+        outtables = TableDict()
+        outtables.make_datatable("freqs", dict(freqs=freqs))
+        outtables.make_datatable("biasfft_sum", data_dict)
+        return outtables
+
+
+class bias_fft_summary(BiasSummaryAnalysisFunc):
+    """Class to analyze the overscan bias as a function of row number"""
+
+    argnames = ['dataset']
+    iteratorClass = BiasSummaryByRaft
+    tablename_func = bias_summary_tablename
+    plotname_func = bias_summary_plotname
+
+    def __init__(self):
+        """C'tor"""
+        BiasSummaryAnalysisFunc.__init__(self, "biasfft_sum")
+
+    @staticmethod
+    def extract(filedict, **kwargs):
+        """Make a summry table of the bias FFT data
+
+        @param filedict (dict)      The files we are analyzing
+        @param kwargs
+            bias (str)
+            superbias (str)
+
+        @returns (TableDict)
+        """
+        if not kwargs.get('skip', False):
+            outtable = vstack_tables(filedict, tablename='biasfft_sum')
+
+        dtables = TableDict()
+        dtables.add_datatable('stats', outtable)
+        dtables.make_datatable('runs', dict(runs=sorted(filedict.keys())))
+        return dtables
+
+
+    @staticmethod
+    def plot(dtables, figs):
+        """Plot the summary data from the superbias statistics study
+
+        @param dtables (TableDict)    The data we are ploting
+        @param fgs (FigureDict)       Keeps track of the figures
+        """
+        sumtable = dtables['biasfft_sum']
+        runtable = dtables['runs']
+
+        yvals = sumtable['fftpow_maxval'].flatten().clip(0., 2.)
+        runs = runtable['runs']
+
+        figs.plot_run_chart("fftpow_maxval", runs, yvals, ylabel="Maximum FFT Power [ADU]")
