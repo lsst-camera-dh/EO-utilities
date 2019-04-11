@@ -193,3 +193,17 @@ def setup_parser(argnames, arg_dict=None, **kwargs):
     use_arg_dict = get_config_defaults(argnames, arg_dict, **kwargs)
     add_arguments(parser, use_arg_dict)
     return parser
+
+
+
+def copy_dict(in_dict, def_dict):
+    """Copy a set of key-value pairs to an new dict
+
+    @param in_dict (dict)   The dictionary mapping argument name to (type, default, helpstring) tuple
+    @param def_dict (dict)  The dictionary with the default values
+
+    @returns (dict) Dictionary with only the arguments we have selected
+    """
+    outdict = { key:in_dict.get(key, val) for key, val in def_dict.items() }
+    return outdict
+ 

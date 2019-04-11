@@ -217,6 +217,10 @@ class superbias_fft(BiasAnalysisFunc):
             dtables.make_datatable('biasfft-%s' % key, fft_data[key])
         return dtables
 
+    @staticmethod
+    def plot(dtables, figs):
+        """Just pass along to bias_fft.plot"""
+        bias_fft.plot(dtables, figs)
 
 
 class bias_fft_stats(BiasAnalysisFunc):

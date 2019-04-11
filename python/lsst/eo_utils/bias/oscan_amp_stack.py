@@ -30,7 +30,7 @@ class oscan_amp_stack(BiasAnalysisFunc):
     """Class to analyze correlations between the imaging section
     and the overscan regions in a series of bias frames"""
 
-    argnames = STANDARD_SLOT_ARGS + ['covar', 'superbias']
+    argnames = STANDARD_SLOT_ARGS + ['bias', 'rafts', 'superbias', 'mask']
     iteratorClass = BiasAnalysisBySlot
 
     def __init__(self):

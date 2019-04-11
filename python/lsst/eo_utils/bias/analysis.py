@@ -26,9 +26,9 @@ mpl_utils.set_plt_ioff()
 def get_bias_data(butler, run_num, **kwargs):
     """Get a set of bias and mask files out of a folder
 
-    @param: butler (`Bulter`)  The data Butler
-    @param run_num (str)        The number number we are reading
-    @param kwargs
+    @param butler (`Bulter`)    The data Butler
+    @param run_num (str)        The run number we are reading
+    @param kwargs:
        acq_types (list)  The types of acquistions we want to include
 
     @returns (dict) Dictionary mapping slot to file names
@@ -43,29 +43,33 @@ def get_bias_data(butler, run_num, **kwargs):
 
 
 class BiasAnalysisBySlot(AnalysisBySlot):
-    """Small class to iterate an analysis function over all the slots in a raft"""
+    """Small class to iterate an analysis function over all the ccd slots"""
 
     data_func = get_bias_data
 
-    def __init__(self, analysis_func):
+    def __init__(self, analysis_func, argnames):
         """C'tor
 
         @param analysis_func (function) Function that does the actual analysis for one CCD
+        @param argnames (list)          List of the keyword arguments need by that function.
+                                        Used to look up defaults
         """
-        AnalysisBySlot.__init__(self, analysis_func)
+        AnalysisBySlot.__init__(self, analysis_func, argnames)
 
 
 class BiasAnalysisByRaft(AnalysisByRaft):
-    """Small class to iterate an analysis task over all the raft and then all the slots in a raft"""
+    """Small class to iterate an analysis task over the rafts """
 
     data_func = get_bias_data
 
-    def __init__(self, analysis_func):
+    def __init__(self, analysis_func, argnames):
         """C'tor
-
+        
         @param analysis_func (function) Function that does the actual analysis for one CCD
+        @param argnames (list)          List of the keyword arguments need by that function.
+                                        Used to look up defaults
         """
-        AnalysisByRaft.__init__(self, analysis_func)
+        AnalysisByRaft.__init__(self, analysis_func, argnames)
 
 
 class BiasAnalysisFunc:
@@ -85,34 +89,45 @@ class BiasAnalysisFunc:
         """
         self.datasuffix = datasuffix
 
-    def make_datatables(self, butler, data, **kwargs):
+    @classmethod
+    def make_datatables(cls, butler, data, datasuffix, **kwargs):
         """Tie together the functions to make the data tables
-        @param butler (`Butler`)   The data butler
-        @param data (dict)    Dictionary pointing to the bias and mask files
+        @param butler (`Butler`)    The data butler
+        @param data (dict)          Dictionary pointing to the bias and mask files
+        @param datasuffix (str)     Suffix for filenames
         @param kwargs
 
         @return (TableDict)
         """
-        tablebase = self.tablename_func(suffix=self.datasuffix, **kwargs)
+        kwargs['suffix'] = datasuffix
+        tablebase = cls.tablename_func(**kwargs)
         makedir_safe(tablebase)
         output_data = tablebase + ".fits"
 
         if kwargs.get('skip', False):
             dtables = TableDict(output_data)
         else:
-            dtables = self.extract(butler, data, **kwargs)
+            dtables = cls.extract(butler, data, **kwargs)
             dtables.save_datatables(output_data)
         return dtables
 
-    def make_plots(self, dtables):
+    @classmethod
+    def make_plots(cls, dtables, **kwargs):
         """Tie together the functions to make the data tables
         @param dtables (`TableDict`)   The data tables
 
         @return (`FigureDict`) the figues we produced
         """
         figs = FigureDict()
-        self.plot(dtables, figs)
-        return figs
+        cls.plot(dtables, figs)
+        if kwargs.get('interactive', False):
+            figs.save_all(None)
+            return figs
+
+        plotbase = cls.plotname_func(**kwargs)
+        makedir_safe(plotbase)
+        figs.save_all(plotbase)
+        return None
 
     def __call__(self, butler, data, **kwargs):
         """Tie together the functions
@@ -120,15 +135,9 @@ class BiasAnalysisFunc:
         @param data (dict)         Dictionary pointing to the bias and mask files
         @param kwargs              Passed to the functions that do the actual work
         """
-        dtables = self.make_datatables(butler, data, **kwargs)
+        dtables = self.make_datatables(butler, data, self.datasuffix, **kwargs)
         if kwargs.get('plot', False):
-            figs = self.make_plots(dtables)
-            if kwargs.get('interactive', False):
-                figs.save_all(None)
-            else:
-                plotbase = self.plotname_func(**kwargs)
-                makedir_safe(plotbase)
-                figs.save_all(plotbase)
+            self.make_plots(dtables, **kwargs)
 
     @classmethod
     def make(cls, butler, data, **kwargs):
@@ -143,8 +152,8 @@ class BiasAnalysisFunc:
     @classmethod
     def run(cls):
         """Run the analysis"""
-        functor = cls.iteratorClass(cls.make)
-        functor.run()
+        functor = cls.iteratorClass(cls.make, cls.argnames)
+        functor.run_analysis()
 
     @staticmethod
     def extract(butler, data, **kwargs):

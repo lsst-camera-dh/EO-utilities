@@ -199,7 +199,9 @@ def get_mask_files(**kwargs):
     @return (list) List of files containing only the one mask file name
     """
     if kwargs.get('mask', False):
-        mask_files = [mask_filename(**kwargs)]
+        kwcopy = kwargs.copy()
+        kwcopy['suffix'] = '_mask.fits'
+        mask_files = [mask_filename(**kwcopy)]
     else:
         mask_files = []
     return mask_files

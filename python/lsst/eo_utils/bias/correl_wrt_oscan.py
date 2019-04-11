@@ -23,7 +23,7 @@ class correl_wrt_oscan(BiasAnalysisFunc):
     """Class to analyze correlations between the imaging section
     and the overscan regions in a series of bias frames"""
 
-    argnames = STANDARD_SLOT_ARGS + ['covar', 'superbias']
+    argnames = STANDARD_SLOT_ARGS + ['rafts', 'mask']
     iteratorClass = BiasAnalysisBySlot
 
     def __init__(self):

@@ -94,9 +94,14 @@ class BiasSummaryByRaft(SummaryAnalysisIterator):
 
     data_func = get_raft_bias_tablefiles
 
-    def __init__(self, analysis_func):
-        """C'tor """
-        SummaryAnalysisIterator.__init__(self, analysis_func)
+    def __init__(self, analysis_func, argnames):
+        """C'tor
+
+        @param analysis_func (function) Function that does the actual analysis for one CCD
+        @param argnames (list)          List of the keyword arguments need by that function.
+                                        Used to look up defaults
+        """
+        SummaryAnalysisIterator.__init__(self, analysis_func, argnames)
 
 
 class SuperbiasSummaryByRaft(SummaryAnalysisIterator):
@@ -104,9 +109,14 @@ class SuperbiasSummaryByRaft(SummaryAnalysisIterator):
 
     data_func = get_raft_superbias_tablefiles
 
-    def __init__(self, analysis_func):
-        """C'tor """
-        SummaryAnalysisIterator.__init__(self, analysis_func)
+    def __init__(self, analysis_func, argnames):
+        """C'tor
+
+        @param analysis_func (function) Function that does the actual analysis for one CCD
+        @param argnames (list)          List of the keyword arguments need by that function.
+                                        Used to look up defaults
+        """
+        SummaryAnalysisIterator.__init__(self, analysis_func, argnames)
 
 
 
@@ -127,25 +137,29 @@ class BiasSummaryAnalysisFunc:
         """
         self.datasuffix = datasuffix
 
-    def make_datatables(self, filedict, **kwargs):
+    @classmethod
+    def make_datatables(cls, filedict, datasuffix, **kwargs):
         """Tie together the functions to make the data tables
-        @param filedict (dict)    Dictionary pointing to the bias and mask files
+        @param filedict (dict)         Dictionary pointing to the bias and mask files
+        @param datasuffix (str)        Suffix for filenames
         @param kwargs
 
         @return (TableDict)
         """
-        tablebase = self.tablename_func(suffix=self.datasuffix, **kwargs)
+        kwargs['suffix'] = datasuffix
+        tablebase = cls.tablename_func(**kwargs)
         makedir_safe(tablebase)
         output_data = tablebase + ".fits"
 
         if kwargs.get('skip', False):
             dtables = TableDict(output_data)
         else:
-            dtables = self.extract(filedict, **kwargs)
+            dtables = cls.extract(filedict, **kwargs)
             dtables.save_datatables(output_data)
         return dtables
 
-    def make_plots(self, dtables):
+    @classmethod
+    def make_plots(self, dtables, **kwargs):
         """Tie together the functions to make the data tables
         @param dtables (`TableDict`)   The data tables
 
@@ -153,7 +167,13 @@ class BiasSummaryAnalysisFunc:
         """
         figs = FigureDict()
         self.plot(dtables, figs)
-        return figs
+        if kwargs.get('interactive', False):
+            figs.save_all(None)
+            return figs
+        plotbase = cls.plotname_func(**kwargs)
+        makedir_safe(plotbase)
+        figs.save_all(plotbase)
+        return None
 
     def __call__(self, dataset, **kwargs):
         """Tie together the functions
@@ -163,13 +183,7 @@ class BiasSummaryAnalysisFunc:
         """
         dtables = self.make_datatables(dataset, **kwargs)
         if kwargs.get('plot', False):
-            figs = self.make_plots(dtables)
-            if kwargs.get('interactive', False):
-                figs.save_all(None)
-            else:
-                plotbase = self.plotname_func(**kwargs)
-                makedir_safe(plotbase)
-                figs.save_all(plotbase)
+            figs = self.make_plots(dtables, **kwargs)
 
     @classmethod
     def make(cls, dataset, **kwargs):
@@ -183,7 +197,7 @@ class BiasSummaryAnalysisFunc:
     @classmethod
     def run(cls):
         """Run the analysis"""
-        functor = cls.iteratorClass(cls.make)
+        functor = cls.iteratorClass(cls.make, cls.argnames)
         functor.run()
 
     @staticmethod

@@ -201,3 +201,8 @@ class superbias_struct(BiasAnalysisFunc):
         for key, val in biasstruct_data.items():
             dtables.make_datatable('biasst-%s' % key, val)
         return dtables
+
+    @staticmethod
+    def plot(dtables, figs):
+        """Just pass along to bias_struct.plot"""
+        return bias_struct.plot(dtables, figs)

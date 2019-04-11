@@ -46,6 +46,9 @@ def make_mask(butler, slot_data, **kwargs):
 
 class MaskAnalysisBySlot(AnalysisBySlot):
     """Small class to iterate an analysis task over all the slots in a raft"""
+
+    data_func = get_mask_data
+
     def __init__(self, analysis_func, argnames):
         """C'tor
 
@@ -53,4 +56,4 @@ class MaskAnalysisBySlot(AnalysisBySlot):
         @param argnames (list)          List of the keyword arguments needed by that function,
                                         used to look up defaults
         """
-        super(MaskAnalysisBySlot, self).__init__(analysis_func, get_mask_data, argnames)
+        super(MaskAnalysisBySlot, self).__init__(analysis_func, argnames)
