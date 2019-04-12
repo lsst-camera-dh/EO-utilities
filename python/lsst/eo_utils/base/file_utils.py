@@ -5,8 +5,13 @@
 
 import os
 
-from get_EO_analysis_files import get_EO_analysis_files
-from exploreRun import exploreRun
+try:
+    from get_EO_analysis_files import get_EO_analysis_files
+    from exploreRun import exploreRun
+except ImportError:
+    print("Warning, no datacat-utilities")
+    pass
+
 
 from .defaults import MASK_TEST_TYPES, SLOT_FORMAT_STRING,\
      RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING, ALL_RAFTS
