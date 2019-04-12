@@ -2,10 +2,11 @@
 
 import sys
 
-from lsst.eo_utils.base.file_utils import read_runlist, makedir_safe
-from lsst.eo_utils.base.data_utils import TableDict
-from lsst.eo_utils.base.plot_utils import FigureDict
+from lsst.eo_utils.base.file_utils import read_runlist
+
 from lsst.eo_utils.base.iter_utils import AnalysisIterator, SummaryAnalysisIterator
+
+from lsst.eo_utils.base.analysis import AnalysisFunc
 
 from .file_utils import slot_bias_tablename,\
     slot_bias_plotname, raft_bias_tablename, raft_superbias_tablename
@@ -40,9 +41,10 @@ def get_tablenames_by_slot(butler, run_num, **kwargs):
     return out_dict
 
 
-def get_raft_bias_tablefiles(dataset, **kwargs):
+def get_raft_bias_tablefiles(butler, dataset, **kwargs):
     """Extract the statistics of the FFT of the bias
 
+    @param butler (`Butler`)    The data butler
     @param dataset (str)
     @param kwargs:
         bias (str)
@@ -50,23 +52,30 @@ def get_raft_bias_tablefiles(dataset, **kwargs):
 
     @returns (dict) mapping runkey to filename
     """
+    if butler is not None:
+        sys.stdout.write("Ignoring butler in get_raft_bias_tablefiles\n")
+
     infile = '%s_runs.txt' % dataset
 
     run_list = read_runlist(infile)
+    kwcopy = kwargs.copy()
 
     filedict = {}
     for runinfo in run_list:
         raft = runinfo[0].replace('-Dev', '')
         run_num = runinfo[1]
         run_key = "%s_%s" % (raft, run_num)
-        filedict[run_key] = raft_bias_tablename('analysis', raft, run_num, **kwargs) + '.fits'
+        kwcopy['run'] = run_num
+        kwcopy['raft'] = raft
+        filedict[run_key] = raft_bias_tablename(**kwcopy) + '.fits'
 
     return filedict
 
 
-def get_raft_superbias_tablefiles(dataset, **kwargs):
+def get_raft_superbias_tablefiles(butler, dataset, **kwargs):
     """Extract the statistics of the FFT of the bias
 
+    @param butler (`Butler`)    The data butler
     @param dataset (str)
     @param kwargs:
         bias (str)
@@ -74,16 +83,22 @@ def get_raft_superbias_tablefiles(dataset, **kwargs):
 
     @returns (dict) mapping runkey to filename
     """
+    if butler is not None:
+        sys.stdout.write("Ignoring butler in get_raft_superbias_tablefiles\n")
+
     infile = '%s_runs.txt' % dataset
 
     run_list = read_runlist(infile)
+    kwcopy = kwargs.copy()
 
     filedict = {}
     for runinfo in run_list:
         raft = runinfo[0].replace('-Dev', '')
         run_num = runinfo[1]
         run_key = "%s_%s" % (raft, run_num)
-        filedict[run_key] = raft_superbias_tablename('analysis', raft, run_num, **kwargs) + '.fits'
+        kwcopy['run'] = run_num
+        kwcopy['raft'] = raft
+        filedict[run_key] = raft_superbias_tablename(**kwargs) + '.fits'
 
     return filedict
 
@@ -120,7 +135,7 @@ class SuperbiasSummaryByRaft(SummaryAnalysisIterator):
 
 
 
-class BiasSummaryAnalysisFunc:
+class BiasSummaryAnalysisFunc(AnalysisFunc):
     """Simple functor class to tie together standard bias data analysis
     """
 
@@ -135,78 +150,4 @@ class BiasSummaryAnalysisFunc:
         @param datasuffix (str)        Suffix for filenames
         @param kwargs:
         """
-        self.datasuffix = datasuffix
-
-    @classmethod
-    def make_datatables(cls, filedict, datasuffix, **kwargs):
-        """Tie together the functions to make the data tables
-        @param filedict (dict)         Dictionary pointing to the bias and mask files
-        @param datasuffix (str)        Suffix for filenames
-        @param kwargs
-
-        @return (TableDict)
-        """
-        kwargs['suffix'] = datasuffix
-        tablebase = cls.tablename_func(**kwargs)
-        makedir_safe(tablebase)
-        output_data = tablebase + ".fits"
-
-        if kwargs.get('skip', False):
-            dtables = TableDict(output_data)
-        else:
-            dtables = cls.extract(filedict, **kwargs)
-            dtables.save_datatables(output_data)
-        return dtables
-
-    @classmethod
-    def make_plots(self, dtables, **kwargs):
-        """Tie together the functions to make the data tables
-        @param dtables (`TableDict`)   The data tables
-
-        @return (`FigureDict`) the figues we produced
-        """
-        figs = FigureDict()
-        self.plot(dtables, figs)
-        if kwargs.get('interactive', False):
-            figs.save_all(None)
-            return figs
-        plotbase = cls.plotname_func(**kwargs)
-        makedir_safe(plotbase)
-        figs.save_all(plotbase)
-        return None
-
-    def __call__(self, dataset, **kwargs):
-        """Tie together the functions
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the bias and mask files
-        @param kwargs              Passed to the functions that do the actual work
-        """
-        dtables = self.make_datatables(dataset, **kwargs)
-        if kwargs.get('plot', False):
-            figs = self.make_plots(dtables, **kwargs)
-
-    @classmethod
-    def make(cls, dataset, **kwargs):
-        """Tie together the functions
-        @param dataset (str)       Key for the data we are analyzing
-        @param kwargs              Passed to the functions that do the actual work
-        """
-        obj = cls()
-        obj(dataset, **kwargs)
-
-    @classmethod
-    def run(cls):
-        """Run the analysis"""
-        functor = cls.iteratorClass(cls.make, cls.argnames)
-        functor.run()
-
-    @staticmethod
-    def extract(filedict, **kwargs):
-        """This needs to be implemented by the sub-class"""
-        raise NotImplementedError("BiasAnalysisFunc.extract")
-
-    @staticmethod
-    def plot(dtables, figs):
-        """This needs to be implemented by the sub-class"""
-        if dtables is not None and figs is not None:
-            sys.stdout.write("Warning, plotting function not implemented\n")
+        AnalysisFunc.__init__(self, datasuffix)

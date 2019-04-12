@@ -22,7 +22,7 @@ DEFAULT_SUPERBIAS_TYPE = None
 
 
 
-def superbias_filename(outdir, raft, run_num, slot, bias_type, **kwargs):
+def superbias_filename(outdir, raft, run_num, slot, **kwargs):
     """Return the filename for a superbias file
 
     The format is {outdir}/superbias/{raft}/{raft}-{run_num}-{slot}_superbias_b-{bias_type}.fits
@@ -33,12 +33,12 @@ def superbias_filename(outdir, raft, run_num, slot, bias_type, **kwargs):
     @param slot (str)
     @param bias_type (str)
     @param kwargs:
+        bias_type (str)
         suffix (str)
 
     @returns (str) The path for the file.
     """
-    suffix = '_superbias_b-%s' % bias_type
-    #suffix += kwargs.get('suffix', '')
+    suffix = '_superbias_b-{bias_type}'.format(**kwargs)
 
     outpath = get_slot_file_basename(outdir=outdir, fileType='superbias',
                                      raft=raft, testType='', run_num=run_num,
@@ -59,12 +59,10 @@ def superbias_stat_filename(outdir, raft, run_num, slot, **kwargs):
     @param kwargs (dict)
         stat_type(str)
         bias_type(str)
-        std (bool)
 
     @returns (str) The path for the file.
     """
     suffix = '_{stat_type}_b-{bias_type}'.format(**kwargs)
-    #suffix += kwargs.get('suffix', '')
 
     outpath = get_slot_file_basename(outdir=outdir, fileType='superbias',
                                      raft=raft, testType='', run_num=run_num,
@@ -73,20 +71,32 @@ def superbias_stat_filename(outdir, raft, run_num, slot, **kwargs):
     return str(outpath)
 
 
-RAFT_BIAS_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None, testType='bias', run_num=None)
-RAFT_BIAS_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None, testType='bias', run_num=None)
-SLOT_BIAS_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None, testType='bias', run_num=None, slot=None)
-SLOT_BIAS_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None, testType='bias', run_num=None, slot=None)
+RAFT_BIAS_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
+                                    testType='bias', run_num=None)
+RAFT_BIAS_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
+                                   testType='bias', run_num=None)
+SLOT_BIAS_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
+                                    testType='bias', run_num=None, slot=None)
+SLOT_BIAS_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
+                                   testType='bias', run_num=None, slot=None)
 
-RAFT_SBIAS_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None, testType='superbias', run_num=None)
-RAFT_SBIAS_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None, testType='superbias', run_num=None)
-SLOT_SBIAS_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None, testType='superbias', run_num=None, slot=None)
-SLOT_SBIAS_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None, testType='superbias', run_num=None, slot=None)
+RAFT_SBIAS_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
+                                     testType='superbias', run_num=None)
+RAFT_SBIAS_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
+                                    testType='superbias', run_num=None)
+SLOT_SBIAS_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
+                                     testType='superbias', run_num=None, slot=None)
+SLOT_SBIAS_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
+                                    testType='superbias', run_num=None, slot=None)
 
-BIAS_SUMMARY_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', testType='bias', dataset=None, suffix='')
-BIAS_SUMMARY_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', testType='bias', dataset=None, suffix='')
-SBIAS_SUMMARY_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', testType='superbias', dataset=None, suffix='')
-SBIAS_SUMMARY_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', testType='superbias', dataset=None, suffix='')
+BIAS_SUMMARY_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables',
+                                       testType='bias', dataset=None, suffix='')
+BIAS_SUMMARY_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots',
+                                      testType='bias', dataset=None, suffix='')
+SBIAS_SUMMARY_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables',
+                                        testType='superbias', dataset=None, suffix='')
+SBIAS_SUMMARY_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots',
+                                       testType='superbias', dataset=None, suffix='')
 
 
 def raft_bias_tablename(**kwargs):
@@ -105,7 +115,7 @@ def raft_bias_tablename(**kwargs):
 
     return str(outbase)
 
-def raft_bias_plotname(outdir, raft, run_num, **kwargs):
+def raft_bias_plotname(**kwargs):
     """Return the filename for a raft level plot
 
     The format is {outdir}/plots/{raft}/bias/{raft}-{run_num}-{slot}_b-{bias_type}_s-{superbias_type}{suffix}
@@ -328,7 +338,7 @@ def superbias_summary_tablename(**kwargs):
     return str(outpath)
 
 
-def superbias_summary_plotname(outdir, dataset, **kwargs):
+def superbias_summary_plotname(**kwargs):
     """Return the filename for a summary plot file
 
     The format is {outdir}/plots/summary/bias/{dataset}{suffix}
@@ -336,7 +346,7 @@ def superbias_summary_plotname(outdir, dataset, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SBIAS_SUMMARY_PLOTNAME_DEFAULTS)
-    outpath = get_summary_file_basename(**kwcop)
+    outpath = get_summary_file_basename(**kwcopy)
 
     return str(outpath)
 

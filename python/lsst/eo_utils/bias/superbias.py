@@ -161,5 +161,5 @@ class superbias:
     @classmethod
     def run(cls):
         """Run the analysis"""
-        functor = cls.iteratorClass(cls.make)
-        functor.run()
+        functor = cls.iteratorClass(cls.make, cls.argnames)
+        functor.run_analysis()

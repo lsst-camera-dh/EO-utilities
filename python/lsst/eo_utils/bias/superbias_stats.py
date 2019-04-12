@@ -128,7 +128,7 @@ class superbias_stats_summary(BiasSummaryAnalysisFunc):
         BiasSummaryAnalysisFunc.__init__(self, "stats")
 
     @staticmethod
-    def extract(filedict, **kwargs):
+    def extract(butler, data, **kwargs):
         """Make a summry table of the bias FFT data
 
         @param filedict (dict)      The files we are analyzing
@@ -138,11 +138,14 @@ class superbias_stats_summary(BiasSummaryAnalysisFunc):
 
         @returns (TableDict)
         """
-        outtable = vstack_tables(filedict, tablename='stats')
+        if butler is not None:
+            sys.stdout.write("Ignoring butler in superbias_stats_summary.extract %s\n" % kwargs)
+
+        outtable = vstack_tables(data, tablename='stats')
 
         dtables = TableDict()
         dtables.add_datatable('stats', outtable)
-        dtables.make_datatable('runs', dict(runs=sorted(filedict.keys())))
+        dtables.make_datatable('runs', dict(runs=sorted(data.keys())))
         return dtables
 
 

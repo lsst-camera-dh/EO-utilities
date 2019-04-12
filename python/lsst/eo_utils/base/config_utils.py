@@ -204,6 +204,5 @@ def copy_dict(in_dict, def_dict):
 
     @returns (dict) Dictionary with only the arguments we have selected
     """
-    outdict = { key:in_dict.get(key, val) for key, val in def_dict.items() }
+    outdict = {key:in_dict.get(key, val) for key, val in def_dict.items()}
     return outdict
- 

@@ -2,7 +2,7 @@
 
 """This module is just a command line interface to make mask files"""
 
-from lsst.eo_utils.base.analysis import MaskAnalysisBySlot, make_mask
+from lsst.eo_utils.base.mask_analysis import MaskAnalysisBySlot, make_mask
 
 
 def main():
@@ -10,7 +10,7 @@ def main():
     argnames = ['run', 'slots', 'butler_repo', 'outdir']
 
     functor = MaskAnalysisBySlot(make_mask, argnames)
-    functor.run()
+    functor.run_analysis()
 
 
 if __name__ == '__main__':

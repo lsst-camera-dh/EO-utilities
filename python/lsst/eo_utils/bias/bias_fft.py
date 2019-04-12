@@ -243,6 +243,9 @@ class bias_fft_stats(BiasAnalysisFunc):
 
         @returns (TableDict) with the extracted data
         """
+        if butler is not None:
+            sys.stdout.write("Ignoring butler in bias_fft_stats.extract\n")
+
         datakey = 'biasfft-s'
 
         data_dict = dict(fftpow_mean=[],
@@ -309,7 +312,7 @@ class bias_fft_summary(BiasSummaryAnalysisFunc):
         BiasSummaryAnalysisFunc.__init__(self, "biasfft_sum")
 
     @staticmethod
-    def extract(filedict, **kwargs):
+    def extract(butler, data, **kwargs):
         """Make a summry table of the bias FFT data
 
         @param filedict (dict)      The files we are analyzing
@@ -319,12 +322,15 @@ class bias_fft_summary(BiasSummaryAnalysisFunc):
 
         @returns (TableDict)
         """
+        if butler is not None:
+            sys.stdout.write("Ignoring butler in bias_fft_summary.extract\n")
+
         if not kwargs.get('skip', False):
-            outtable = vstack_tables(filedict, tablename='biasfft_sum')
+            outtable = vstack_tables(data, tablename='biasfft_sum')
 
         dtables = TableDict()
         dtables.add_datatable('stats', outtable)
-        dtables.make_datatable('runs', dict(runs=sorted(filedict.keys())))
+        dtables.make_datatable('runs', dict(runs=sorted(data.keys())))
         return dtables
 
 
