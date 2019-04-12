@@ -65,7 +65,7 @@ class superbias:
         else:
             raise ValueError("Can not convert %s to a valid statistic to perform stacking" % stat_type)
 
-        sbias = make_superbias(butler, bias_files, statistic=statistic, bias_type=bias_type, stat_type=stat_type)
+        sbias = make_superbias(butler, bias_files, statistic=statistic, bias_type=bias_type)
         return sbias
 
 
@@ -82,7 +82,9 @@ class superbias:
         if kwargs.get('stat', DEFAULT_STAT_TYPE) == DEFAULT_STAT_TYPE:
             output_file = superbias_filename(bias_type=kwargs.get('bias'), **kwargs)
         else:
-            output_file = superbias_stat_filename(bias_type=kwargs.get('bias'), **kwargs)
+            output_file = superbias_stat_filename(bias_type=kwargs.get('bias'),
+                                                  stat_type=kwargs.get('stat'),
+                                                  **kwargs)
 
         makedir_safe(output_file)
 
