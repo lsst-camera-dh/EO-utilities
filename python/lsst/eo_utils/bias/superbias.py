@@ -65,7 +65,7 @@ class superbias:
         else:
             raise ValueError("Can not convert %s to a valid statistic to perform stacking" % stat_type)
 
-        sbias = make_superbias(butler, bias_files, statistic=statistic, bias_type=bias_type)
+        sbias = make_superbias(butler, bias_files, statistic=statistic, bias_type=bias_type, stat_type=stat_type)
         return sbias
 
 
