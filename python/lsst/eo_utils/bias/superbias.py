@@ -145,7 +145,14 @@ class superbias:
             if kwargs.get('interactive', False):
                 figs.save_all(None)
             else:
-                plotbase = superbias_filename(**kwargs).replace('.fits', '')
+                if kwargs.get('stat', DEFAULT_STAT_TYPE) == DEFAULT_STAT_TYPE:
+                    plotbase = superbias_filename(bias_type=kwargs.get('bias'),
+                                                  **kwargs).replace('.fits', '')
+                else:
+                    plotbase = superbias_stat_filename(bias_type=kwargs.get('bias'),
+                                                          stat_type=kwargs.get('stat'),
+                                                          **kwargs).replace('.fits', '')
+
                 makedir_safe(plotbase)
                 figs.save_all(plotbase)
 
