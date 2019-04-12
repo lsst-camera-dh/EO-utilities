@@ -8,12 +8,7 @@ from collections import OrderedDict
 
 import lsst.pex.config as pexConfig
 
-
-# Some default values
-DEFAULT_DB = 'Dev'
-DEFAULT_OUTDIR = 'analysis'
-DEFAULT_STAT_TYPE = 'median'
-DEFAULT_BITPIX = -32
+from .defaults import DEFAULT_OUTDIR, DEFAULT_LOGFILE, DEFAULT_NBINS, DEFAULT_BATCH_ARGS
 
 
 # Some standard set of argument names
@@ -27,10 +22,10 @@ class EOUtilConfig(pexConfig.Config):
     """A simple class to manage configuration parameters for EO analysis tasks"""
     input = pexConfig.Field("Input file", str, default=None)
     output = pexConfig.Field("Output file", str, default=None)
-    logfile = pexConfig.Field("Log file", str, default="temp.log")
+    logfile = pexConfig.Field("Log file", str, default=DEFAULT_LOGFILE)
     batch = pexConfig.Field("Dispatch job to batch", str, default=None)
     dry_run = pexConfig.Field("Print batch command, do not send job", bool, default=False)
-    batch_args = pexConfig.Field("Arguments to pass to batch command", str, default="-W 1200 -R bullet")
+    batch_args = pexConfig.Field("Arguments to pass to batch command", str, default=DEFAULT_BATCH_ARGS)
     run = pexConfig.Field("Run ID", str, default=None)
     slots = pexConfig.ListField("Slot ID(s)", str, default=None)
     rafts = pexConfig.ListField("Raft Slot(s)", str, default=None)
@@ -42,7 +37,7 @@ class EOUtilConfig(pexConfig.Config):
     outdir = pexConfig.Field("Output file path root", str, default=DEFAULT_OUTDIR)
     vmin = pexConfig.Field("Color scale minimum value", float, default=None)
     vmax = pexConfig.Field("Color scale maximum value", float, default=None)
-    nbins = pexConfig.Field("Number of bins in histogram", int, default=100)
+    nbins = pexConfig.Field("Number of bins in histogram", int, default=DEFAULT_NBINS)
     mask = pexConfig.Field("Use the mask files", bool, default=False)
     plot = pexConfig.Field("Make plots", bool, default=False)
     std = pexConfig.Field("Plot standard deviation instead of mean", bool, default=False)

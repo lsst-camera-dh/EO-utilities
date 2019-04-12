@@ -14,7 +14,6 @@ from astropy.table import vstack as vstack_table
 HDF5_SUFFIXS = ['.hdf', '.h5', '.hd5', '.hdf5']
 FITS_SUFFIXS = ['.fit', '.fits']
 
-
 class TableDict:
     """Object to collect `astropy.table.Table` objects
 

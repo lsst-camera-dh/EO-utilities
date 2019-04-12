@@ -4,22 +4,14 @@
 
 """This module contains functions to find files of a particular type in the SLAC directory tree"""
 
+from lsst.eo_utils.base.defaults import DATACAT_TS8_TEST_TYPES, DATACAT_BOT_TEST_TYPES,\
+     DEFAULT_SUPERBIAS_TYPE
+
 from lsst.eo_utils.base.config_utils import copy_dict
 
 from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_for_run,\
     get_slot_file_basename, get_raft_file_basename, get_summary_file_basename
 from lsst.eo_utils.base.image_utils import get_ccd_from_id
-
-ACQ_TYPES_RAFT = ['fe55_raft_acq',
-                  'flat_pair_raft_acq',
-                  'sflat_raft_acq',
-                  'qe_raft_acq',
-                  'dark_raft_acq']
-
-ACQ_TYPES_BOT = ['DARK', 'FLAT', 'FE55', 'PPUMP', 'SFLAT', 'LAMBDA', 'TRAP']
-
-DEFAULT_SUPERBIAS_TYPE = None
-
 
 
 def superbias_filename(outdir, raft, run_num, slot, **kwargs):
@@ -364,9 +356,9 @@ def get_bias_files_run(run_id, **kwargs):
 
     if acq_types is None:
         if hinfo[0] == 'LCA-11021':
-            acq_types = ACQ_TYPES_RAFT
+            acq_types = DATACAT_TS8_TEST_TYPES
         else:
-            acq_types = ACQ_TYPES_BOT
+            acq_types = DATACAT_BOT_TEST_TYPES
 
     return get_files_for_run(run_id,
                              imageType="BIAS",

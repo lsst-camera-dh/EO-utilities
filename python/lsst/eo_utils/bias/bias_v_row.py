@@ -6,6 +6,8 @@ import numpy as np
 
 import lsst.eotest.image_utils as imutil
 
+from lsst.eo_utils.base.defaults import DEFAULT_BIAS_TYPE
+
 from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
 
 from lsst.eo_utils.base.data_utils import TableDict
@@ -17,7 +19,6 @@ from lsst.eo_utils.base.image_utils import get_dims_from_ccd,\
 
 from .analysis import BiasAnalysisFunc, BiasAnalysisBySlot
 
-DEFAULT_BIAS_TYPE = 'spline'
 
 class bias_v_row(BiasAnalysisFunc):
     """Class to analyze the overscan bias as a function of row number"""

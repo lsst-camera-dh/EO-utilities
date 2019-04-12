@@ -1,5 +1,6 @@
 """Functions to analyse bias and superbias frames"""
 
+
 from lsst.eo_utils.base import mpl_utils
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot, AnalysisByRaft
@@ -11,11 +12,8 @@ from .file_utils import get_bias_files_run,\
 
 from .butler_utils import get_bias_files_butler
 
-
-DEFAULT_BIAS_TYPE = 'spline'
-ALL_SLOTS = 'S00 S01 S02 S10 S11 S12 S20 S21 S22'.split()
-
 mpl_utils.set_plt_ioff()
+
 
 def get_bias_data(butler, run_num, **kwargs):
     """Get a set of bias and mask files out of a folder

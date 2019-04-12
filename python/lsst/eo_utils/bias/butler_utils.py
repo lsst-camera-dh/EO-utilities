@@ -1,8 +1,7 @@
 """This module contains functions to find files of a particular type using the data Butler"""
 
+from lsst.eo_utils.base.defaults import BUTLER_TEST_TYPES
 from lsst.eo_utils.base.butler_utils import get_files_butler
-
-BIAS_TEST_TYPES = ['DARK', 'FLAT', 'FE55', 'PPUMP', 'SFLAT', 'LAMBDA', 'TRAP']
 
 
 def get_bias_files_butler(butler, run_id, **kwargs):
@@ -19,7 +18,7 @@ def get_bias_files_butler(butler, run_id, **kwargs):
     acq_types = kwargs.get('acq_types', None)
 
     if acq_types is None:
-        acq_types = BIAS_TEST_TYPES
+        acq_types = BUTLER_TEST_TYPES
 
     return get_files_butler(butler, run_id,
                             testTypes=acq_types,

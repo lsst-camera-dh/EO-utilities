@@ -6,6 +6,8 @@ import numpy as np
 
 from lsst.eo_utils.base.file_utils import get_mask_files
 
+from lsst.eo_utils.base.defaults import ALL_SLOTS
+
 from lsst.eo_utils.base.config_utils import STANDARD_RAFT_ARGS
 
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
@@ -22,9 +24,6 @@ from .file_utils import raft_superbias_tablename, raft_superbias_plotname,\
 
 from .meta_analysis import SuperbiasSummaryByRaft, BiasSummaryAnalysisFunc
 
-#FIXME get these from elsewhere
-DEFAULT_BIAS_TYPE = 'spline'
-ALL_SLOTS = 'S00 S01 S02 S10 S11 S12 S20 S21 S22'.split()
 
 class superbias_stats(BiasAnalysisFunc):
     """Class to analyze the overscan bias as a function of row number"""

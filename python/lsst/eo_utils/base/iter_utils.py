@@ -3,17 +3,13 @@
 import sys
 import os
 
+from .defaults import ALL_SLOTS
 
 from .config_utils import setup_parser, make_argstring, get_config_values
 from .file_utils import get_hardware_type_and_id, get_raft_names_dc
 from .butler_utils import getButler, get_hardware_info, get_raft_names_butler
 
 from .batch_utils import dispatch_job
-
-# These should be taken from somewhere, not hardcoded here
-ALL_SLOTS = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
-ALL_RAFTS = ['R10', 'R22']
-
 
 
 def dummy_data_func(butler, datakey, **kwargs):

@@ -5,6 +5,8 @@ import sys
 
 import numpy as np
 
+from lsst.eo_utils.base.defaults import DEFAULT_BIAS_TYPE
+
 from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
 
 from lsst.eo_utils.base.file_utils import get_mask_files
@@ -24,7 +26,6 @@ from .data_utils import convert_stack_arrays_to_dict
 
 from .analysis import BiasAnalysisFunc, BiasAnalysisBySlot
 
-DEFAULT_BIAS_TYPE = 'spline'
 
 class oscan_amp_stack(BiasAnalysisFunc):
     """Class to analyze correlations between the imaging section

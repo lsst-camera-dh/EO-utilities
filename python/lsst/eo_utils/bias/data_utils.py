@@ -2,12 +2,11 @@
 
 import numpy as np
 
+from lsst.eo_utils.base.defaults import DEFAULT_BIAS_TYPE
+
 from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES,\
     get_geom_regions, get_raw_image, get_amp_list,\
     get_image_frames_2d, array_struct, unbias_amp
-
-DEFAULT_BIAS_TYPE = 'spline'
-
 
 
 def stack_by_amps(stack_arrays, butler, ccd, **kwargs):

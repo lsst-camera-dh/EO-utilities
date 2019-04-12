@@ -8,18 +8,8 @@ import os
 from get_EO_analysis_files import get_EO_analysis_files
 from exploreRun import exploreRun
 
-MASK_TYPES_DEFAULT = ['fe55_raft_analysis',
-                      'dark_defects_raft',
-                      'traps_raft',
-                      'bright_defects_raft']
-
-
-# These strings define the standard output filenames
-SLOT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}-{slot}{suffix}'
-RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}-RFT{suffix}'
-SUMMARY_FORMAT_STRING = '{outdir}/{fileType}/summary/{testType}/{dataset}{suffix}'
-
-ALL_RAFTS = ["R10", "R22"]
+from .defaults import MASK_TEST_TYPES, SLOT_FORMAT_STRING,\
+     RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING, ALL_RAFTS
 
 
 def makedir_safe(filepath):
@@ -182,7 +172,7 @@ def get_mask_files_run(run_id, **kwargs):
     """
     mask_types = kwargs.get('mask_types', None)
     if mask_types is None:
-        mask_types = MASK_TYPES_DEFAULT
+        mask_types = MASK_TEST_TYPES
 
     return get_files_for_run(run_id,
                              testTypes=mask_types,

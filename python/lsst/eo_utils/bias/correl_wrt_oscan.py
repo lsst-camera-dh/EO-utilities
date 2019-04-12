@@ -17,7 +17,6 @@ from lsst.eo_utils.base.image_utils import get_dims_from_ccd, get_ccd_from_id,\
 
 from .analysis import BiasAnalysisFunc, BiasAnalysisBySlot
 
-DEFAULT_BIAS_TYPE = 'spline'
 
 class correl_wrt_oscan(BiasAnalysisFunc):
     """Class to analyze correlations between the imaging section

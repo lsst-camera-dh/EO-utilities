@@ -17,10 +17,7 @@ import lsst.afw.image as afwImage
 import lsst.eotest.image_utils as imutil
 from lsst.eotest.sensor import MaskedCCD
 
-
-# These readout times, in seconds
-T_SERIAL = 2e-06
-T_PARALLEL = 40e-06
+from .defaults import T_SERIAL, T_PARALLEL
 
 # These are the names and labels for the parts of the data array
 REGION_KEYS = ['i', 's', 'p']

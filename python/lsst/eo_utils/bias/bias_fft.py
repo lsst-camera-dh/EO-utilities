@@ -6,6 +6,8 @@ import numpy as np
 
 from scipy import fftpack
 
+from lsst.eo_utils.base.defaults import ALL_SLOTS, DEFAULT_BIAS_TYPE
+
 from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
 
 from lsst.eo_utils.base.file_utils import get_mask_files
@@ -26,9 +28,6 @@ from .analysis import BiasAnalysisFunc, BiasAnalysisBySlot
 
 from .meta_analysis import BiasSummaryByRaft, BiasSummaryAnalysisFunc
 
-#FIXME, get these from elsewhere
-DEFAULT_BIAS_TYPE = 'spline'
-SLOT_LIST = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
 
 class bias_fft(BiasAnalysisFunc):
     """Class to analyze the overscan bias as a function of row number"""
@@ -263,7 +262,7 @@ class bias_fft_stats(BiasAnalysisFunc):
         sys.stdout.write("Working on %s:")
         sys.stdout.flush()
 
-        for islot, slot in enumerate(SLOT_LIST):
+        for islot, slot in enumerate(ALL_SLOTS):
 
             sys.stdout.write(" %s" % slot)
             sys.stdout.flush()

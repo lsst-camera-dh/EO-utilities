@@ -2,6 +2,8 @@
 
 import sys
 
+from lsst.eo_utils.base.defaults import ALL_SLOTS
+
 from lsst.eo_utils.base.file_utils import read_runlist
 
 from lsst.eo_utils.base.iter_utils import AnalysisIterator, SummaryAnalysisIterator
@@ -11,7 +13,6 @@ from lsst.eo_utils.base.analysis import AnalysisFunc
 from .file_utils import slot_bias_tablename,\
     slot_bias_plotname, raft_bias_tablename, raft_superbias_tablename
 
-SLOT_LIST = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
 
 
 def get_tablenames_by_slot(butler, run_num, **kwargs):
@@ -32,7 +33,7 @@ def get_tablenames_by_slot(butler, run_num, **kwargs):
     for raft in raft_list:
         kwcopy['raft'] = raft
         slot_dict = {}
-        for slot in SLOT_LIST:
+        for slot in ALL_SLOTS:
             kwcopy['slot'] = slot
             basename = slot_bias_tablename(**kwcopy)
             datapath = basename + '.fits'

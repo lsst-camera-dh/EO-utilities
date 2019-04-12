@@ -4,6 +4,8 @@ import sys
 
 import numpy as np
 
+from lsst.eo_utils.base.defaults import DEFAULT_BIAS_TYPE
+
 from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
 
 from lsst.eo_utils.base.file_utils import get_mask_files
@@ -33,9 +35,6 @@ from .correl_wrt_oscan import correl_wrt_oscan
 
 from .oscan_amp_stack import oscan_amp_stack
 
-
-# FIXME, this should come from somewhere else
-DEFAULT_BIAS_TYPE = 'spline'
 
 class bias_data(BiasAnalysisFunc):
     """Class to analyze the overscan bias as a function of row number"""

@@ -2,19 +2,7 @@
 
 from lsst.daf.persistence import Butler
 
-
-# This is the location of the Teststand 8 runs at SLAC
-BUTLER_TS8_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/ts8'
-# This is the location of the BOT runs at SLAC
-BUTLER_BOT_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/bot'
-
-# Map the Butler repos to simple names
-BUTLER_REPO_DICT = dict(TS8=BUTLER_TS8_REPO,
-                        BOT=BUTLER_BOT_REPO)
-
-
-# FIXME, we should get this from a single place
-SLOT_LIST = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
+from .defaults import BUTLER_REPO_DICT
 
 
 def getButler(repo, **kwargs):

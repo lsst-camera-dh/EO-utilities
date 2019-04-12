@@ -9,6 +9,8 @@ from .image_utils import get_raw_image,\
     get_amp_list, unbias_amp, get_geom_regions,\
     get_image_frames_2d
 
+from .defaults import TESTCOLORMAP
+
 from . import mpl_utils
 
 from matplotlib import ticker
@@ -16,13 +18,6 @@ import matplotlib.pyplot as plt
 
 mpl_utils.set_plt_ioff()
 
-TESTCOLORMAP = dict(DARK="black",
-                    FLAT="blue",
-                    TRAP="red",
-                    LAMBDA="magenta",
-                    SFLAT="green",
-                    SFLAT_500="green",
-                    FE55="cyan")
 
 
 class FigureDict:

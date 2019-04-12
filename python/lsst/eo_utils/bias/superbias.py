@@ -9,9 +9,10 @@ import lsst.eotest.image_utils as imutil
 from lsst.eo_utils.base.file_utils import makedir_safe,\
     get_mask_files
 
-from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
+from lsst.eo_utils.base.defaults import SBIAS_TEMPLATE, DEFAULT_BIAS_TYPE,\
+    DEFAULT_STAT_TYPE, DEFAULT_BITPIX
 
-from lsst.eo_utils.base.config_utils import DEFAULT_STAT_TYPE, DEFAULT_BITPIX
+from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
 
 from lsst.eo_utils.base.plot_utils import FigureDict
 
@@ -21,9 +22,6 @@ from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
 from .file_utils import superbias_filename, superbias_stat_filename
 
 from .analysis import BiasAnalysisBySlot
-
-DEFAULT_BIAS_TYPE = 'spline'
-SBIAS_TEMPLATE = 'analysis/superbias/templates/sbias_template.fits'
 
 
 class superbias:
@@ -150,8 +148,8 @@ class superbias:
                                                   **kwargs).replace('.fits', '')
                 else:
                     plotbase = superbias_stat_filename(bias_type=kwargs.get('bias'),
-                                                          stat_type=kwargs.get('stat'),
-                                                          **kwargs).replace('.fits', '')
+                                                       stat_type=kwargs.get('stat'),
+                                                       **kwargs).replace('.fits', '')
 
                 makedir_safe(plotbase)
                 figs.save_all(plotbase)

@@ -4,6 +4,8 @@ import itertools
 
 import numpy as np
 
+from lsst.eo_utils.base.defaults import ALL_SLOTS
+
 from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
 
 from lsst.eo_utils.base.file_utils import get_mask_files
@@ -19,9 +21,6 @@ from .file_utils import get_superbias_frame
 
 from .analysis import BiasAnalysisFunc, BiasAnalysisByRaft
 
-#FIXME get these from standard location
-DEFAULT_BIAS_TYPE = 'spline'
-ALL_SLOTS = 'S00 S01 S02 S10 S11 S12 S20 S21 S22'.split()
 
 class oscan_correl(BiasAnalysisFunc):
     """Class to analyze the overscan bias as a function of row number"""

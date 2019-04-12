@@ -8,7 +8,6 @@ from .iter_utils import AnalysisBySlot
 from .file_utils import makedir_safe, get_mask_files_run, mask_filename
 
 
-
 def get_mask_data(butler, run_num, **kwargs):
     """Get a set of mask files out of a folder
 

@@ -4,6 +4,8 @@ import sys
 
 import numpy as np
 
+from lsst.eo_utils.base.defaults import DEFAULT_BIAS_TYPE
+
 from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
 
 from lsst.eo_utils.base.file_utils import get_mask_files
@@ -21,7 +23,6 @@ from .file_utils import get_superbias_frame,\
 
 from .analysis import BiasAnalysisFunc, BiasAnalysisBySlot
 
-DEFAULT_BIAS_TYPE = 'spline'
 
 class bias_struct(BiasAnalysisFunc):
     """Class to analyze the overscan bias as a function of row number"""
