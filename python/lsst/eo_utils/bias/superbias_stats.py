@@ -28,7 +28,7 @@ from .meta_analysis import SuperbiasSummaryByRaft, BiasSummaryAnalysisFunc
 class superbias_stats(BiasAnalysisFunc):
     """Class to analyze the overscan bias as a function of row number"""
 
-    argnames = STANDARD_RAFT_ARGS + ['stat', 'mask']
+    argnames = STANDARD_RAFT_ARGS + ['stat', 'mask', 'bias']
     analysisClass = BiasAnalysisByRaft
     tablename_func = raft_superbias_tablename
     plotname_func = raft_superbias_plotname
