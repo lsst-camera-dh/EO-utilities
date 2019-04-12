@@ -26,7 +26,7 @@ class oscan_correl(BiasAnalysisFunc):
     """Class to analyze the overscan bias as a function of row number"""
 
     argnames = STANDARD_SLOT_ARGS + ['mask', 'bias', 'superbias', 'std']
-    analysisClass = BiasAnalysisByRaft
+    iteratorClass = BiasAnalysisByRaft
 
     def __init__(self):
         BiasAnalysisFunc.__init__(self, "oscorr")
