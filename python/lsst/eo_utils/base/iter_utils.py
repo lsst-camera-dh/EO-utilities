@@ -214,7 +214,7 @@ class AnalysisIterator(AnalysisHandler):
         batch = kwargs.pop('batch')
         butler_repo = kwargs.get('butler_repo', None)
 
-        if butler_repo is None or kwargs.get('skip', False):
+        if butler_repo is None:
             butler = None
         else:
             butler = self.get_butler(butler_repo)
