@@ -29,7 +29,7 @@ SBIAS_TEMPLATE = 'analysis/superbias/templates/sbias_template.fits'
 class superbias:
     """Class to analyze the overscan bias as a function of row number"""
 
-    argnames = STANDARD_SLOT_ARGS + ['bias', 'rafts']
+    argnames = STANDARD_SLOT_ARGS + ['bias', 'rafts', 'mask', 'stat']
     iteratorClass = BiasAnalysisBySlot
 
     @staticmethod
