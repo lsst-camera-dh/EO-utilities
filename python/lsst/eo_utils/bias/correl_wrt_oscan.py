@@ -4,18 +4,27 @@ import sys
 
 import numpy as np
 
+from lsst.eo_utils.base.defaults import ALL_SLOTS
+
 from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
 
 from lsst.eo_utils.base.file_utils import get_mask_files
 
-from lsst.eo_utils.base.data_utils import TableDict
+from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import get_dims_from_ccd, get_ccd_from_id,\
     get_raw_image, get_geom_regions, get_amp_list, get_image_frames_2d
 
+from .file_utils import raft_bias_tablename, raft_bias_plotname,\
+    bias_summary_tablename, bias_summary_plotname
+
 from .analysis import BiasAnalysisFunc, BiasAnalysisBySlot
+
+from .meta_analysis import BiasSummaryByRaft, BiasTableAnalysisByRaft,\
+    BiasSummaryAnalysisFunc
+
 
 
 class correl_wrt_oscan(BiasAnalysisFunc):
@@ -153,3 +162,173 @@ class correl_wrt_oscan(BiasAnalysisFunc):
                                                dd_s[mask_s])[0, 1]
             p_correl[i, ifile-1] = np.corrcoef(del_p_array.mean(0)[0:ncol_i][mask_p],
                                                dd_p[mask_p])[0, 1]
+
+
+
+class correl_wrt_oscan_stats(BiasAnalysisFunc):
+    """Class to analyze the overscan correlation with imaging region"""
+
+    argnames = STANDARD_SLOT_ARGS + ['bias', 'superbias']
+    iteratorClass = BiasTableAnalysisByRaft
+    tablename_func = raft_bias_tablename
+    plotname_func = raft_bias_plotname
+
+    def __init__(self):
+        """C'tor """
+        BiasAnalysisFunc.__init__(self, "biasoscorr_stats")
+
+
+    @staticmethod
+    def extract(butler, data, **kwargs):
+        """Extract the bias as function of row
+
+        @param butler (`Butler`)   The data butler
+        @param data (dict)         Dictionary pointing to the bias and mask files
+        @param kwargs
+
+        @returns (TableDict) with the extracted data
+        """
+        if butler is not None:
+            sys.stdout.write("Ignoring butler in bias_fft_stats.extract\n")
+
+        datakey = 'correl'
+
+        data_dict = dict(s_correl_mean=[],
+                         s_correl_median=[],
+                         s_correl_std=[],
+                         s_correl_min=[],
+                         s_correl_max=[],
+                         p_correl_mean=[],
+                         p_correl_median=[],
+                         p_correl_std=[],
+                         p_correl_min=[],
+                         p_correl_max=[],
+                         slot=[],
+                         amp=[])
+
+        sys.stdout.write("Working on 9 slots: " )
+        sys.stdout.flush()
+
+        for islot, slot in enumerate(ALL_SLOTS):
+
+            sys.stdout.write(" %s" % slot)
+            sys.stdout.flush()
+
+            basename = data[slot]
+            datapath = basename.replace('.fits', '_biasoscorr.fits')
+
+            try:
+                dtables = TableDict(datapath, [datakey])
+                table = dtables[datakey]
+            except FileNotFoundError:
+                sys.stderr.write("Warning, could not open %s" % datapath)
+                table = None
+
+            for amp in range(16):
+                if table is not None:
+                    tablevals_s = table['s_correl_a%02i' % amp]
+                    tablevals_p = table['p_correl_a%02i' % amp]
+                    mask_s = np.isfinite(tablevals_s)
+                    mask_p = np.isfinite(tablevals_p)
+                    if mask_s.sum() > 0:
+                        tablevals_s = tablevals_s[mask_s]
+                    else:
+                        tablevals_s = [0., 0.]
+                    if mask_p.sum() > 0:
+                        tablevals_p = tablevals_p[mask_p]
+                    else:
+                        tablevals_p = [0., 0.]
+                else:
+                    tablevals_s = [0., 0.]
+                    tablevals_p = [0., 0.]
+                data_dict['s_correl_mean'].append(np.mean(tablevals_s))
+                data_dict['s_correl_median'].append(np.median(tablevals_s))
+                data_dict['s_correl_std'].append(np.std(tablevals_s))
+                data_dict['s_correl_min'].append(np.min(tablevals_s))
+                data_dict['s_correl_max'].append(np.max(tablevals_s))
+                data_dict['p_correl_mean'].append(np.mean(tablevals_p))
+                data_dict['p_correl_median'].append(np.median(tablevals_p))
+                data_dict['p_correl_std'].append(np.std(tablevals_p))
+                data_dict['p_correl_min'].append(np.min(tablevals_p))
+                data_dict['p_correl_max'].append(np.max(tablevals_p))
+                data_dict['slot'].append(islot)
+                data_dict['amp'].append(amp)
+
+        sys.stdout.write(".\n")
+        sys.stdout.flush()
+
+        outtables = TableDict()
+        outtables.make_datatable("biasoscorr_stats", data_dict)
+        return outtables
+
+
+    @staticmethod
+    def plot(dtables, figs):
+        """Plot the summary data from the bias fft statistics study
+
+        @param dtables (TableDict)    The data we are ploting
+        @param fgs (FigureDict)       Keeps track of the figures
+        """
+        sumtable = dtables['biasoscorr_stats']
+        figs.plot_stat_color('mean_oscorr_s', sumtable['s_correl_mean'].reshape(9,16))
+        figs.plot_stat_color('mean_oscorr_p', sumtable['p_correl_mean'].reshape(9,16))
+
+
+
+
+
+
+class correl_wrt_oscan_summary(BiasSummaryAnalysisFunc):
+    """Class to analyze the overscan bias as a function of row number"""
+
+    argnames = ['dataset', 'butler_repo', 'bias', 'superbias', 'skip', 'plot']
+    iteratorClass = BiasSummaryByRaft
+    tablename_func = bias_summary_tablename
+    plotname_func = bias_summary_plotname
+
+    def __init__(self):
+        """C'tor"""
+        BiasSummaryAnalysisFunc.__init__(self, "_biasoscorr_sum")
+
+    @staticmethod
+    def extract(butler, data, **kwargs):
+        """Make a summry table of the bias FFT data
+
+        @param filedict (dict)      The files we are analyzing
+        @param kwargs
+            bias (str)
+            superbias (str)
+
+        @returns (TableDict)
+        """
+        if butler is not None:
+            sys.stdout.write("Ignoring butler in correl_wrt_oscan_summary.extract\n")
+
+        for key,val in data.items():
+            data[key] = val.replace('.fits', '_biasoscorr_stats.fits')
+
+        if not kwargs.get('skip', False):
+            outtable = vstack_tables(data, tablename='biasoscorr_stats')
+
+        dtables = TableDict()
+        dtables.add_datatable('biasoscorr_sum', outtable)
+        dtables.make_datatable('runs', dict(runs=sorted(data.keys())))
+        return dtables
+
+
+    @staticmethod
+    def plot(dtables, figs):
+        """Plot the summary data from the superbias statistics study
+
+        @param dtables (TableDict)    The data we are ploting
+        @param fgs (FigureDict)       Keeps track of the figures
+        """
+        sumtable = dtables['biasoscorr_sum']
+        runtable = dtables['runs']
+
+        yvals_s = sumtable['s_correl_mean'].flatten().clip(0., 1.)
+        yvals_p = sumtable['p_correl_mean'].flatten().clip(0., 1.)
+        runs = runtable['runs']
+
+        figs.plot_run_chart("s_correl_mean", runs, yvals_s, ylabel="Correlation between serial overscan and imaging")
+        figs.plot_run_chart("p_correl_mean", runs, yvals_p, ylabel="Correlation between parallel overscan and imaging")

@@ -6,7 +6,8 @@ from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.file_utils import read_runlist
 
-from lsst.eo_utils.base.iter_utils import AnalysisIterator, SummaryAnalysisIterator
+from lsst.eo_utils.base.iter_utils import AnalysisIterator,\
+    SummaryAnalysisIterator, AnalysisByRaft
 
 from lsst.eo_utils.base.analysis import AnalysisFunc
 
@@ -15,7 +16,7 @@ from .file_utils import slot_bias_tablename,\
 
 
 
-def get_tablenames_by_slot(butler, run_num, **kwargs):
+def get_tablenames_by_raft(butler, run_num, **kwargs):
     """Extract the statistics of the FFT of the bias
 
     @param rum_num (str)     The run number
@@ -25,7 +26,7 @@ def get_tablenames_by_slot(butler, run_num, **kwargs):
         superbias (str)
     """
     kwcopy = kwargs.copy()
-    kwcopy['run'] = run_num
+    kwcopy['run_num'] = run_num
 
     out_dict = {}
     raft_list = AnalysisIterator.get_raft_list(butler, run_num)
@@ -66,7 +67,7 @@ def get_raft_bias_tablefiles(butler, dataset, **kwargs):
         raft = runinfo[0].replace('-Dev', '')
         run_num = runinfo[1]
         run_key = "%s_%s" % (raft, run_num)
-        kwcopy['run'] = run_num
+        kwcopy['run_num'] = run_num
         kwcopy['raft'] = raft
         filedict[run_key] = raft_bias_tablename(**kwcopy) + '.fits'
 
@@ -91,18 +92,33 @@ def get_raft_superbias_tablefiles(butler, dataset, **kwargs):
 
     run_list = read_runlist(infile)
     kwcopy = kwargs.copy()
+    kwcopy.setdefault('superbias', kwargs.get('bias'))
 
     filedict = {}
     for runinfo in run_list:
         raft = runinfo[0].replace('-Dev', '')
         run_num = runinfo[1]
         run_key = "%s_%s" % (raft, run_num)
-        kwcopy['run'] = run_num
+        kwcopy['run_num'] = run_num
         kwcopy['raft'] = raft
-        filedict[run_key] = raft_superbias_tablename(**kwargs) + '.fits'
+        filedict[run_key] = raft_superbias_tablename(**kwcopy) + '.fits'
 
     return filedict
 
+
+class BiasTableAnalysisByRaft(AnalysisByRaft):
+    """Small class to iterate an analysis function over all the slots in a raft"""
+
+    data_func = get_tablenames_by_raft
+
+    def __init__(self, analysis_func, argnames):
+        """C'tor
+        
+        @param analysis_func (function) Function that does the actual analysis for one CCD
+        @param argnames (list)          List of the keyword arguments need by that function.
+                                        Used to look up defaults
+        """
+        AnalysisByRaft.__init__(self, analysis_func, argnames)
 
 
 class BiasSummaryByRaft(SummaryAnalysisIterator):
@@ -142,7 +158,7 @@ class BiasSummaryAnalysisFunc(AnalysisFunc):
 
     # These can overridden by the sub-class
     iteratorClass = BiasSummaryByRaft
-    argnames = []
+    argnames = ['dataset', 'butler_repo']
     tablename_func = slot_bias_tablename
     plotname_func = slot_bias_plotname
 

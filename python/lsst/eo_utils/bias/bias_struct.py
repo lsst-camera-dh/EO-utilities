@@ -31,7 +31,7 @@ class bias_struct(BiasAnalysisFunc):
     iteratorClass = BiasAnalysisBySlot
 
     def __init__(self):
-        BiasAnalysisFunc.__init__(self, "biasval")
+        BiasAnalysisFunc.__init__(self, "biasst")
 
     @staticmethod
     def extract(butler, data, **kwargs):

@@ -35,7 +35,8 @@ def main():
 
     opt_dict = dict(bsub_args=args.bsub_args,
                     optstring=args.optstring,
-                    dry_run=args.dry_run)
+                    dry_run=args.dry_run,
+                    use_batch=args.use_batch)
 
     for run in run_list:
 

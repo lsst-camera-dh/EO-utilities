@@ -27,6 +27,7 @@ class EOUtilConfig(pexConfig.Config):
     dry_run = pexConfig.Field("Print batch command, do not send job", bool, default=False)
     batch_args = pexConfig.Field("Arguments to pass to batch command", str, default=DEFAULT_BATCH_ARGS)
     run = pexConfig.Field("Run ID", str, default=None)
+    dataset = pexConfig.Field("dataset", str, default=None)
     slots = pexConfig.ListField("Slot ID(s)", str, default=None)
     rafts = pexConfig.ListField("Raft Slot(s)", str, default=None)
     bias = pexConfig.Field("Method to use for unbiasing", str, default=None)

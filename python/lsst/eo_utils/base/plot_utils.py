@@ -106,6 +106,8 @@ class FigureDict:
             title (str)    Figure title
             xlabel (str)   X-axis label
             ylabel (str)   Y-axis label
+            ymin (float)   Y-axis min
+            ymax (float)   Y-axis max
             figsize (str)  Figure width, height in inches
 
         @returns (dict)
@@ -115,6 +117,9 @@ class FigureDict:
         title = kwargs.get('title', None)
         xlabel = kwargs.get('xlabel', None)
         ylabel = kwargs.get('ylabel', None)
+        ymin = kwargs.get('ymin', None)
+        ymax = kwargs.get('ymax', None)
+
         figsize = kwargs.get('figsize', (15, 10))
 
         fig_nrow = 4
@@ -133,6 +138,11 @@ class FigureDict:
             for i_col in range(fig_ncol):
                 ax_col = axs[3, i_col]
                 ax_col.set_xlabel(xlabel)
+
+        if ymin is not None or ymax is not None:
+            for i_row in range(fig_nrow):
+                for i_col in range(fig_ncol):
+                    axs[i_row, i_col].set_ylim(ymin, ymax)
 
         o_dict = dict(fig=fig, axs=axs)
         self._fig_dict[key] = o_dict
@@ -244,7 +254,7 @@ class FigureDict:
             nbins (int)
         """
         xmin = kwargs.get('xmin', None)
-        xmax = kwargs.get('xmin', None)
+        xmax = kwargs.get('xmax', None)
         if xmin is not None and xmax is not None:
             xr = (xmin, xmax)
         else:
@@ -307,9 +317,13 @@ class FigureDict:
         @param kwargs:
            x_name (str) Name for the x-axis data
            y_name (str) Start of the name for the y-axis data
+           ymin (float) Y-axis min
+           ymax (float) Y-axis max
         """
         x_name = kwargs.get('x_name', 'x')
         y_name = kwargs.get('y_name', 'y')
+        ymin = kwargs.get('ymin', -np.inf)
+        ymax = kwargs.get('ymax', np.inf)
 
         file_data = fd.get_table('files')
         df = fd.get_table(key)
@@ -319,7 +333,7 @@ class FigureDict:
                 continue
             valarray = df[col]
             for row, test_type in zip(valarray.T, file_data['testtype']):
-                self.plot(plotkey, idx, xcol, row,
+                self.plot(plotkey, idx, xcol, row.clip(ymin, ymax),
                           color=TESTCOLORMAP.get(test_type, 'gray'))
 
 
@@ -332,16 +346,20 @@ class FigureDict:
         @param kwargs:
            x_name (str) Name for the x-axis data
            y_name (str) Start of the name for the y-axis data
+           ymin (float) Y-axis min
+           ymax (float) Y-axis max
         """
         x_name = kwargs.get('x_name', 'x')
         y_name = kwargs.get('y_name', 'y')
+        ymin = kwargs.get('ymin', -np.inf)
+        ymax = kwargs.get('ymax', np.inf)
 
         df = fd.get_table(key)
         xcol = df[x_name]
         for col in df.columns:
             if col.find(y_name) != 0:
                 continue
-            self.plot_single(plotkey, xcol, df[col])
+            self.plot_single(plotkey, xcol, df[col].clip(ymin, ymax))
 
 
     def plot_xy_amps_from_tabledict(self, fd, key, plotkey, **kwargs):
@@ -356,6 +374,8 @@ class FigureDict:
         """
         x_name = kwargs.get('x_name', 'x')
         y_name = kwargs.get('y_name', 'y')
+        ymin = kwargs.get('ymin', -np.inf)
+        ymax = kwargs.get('ymax', np.inf)
 
         file_data = fd.get_table('files')
         df = fd.get_table(key)
@@ -377,7 +397,7 @@ class FigureDict:
                 except KeyError:
                     color = "gray"
 
-                self.plot(plotkey, amp, xcol, row, color=color)
+                self.plot(plotkey, amp, xcol, row.clip(ymin, ymax), color=color)
 
 
     def plot_raft_correl_matrix(self, key, data, **kwargs):

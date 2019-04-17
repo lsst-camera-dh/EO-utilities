@@ -117,14 +117,14 @@ class superbias_stats(BiasAnalysisFunc):
 class superbias_stats_summary(BiasSummaryAnalysisFunc):
     """Class to analyze the overscan bias as a function of row number"""
 
-    argnames = ['dataset']
+    argnames = ['dataset', 'butler_repo', 'bias', 'skip', 'plot']
     iteratorClass = SuperbiasSummaryByRaft
     tablename_func = superbias_summary_tablename
     plotname_func = superbias_summary_plotname
 
     def __init__(self):
         """C'tor"""
-        BiasSummaryAnalysisFunc.__init__(self, "stats")
+        BiasSummaryAnalysisFunc.__init__(self, "_stats")
 
     @staticmethod
     def extract(butler, data, **kwargs):
@@ -139,6 +139,9 @@ class superbias_stats_summary(BiasSummaryAnalysisFunc):
         """
         if butler is not None:
             sys.stdout.write("Ignoring butler in superbias_stats_summary.extract %s\n" % kwargs)
+
+        for key,val in data.items():
+            data[key] = val.replace('.fits', '_stdevclip_stats.fits')
 
         outtable = vstack_tables(data, tablename='stats')
 

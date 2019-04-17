@@ -381,8 +381,8 @@ class SummaryAnalysisIterator(AnalysisHandler):
         """
         data_files = self.get_data(None, dataset, **kwargs)
 
-        if self.analysis_func is not None:
-            self.analysis_func(data_files, **kwargs)
+        if self.analysis_func is not None:            
+            self.analysis_func(None, data_files, dataset=dataset, **kwargs)
 
 
     def run_with_args(self, **kwargs):

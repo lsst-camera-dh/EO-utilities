@@ -28,6 +28,9 @@ class oscan_correl(BiasAnalysisFunc):
     argnames = STANDARD_SLOT_ARGS + ['mask', 'bias', 'superbias', 'std']
     iteratorClass = BiasAnalysisByRaft
 
+    tablename_func = raft_bias_tablename
+    plotname_func = raft_bias_plotname
+
     def __init__(self):
         BiasAnalysisFunc.__init__(self, "oscorr")
 
