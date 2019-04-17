@@ -75,11 +75,21 @@ def get_raft_file_basename(**kwargs):
     return str(RAFT_FORMAT_STRING.format(**kwargs))
 
 
+def get_summary_file_basename(**kwargs):
+    """Return the filename for a raft-level file
+
+    The format is {outdir}/{fileType}/summary/{testType}/{dataset}{suffix}
+    @param kwargs:     These are passed to the string format statement
+
+    @returns (str) The path for the file.
+    """
+    return str(SUMMARY_FORMAT_STRING.format(**kwargs))
+
+
 def mask_filename(outdir, raft, run_num, slot, **kwargs):
     """Return the filename for a mask file
 
-    The following parameters are passed to the SLOT_FORMAT_STRING.format statement
-
+    The following parameters are passed to the SLOT_FORMAT_STRING.format stateme
     @param outdir (str)
     @param raft (str)
     @param run_num (str)
