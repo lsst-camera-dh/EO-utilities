@@ -46,6 +46,7 @@ class EOUtilConfig(pexConfig.Config):
     skip = pexConfig.Field("Skip the main analysis and only make plots", bool, default=False)
     subtract_mean = pexConfig.Field("Subtract the mean from all images frames", bool, default=False)
     stats_hist = pexConfig.Field("Make a histogram of the distribution", bool, default=False)
+    use_all = pexConfig.Field("Use all fe55 clusters", bool, default=False)
 
 
     def to_odict(self):

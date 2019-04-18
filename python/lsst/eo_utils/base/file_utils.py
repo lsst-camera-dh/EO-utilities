@@ -4,6 +4,9 @@
 """
 
 import os
+import glob
+
+import yaml
 
 try:
     from get_EO_analysis_files import get_EO_analysis_files
@@ -239,3 +242,83 @@ def get_raft_names_dc(run_num):
     if htype == 'LCA-10134':
         return ALL_RAFTS
     raise ValueError("Unrecognized hardware type %s" % htype)
+
+
+def read_raft_ccd_map(yamlfile):
+    """Get the mapping from raft and slot to CCD in
+
+    @param yamlfile(str)   File with the mapping
+
+    @returns (dict) the mapping
+    """
+    return yaml.safe_load(open(yamlfile))
+
+
+def find_eo_results(glob_format, paths, **kwargs):
+    """Get a particular EO test result 
+
+    @param glob_format (str)   Formatting string for search path
+    @param paths (list)        Search paths
+    @param kwargs              Passed to formatting string
+
+    @returns (dict) the mapping
+    """
+
+    for path in paths:
+        globstring = glob_format.format(path=path, **kwargs)
+        globfiles = glob.glob(globstring)
+        if len(globfiles) != 9:
+            continue
+        odict = {}       
+        for fname in globfiles:
+            sensor = os.path.basename(fname).split('_')[0].replace('-Dev', '')
+            odict[sensor] = fname
+        return odict
+    return None
+
+
+def link_eo_results(ccd_map, fdict, outformat, **kwargs):
+    """Link eo results to the analysis area 
+
+    @param ccd_map (dcit)      Mapping between rafts, slot and CCD id
+    @param fdict (dict)        Mapping between CCD id and filename
+    @param outformat (str)     Formatting string for output path
+    @param kwargs              Passed to formatting string
+
+    @returns (dict) the mapping
+    """
+    raft = kwargs.pop('raft')
+    slot_map = ccd_map[raft]
+    for slot, val in slot_map.items():
+        try:
+            fname = fdict[val]
+        except KeyError as msg:
+            print(fdict.keys())
+            raise KeyError(msg)
+        outpath = outformat.format(raft=raft, slot=slot, **kwargs)
+        makedir_safe(outpath)
+        os.system("ln -s %s %s" % (fname, outpath) )
+
+
+def link_eo_results_runlist(args, glob_format, paths, outformat):
+    """Link eo results to the analysis area 
+
+    @param args (dict)      Mapping between rafts, slot and CCD id
+    @param glob_format (str)   Formatting string for search path
+    @param paths (list)        Search paths
+    @param outformat (str)     Formatting string for output path
+    """
+    run_list = read_runlist(args['input'])
+    ccd_map = read_raft_ccd_map(args['mapping'])
+
+    for run in run_list:
+
+        run_num = run[1]
+        hid = run[0].replace('-Dev', '')
+
+        fdict = find_eo_results(glob_format, paths, run=run_num, raft=hid)
+        if fdict is None:
+            sys.stderr.write("Could not find eotest_results for %s %s\n" % (run_num, hid))
+            continue
+
+        link_eo_results(ccd_map, fdict, outformat, run=run_num, raft=hid, outdir=args['outdir'])
