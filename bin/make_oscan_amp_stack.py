@@ -4,11 +4,11 @@
 of the overscan regions from several amplifiers, to look for
 structured read noise"""
 
-from lsst.eo_utils.bias.oscan_amp_stack import oscan_amp_stack
+from lsst.eo_utils.bias.oscan_amp_stack import OscanAmpStackTask
 
 def main():
     """Hook for setup.py"""
-    oscan_amp_stack.run()
+    OscanAmpStackTask.run()
 
 if __name__ == '__main__':
     main()
