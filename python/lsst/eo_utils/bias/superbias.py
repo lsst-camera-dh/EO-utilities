@@ -9,29 +9,53 @@ import lsst.eotest.image_utils as imutil
 from lsst.eo_utils.base.file_utils import makedir_safe,\
     get_mask_files
 
-from lsst.eo_utils.base.defaults import SBIAS_TEMPLATE, DEFAULT_BIAS_TYPE,\
+from lsst.eo_utils.base.defaults import SBIAS_TEMPLATE,\
     DEFAULT_STAT_TYPE, DEFAULT_BITPIX
 
-from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
+from lsst.eo_utils.base.config_utils import EOUtilConfig
 
 from lsst.eo_utils.base.plot_utils import FigureDict
 
 from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
     flip_data_in_place, make_superbias
 
+from lsst.eo_utils.base.analysis import BaseAnalysisConfig, BaseAnalysisTask
+
 from .file_utils import superbias_filename, superbias_stat_filename
 
 from .analysis import BiasAnalysisBySlot
 
 
-class superbias:
+class SuperbiasConfig(BaseAnalysisConfig):
+    """Configuration for BiasVRowTask"""
+    outdir = EOUtilConfig.clone_param('outdir')
+    run = EOUtilConfig.clone_param('run')
+    raft = EOUtilConfig.clone_param('raft')
+    slot = EOUtilConfig.clone_param('slot')
+    suffix = EOUtilConfig.clone_param('suffix')
+    mask = EOUtilConfig.clone_param('mask')
+    stat = EOUtilConfig.clone_param('stat')
+    bias = EOUtilConfig.clone_param('bias')
+    nfiles = EOUtilConfig.clone_param('nfiles')
+
+
+class SuperbiasTask(BaseAnalysisTask):
     """Class to analyze the overscan bias as a function of row number"""
 
-    argnames = STANDARD_SLOT_ARGS + ['bias', 'rafts', 'mask', 'stat']
+    ConfigClass = SuperbiasConfig
+    _DefaultName = "SuperbiasTask"
     iteratorClass = BiasAnalysisBySlot
 
-    @staticmethod
-    def extract(butler, data, **kwargs):
+
+    def __init__(self, **kwargs):
+        """ C'tor
+
+        @param kwargs:    Used to override configruation
+        """
+        BaseAnalysisTask.__init__(self, **kwargs)
+
+
+    def extract(self, butler, data, **kwargs):
         """Make superbias frame for one slot
 
         @param butler (`Butler`)   The data butler
@@ -48,9 +72,10 @@ class superbias:
             plot (bool)          Plot superbias images
             stats_hist (bool)    Plot superbias summary histograms
         """
-        slot = kwargs['slot']
-        bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
-        stat_type = kwargs.get('stat', None)
+        self.safe_update(**kwargs)
+        slot = self.config.slot
+        bias_type = self.config.bias
+        stat_type = self.config.stat
         if stat_type is None:
             stat_type = DEFAULT_STAT_TYPE
 
@@ -96,8 +121,7 @@ class superbias:
         return sbias
 
 
-    @staticmethod
-    def plot(sbias, figs, **kwargs):
+    def plot(self, sbias, figs, **kwargs):
         """Make plots of the superbias frame
 
         @param sbias (str)          The superbias frame
@@ -106,12 +130,12 @@ class superbias:
             plot (bool)              Plot images of the superbias
             stats_hist (bool)        Plot statistics
         """
-        subtract_mean = kwargs.get('stat', DEFAULT_STAT_TYPE) == DEFAULT_STAT_TYPE
+        subtract_mean = self.config.stat == DEFAULT_STAT_TYPE
 
-        if kwargs.get('plot', False):
+        if self.config.plot:
             figs.plot_sensor("img", None, sbias)
 
-        if kwargs.get('stats_hist', False):
+        if self.config.stats_hist:
             kwcopy = kwargs.copy()
             kwcopy.pop('bias', None)
             kwcopy.pop('superbias', None)
@@ -153,20 +177,3 @@ class superbias:
 
                 makedir_safe(plotbase)
                 figs.save_all(plotbase)
-
-
-    @classmethod
-    def make(cls, butler, data, **kwargs):
-        """Tie together the functions
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the bias and mask files
-        @param kwargs              Passed to the functions that do the actual work
-        """
-        obj = cls()
-        obj(butler, data, **kwargs)
-
-    @classmethod
-    def run(cls):
-        """Run the analysis"""
-        functor = cls.iteratorClass(cls.make, cls.argnames)
-        functor.run_analysis()

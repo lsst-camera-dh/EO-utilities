@@ -6,7 +6,7 @@ import numpy as np
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
+from lsst.eo_utils.base.config_utils import EOUtilConfig
 
 from lsst.eo_utils.base.file_utils import get_mask_files
 
@@ -17,25 +17,37 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_raw_image,\
     get_geom_regions, get_amp_list, unbias_amp
 
-from .file_utils import get_superbias_frame
+from .file_utils import get_superbias_frame, raft_bias_tablename, raft_bias_plotname
 
-from .analysis import BiasAnalysisFunc, BiasAnalysisByRaft
+from .analysis import BiasAnalysisTask, BiasAnalysisConfig, BiasAnalysisByRaft
 
 
-class oscan_correl(BiasAnalysisFunc):
+
+class OscanCorrelConfig(BiasAnalysisConfig):
+    """Configuration for BiasVRowTask"""
+    suffix = EOUtilConfig.clone_param('suffix', default='oscorr')
+    bias = EOUtilConfig.clone_param('bias')
+    superbias = EOUtilConfig.clone_param('superbias')
+    mask = EOUtilConfig.clone_param('mask')
+    std = EOUtilConfig.clone_param('std')
+    covar = EOUtilConfig.clone_param('covar')
+
+
+class OscanCorrelTask(BiasAnalysisTask):
     """Class to analyze the overscan bias as a function of row number"""
 
-    argnames = STANDARD_SLOT_ARGS + ['mask', 'bias', 'superbias', 'std']
+    ConfigClass = OscanCorrelConfig
+    _DefaultName = "OscanCorrelTask"
     iteratorClass = BiasAnalysisByRaft
 
-    tablename_func = raft_bias_tablename
-    plotname_func = raft_bias_plotname
+    tablefile_name = raft_bias_tablename
+    plotfile_name = raft_bias_plotname
 
-    def __init__(self):
-        BiasAnalysisFunc.__init__(self, "oscorr")
+    def __init__(self, **kwargs):
+        BiasAnalysisTask.__init__(self, **kwargs)
 
-    @staticmethod
-    def extract(butler, data, **kwargs):
+
+    def extract(self, butler, data, **kwargs):
         """Extract the correlations between the serial overscan for each amp on a raft
 
         @param butler (Butler)   The data butler
@@ -44,26 +56,28 @@ class oscan_correl(BiasAnalysisFunc):
             raft (str)           Raft in question, i.e., 'RTM-004-Dev'
             run_num (str)        Run number, i.e,. '6106D'
             covar (bool)         Plot covariance instead of correlation
-            db (str)             Which database to use
             outdir (str)         Output directory
         """
-        covar = kwargs.get('covar', False)
+        self.safe_update(**kwargs)
+
         slots = ALL_SLOTS
         overscans = []
         boundry = 10
 
+        kwcopy = kwargs.copy()
         for slot in slots:
             bias_files = data[slot]['BIAS']
 
-            mask_files = get_mask_files(slot=slot, **kwargs)
-            superbias_frame = get_superbias_frame(mask_files=mask_files, slot=slot, **kwargs)
+            kwcopy['slot'] = slot
+            mask_files = get_mask_files(**kwcopy)
+            superbias_frame = get_superbias_frame(mask_files=mask_files, **kwcopy)
 
             ccd = get_ccd_from_id(butler, bias_files[0], [])
-            overscans += oscan_correl.get_ccd_data(butler, ccd, boundry=boundry,
-                                                   superbias_frame=superbias_frame)
+            overscans += self.get_ccd_data(butler, ccd, boundry=boundry,
+                                           superbias_frame=superbias_frame)
 
         namps = len(overscans)
-        if covar:
+        if self.config.covar:
             data = np.array([np.cov(overscans[i[0]].ravel(),
                                     overscans[i[1]].ravel())[0, 1]
                              for i in itertools.product(range(namps), range(namps))])
@@ -78,16 +92,16 @@ class oscan_correl(BiasAnalysisFunc):
         dtables.make_datatable('correl', dict(correl=data))
         return dtables
 
-
-    @staticmethod
-    def plot(dtables, figs):
+    def plot(self, dtables, figs, **kwargs):
         """Plot the bias fft
 
         @param dtables (TableDict)  The data
         @param figs (FigureDict)    Object to store the figues
         """
+        self.safe_update(**kwargs)
         data = dtables.get_table('correl')['correl']
         figs.plot_raft_correl_matrix("oscorr", data, title="Overscan Correlations", slots=ALL_SLOTS)
+
 
     @staticmethod
     def get_ccd_data(butler, ccd, **kwargs):

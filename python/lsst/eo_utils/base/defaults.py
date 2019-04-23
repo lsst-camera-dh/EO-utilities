@@ -39,8 +39,8 @@ DATACAT_BOT_TEST_TYPES = ['DARK', 'FLAT', 'FE55', 'PPUMP', 'SFLAT', 'LAMBDA', 'T
 
 
 # These strings define the standard output filenames
-SLOT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}-{slot}{suffix}'
-RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}-RFT{suffix}'
+SLOT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}{suffix}'
+RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-RFT{suffix}'
 SUMMARY_FORMAT_STRING = '{outdir}/{fileType}/summary/{testType}/{dataset}{suffix}'
 
 

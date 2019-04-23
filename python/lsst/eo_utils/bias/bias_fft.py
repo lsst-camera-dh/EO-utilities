@@ -8,7 +8,7 @@ from scipy import fftpack
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS, DEFAULT_BIAS_TYPE
 
-from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
+from lsst.eo_utils.base.config_utils import EOUtilConfig
 
 from lsst.eo_utils.base.file_utils import get_mask_files
 
@@ -25,24 +25,33 @@ from .file_utils import get_superbias_frame,\
     bias_summary_tablename, bias_summary_plotname,\
     raft_bias_tablename, raft_bias_plotname
 
-from .analysis import BiasAnalysisFunc, BiasAnalysisBySlot
+from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisBySlot
 
 from .meta_analysis import BiasSummaryByRaft, BiasTableAnalysisByRaft,\
-    BiasSummaryAnalysisFunc
+    BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask
 
 
-class bias_fft(BiasAnalysisFunc):
+class BiasFFTConfig(BiasAnalysisConfig):
+    """Configuration for BiasFFTTask"""
+    suffix = EOUtilConfig.clone_param('suffix', default='biasfft')
+    bias = EOUtilConfig.clone_param('bias')
+    superbias = EOUtilConfig.clone_param('superbias')
+    mask = EOUtilConfig.clone_param('mask')
+    std = EOUtilConfig.clone_param('std')
+
+
+class BiasFFTTask(BiasAnalysisTask):
     """Class to analyze the overscan bias as a function of row number"""
 
-    argnames = STANDARD_SLOT_ARGS + ['mask', 'bias', 'superbias', 'std']
+    ConfigClass = BiasFFTConfig
+    _DefaultName = "BiasFFTTask"
     iteratorClass = BiasAnalysisBySlot
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """C'tor """
-        BiasAnalysisFunc.__init__(self, "biasval")
+        BiasAnalysisTask.__init__(self, **kwargs)
 
-    @staticmethod
-    def extract(butler, data, **kwargs):
+    def extract(self, butler, data, **kwargs):
         """Extract the bias as function of row
 
         @param butler (`Butler`)   The data butler
@@ -53,9 +62,9 @@ class bias_fft(BiasAnalysisFunc):
 
         @returns (TableDict) with the extracted data
         """
-        slot = kwargs['slot']
-        std = kwargs.get('std', False)
-        bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
+        self.safe_update(**kwargs)
+
+        slot = self.config.slot
 
         bias_files = data['BIAS']
         mask_files = get_mask_files(**kwargs)
@@ -79,10 +88,10 @@ class bias_fft(BiasAnalysisFunc):
                 nfreqs = len(freqs)
                 fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
 
-            bias_fft.get_ccd_data(butler, ccd, fft_data,
-                                  ifile=ifile, nfiles=len(bias_files),
-                                  slot=slot, bias_type=bias_type,
-                                  std=std, superbias_frame=superbias_frame)
+            self.get_ccd_data(butler, ccd, fft_data,
+                              ifile=ifile, nfiles=len(bias_files),
+                              slot=slot, bias_type=self.config.bias,
+                              std=self.config.std, superbias_frame=superbias_frame)
 
         sys.stdout.write("!\n")
         sys.stdout.flush()
@@ -95,17 +104,18 @@ class bias_fft(BiasAnalysisFunc):
         return dtables
 
 
-    @staticmethod
-    def plot(dtables, figs):
+    def plot(self, dtables, figs, **kwargs):
         """Plot the bias as function of row
 
         @param dtables (`TableDict`)  The data
         @param figs (`FigureDict`)    Object to store the figues
         """
+        self.safe_update(**kwargs)
+
         for key, region in zip(REGION_KEYS, REGION_NAMES):
             datakey = 'biasfft-%s' % key
             figs.setup_amp_plots_grid(datakey, title="FFT of %s region mean by row" % region,
-                                      xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]", 
+                                      xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]",
                                       ymin=0., ymax=3.)
             figs.plot_xy_amps_from_tabledict(dtables, datakey, datakey,
                                              x_name='freqs', y_name='fftpow',
@@ -161,20 +171,27 @@ class bias_fft(BiasAnalysisFunc):
 
 
 
-class superbias_fft(BiasAnalysisFunc):
+class SuperbiasFFTConfig(BiasAnalysisConfig):
+    """Configuration for BiasFFTTask"""
+    suffix = EOUtilConfig.clone_param('suffix', default='biasfft')
+    superbias = EOUtilConfig.clone_param('superbias')
+    mask = EOUtilConfig.clone_param('mask')
+
+
+class SuperbiasFFTTask(BiasAnalysisTask):
     """Class to analyze the overscan bias as a function of row number"""
 
-    argnames = STANDARD_SLOT_ARGS + ['mask', 'superbias', 'std']
+    ConfigClass = SuperbiasFFTConfig
+    _DefaultName = "SuperbiasFFTTask"
     iteratorClass = BiasAnalysisBySlot
 
-    tablename_func = slot_superbias_tablename
-    plotname_func = slot_superbias_plotname
+    tablefile_name = slot_superbias_tablename
+    plotfile_name = slot_superbias_plotname
 
-    def __init__(self):
-        BiasAnalysisFunc.__init__(self, "sbiasfft")
+    def __init__(self, **kwargs):
+        BiasAnalysisTask.__init__(self, **kwargs)
 
-    @staticmethod
-    def extract(butler, data, **kwargs):
+    def extract(self, butler, data, **kwargs):
         """Extract the FFTs of the row-wise and col-wise struture
         in a superbias frame
 
@@ -188,8 +205,8 @@ class superbias_fft(BiasAnalysisFunc):
             outdir (str)         Output directory
             std (bool)           Plot standard deviation instead of median
         """
-        slot = kwargs['slot']
-        std = kwargs.get('std', False)
+        self.safe_update(**kwargs)
+        slot = self.config.slot
 
         if butler is not None:
             sys.stdout.write("Ignoring butler in extract_superbias_fft_slot")
@@ -207,9 +224,9 @@ class superbias_fft(BiasAnalysisFunc):
             nfreqs = len(freqs)
             fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
 
-        bias_fft.get_ccd_data(None, superbias, fft_data,
-                              slot=slot, bias_type=kwargs.get('superbias'),
-                              std=std, superbias_frame=None)
+        BiasFFTTask.get_ccd_data(None, superbias, fft_data,
+                                 slot=slot, bias_type=None,
+                                 std=False, superbias_frame=None)
 
         sys.stdout.write("!\n")
         sys.stdout.flush()
@@ -220,26 +237,34 @@ class superbias_fft(BiasAnalysisFunc):
             dtables.make_datatable('biasfft-%s' % key, fft_data[key])
         return dtables
 
-    @staticmethod
-    def plot(dtables, figs):
+    def plot(self, dtables, figs, **kwargs):
         """Just pass along to bias_fft.plot"""
-        bias_fft.plot(dtables, figs)
+        BiasFFTTask.plot(dtables, figs, **kwargs)
 
 
-class bias_fft_stats(BiasAnalysisFunc):
+class BiasFFTStatsConfig(BiasAnalysisConfig):
+    """Configuration for OscanAmpStackStatsTask"""
+    suffix = EOUtilConfig.clone_param('suffix', default='_biasfft_stats')
+    bias = EOUtilConfig.clone_param('bias')
+    superbias = EOUtilConfig.clone_param('superbias')
+
+
+
+class BiasFFTStatsTask(BiasAnalysisTask):
     """Class to analyze the overscan bias as a function of row number"""
 
-    argnames = STANDARD_SLOT_ARGS + ['bias', 'superbias']
+    ConfigClass = BiasFFTStatsConfig
+    _DefaultName = "BiasAnalysisTask"
     iteratorClass = BiasTableAnalysisByRaft
-    tablename_func = raft_bias_tablename
-    plotname_func = raft_bias_plotname
+    tablefile_name = raft_bias_tablename
+    plotfile_name = raft_bias_plotname
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """C'tor """
-        BiasAnalysisFunc.__init__(self, "biasfft_stats")
+        BiasAnalysisTask.__init__(self, **kwargs)
 
-    @staticmethod
-    def extract(butler, data, **kwargs):
+
+    def extract(self, butler, data, **kwargs):
         """Extract the bias as function of row
 
         @param butler (`Butler`)   The data butler
@@ -248,6 +273,8 @@ class bias_fft_stats(BiasAnalysisFunc):
 
         @returns (TableDict) with the extracted data
         """
+        self.safe_update(**kwargs)
+
         if butler is not None:
             sys.stdout.write("Ignoring butler in bias_fft_stats.extract\n")
 
@@ -265,7 +292,7 @@ class bias_fft_stats(BiasAnalysisFunc):
 
         freqs = None
 
-        sys.stdout.write("Working on 9 slots: " )
+        sys.stdout.write("Working on 9 slots: ")
         sys.stdout.flush()
 
         for islot, slot in enumerate(ALL_SLOTS):
@@ -304,32 +331,38 @@ class bias_fft_stats(BiasAnalysisFunc):
         return outtables
 
 
-    @staticmethod
-    def plot(dtables, figs):
+    def plot(self, dtables, figs, **kwargs):
         """Plot the summary data from the bias fft statistics study
 
         @param dtables (TableDict)    The data we are ploting
         @param fgs (FigureDict)       Keeps track of the figures
         """
         sumtable = dtables['biasfft_stats']
-        figs.plot_stat_color('max_fft_noise', sumtable['fftpow_maxval'].reshape(9,16))
+        figs.plot_stat_color('max_fft_noise', sumtable['fftpow_maxval'].reshape(9, 16))
 
 
 
-class bias_fft_summary(BiasSummaryAnalysisFunc):
+class BiasFFTSummaryConfig(BiasSummaryAnalysisConfig):
+    """Configuration for CorrelWRTOScanSummaryTask"""
+    suffix = EOUtilConfig.clone_param('suffix', default='_biasfft_sum')
+    bias = EOUtilConfig.clone_param('bias')
+    superbias = EOUtilConfig.clone_param('superbias')
+
+
+class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
     """Class to analyze the overscan bias as a function of row number"""
 
-    argnames = ['dataset', 'butler_repo', 'bias', 'superbias', 'skip', 'plot']
+    ConfigClass = BiasFFTSummaryConfig
+    _DefaultName = "BiasFFTSummaryTask"
     iteratorClass = BiasSummaryByRaft
-    tablename_func = bias_summary_tablename
-    plotname_func = bias_summary_plotname
+    tablefile_name = bias_summary_tablename
+    plotfile_name = bias_summary_plotname
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """C'tor"""
-        BiasSummaryAnalysisFunc.__init__(self, "_biasfft_sum")
+        BiasSummaryAnalysisTask.__init__(self, **kwargs)
 
-    @staticmethod
-    def extract(butler, data, **kwargs):
+    def extract(self, butler, data, **kwargs):
         """Make a summry table of the bias FFT data
 
         @param filedict (dict)      The files we are analyzing
@@ -339,17 +372,17 @@ class bias_fft_summary(BiasSummaryAnalysisFunc):
 
         @returns (TableDict)
         """
+        self.safe_update(**kwargs)
+
         if butler is not None:
             sys.stdout.write("Ignoring butler in bias_fft_summary.extract\n")
 
-        for key,val in data.items():
+        for key, val in data.items():
             data[key] = val.replace('.fits', '_biasfft_stats.fits')
 
         KEEP_COLS = ['fftpow_maxval', 'fftpow_argmax', 'slot', 'amp']
 
-        if not kwargs.get('skip', False):
-            outtable = vstack_tables(data, tablename='biasfft_stats',
-                                     keep_cols=KEEP_COLS)
+        outtable = vstack_tables(data, tablename='biasfft_stats', keep_cols=KEEP_COLS)
 
         dtables = TableDict()
         dtables.add_datatable('biasfft_sum', outtable)
@@ -357,13 +390,14 @@ class bias_fft_summary(BiasSummaryAnalysisFunc):
         return dtables
 
 
-    @staticmethod
-    def plot(dtables, figs):
+    def plot(self, dtables, figs, **kwargs):
         """Plot the summary data from the superbias statistics study
 
         @param dtables (TableDict)    The data we are ploting
         @param fgs (FigureDict)       Keeps track of the figures
         """
+        self.safe_update(**kwargs)
+
         sumtable = dtables['biasfft_sum']
         runtable = dtables['runs']
 
