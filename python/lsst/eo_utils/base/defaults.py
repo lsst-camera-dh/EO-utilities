@@ -20,10 +20,13 @@ ALL_RAFTS = ["R10", "R22"]
 
 
 # Various types of tests
-MASK_TEST_TYPES = ['fe55_raft_analysis',
-                   'dark_defects_raft',
-                   'traps_raft',
-                   'bright_defects_raft']
+DATACAT_TS8_MASK_TEST_TYPES = ['fe55_raft_analysis',
+                               'dark_defects_raft',
+                               'traps_raft',
+                               'bright_defects_raft']
+DATACAT_BOT_MASK_TEST_TYPES = ['fe55_analysis_BOT',
+                               'pixel_defects_BOT']
+
 
 BUTLER_TEST_TYPES = ['DARK', 'FLAT', 'FE55', 'PPUMP', 'SFLAT', 'LAMBDA', 'TRAP']
 DATACAT_TS8_TEST_TYPES = ['fe55_raft_acq',

@@ -66,6 +66,18 @@ class FigureDict:
         """
         return self._fig_dict[key][key2]
 
+
+    def get_amp_axes(self, key, iamp):
+        """Return some the axis object for a particular amp
+
+        @param key (str)   Key for the figure.
+        @param iamp (int)  Amplifier index
+
+        @returns (axis) requested object
+        """
+        return self._fig_dict[key]['axs'].flat[iamp]
+
+
     def setup_figure(self, key, **kwargs):
         """Set up a figure with requested labeling
 

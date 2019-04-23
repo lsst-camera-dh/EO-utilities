@@ -16,8 +16,8 @@ except ImportError:
     pass
 
 
-from .defaults import MASK_TEST_TYPES, SLOT_FORMAT_STRING,\
-     RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING, ALL_RAFTS
+from .defaults import DATACAT_TS8_MASK_TEST_TYPES, DATACAT_BOT_MASK_TEST_TYPES,\
+    SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING, ALL_RAFTS
 
 
 def makedir_safe(filepath):
@@ -179,8 +179,12 @@ def get_mask_files_run(run_id, **kwargs):
     @returns (dict) Dictionary mapping slot to file names
     """
     mask_types = kwargs.get('mask_types', None)
+    hinfo = get_hardware_type_and_id(run_id)
     if mask_types is None:
-        mask_types = MASK_TEST_TYPES
+        if hinfo[0] == 'LCA-11021':
+            mask_types = DATACAT_TS8_MASK_TEST_TYPES
+        else:
+            mask_types = DATACAT_BOT_MASK_TEST_TYPES
 
     return get_files_for_run(run_id,
                              testTypes=mask_types,

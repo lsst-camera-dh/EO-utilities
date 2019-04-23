@@ -18,7 +18,7 @@ def get_flat_files_butler(butler, run_id, **kwargs):
     acq_types = kwargs.get('acq_types', None)
 
     if acq_types is None:
-        acq_types = BUTLER_TEST_TYPES
+        acq_types = ["FLAT"]
 
     return get_files_butler(butler, run_id,
                             testTypes=acq_types,

@@ -346,7 +346,7 @@ def array_struct(i_array, clip=None, do_std=False):
     return o_dict
 
 
-def unbias_amp(im, serial_oscan, bias_type=None, superbias_im=None):
+def unbias_amp(im, serial_oscan, bias_type=None, superbias_im=None, region=None):
     """Unbias the data from a particular amp
 
     @param ccd (ImageF)                    The data
@@ -359,11 +359,14 @@ def unbias_amp(im, serial_oscan, bias_type=None, superbias_im=None):
     if bias_type is not None:
         image = imutil.unbias_and_trim(im, serial_oscan,
                                        bias_method=bias_type,
-                                       bias_frame=superbias_im)
+                                       bias_frame=superbias_im,
+                                       imaging=region)
     else:
         image = im
         if superbias_im is not None:
             image -= superbias_im
+        if region is not None:
+            image = imutils.trim(image, region)
 
     return image
 

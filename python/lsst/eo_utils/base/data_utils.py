@@ -135,7 +135,8 @@ def vstack_tables(filedict, **kwargs):
     @param filedict (dict)    Dictionary pointing to the files with the tables
     @param kwargs
         tablename (str)
-        keep_cols (str)
+        keep_cols (list)
+        remove_cols (list)
 
     @returns (Table)
     """
@@ -143,15 +144,17 @@ def vstack_tables(filedict, **kwargs):
     kwcopy = kwargs.copy()
     tablename = kwcopy.pop('tablename')
     keep_cols = kwcopy.pop('keep_cols', None)
+    remove_cols = kwcopy.pop('remove_cols', None)
 
     tables = []
 
     for irun, pair in enumerate(sorted(filedict.items())):
         dtables = TableDict(pair[1], [tablename])
         table = dtables[tablename]
-        print(table)
         if keep_cols is not None:
             table.keep_columns(keep_cols)
+        if remove_cols is not None:
+            table.remove_columns(remove_cols)
         table.add_column(Column(name='run', data=irun*np.ones((len(table)), int)))
         tables.append(table)
 

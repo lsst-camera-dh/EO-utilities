@@ -14,22 +14,22 @@ from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_fo
 
 
 RAFT_FLAT_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
-                                    testType='flat', run_num=None)
+                                    testType='flat', run_num=None, suffix='')
 RAFT_FLAT_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
-                                   testType='flat', run_num=None)
+                                   testType='flat', run_num=None, suffix='')
 SLOT_FLAT_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
-                                    testType='flat', run_num=None, slot=None)
+                                    testType='flat', run_num=None, slot=None, suffix='')
 SLOT_FLAT_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
-                                   testType='flat', run_num=None, slot=None)
+                                   testType='flat', run_num=None, slot=None, suffix='')
 
 RAFT_SFLAT_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
-                                     testType='superflat', run_num=None)
+                                     testType='superflat', run_num=None, suffix='')
 RAFT_SFLAT_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
-                                    testType='superflat', run_num=None)
+                                    testType='superflat', run_num=None, suffix='')
 SLOT_SFLAT_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
-                                     testType='superflat', run_num=None, slot=None)
+                                     testType='superflat', run_num=None, slot=None, suffix='')
 SLOT_SFLAT_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
-                                    testType='superflat', run_num=None, slot=None)
+                                    testType='superflat', run_num=None, slot=None, suffix='')
 
 FLAT_SUMMARY_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables',
                                        testType='flat', dataset=None, suffix='')
@@ -51,8 +51,6 @@ def raft_flat_tablename(**kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, RAFT_FLAT_TABLENAME_DEFAULTS)
-    kwcopy['suffix'] = get_flat_suffix(**kwargs)
-
     outbase = get_raft_file_basename(**kwcopy)
 
     return str(outbase)
@@ -67,83 +65,8 @@ def raft_flat_plotname(**kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, RAFT_FLAT_PLOTNAME_DEFAULTS)
-    kwcopy['suffix'] = get_flat_suffix(**kwargs)
-
     outbase = get_raft_file_basename(**kwcopy)
     return str(outbase)
-
-
-def get_flat_suffix(**kwargs):
-    """Return the suffix for flat files
-
-    @param kwargs (dict)
-        flat_type(str)
-        superflat_type(str)
-        stat (str)
-        std (bool)
-        suffix (str)
-
-    the format is _b-{flat_type}_s-{superflat_type}{stat}{suffix}
-    @return (str) the suffix
-    """
-    flat_type = kwargs.get('flat', None)
-    superflat_type = kwargs.get('superflat', None)
-    kwsuffix = kwargs.get('suffix', None)
-    stat_type = kwargs.get('stat', None)
-
-    suffix = ""
-    if flat_type is None:
-        suffix += "_b-none"
-    else:
-        suffix += "_b-%s" % flat_type
-
-    if superflat_type is None:
-        suffix += "_s-none"
-    else:
-        suffix += "_s-%s" % superflat_type
-
-    if kwargs.get('std', False):
-        suffix += "_std"
-
-    if stat_type is not None:
-        suffix += "_%s" % stat_type
-
-    if kwsuffix is not None:
-        suffix += "_%s" % kwsuffix
-    return suffix
-
-
-def get_superflat_suffix(**kwargs):
-    """Return the suffix for flat files
-
-    @param kwargs (dict)
-        superflat_type(str)
-        std (bool)
-        suffix (str)
-        stat (str)
-
-    the format is b-{superflat_type}{stat}{suffix}
-    @return (str) the suffix
-    """
-    superflat_type = kwargs.get('superflat', None)
-    stat_type = kwargs.get('stat', None)
-    kwsuffix = kwargs.get('suffix', None)
-    suffix = ""
-
-    if superflat_type is None:
-        suffix += "_b-none"
-    else:
-        suffix += "_b-%s" % (superflat_type)
-
-    if kwargs.get('std', False):
-        suffix += "_std"
-
-    if stat_type is not None:
-        suffix += "_%s" % stat_type
-
-    if kwsuffix is not None:
-        suffix += "_%s" % kwsuffix
-    return suffix
 
 
 
@@ -157,8 +80,6 @@ def slot_flat_tablename(**kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_FLAT_TABLENAME_DEFAULTS)
-    kwcopy['suffix'] = get_flat_suffix(**kwargs)
-
     outpath = get_slot_file_basename(**kwcopy)
     return str(outpath)
 
@@ -173,8 +94,6 @@ def slot_flat_plotname(**kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_FLAT_PLOTNAME_DEFAULTS)
-    kwcopy['suffix'] = get_flat_suffix(**kwargs)
-
     outpath = get_slot_file_basename(**kwcopy)
     return str(outpath)
 
@@ -189,8 +108,6 @@ def slot_superflat_tablename(**kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_SFLAT_TABLENAME_DEFAULTS)
-    kwcopy['suffix'] = get_superflat_suffix(**kwargs)
-
     outpath = get_slot_file_basename(**kwcopy)
     return str(outpath)
 
@@ -203,8 +120,6 @@ def slot_superflat_plotname(**kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_SFLAT_PLOTNAME_DEFAULTS)
-    kwcopy['suffix'] = get_superflat_suffix(**kwargs)
-
     outpath = get_slot_file_basename(**kwcopy)
     return str(outpath)
 
@@ -219,9 +134,7 @@ def raft_superflat_tablename(**kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, RAFT_SFLAT_TABLENAME_DEFAULTS)
-    kwcopy['suffix'] = get_superflat_suffix(**kwargs)
     outpath = get_raft_file_basename(**kwcopy)
-
     return str(outpath)
 
 def raft_superflat_plotname(**kwargs):
@@ -234,9 +147,7 @@ def raft_superflat_plotname(**kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, RAFT_SFLAT_PLOTNAME_DEFAULTS)
-    kwcopy['suffix'] = get_superflat_suffix(**kwargs)
     outpath = get_raft_file_basename(**kwcopy)
-
     return str(outpath)
 
 
@@ -307,9 +218,9 @@ def get_flat_files_run(run_id, **kwargs):
 
     if acq_types is None:
         if hinfo[0] == 'LCA-11021':
-            acq_types = DATACAT_TS8_TEST_TYPES
+            acq_types = ['flat_pair_raft_acq']
         else:
-            acq_types = DATACAT_BOT_TEST_TYPES
+            acq_types = ['FLAT']
 
     return get_files_for_run(run_id,
                              imageType="FLAT",

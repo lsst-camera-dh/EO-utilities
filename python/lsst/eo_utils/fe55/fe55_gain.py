@@ -162,20 +162,17 @@ class fe55_gain_summary(Fe55SummaryAnalysisFunc):
             sys.stdout.write("Ignoring butler in fe55_gain_summary.extract\n")
 
         if kwargs.get('use_all', False):
-            insuffix = '_all_fe55_gain_stats.fits'
+            insuffix = '_fe55_gain_stats.fits'
         else:
-            insuffix = '_good_fe55_gain_stats.fits'
+            insuffix = '_fe55_gain_stats.fits'
         for key,val in data.items():
             data[key] = val.replace('.fits', insuffix)
 
-        KEEP_COLS = ['kalpha_peak', 'kalpha_sigma', 'ncluster', 'ngood',
-                     'gain', 'gain_error',
-                     'sigmax_median', 'sigmay_median',
-                     'slot', 'amp']
+        REMOVE_COLS = ['fit_pars']
 
         if not kwargs.get('skip', False):
             outtable = vstack_tables(data, tablename='fe55_gain_stats',
-                                     keep_cols=KEEP_COLS)
+                                     remove_cols=REMOVE_COLS)
 
         dtables = TableDict()
         dtables.add_datatable('fe55_gain_sum', outtable)

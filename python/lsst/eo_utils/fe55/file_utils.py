@@ -40,6 +40,10 @@ def raft_fe55_tablename(**kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, RAFT_FE55_TABLENAME_DEFAULTS)
+    if kwargs.get('use_all', False):
+        kwcopy['suffix'] = '_all%s' % kwcopy['suffix']
+    else:
+        kwcopy['suffix'] = '_good%s' % kwcopy['suffix']
     outbase = get_raft_file_basename(**kwcopy)
 
     return str(outbase)
@@ -55,9 +59,9 @@ def raft_fe55_plotname(**kwargs):
     """
     kwcopy = copy_dict(kwargs, RAFT_FE55_PLOTNAME_DEFAULTS)
     if kwargs.get('use_all', False):
-        kwcopy['suffix']  += '_all'
+        kwcopy['suffix'] = '_all%s' % kwcopy['suffix']
     else:
-        kwcopy['suffix']  += '_good'
+        kwcopy['suffix'] = '_good%s' % kwcopy['suffix']
     outbase = get_raft_file_basename(**kwcopy)
 
     return str(outbase)
@@ -73,10 +77,6 @@ def slot_fe55_tablename(**kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_FE55_TABLENAME_DEFAULTS)
-    if kwargs.get('use_all', False):
-        kwcopy['suffix'] = 'all_%s' % kwcopy['suffix']
-    else:
-        kwcopy['suffix'] = 'good_%s' % kwcopy['suffix']
     outpath = get_slot_file_basename(**kwcopy)
 
     return str(outpath)
@@ -92,10 +92,6 @@ def slot_fe55_plotname(**kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_FE55_PLOTNAME_DEFAULTS)
-    if kwargs.get('use_all', False):
-        kwcopy['suffix'] = 'all_%s' % kwcopy['suffix']
-    else:
-        kwcopy['suffix'] = 'good_%s' % kwcopy['suffix']
     outpath = get_slot_file_basename(**kwcopy)
 
     return str(outpath)
@@ -112,9 +108,9 @@ def fe55_summary_tablename(**kwargs):
     """
     kwcopy = copy_dict(kwargs, FE55_SUMMARY_TABLENAME_DEFAULTS)
     if kwargs.get('use_all', False):
-        kwcopy['suffix'] = 'all_%s' % kwcopy['suffix']
+        kwcopy['suffix'] = '_all%s' % kwcopy['suffix']
     else:
-        kwcopy['suffix'] = 'good_%s' % kwcopy['suffix']
+        kwcopy['suffix'] = '_good%s' % kwcopy['suffix']
     outpath = get_summary_file_basename(**kwcopy)
     return str(outpath)
 
