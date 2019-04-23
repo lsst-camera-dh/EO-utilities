@@ -70,8 +70,8 @@ class EOUtilConfig(pexConfig.Config):
             o_dict[key] = (val.dtype, val.default, val.__doc__)
         return o_dict
 
-        
-    
+
+
 
 # Turn the object about into an ordered dictionary
 DEFAULT_CONFIG = EOUtilConfig()
@@ -114,7 +114,7 @@ def add_pex_arguments(parser, pexClass):
     @param pexClass (`pexConfig`)  A config class
     """
     for key, val in pexClass._fields.items():
-        if type(val) in [pexConfig.listField.List]:
+        if isinstance(val, pexConfig.listField.List):
             parser.add_argument("--%s" % key,
                                 action='append',
                                 type=val.dtype,
@@ -253,9 +253,9 @@ def copy_dict(in_dict, def_dict):
 
 def copy_pex_fields(field_names, target_class, library_class):
     """Copy a set of pexConfig.Field objects to a target class
-    
+
     This is a way to make sure that all config classes in this
-    package are using the same pexConfig.Field object and 
+    package are using the same pexConfig.Field object and
     share the same parameters when appropriate
 
     @param field_names (list)                 : Name of parameters to copy
@@ -265,7 +265,7 @@ def copy_pex_fields(field_names, target_class, library_class):
     for fname in field_names:
         try:
             item = library_class.__dict__[fname]
-        except KeyError:            
+        except KeyError:
             raise KeyError("Field %s does not exist in class %s\n" % (fname, type(library_class)))
         if isinstance(item, pexConfig.Field):
             setattr(target_class, fname, copy.deepcopy(item))

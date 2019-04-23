@@ -1,5 +1,6 @@
 """Functions to analyse bias and superbias frames"""
 
+import sys
 
 from lsst.eo_utils.base import mpl_utils
 
@@ -33,7 +34,7 @@ def get_bias_data(caller, butler, run_num, **kwargs):
         retval = get_bias_files_run(run_num, **kwargs)
     else:
         retval = get_bias_files_butler(butler, run_num, **kwargs)
-    if len(retval) == 0:
+    if not retval:
         sys.stdout.write("Warning, call to get_bias_data for %s returned no data" % caller)
     return retval
 
@@ -92,4 +93,12 @@ class BiasAnalysisTask(AnalysisTask):
 
         @param kwargs:    Used to override configruation
         """
-        super(BiasAnalysisTask, self).__init__(**kwargs)
+        AnalysisTask.__init__(self, **kwargs)
+
+    def extract(self, butler, data, **kwargs):
+        """This needs to be implemented by the sub-class"""
+        raise NotImplementedError("AnalysisFunc.extract is not overridden.")
+
+    def plot(self, dtables, figs, **kwargs):
+        """This needs to be implemented by the sub-class"""
+        raise NotImplementedError("AnalysisFunc.plot is not overridden.")

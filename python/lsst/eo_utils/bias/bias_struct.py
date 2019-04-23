@@ -4,8 +4,6 @@ import sys
 
 import numpy as np
 
-from lsst.eo_utils.base.defaults import DEFAULT_BIAS_TYPE
-
 from lsst.eo_utils.base.config_utils import EOUtilConfig
 
 from lsst.eo_utils.base.file_utils import get_mask_files
@@ -73,7 +71,7 @@ class BiasStructTask(BiasAnalysisTask):
         std (bool)           Plot standard deviation instead of median
         """
         self.safe_update(**kwargs)
-       
+
         slot = self.config.slot
         bias_files = data['BIAS']
         mask_files = get_mask_files(**kwargs)
@@ -195,7 +193,7 @@ class SuperbiasStructTask(BiasAnalysisTask):
             std (bool)           Plot standard deviation instead of median
         """
         self.safe_update(**kwargs)
-        
+
         slot = self.config.slot
 
         if butler is not None:
@@ -224,4 +222,3 @@ class SuperbiasStructTask(BiasAnalysisTask):
         for key, val in biasstruct_data.items():
             dtables.make_datatable('biasst-%s' % key, val)
         return dtables
-

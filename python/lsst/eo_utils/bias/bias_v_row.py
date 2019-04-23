@@ -6,8 +6,6 @@ import numpy as np
 
 import lsst.eotest.image_utils as imutil
 
-from lsst.eo_utils.base.defaults import DEFAULT_BIAS_TYPE
-
 from lsst.eo_utils.base.config_utils import EOUtilConfig
 
 from lsst.eo_utils.base.data_utils import TableDict
@@ -50,7 +48,6 @@ class BiasVRowTask(BiasAnalysisTask):
         self.safe_update(**kwargs)
 
         slot = self.config.slot
-        bias_type = self.config.bias
 
         bias_files = data['BIAS']
 

@@ -252,11 +252,7 @@ def get_ccd_from_id(butler, dataId, mask_files):
     if butler is None:
         exposure = MaskedCCD(str(dataId), mask_files=mask_files)
     else:
-        try:
-            exposure = butler.get('raw', dataId)
-        except ValueError as msg:
-            print (dataId)
-            raise ValueError(msg)
+        exposure = butler.get('raw', dataId)
         apply_masks(butler, exposure, mask_files)
     return exposure
 

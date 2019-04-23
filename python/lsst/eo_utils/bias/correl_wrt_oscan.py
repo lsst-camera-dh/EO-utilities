@@ -223,7 +223,7 @@ class CorrelWRTOScanStatsTask(BiasAnalysisTask):
                          slot=[],
                          amp=[])
 
-        sys.stdout.write("Working on 9 slots: " )
+        sys.stdout.write("Working on 9 slots: ")
         sys.stdout.flush()
 
         for islot, slot in enumerate(ALL_SLOTS):
@@ -287,9 +287,8 @@ class CorrelWRTOScanStatsTask(BiasAnalysisTask):
         """
         self.safe_update(**kwargs)
         sumtable = dtables['biasoscorr_stats']
-        figs.plot_stat_color('mean_oscorr_s', sumtable['s_correl_mean'].reshape(9,16))
-        figs.plot_stat_color('mean_oscorr_p', sumtable['p_correl_mean'].reshape(9,16))
-
+        figs.plot_stat_color('mean_oscorr_s', sumtable['s_correl_mean'].reshape(9, 16))
+        figs.plot_stat_color('mean_oscorr_p', sumtable['p_correl_mean'].reshape(9, 16))
 
 
 
@@ -328,7 +327,7 @@ class CorrelWRTOScanSummaryTask(BiasSummaryAnalysisTask):
         if butler is not None:
             sys.stdout.write("Ignoring butler in correl_wrt_oscan_summary.extract\n")
 
-        for key,val in data.items():
+        for key, val in data.items():
             data[key] = val.replace('.fits', 'biasoscorr_stats.fits')
 
         if not kwargs.get('skip', False):

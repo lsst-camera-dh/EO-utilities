@@ -1,11 +1,10 @@
-
 """Class to analyze the overscan bias as a function of row number"""
 
 import sys
 
 import numpy as np
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS, DEFAULT_BIAS_TYPE
+from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.config_utils import EOUtilConfig
 
@@ -62,9 +61,7 @@ class OscanAmpStackTask(BiasAnalysisTask):
             bias (str)           Method to use for unbiasing
             superbias (str)      Method to use for superbias subtraction
         """
-        print (self.config.toDict())
         self.safe_update(**kwargs)
-        print (self.config.toDict())
 
         slot = self.config.slot
 
@@ -190,7 +187,7 @@ class OscanAmpStackStatsTask(BiasAnalysisTask):
                          p_col_max_max=[],
                          slot=[])
 
-        sys.stdout.write("Working on 9 slots: " )
+        sys.stdout.write("Working on 9 slots: ")
         sys.stdout.flush()
 
         for islot, slot in enumerate(ALL_SLOTS):
@@ -299,9 +296,8 @@ class OscanAmpStackSummaryTask(BiasSummaryAnalysisTask):
         if butler is not None:
             sys.stdout.write("Ignoring butler in correl_wrt_oscan_summary.extract\n")
 
-        for key,val in data.items():
+        for key, val in data.items():
             data[key] = val.replace('_sum.fits', '_stats.fits')
-            print (data[key])
 
         outtable = vstack_tables(data, tablename='biasosstack_stats')
 
@@ -342,5 +338,3 @@ class OscanAmpStackSummaryTask(BiasSummaryAnalysisTask):
                             yerrs=yvals_s_err, ylabel="Amplitude of Row-wise amp stack [ADU]")
         figs.plot_run_chart("p_col_diff", runs, yvals_p_diff,
                             yerrs=yvals_p_err, ylabel="Amplitude of Col-wise amp stack [ADU]")
-        
- 

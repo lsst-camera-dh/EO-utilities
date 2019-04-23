@@ -8,7 +8,7 @@ from lsst.eo_utils.base.file_utils import get_mask_files
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.config_utils import STANDARD_RAFT_ARGS
+from lsst.eo_utils.base.config_utils import EOUtilConfig
 
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 

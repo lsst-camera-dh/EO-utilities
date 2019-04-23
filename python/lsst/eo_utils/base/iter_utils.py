@@ -25,10 +25,10 @@ class AnalysisHandler:
 
     def __init__(self, task):
         """C'tor
-        @param task (`AnalysisTask`)     Task that this will run                                        
+        @param task (`AnalysisTask`)     Task that this will run
         """
         self._task = task
-        self.argnames = []  
+        self.argnames = []
         self.argnames += self.batch_argnames
 
     @staticmethod
@@ -41,15 +41,6 @@ class AnalysisHandler:
         @returns (`Butler`)        The requested data Butler
         """
         return getButler(butler_repo, **kwargs)
-
-    def get_data(self, butler, datakey, **kwargs):
-        """Function to get the data
-
-        @param bulter (`Butler`)     The data Butler
-        @param datakey (str)         The ddata identifier (run number or other string)
-        @param kwargs (dict)         Passed to the data function
-        """
-        return NotImplementedError("AnalysisHandler.get_data")
 
     def run_analysis(self, **kwargs):
         """Run the analysis over all of the requested objects.
@@ -93,13 +84,13 @@ class SimpleAnalysisHandler(AnalysisHandler):
     """
     def __init__(self, task):
         """C'tor
-        @param task (AnalysisTask)     Task that this will run                                        
+        @param task (AnalysisTask)     Task that this will run
         """
         AnalysisHandler.__init__(self, task)
 
     def call_analysis_task(self, **kwargs):
         """Jusgt call the analysis function"""
-        return self.task(**kwargs)
+        return self._task(**kwargs)
 
     def run_with_args(self, **kwargs):
         """Run the analysis over all of the requested objects.
@@ -133,7 +124,7 @@ class AnalysisIterator(AnalysisHandler):
     """
     def __init__(self, task):
         """C'tor
-        @param task (AnalysisTask)     Task that this will run                                        
+        @param task (AnalysisTask)     Task that this will run
         """
         AnalysisHandler.__init__(self, task)
 
@@ -267,10 +258,19 @@ class AnalysisBySlot(AnalysisIterator):
     """
     def __init__(self, task):
         """C'tor
-        @param task (AnalysisTask)     Task that this will run                                        
+        @param task (AnalysisTask)     Task that this will run
         """
         AnalysisIterator.__init__(self, task)
         self.argnames += ['slots']
+
+    def get_data(self, butler, datakey, **kwargs):
+        """Function to get the data
+
+        @param bulter (`Butler`)     The data Butler
+        @param datakey (str)         The ddata identifier (run number or other string)
+        @param kwargs (dict)         Passed to the data function
+        """
+        raise NotImplementedError("AnalysisBySlot.get_data")
 
     def call_analysis_task(self, run, **kwargs):
         """Call the analysis function for one run
@@ -305,11 +305,19 @@ class AnalysisByRaft(AnalysisIterator):
     def __init__(self, task):
         """C'tor
 
-        @param task (`AnalysisTask`)     Task that this will run 
+        @param task (`AnalysisTask`)     Task that this will run
         """
         AnalysisIterator.__init__(self, task)
         self.argnames += ['rafts']
 
+    def get_data(self, butler, datakey, **kwargs):
+        """Function to get the data
+
+        @param bulter (`Butler`)     The data Butler
+        @param datakey (str)         The ddata identifier (run number or other string)
+        @param kwargs (dict)         Passed to the data function
+        """
+        raise NotImplementedError("AnalysisByRaft.get_data")
 
     def call_analysis_task(self, run, **kwargs):
         """Call the analysis function for one run
@@ -342,9 +350,18 @@ class SummaryAnalysisIterator(AnalysisHandler):
 
     def __init__(self, task):
         """C'tor
-        @param task (`AnalysisTask`)     Task that this will run                                        
+        @param task (`AnalysisTask`)     Task that this will run
         """
         AnalysisHandler.__init__(self, task)
+
+    def get_data(self, butler, datakey, **kwargs):
+        """Function to get the data
+
+        @param bulter (`Butler`)     The data Butler
+        @param datakey (str)         The ddata identifier (run number or other string)
+        @param kwargs (dict)         Passed to the data function
+        """
+        raise NotImplementedError("SummaryAnalysisIterator.get_data")
 
     def call_analysis_task(self, dataset, **kwargs):
         """Call the analysis function for one run

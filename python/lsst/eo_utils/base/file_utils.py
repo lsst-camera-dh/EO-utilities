@@ -4,6 +4,7 @@
 """
 
 import os
+import sys
 import glob
 
 import yaml
@@ -13,7 +14,6 @@ try:
     from exploreRun import exploreRun
 except ImportError:
     print("Warning, no datacat-utilities")
-    pass
 
 
 from .defaults import MASK_TEST_TYPES, SLOT_FORMAT_STRING,\
@@ -258,7 +258,7 @@ def read_raft_ccd_map(yamlfile):
 
 
 def find_eo_results(glob_format, paths, **kwargs):
-    """Get a particular EO test result 
+    """Get a particular EO test result
 
     @param glob_format (str)   Formatting string for search path
     @param paths (list)        Search paths
@@ -272,7 +272,7 @@ def find_eo_results(glob_format, paths, **kwargs):
         globfiles = glob.glob(globstring)
         if len(globfiles) != 9:
             continue
-        odict = {}       
+        odict = {}
         for fname in globfiles:
             sensor = os.path.basename(fname).split('_')[0].replace('-Dev', '')
             odict[sensor] = fname
@@ -281,7 +281,7 @@ def find_eo_results(glob_format, paths, **kwargs):
 
 
 def link_eo_results(ccd_map, fdict, outformat, **kwargs):
-    """Link eo results to the analysis area 
+    """Link eo results to the analysis area
 
     @param ccd_map (dcit)      Mapping between rafts, slot and CCD id
     @param fdict (dict)        Mapping between CCD id and filename
@@ -300,11 +300,11 @@ def link_eo_results(ccd_map, fdict, outformat, **kwargs):
             raise KeyError(msg)
         outpath = outformat.format(raft=raft, slot=slot, **kwargs)
         makedir_safe(outpath)
-        os.system("ln -s %s %s" % (fname, outpath) )
+        os.system("ln -s %s %s" % (fname, outpath))
 
 
 def link_eo_results_runlist(args, glob_format, paths, outformat):
-    """Link eo results to the analysis area 
+    """Link eo results to the analysis area
 
     @param args (dict)      Mapping between rafts, slot and CCD id
     @param glob_format (str)   Formatting string for search path

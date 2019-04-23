@@ -9,7 +9,7 @@ import lsst.eotest.image_utils as imutil
 from lsst.eo_utils.base.file_utils import makedir_safe,\
     get_mask_files
 
-from lsst.eo_utils.base.defaults import SBIAS_TEMPLATE, DEFAULT_BIAS_TYPE,\
+from lsst.eo_utils.base.defaults import SBIAS_TEMPLATE,\
     DEFAULT_STAT_TYPE, DEFAULT_BITPIX
 
 from lsst.eo_utils.base.config_utils import EOUtilConfig
@@ -177,5 +177,3 @@ class SuperbiasTask(BaseAnalysisTask):
 
                 makedir_safe(plotbase)
                 figs.save_all(plotbase)
-
-

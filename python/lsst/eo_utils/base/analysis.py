@@ -1,13 +1,11 @@
 """Utilities for offline data analysis of LSST Electrical-Optical testing"""
 
-import sys
-
 import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
 
 from .file_utils import makedir_safe
 
-from .config_utils import EOUtilConfig, copy_pex_fields, copy_dict
+from .config_utils import EOUtilConfig, copy_dict
 
 from .data_utils import TableDict
 
@@ -45,13 +43,13 @@ class BaseAnalysisTask(pipeBase.Task):
         Update the configuration from a set of kw
         """
         base_dict = self.config.toDict()
-        update_dict = {}        
+        update_dict = {}
         for key, val in kwargs.items():
             if key in base_dict:
                 update_dict[key] = val
         self.config.update(**update_dict)
 
-    
+
     def extract_config_vals(self, def_dict):
         """ C'tor
         Extract a set of configuration values to a dict
@@ -100,21 +98,21 @@ class AnalysisTask(BaseAnalysisTask):
 
         @param kwargs:    Used to override configruation
         """
-        super(BaseAnalysisTask, self).__init__(**kwargs)
-    
+        BaseAnalysisTask.__init__(self, **kwargs)
+
     def tablefile_name(self, **kwargs):
         """ Name of the file with the output tables
 
         @param kwargs:    Used to override configruation
         """
-        pass
-    
+        raise NotImplementedError("AnalysisTask.tablefile_name")
+
     def plotfile_name(self, **kwargs):
         """ Name of the file for plots
 
         @param kwargs:    Used to override configruation
         """
-        pass
+        raise NotImplementedError("AnalysisTask.plotfile_name")
 
     def make_datatables(self, butler, data, **kwargs):
         """Tie together the functions to make the data tables
@@ -166,10 +164,8 @@ class AnalysisTask(BaseAnalysisTask):
 
     def extract(self, butler, data, **kwargs):
         """This needs to be implemented by the sub-class"""
-        raise RuntimeError("AnalysisFunc.extract is not overridden")
+        raise NotImplementedError("AnalysisFunc.extract is not overridden.")
 
     def plot(self, dtables, figs, **kwargs):
         """This needs to be implemented by the sub-class"""
-        if dtables is not None and figs is not None:
-            sys.stdout.write("Warning, plotting function not implemented\n")
-
+        raise NotImplementedError("AnalysisFunc.plot is not overridden.")

@@ -8,7 +8,7 @@ from .iter_utils import AnalysisBySlot
 
 from .analysis import BaseAnalysisConfig, BaseAnalysisTask
 
-from .config_utils import EOUtilConfig, copy_pex_fields
+from .config_utils import EOUtilConfig
 
 from .file_utils import makedir_safe, get_mask_files_run,\
     mask_filename, MASKFILENAME_DEFAULTS
@@ -82,14 +82,14 @@ class MaskAddTask(BaseAnalysisTask):
                                  output filename
         """
         self.safe_update(**kwargs)
-    
+
         mask_files = slot_data['MASK']
         if butler is not None:
             print("Ignoring Butler to get mask files")
-        
+
         mask_kwargs = self.extract_config_vals(MASKFILENAME_DEFAULTS)
-    
+
         outfile = mask_filename(**mask_kwargs)
         makedir_safe(outfile)
-    
+
         add_mask_files(mask_files, outfile)

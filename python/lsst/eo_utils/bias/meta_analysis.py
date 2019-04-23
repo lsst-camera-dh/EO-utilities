@@ -115,7 +115,7 @@ class BiasTableAnalysisByRaft(AnalysisByRaft):
 
     def __init__(self, task):
         """C'tor
-        
+
         @param task (AnalysisTask)     Task that this will run
         """
         AnalysisByRaft.__init__(self, task)
@@ -171,4 +171,12 @@ class BiasSummaryAnalysisTask(AnalysisTask):
         @param datasuffix (str)        Suffix for filenames
         @param kwargs:
         """
-        super(BiasSummaryAnalysisTask, self).__init__(**kwargs)
+        AnalysisTask.__init__(self, **kwargs)
+
+    def extract(self, butler, data, **kwargs):
+        """This needs to be implemented by the sub-class"""
+        raise NotImplementedError("AnalysisFunc.extract is not overridden.")
+
+    def plot(self, dtables, figs, **kwargs):
+        """This needs to be implemented by the sub-class"""
+        raise NotImplementedError("AnalysisFunc.plot is not overridden.")
