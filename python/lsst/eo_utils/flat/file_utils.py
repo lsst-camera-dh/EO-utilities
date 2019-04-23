@@ -4,8 +4,6 @@
 
 """This module contains functions to find files of a particular type in the SLAC directory tree"""
 
-from lsst.eo_utils.base.defaults import DATACAT_TS8_TEST_TYPES, DATACAT_BOT_TEST_TYPES
-
 from lsst.eo_utils.base.config_utils import copy_dict
 
 from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_for_run,\
@@ -14,22 +12,22 @@ from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_fo
 
 
 RAFT_FLAT_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
-                                    testType='flat', run_num=None, suffix='')
+                                    testType='flat', run=None, suffix='')
 RAFT_FLAT_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
-                                   testType='flat', run_num=None, suffix='')
+                                   testType='flat', run=None, suffix='')
 SLOT_FLAT_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
-                                    testType='flat', run_num=None, slot=None, suffix='')
+                                    testType='flat', run=None, slot=None, suffix='')
 SLOT_FLAT_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
-                                   testType='flat', run_num=None, slot=None, suffix='')
+                                   testType='flat', run=None, slot=None, suffix='')
 
 RAFT_SFLAT_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
-                                     testType='superflat', run_num=None, suffix='')
+                                     testType='superflat', run=None, suffix='')
 RAFT_SFLAT_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
-                                    testType='superflat', run_num=None, suffix='')
+                                    testType='superflat', run=None, suffix='')
 SLOT_SFLAT_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
-                                     testType='superflat', run_num=None, slot=None, suffix='')
+                                     testType='superflat', run=None, slot=None, suffix='')
 SLOT_SFLAT_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
-                                    testType='superflat', run_num=None, slot=None, suffix='')
+                                    testType='superflat', run=None, slot=None, suffix='')
 
 FLAT_SUMMARY_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables',
                                        testType='flat', dataset=None, suffix='')
@@ -41,117 +39,117 @@ SFLAT_SUMMARY_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots',
                                        testType='superflat', dataset=None, suffix='')
 
 
-def raft_flat_tablename(**kwargs):
+def raft_flat_tablename(caller, **kwargs):
     """Return the filename for a raft level plot
 
-    The format is {outdir}/tables/{raft}/flat/{raft}-{run_num}-RFT_b-{flat_type}_s-{superflat_type}{suffix}
+    The format is {outdir}/tables/{raft}/flat/{raft}-{run}-RFT_b-{flat_type}_s-{superflat_type}{suffix}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs:          Passed to get_flat_suffix and get_raft_file_basename
 
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, RAFT_FLAT_TABLENAME_DEFAULTS)
-    outbase = get_raft_file_basename(**kwcopy)
+    return get_raft_file_basename(caller, **kwcopy)
 
-    return str(outbase)
 
-def raft_flat_plotname(**kwargs):
+def raft_flat_plotname(caller, **kwargs):
     """Return the filename for a raft level plot
 
-    The format is {outdir}/plots/{raft}/flat/{raft}-{run_num}-{slot}_b-{flat_type}_s-{superflat_type}{suffix}
+    The format is {outdir}/plots/{raft}/flat/{raft}-{run}-{slot}_b-{flat_type}_s-{superflat_type}{suffix}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs:          Passed to get_flat_suffix and get_raft_file_basename
 
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, RAFT_FLAT_PLOTNAME_DEFAULTS)
-    outbase = get_raft_file_basename(**kwcopy)
-    return str(outbase)
+    return get_raft_file_basename(caller, **kwcopy)
 
 
-
-def slot_flat_tablename(**kwargs):
+def slot_flat_tablename(caller, **kwargs):
     """Return the filename for a plot made from a flat file
 
-    The format is {outdir}/tables/{raft}/flat/{raft}-{run_num}-{slot}_b-{flat_type}_s-{superflat_type}
+    The format is {outdir}/tables/{raft}/flat/{raft}-{run}-{slot}_b-{flat_type}_s-{superflat_type}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_flat_suffix and get_slot_file_basename
 
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_FLAT_TABLENAME_DEFAULTS)
-    outpath = get_slot_file_basename(**kwcopy)
-    return str(outpath)
+    return get_slot_file_basename(caller, **kwcopy)
 
 
-def slot_flat_plotname(**kwargs):
+def slot_flat_plotname(caller, **kwargs):
     """Return the filename for a plot made from a flat file
 
-    The format is {outdir}/plots/{raft}/flat/{raft}-{run_num}-{slot}_b-{flat_type}_s-{superflat_type}
+    The format is {outdir}/plots/{raft}/flat/{raft}-{run}-{slot}_b-{flat_type}_s-{superflat_type}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_flat_suffix and get_slot_file_basename
 
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_FLAT_PLOTNAME_DEFAULTS)
-    outpath = get_slot_file_basename(**kwcopy)
-    return str(outpath)
+    return get_slot_file_basename(caller, **kwcopy)
 
 
-def slot_superflat_tablename(**kwargs):
+def slot_superflat_tablename(caller, **kwargs):
     """Return the filename for a plot made from a superflat file
 
-    The format is {outdir}/tables/{raft}/superflat/{raft}-{run_num}-{slot}_b-{superflat_type}
+    The format is {outdir}/tables/{raft}/superflat/{raft}-{run}-{slot}_b-{superflat_type}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_superflat_suffix and get_slot_file_basename
 
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_SFLAT_TABLENAME_DEFAULTS)
-    outpath = get_slot_file_basename(**kwcopy)
-    return str(outpath)
+    return get_slot_file_basename(caller, **kwcopy)
 
 
-def slot_superflat_plotname(**kwargs):
+def slot_superflat_plotname(caller, **kwargs):
     """Return the filename for a plot made from a superflat file
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_superflat_suffix and get_slot_file_basename
 
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_SFLAT_PLOTNAME_DEFAULTS)
-    outpath = get_slot_file_basename(**kwcopy)
-    return str(outpath)
+    return get_slot_file_basename(caller, **kwcopy)
 
 
-def raft_superflat_tablename(**kwargs):
+def raft_superflat_tablename(caller, **kwargs):
     """Return the filename for a plot made from a superflat file
 
-    The format is {outdir}/tables/{raft}/superflat/{raft}-{run_num}-{slot}_b-{superflat_type}
+    The format is {outdir}/tables/{raft}/superflat/{raft}-{run}-{slot}_b-{superflat_type}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_superflat_suffix and get_raft_file_basename
 
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, RAFT_SFLAT_TABLENAME_DEFAULTS)
-    outpath = get_raft_file_basename(**kwcopy)
-    return str(outpath)
+    return get_raft_file_basename(caller, **kwcopy)
 
-def raft_superflat_plotname(**kwargs):
+
+def raft_superflat_plotname(caller, **kwargs):
     """Return the filename for a plot made from a superflat file
 
-    The format is {outdir}/plots/{raft}/superflat/{raft}-{run_num}-{slot}_b-{superflat_type}
+    The format is {outdir}/plots/{raft}/superflat/{raft}-{run}-{slot}_b-{superflat_type}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_superflat_suffix and get_raft_file_basename
 
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, RAFT_SFLAT_PLOTNAME_DEFAULTS)
-    outpath = get_raft_file_basename(**kwcopy)
-    return str(outpath)
+    return get_raft_file_basename(caller, **kwcopy)
 
 
-def flat_summary_tablename(**kwargs):
+def flat_summary_tablename(caller, **kwargs):
     """Return the filename for a summary table file
 
     The format is {outdir}/tables/summary/flat/{dataset}{suffix}
@@ -161,47 +159,49 @@ def flat_summary_tablename(**kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, FLAT_SUMMARY_TABLENAME_DEFAULTS)
-    outpath = get_summary_file_basename(**kwcopy)
-    return str(outpath)
+    return get_summary_file_basename(caller, **kwcopy)
 
-def flat_summary_plotname(**kwargs):
+
+def flat_summary_plotname(caller, **kwargs):
     """Return the filename for a summary plot file
 
     The format is {outdir}/plots/summary/flat/{dataset}{suffix}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_summary_file_basename
 
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, FLAT_SUMMARY_PLOTNAME_DEFAULTS)
-    outpath = get_summary_file_basename(**kwcopy)
-    return str(outpath)
+    return get_summary_file_basename(caller, **kwcopy)
 
-def superflat_summary_tablename(**kwargs):
+
+def superflat_summary_tablename(caller, **kwargs):
     """Return the filename for a summary table file
 
     The format is {outdir}/tables/summary/flat/{dataset}{suffix}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_summary_file_basename
 
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SFLAT_SUMMARY_TABLENAME_DEFAULTS)
-    outpath = get_summary_file_basename(**kwcopy)
-    return str(outpath)
+    return get_summary_file_basename(caller, **kwcopy)
 
 
-def superflat_summary_plotname(**kwargs):
+def superflat_summary_plotname(caller, **kwargs):
     """Return the filename for a summary plot file
 
     The format is {outdir}/plots/summary/flat/{dataset}{suffix}
 
+    @param caller ('Task')  Object calling this function
+    @param kwargs           Passed to get_summary_file_basename
+
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SFLAT_SUMMARY_PLOTNAME_DEFAULTS)
-    outpath = get_summary_file_basename(**kwcopy)
-
-    return str(outpath)
+    return get_summary_file_basename(caller, **kwcopy)
 
 
 def get_flat_files_run(run_id, **kwargs):
@@ -227,4 +227,3 @@ def get_flat_files_run(run_id, **kwargs):
                              testTypes=acq_types,
                              outkey='FLAT',
                              **kwargs)
-

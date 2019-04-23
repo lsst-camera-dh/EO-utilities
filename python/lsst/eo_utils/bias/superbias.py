@@ -103,9 +103,11 @@ class SuperbiasTask(BaseAnalysisTask):
 
         mask_files = get_mask_files(**kwargs)
         if kwargs.get('stat', DEFAULT_STAT_TYPE) == DEFAULT_STAT_TYPE:
-            output_file = superbias_filename(bias_type=kwargs.get('bias'), **kwargs)
+            output_file = superbias_filename(self,
+                                             bias_type=kwargs.get('bias'), **kwargs)
         else:
-            output_file = superbias_stat_filename(bias_type=kwargs.get('bias'),
+            output_file = superbias_stat_filename(self,
+                                                  bias_type=kwargs.get('bias'),
                                                   stat_type=kwargs.get('stat'),
                                                   **kwargs)
 

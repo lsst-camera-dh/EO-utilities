@@ -270,4 +270,4 @@ def copy_pex_fields(field_names, target_class, library_class):
         if isinstance(item, pexConfig.Field):
             setattr(target_class, fname, copy.deepcopy(item))
         else:
-            raise TypeError("Field %s does in class %s\n is not a pexConfig.Field" % (fname, type(library_class)))
+            raise TypeError("Field %s in class %s\n is not a pexConfig.Field" % (fname, type(library_class)))

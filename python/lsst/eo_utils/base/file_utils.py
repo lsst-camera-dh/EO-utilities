@@ -57,43 +57,61 @@ def get_hardware_type_and_id(run):
     return (htype, hid)
 
 
-def get_slot_file_basename(**kwargs):
+def get_slot_file_basename(caller, **kwargs):
     """Return the filename for an output file from a slot-level analysis
 
     The format is {outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}{suffix}
 
-    @param kwargs       Passed to the SLOT_FORMAT_STRING.format statement
+    @param caller ('Task')  Object calling this function
+    @param kwargs           Passed to the SLOT_FORMAT_STRING.format statement
 
     @returns (str) The path for the file.
     """
-    return str(SLOT_FORMAT_STRING.format(**kwargs))
+    try:
+        return str(SLOT_FORMAT_STRING.format(**kwargs))
+    except KeyError as msg:
+        sys.stderr.write("get_slot_file_basename failed for %s." % caller)
+        raise KeyError(msg)
 
 
-def get_raft_file_basename(**kwargs):
+def get_raft_file_basename(caller, **kwargs):
     """Return the filename for an output file from a raft-level analysis
 
     The format is {outdir}/{fileType}/{raft}/{testType}/{raft}-{run}{suffix}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs       Passed to the RAFT_FORMAT_STRING.format statement
 
     @returns (str) The path for the file.
     """
-    return str(RAFT_FORMAT_STRING.format(**kwargs))
+    try:
+        return str(RAFT_FORMAT_STRING.format(**kwargs))
+    except KeyError as msg:
+        sys.stderr.write("get_raft_file_basename failed for %s." % caller)
+        raise KeyError(msg)
 
 
-def get_summary_file_basename(**kwargs):
+def get_summary_file_basename(caller, **kwargs):
     """Return the filename for a raft-level file
 
     The format is {outdir}/{fileType}/summary/{testType}/{dataset}{suffix}
+
+    @param caller ('Task')  Object calling this function
     @param kwargs:     These are passed to the string format statement
 
     @returns (str) The path for the file.
     """
-    return str(SUMMARY_FORMAT_STRING.format(**kwargs))
+    try:
+        return str(SUMMARY_FORMAT_STRING.format(**kwargs))
+    except KeyError as msg:
+        sys.stderr.write("get_summary_file_basename failed for %s." % caller)
+        raise KeyError(msg)
 
 
-def mask_filename(outdir, raft, run, slot, **kwargs):
+def mask_filename(caller, outdir, raft, run, slot, **kwargs):
     """Return the filename for a mask file
+
+    @param caller ('Task')  Object calling this function
 
     The following parameters are passed to the SLOT_FORMAT_STRING.format stateme
     @param outdir (str)
@@ -105,7 +123,8 @@ def mask_filename(outdir, raft, run, slot, **kwargs):
 
     @returns (str) The path for the file.
     """
-    return get_slot_file_basename(outdir=outdir, fileType='masks',
+    return get_slot_file_basename(caller,
+                                  outdir=outdir, fileType='masks',
                                   raft=raft, testType='', run=run,
                                   slot=slot, suffix=kwargs.get('suffix', '_mask.fits'))
 

@@ -16,13 +16,14 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import get_raw_image, get_amp_list
 
-from .analysis import BiasAnalysisFunc, BiasAnalysisByRaft
+from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisByRaft
 
 from .file_utils import raft_superbias_tablename, raft_superbias_plotname,\
     get_superbias_frame, superbias_summary_tablename, superbias_summary_plotname
 
 
-from .meta_analysis import SuperbiasSummaryByRaft, BiasSummaryAnalysisFunc
+from .meta_analysis import SuperbiasSummaryByRaft, BiasSummaryAnalysisConfig,\
+    BiasSummaryAnalysisTask
 
 
 class SuperbiasStatsConfig(BiasAnalysisConfig):
@@ -69,9 +70,9 @@ class SuperbiasStatsTask(BiasAnalysisTask):
         for islot, slot in enumerate(slots):
             kwcopy['slot'] = slot
             mask_files = get_mask_files(**kwcopy)
-            superbias = get_superbias_frame(mask_files=mask_files, **kwcopy)
-            superbias_stats.get_superbias_stats(None, superbias, stats_data,
-                                                islot=islot, slot=slot)
+            superbias = get_superbias_frame(self, mask_files=mask_files, **kwcopy)
+            self.get_superbias_stats(None, superbias, stats_data,
+                                     islot=islot, slot=slot)
 
         dtables = TableDict()
         dtables.make_datatable('files', make_file_dict(None, slots))
@@ -157,7 +158,7 @@ class SuperbiasSummaryTask(BiasSummaryAnalysisTask):
         if butler is not None:
             sys.stdout.write("Ignoring butler in superbias_stats_summary.extract %s\n" % kwargs)
 
-        for key,val in data.items():
+        for key, val in data.items():
             data[key] = val.replace('.fits', '_stdevclip_stats.fits')
 
         outtable = vstack_tables(data, tablename='stats')

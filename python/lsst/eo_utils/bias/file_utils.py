@@ -14,8 +14,10 @@ from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_fo
 from lsst.eo_utils.base.image_utils import get_ccd_from_id
 
 
-def superbias_filename(outdir, raft, run, slot, **kwargs):
+def superbias_filename(caller, outdir, raft, run, slot, **kwargs):
     """Return the filename for a superbias file
+
+    @param caller ('Task')  Object calling this function
 
     The format is {outdir}/superbias/{raft}/{raft}-{run}-{slot}_superbias_b-{bias_type}.fits
 
@@ -32,15 +34,18 @@ def superbias_filename(outdir, raft, run, slot, **kwargs):
     """
     suffix = '_superbias_b-{bias_type}'.format(**kwargs)
 
-    outpath = get_slot_file_basename(outdir=outdir, fileType='superbias',
+    outpath = get_slot_file_basename(caller,
+                                     outdir=outdir, fileType='superbias',
                                      raft=raft, testType='', run=run,
                                      slot=slot, suffix=suffix)
     outpath += '.fits'
     return str(outpath)
 
 
-def superbias_stat_filename(outdir, raft, run, slot, **kwargs):
+def superbias_stat_filename(caller, outdir, raft, run, slot, **kwargs):
     """Return the filename for a superbias-like statistics file
+
+    @param caller ('Task')  Object calling this function
 
     The format is {outdir}/superbias/{raft}/{raft}-{run}-{slot}_{stat_type}_b-{superbias_type}.fits
 
@@ -56,7 +61,8 @@ def superbias_stat_filename(outdir, raft, run, slot, **kwargs):
     """
     suffix = '_{stat_type}_b-{bias_type}'.format(**kwargs)
 
-    outpath = get_slot_file_basename(outdir=outdir, fileType='superbias',
+    outpath = get_slot_file_basename(caller,
+                                     outdir=outdir, fileType='superbias',
                                      raft=raft, testType='', run=run,
                                      slot=slot, suffix=suffix)
     outpath += '.fits'
@@ -96,6 +102,7 @@ def raft_bias_tablename(caller, **kwargs):
 
     The format is {outdir}/tables/{raft}/bias/{raft}-{run}-RFT_b-{bias_type}_s-{superbias_type}{suffix}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs:          Passed to get_bias_suffix and get_raft_file_basename
 
     @returns (str) The path for the file.
@@ -103,15 +110,14 @@ def raft_bias_tablename(caller, **kwargs):
     kwcopy = copy_dict(kwargs, RAFT_BIAS_TABLENAME_DEFAULTS)
     kwcopy['suffix'] = get_bias_suffix(**kwargs)
 
-    outbase = get_raft_file_basename(**kwcopy)
-
-    return str(outbase)
+    return get_raft_file_basename(caller, **kwcopy)
 
 def raft_bias_plotname(caller, **kwargs):
     """Return the filename for a raft level plot
 
     The format is {outdir}/plots/{raft}/bias/{raft}-{run}-{slot}_b-{bias_type}_s-{superbias_type}{suffix}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs:          Passed to get_bias_suffix and get_raft_file_basename
 
     @returns (str) The path for the file.
@@ -119,8 +125,7 @@ def raft_bias_plotname(caller, **kwargs):
     kwcopy = copy_dict(kwargs, RAFT_BIAS_PLOTNAME_DEFAULTS)
     kwcopy['suffix'] = get_bias_suffix(**kwargs)
 
-    outbase = get_raft_file_basename(**kwcopy)
-    return str(outbase)
+    return get_raft_file_basename(caller, **kwcopy)
 
 
 def get_bias_suffix(**kwargs):
@@ -165,7 +170,7 @@ def get_bias_suffix(**kwargs):
 
 def get_superbias_suffix(**kwargs):
     """Return the suffix for bias files
-
+    
     @param kwargs (dict)
         superbias_type(str)
         std (bool)
@@ -202,6 +207,7 @@ def slot_bias_tablename(caller, **kwargs):
 
     The format is {outdir}/tables/{raft}/bias/{raft}-{run}-{slot}_b-{bias_type}_s-{superbias_type}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_bias_suffix and get_slot_file_basename
 
     @returns (str) The path for the file.
@@ -209,24 +215,7 @@ def slot_bias_tablename(caller, **kwargs):
     kwcopy = copy_dict(kwargs, SLOT_BIAS_TABLENAME_DEFAULTS)
     kwcopy['suffix'] = get_bias_suffix(**kwargs)
 
-    outpath = get_slot_file_basename(**kwcopy)
-    return str(outpath)
-
-
-def slot_bias_plotname(caller, **kwargs):
-    """Return the filename for a plot made from a bias file
-
-    The format is {outdir}/tables/{raft}/bias/{raft}-{run}-{slot}_b-{bias_type}_s-{superbias_type}
-
-    @param kwargs           Passed to get_bias_suffix and get_slot_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, SLOT_BIAS_TABLENAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-
-    outpath = get_slot_file_basename(**kwcopy)
-    return str(outpath)
+    return get_slot_file_basename(caller, **kwcopy)
 
 
 def slot_bias_plotname(caller, **kwargs):
@@ -234,6 +223,7 @@ def slot_bias_plotname(caller, **kwargs):
 
     The format is {outdir}/plots/{raft}/bias/{raft}-{run}-{slot}_b-{bias_type}_s-{superbias_type}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_bias_suffix and get_slot_file_basename
 
     @returns (str) The path for the file.
@@ -241,8 +231,7 @@ def slot_bias_plotname(caller, **kwargs):
     kwcopy = copy_dict(kwargs, SLOT_BIAS_PLOTNAME_DEFAULTS)
     kwcopy['suffix'] = get_bias_suffix(**kwargs)
 
-    outpath = get_slot_file_basename(**kwcopy)
-    return str(outpath)
+    return get_slot_file_basename(caller, **kwcopy)
 
 
 def slot_superbias_tablename(caller, **kwargs):
@@ -250,6 +239,7 @@ def slot_superbias_tablename(caller, **kwargs):
 
     The format is {outdir}/tables/{raft}/superbias/{raft}-{run}-{slot}_b-{superbias_type}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_superbias_suffix and get_slot_file_basename
 
     @returns (str) The path for the file.
@@ -257,13 +247,13 @@ def slot_superbias_tablename(caller, **kwargs):
     kwcopy = copy_dict(kwargs, SLOT_SBIAS_TABLENAME_DEFAULTS)
     kwcopy['suffix'] = get_superbias_suffix(**kwargs)
 
-    outpath = get_slot_file_basename(**kwcopy)
-    return str(outpath)
+    return get_slot_file_basename(caller, **kwcopy)
 
 
 def slot_superbias_plotname(caller, **kwargs):
     """Return the filename for a plot made from a superbias file
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_superbias_suffix and get_slot_file_basename
 
     @returns (str) The path for the file.
@@ -271,8 +261,7 @@ def slot_superbias_plotname(caller, **kwargs):
     kwcopy = copy_dict(kwargs, SLOT_SBIAS_PLOTNAME_DEFAULTS)
     kwcopy['suffix'] = get_superbias_suffix(**kwargs)
 
-    outpath = get_slot_file_basename(**kwcopy)
-    return str(outpath)
+    return get_slot_file_basename(caller, **kwcopy)
 
 
 def raft_superbias_tablename(caller, **kwargs):
@@ -280,30 +269,29 @@ def raft_superbias_tablename(caller, **kwargs):
 
     The format is {outdir}/tables/{raft}/superbias/{raft}-{run}-{slot}_b-{superbias_type}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_superbias_suffix and get_raft_file_basename
 
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, RAFT_SBIAS_TABLENAME_DEFAULTS)
     kwcopy['suffix'] = get_superbias_suffix(**kwargs)
-    outpath = get_raft_file_basename(**kwcopy)
+    return get_raft_file_basename(caller, **kwcopy)
 
-    return str(outpath)
 
 def raft_superbias_plotname(caller, **kwargs):
     """Return the filename for a plot made from a superbias file
 
     The format is {outdir}/plots/{raft}/superbias/{raft}-{run}-{slot}_b-{superbias_type}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_superbias_suffix and get_raft_file_basename
 
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, RAFT_SBIAS_PLOTNAME_DEFAULTS)
     kwcopy['suffix'] = get_superbias_suffix(**kwargs)
-    outpath = get_raft_file_basename(**kwcopy)
-
-    return str(outpath)
+    return get_raft_file_basename(caller, **kwcopy)
 
 
 def bias_summary_tablename(caller, **kwargs):
@@ -311,39 +299,41 @@ def bias_summary_tablename(caller, **kwargs):
 
     The format is {outdir}/tables/summary/bias/{dataset}{suffix}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_summary_file_basename
 
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, BIAS_SUMMARY_TABLENAME_DEFAULTS)
-    outpath = get_summary_file_basename(**kwcopy)
-    return str(outpath)
+    return get_summary_file_basename(caller, **kwcopy)
+
 
 def bias_summary_plotname(caller, **kwargs):
     """Return the filename for a summary plot file
 
     The format is {outdir}/plots/summary/bias/{dataset}{suffix}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_summary_file_basename
 
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, BIAS_SUMMARY_PLOTNAME_DEFAULTS)
-    outpath = get_summary_file_basename(**kwcopy)
-    return str(outpath)
+    return get_summary_file_basename(caller, **kwcopy)
+
 
 def superbias_summary_tablename(caller, **kwargs):
     """Return the filename for a summary table file
 
     The format is {outdir}/tables/summary/bias/{dataset}{suffix}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_summary_file_basename
 
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SBIAS_SUMMARY_TABLENAME_DEFAULTS)
-    outpath = get_summary_file_basename(**kwcopy)
-    return str(outpath)
+    return get_summary_file_basename(caller, **kwcopy)
 
 
 def superbias_summary_plotname(caller, **kwargs):
@@ -351,12 +341,13 @@ def superbias_summary_plotname(caller, **kwargs):
 
     The format is {outdir}/plots/summary/bias/{dataset}{suffix}
 
+    @param caller ('Task')  Object calling this function
+    @param kwargs           Passed to get_summary_file_basename
+
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SBIAS_SUMMARY_PLOTNAME_DEFAULTS)
-    outpath = get_summary_file_basename(**kwcopy)
-
-    return str(outpath)
+    return get_summary_file_basename(caller, **kwcopy)
 
 def get_bias_files_run(run_id, **kwargs):
     """Get a set of bias and mask files out of a folder
@@ -383,7 +374,7 @@ def get_bias_files_run(run_id, **kwargs):
                              **kwargs)
 
 
-def get_superbias_frame(**kwargs):
+def get_superbias_frame(caller, **kwargs):
     """Get the superbias frame
 
     @param kwargs
@@ -400,7 +391,10 @@ def get_superbias_frame(**kwargs):
     if stat_type is None:
         if superbias_type is None:
             return None
-        superbias_file = superbias_filename(bias_type=superbias_type, **kwcopy)
+        superbias_file = superbias_filename(caller,
+                                            bias_type=superbias_type, **kwcopy)
     else:
-        superbias_file = superbias_stat_filename(bias_type=superbias_type, stat_type=stat_type, **kwargs)
+        superbias_file = superbias_stat_filename(caller,
+                                                 bias_type=superbias_type, stat_type=stat_type,
+                                                 **kwargs)
     return get_ccd_from_id(None, superbias_file, mask_files)

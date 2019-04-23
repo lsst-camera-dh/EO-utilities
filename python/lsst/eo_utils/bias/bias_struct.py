@@ -23,19 +23,6 @@ from .analysis import BiasAnalysisTask, BiasAnalysisConfig, BiasAnalysisBySlot
 
 
 
-def plot_bias_struct(caller, dtables, figs, **kwargs):
-    """Plot the bias structure
-
-    @param dtables (`TableDict`)  The data
-    @param figs (`FigureDict`)    Object to store the figues
-    """
-    for rkey, rlabel in zip(REGION_KEYS, REGION_LABELS):
-        for dkey in ['row', 'col']:
-            datakey = "biasst-%s_%s" % (dkey, rkey)
-            figs.setup_amp_plots_grid(datakey, title="%s, profile by %s" % (rlabel, dkey),
-                                      xlabel=dkey, ylabel="ADU")
-            figs.plot_xy_amps_from_tabledict(dtables, datakey, datakey,
-                                             x_name="%s_%s" % (dkey, rkey), y_name="biasst")
 
 
 class BiasStructConfig(BiasAnalysisConfig):
@@ -52,7 +39,6 @@ class BiasStructTask(BiasAnalysisTask):
     ConfigClass = BiasStructConfig
     _DefaultName = "BiasStructTask"
     iteratorClass = BiasAnalysisBySlot
-    plot = plot_bias_struct
 
     def __init__(self, **kwargs):
         """ C'tor """
@@ -75,7 +61,7 @@ class BiasStructTask(BiasAnalysisTask):
         slot = self.config.slot
         bias_files = data['BIAS']
         mask_files = get_mask_files(**kwargs)
-        superbias_frame = get_superbias_frame(mask_files=mask_files, **kwargs)
+        superbias_frame = get_superbias_frame(self, mask_files=mask_files, **kwargs)
 
         sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
         sys.stdout.flush()
@@ -107,6 +93,21 @@ class BiasStructTask(BiasAnalysisTask):
             dtables.make_datatable('biasst-%s' % key, val)
         return dtables
 
+    def plot(self, dtables, figs, **kwargs):
+        """Plot the bias structure
+
+        @param dtables (`TableDict`)  The data
+        @param figs (`FigureDict`)    Object to store the figues
+        """
+        for rkey, rlabel in zip(REGION_KEYS, REGION_LABELS):
+            for dkey in ['row', 'col']:
+                datakey = "biasst-%s_%s" % (dkey, rkey)
+                figs.setup_amp_plots_grid(datakey, title="%s, profile by %s" % (rlabel, dkey),
+                                          xlabel=dkey, ylabel="ADU")
+                figs.plot_xy_amps_from_tabledict(dtables, datakey, datakey,
+                                                 x_name="%s_%s" % (dkey, rkey), y_name="biasst")
+
+
     @staticmethod
     def get_ccd_data(butler, ccd, data, **kwargs):
         """Get the bias values and update the data dictionary
@@ -127,7 +128,6 @@ class BiasStructTask(BiasAnalysisTask):
         nfiles = kwargs.get('nfiles', 1)
         slot = kwargs.get('slot')
         bias_type = kwargs.get('bias_type')
-        std = kwargs.get('std', False)
         superbias_frame = kwargs.get('superbias_frame', None)
 
         amps = get_amp_list(butler, ccd)
@@ -145,7 +145,7 @@ class BiasStructTask(BiasAnalysisTask):
             for key, region in zip(REGION_KEYS, REGION_NAMES):
                 framekey_row = "row_%s" % key
                 framekey_col = "col_%s" % key
-                struct = array_struct(frames[region], do_std=std)
+                struct = array_struct(frames[region], do_std=kwargs.get('std', False))
                 key_str = "biasst_%s_a%02i" % (slot, i)
                 if key_str not in data[framekey_row]:
                     data[framekey_row][key_str] = np.ndarray((len(struct['rows']), nfiles))
@@ -164,7 +164,7 @@ class SuperbiasStructConfig(BiasAnalysisConfig):
     stat = EOUtilConfig.clone_param('stat')
 
 
-class SuperbiasStructTask(BiasAnalysisTask):
+class SuperbiasStructTask(BiasStructTask):
     """Class to analyze the overscan bias as a function of row number"""
 
     ConfigClass = SuperbiasStructConfig
@@ -173,11 +173,10 @@ class SuperbiasStructTask(BiasAnalysisTask):
 
     tablefile_name = slot_superbias_tablename
     plotfile_name = slot_superbias_plotname
-    plot = plot_bias_struct
 
     def __init__(self, **kwargs):
         """C'tor"""
-        BiasAnalysisTask.__init__(self, **kwargs)
+        BiasStructTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
         """Extract the row-wise and col-wise struture  in a superbias frame
@@ -202,7 +201,7 @@ class SuperbiasStructTask(BiasAnalysisTask):
             sys.stdout.write("Ignoring butler in superbias_struct.extract")
 
         mask_files = get_mask_files(**kwargs)
-        superbias = get_superbias_frame(mask_files=mask_files, **kwargs)
+        superbias = get_superbias_frame(self, mask_files=mask_files, **kwargs)
 
         biasstruct_data = {}
 

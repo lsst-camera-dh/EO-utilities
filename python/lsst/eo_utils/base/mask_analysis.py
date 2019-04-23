@@ -89,7 +89,7 @@ class MaskAddTask(BaseAnalysisTask):
 
         mask_kwargs = self.extract_config_vals(MASKFILENAME_DEFAULTS)
 
-        outfile = mask_filename(**mask_kwargs)
+        outfile = mask_filename(self, **mask_kwargs)
         makedir_safe(outfile)
 
         add_mask_files(mask_files, outfile)

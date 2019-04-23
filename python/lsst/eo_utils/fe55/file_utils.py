@@ -4,24 +4,22 @@
 
 """This module contains functions to find files of a particular type in the SLAC directory tree"""
 
-from lsst.eo_utils.base.defaults import DATACAT_TS8_TEST_TYPES, DATACAT_BOT_TEST_TYPES,\
-     DEFAULT_SUPERBIAS_TYPE
+from lsst.eo_utils.base.defaults import DATACAT_TS8_TEST_TYPES, DATACAT_BOT_TEST_TYPES
 
 from lsst.eo_utils.base.config_utils import copy_dict
 
 from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_for_run,\
     get_slot_file_basename, get_raft_file_basename, get_summary_file_basename
-from lsst.eo_utils.base.image_utils import get_ccd_from_id
 
 
 RAFT_FE55_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
-                                    testType='fe55', run_num=None, suffix='')
+                                    testType='fe55', run=None, suffix='')
 RAFT_FE55_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
-                                   testType='fe55', run_num=None, suffix='')
+                                   testType='fe55', run=None, suffix='')
 SLOT_FE55_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
-                                    testType='fe55', run_num=None, slot=None, suffix='')
+                                    testType='fe55', run=None, slot=None, suffix='')
 SLOT_FE55_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
-                                   testType='fe55', run_num=None, slot=None, suffix='')
+                                   testType='fe55', run=None, slot=None, suffix='')
 
 
 FE55_SUMMARY_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables',
@@ -30,11 +28,12 @@ FE55_SUMMARY_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots',
                                       testType='fe55', dataset=None, suffix='')
 
 
-def raft_fe55_tablename(**kwargs):
+def raft_fe55_tablename(caller, **kwargs):
     """Return the filename for a raft level plot
 
-    The format is {outdir}/tables/{raft}/fe55/{raft}-{run_num}-RFT{suffix}
+    The format is {outdir}/tables/{raft}/fe55/{raft}-{run}-RFT{suffix}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs:          Passed to get_raft_file_basename
 
     @returns (str) The path for the file.
@@ -44,15 +43,15 @@ def raft_fe55_tablename(**kwargs):
         kwcopy['suffix'] = '_all%s' % kwcopy['suffix']
     else:
         kwcopy['suffix'] = '_good%s' % kwcopy['suffix']
-    outbase = get_raft_file_basename(**kwcopy)
+    return get_raft_file_basename(caller, **kwcopy)
 
-    return str(outbase)
 
-def raft_fe55_plotname(**kwargs):
+def raft_fe55_plotname(caller, **kwargs):
     """Return the filename for a raft level plot
 
-    The format is {outdir}/plots/{raft}/fe55/{raft}-{run_num}-{slot}{suffix}
+    The format is {outdir}/plots/{raft}/fe55/{raft}-{run}-{slot}{suffix}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs:          Passed to get_raft_file_basename
 
     @returns (str) The path for the file.
@@ -62,46 +61,42 @@ def raft_fe55_plotname(**kwargs):
         kwcopy['suffix'] = '_all%s' % kwcopy['suffix']
     else:
         kwcopy['suffix'] = '_good%s' % kwcopy['suffix']
-    outbase = get_raft_file_basename(**kwcopy)
-
-    return str(outbase)
+    return get_raft_file_basename(caller, **kwcopy)
 
 
-def slot_fe55_tablename(**kwargs):
+def slot_fe55_tablename(caller, **kwargs):
     """Return the filename for a plot made from a fe55 file
 
-    The format is {outdir}/tables/{raft}/fe55/{raft}-{run_num}-{slot}{suffix}
+    The format is {outdir}/tables/{raft}/fe55/{raft}-{run}-{slot}{suffix}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_fe55_suffix and get_slot_file_basename
 
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_FE55_TABLENAME_DEFAULTS)
-    outpath = get_slot_file_basename(**kwcopy)
-
-    return str(outpath)
+    return get_slot_file_basename(caller, **kwcopy)
 
 
-def slot_fe55_plotname(**kwargs):
+def slot_fe55_plotname(caller, **kwargs):
     """Return the filename for a plot made from a fe55 file
 
-    The format is {outdir}/plots/{raft}/fe55/{raft}-{run_num}-{slot}{suffix}
+    The format is {outdir}/plots/{raft}/fe55/{raft}-{run}-{slot}{suffix}
 
     @param kwargs           Passed to get_fe55_suffix and get_slot_file_basename
 
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_FE55_PLOTNAME_DEFAULTS)
-    outpath = get_slot_file_basename(**kwcopy)
-
-    return str(outpath)
+    return get_slot_file_basename(caller, **kwcopy)
 
 
-def fe55_summary_tablename(**kwargs):
+def fe55_summary_tablename(caller, **kwargs):
     """Return the filename for a summary table file
 
     The format is {outdir}/tables/summary/fe55/{dataset}{suffix}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_summary_file_basename
 
     @returns (str) The path for the file.
@@ -111,15 +106,15 @@ def fe55_summary_tablename(**kwargs):
         kwcopy['suffix'] = '_all%s' % kwcopy['suffix']
     else:
         kwcopy['suffix'] = '_good%s' % kwcopy['suffix']
-    outpath = get_summary_file_basename(**kwcopy)
-    return str(outpath)
+    return get_summary_file_basename(caller, **kwcopy)
 
 
-def fe55_summary_plotname(**kwargs):
+def fe55_summary_plotname(caller, **kwargs):
     """Return the filename for a summary plot file
 
     The format is {outdir}/plots/summary/fe55/{dataset}{suffix}
 
+    @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_summary_file_basename
 
     @returns (str) The path for the file.
@@ -129,8 +124,7 @@ def fe55_summary_plotname(**kwargs):
         kwcopy['suffix'] = '_all%s' % kwcopy['suffix']
     else:
         kwcopy['suffix'] = '_good%s' % kwcopy['suffix']
-    outpath = get_summary_file_basename(**kwcopy)
-    return str(outpath)
+    return get_summary_file_basename(caller, **kwcopy)
 
 def get_fe55_files_run(run_id, **kwargs):
     """Get a set of fe55 and mask files out of a folder
@@ -155,5 +149,3 @@ def get_fe55_files_run(run_id, **kwargs):
                              testTypes=acq_types,
                              outkey='FE55',
                              **kwargs)
-
-

@@ -44,6 +44,7 @@ class OscanCorrelTask(BiasAnalysisTask):
     plotfile_name = raft_bias_plotname
 
     def __init__(self, **kwargs):
+        """C'tor"""
         BiasAnalysisTask.__init__(self, **kwargs)
 
 
@@ -70,7 +71,7 @@ class OscanCorrelTask(BiasAnalysisTask):
 
             kwcopy['slot'] = slot
             mask_files = get_mask_files(**kwcopy)
-            superbias_frame = get_superbias_frame(mask_files=mask_files, **kwcopy)
+            superbias_frame = get_superbias_frame(self, mask_files=mask_files, **kwcopy)
 
             ccd = get_ccd_from_id(butler, bias_files[0], [])
             overscans += self.get_ccd_data(butler, ccd, boundry=boundry,

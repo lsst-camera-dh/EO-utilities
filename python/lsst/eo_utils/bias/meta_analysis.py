@@ -168,7 +168,6 @@ class BiasSummaryAnalysisTask(AnalysisTask):
 
     def __init__(self, **kwargs):
         """ C'tor
-        @param datasuffix (str)        Suffix for filenames
         @param kwargs:
         """
         AnalysisTask.__init__(self, **kwargs)

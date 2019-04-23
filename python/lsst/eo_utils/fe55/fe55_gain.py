@@ -1,3 +1,4 @@
+"""Class to analyze the gains from fe55 cluster fitting"""
 
 import sys
 
@@ -7,33 +8,40 @@ from lsst.eotest.sensor import Fe55GainFitter
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
+from lsst.eo_utils.base.config_utils import EOUtilConfig
 
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
-from .file_utils import fe55_summary_tablename, fe55_summary_plotname,\
+from lsst.eo_utils.fe55.file_utils import fe55_summary_tablename, fe55_summary_plotname,\
     raft_fe55_tablename, raft_fe55_plotname
 
-from .analysis import Fe55AnalysisFunc
+from lsst.eo_utils.fe55.analysis import Fe55AnalysisConfig, Fe55AnalysisTask
 
-from .meta_analysis import Fe55SummaryByRaft, Fe55TableAnalysisByRaft,\
-    Fe55SummaryAnalysisFunc
+from lsst.eo_utils.fe55.meta_analysis import Fe55SummaryByRaft, Fe55TableAnalysisByRaft,\
+    Fe55SummaryAnalysisConfig, Fe55SummaryAnalysisTask
 
 
-class fe55_gain_stats(Fe55AnalysisFunc):
+class Fe55GainStatsConfig(Fe55AnalysisConfig):
+    """Configuration for BiasVRowTask"""
+    suffix = EOUtilConfig.clone_param('suffix', default='ptc_stats')
+    bias = EOUtilConfig.clone_param('bias')
+    superbias = EOUtilConfig.clone_param('superbias')
+
+
+class Fe55GainStatsTask(Fe55AnalysisTask):
     """Class to analyze the overscan fe55 as a function of row number"""
 
-    argnames = STANDARD_SLOT_ARGS + ['use_all']
+    ConfigClass = Fe55GainStatsConfig
+    _DefaultName = "Fe55GainStatsTask"
     iteratorClass = Fe55TableAnalysisByRaft
     tablename_func = raft_fe55_tablename
     plotname_func = raft_fe55_plotname
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """C'tor """
-        Fe55AnalysisFunc.__init__(self, "_fe55_gain_stats")
+        Fe55AnalysisTask.__init__(self, **kwargs)
 
-    @staticmethod
-    def extract(butler, data, **kwargs):
+    def extract(self, butler, data, **kwargs):
         """Extract the fe55 as function of row
 
         @param butler (`Butler`)   The data butler
@@ -42,6 +50,8 @@ class fe55_gain_stats(Fe55AnalysisFunc):
 
         @returns (TableDict) with the extracted data
         """
+        self.safe_update(**kwargs)
+
         if butler is not None:
             sys.stdout.write("Ignoring butler in fe55_gain_stats.extract\n")
 
@@ -62,9 +72,7 @@ class fe55_gain_stats(Fe55AnalysisFunc):
                          slot=[],
                          amp=[])
 
-        freqs = None
-
-        sys.stdout.write("Working on 9 slots: " )
+        sys.stdout.write("Working on 9 slots: ")
         sys.stdout.flush()
 
         for islot, slot in enumerate(ALL_SLOTS):
@@ -76,23 +84,23 @@ class fe55_gain_stats(Fe55AnalysisFunc):
             datapath = basename.replace('.fits', '_fe55-clusters.fits')
 
             dtables = TableDict(datapath)
-           
+
             for amp in range(16):
                 table = dtables['amp%02i' % (amp+1)]
-                if use_all: 
+                if use_all:
                     mask = np.ones((len(table)), bool)
                 else:
                     mask = (np.fabs(table['XPOS'] - table['XPEAK']) < 1)*\
                         (np.fabs(table['YPOS'] - table['YPEAK']) < 1)
-                tablevals = table[mask]['DN']                    
+                tablevals = table[mask]['DN']
                 gf = Fe55GainFitter(tablevals)
                 try:
                     kalpha_peak, kalpha_sigma = gf.fit(bins=100)
                     gain = gf.gain
                     gain_error = gf.gain_error
                     pars = gf.pars
-                except:
-                    kalpha_peak, kalpha_sigma = (np.nan, np.nan) 
+                except Exception:
+                    kalpha_peak, kalpha_sigma = (np.nan, np.nan)
                     gain = np.nan
                     gain_error = np.nan
                     pars = np.nan * np.ones((4))
@@ -124,33 +132,41 @@ class fe55_gain_stats(Fe55AnalysisFunc):
         return outtables
 
 
-    @staticmethod
-    def plot(dtables, figs):
+    def plot(self, dtables, figs, **kwargs):
         """Plot the summary data from the fe55 fft statistics study
 
         @param dtables (TableDict)    The data we are ploting
         @param fgs (FigureDict)       Keeps track of the figures
         """
+        self.safe_update(**kwargs)
         sumtable = dtables['fe55_gain_stats']
-        figs.plot_stat_color('gain_array', sumtable['gain'].reshape(9,16))
+        figs.plot_stat_color('gain_array', sumtable['gain'].reshape(9, 16))
 
 
 
+class Fe55GainSummaryConfig(Fe55SummaryAnalysisConfig):
+    """Configuration for CorrelWRTOScanSummaryTask"""
+    suffix = EOUtilConfig.clone_param('suffix', default='_fe55_sum')
+    bias = EOUtilConfig.clone_param('bias')
+    superbias = EOUtilConfig.clone_param('superbias')
+    use_all = EOUtilConfig.clone_param('use_all')
 
-class fe55_gain_summary(Fe55SummaryAnalysisFunc):
+
+class Fe55GainSummaryTask(Fe55SummaryAnalysisTask):
     """Class to analyze the overscan fe55 as a function of row number"""
 
-    argnames = ['dataset', 'butler_repo', 'skip', 'plot', 'use_all']
+    ConfigClass = Fe55SummaryAnalysisConfig
+    _DefaultName = ""
     iteratorClass = Fe55SummaryByRaft
-    tablename_func = fe55_summary_tablename
-    plotname_func = fe55_summary_plotname
+    tablefile_name = fe55_summary_tablename
+    plotfile_name = fe55_summary_plotname
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """C'tor"""
-        Fe55SummaryAnalysisFunc.__init__(self, "_fe55_gain_sum")
+        Fe55SummaryAnalysisTask.__init__(self, **kwargs)
 
-    @staticmethod
-    def extract(butler, data, **kwargs):
+
+    def extract(self, butler, data, **kwargs):
         """Make a summry table of the fe55 FFT data
 
         @param filedict (dict)      The files we are analyzing
@@ -158,6 +174,8 @@ class fe55_gain_summary(Fe55SummaryAnalysisFunc):
 
         @returns (TableDict)
         """
+        self.safe_update(**kwargs)
+
         if butler is not None:
             sys.stdout.write("Ignoring butler in fe55_gain_summary.extract\n")
 
@@ -165,7 +183,7 @@ class fe55_gain_summary(Fe55SummaryAnalysisFunc):
             insuffix = '_fe55_gain_stats.fits'
         else:
             insuffix = '_fe55_gain_stats.fits'
-        for key,val in data.items():
+        for key, val in data.items():
             data[key] = val.replace('.fits', insuffix)
 
         REMOVE_COLS = ['fit_pars']
@@ -180,13 +198,13 @@ class fe55_gain_summary(Fe55SummaryAnalysisFunc):
         return dtables
 
 
-    @staticmethod
-    def plot(dtables, figs):
+    def plot(self, dtables, figs, **kwargs):
         """Plot the summary data from the superfe55 statistics study
 
         @param dtables (TableDict)    The data we are ploting
         @param fgs (FigureDict)       Keeps track of the figures
         """
+        self.safe_update(**kwargs)
         sumtable = dtables['fe55_gain_sum']
         runtable = dtables['runs']
 

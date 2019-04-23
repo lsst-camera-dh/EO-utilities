@@ -4,19 +4,21 @@ import sys
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
+from lsst.eo_utils.base.config_utils import EOUtilConfig
+
 from lsst.eo_utils.base.file_utils import read_runlist
 
 from lsst.eo_utils.base.iter_utils import AnalysisIterator,\
     SummaryAnalysisIterator, AnalysisByRaft
 
-from lsst.eo_utils.base.analysis import AnalysisFunc
+from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
-from .file_utils import slot_flat_tablename,\
-    slot_flat_plotname, raft_flat_tablename, raft_flat_plotname
+from lsst.eo_utils.flat.file_utils import slot_flat_tablename,\
+    slot_flat_plotname, raft_flat_tablename
 
 
 
-def get_tablenames_by_raft(butler, run_num, **kwargs):
+def get_tablenames_by_raft(caller, butler, run_num, **kwargs):
     """Extract the statistics of the FFT of the bias
 
     @param butler (`Butler`)    The data butler
@@ -36,14 +38,14 @@ def get_tablenames_by_raft(butler, run_num, **kwargs):
             kwcopy['slot'] = slot
             kwcopy['fileType'] = 'flat'
             kwcopy['testType'] = ''
-            basename = slot_flat_tablename(**kwcopy)
+            basename = slot_flat_tablename(caller, **kwcopy)
             datapath = basename + '.fits'
             slot_dict[slot] = datapath
         out_dict[raft] = slot_dict
     return out_dict
 
 
-def get_raft_flat_tablefiles(butler, dataset, **kwargs):
+def get_raft_flat_tablefiles(caller, butler, dataset, **kwargs):
     """Extract the statistics of the FFT of the flat
 
     @param butler (`Butler`)    The data butler
@@ -67,7 +69,7 @@ def get_raft_flat_tablefiles(butler, dataset, **kwargs):
         run_key = "%s_%s" % (raft, run_num)
         kwcopy['run_num'] = run_num
         kwcopy['raft'] = raft
-        filedict[run_key] = raft_flat_tablename(**kwcopy) + '.fits'
+        filedict[run_key] = raft_flat_tablename(caller, **kwcopy) + '.fits'
 
     return filedict
 
@@ -76,46 +78,57 @@ def get_raft_flat_tablefiles(butler, dataset, **kwargs):
 class FlatTableAnalysisByRaft(AnalysisByRaft):
     """Small class to iterate an analysis function over all the slots in a raft"""
 
-    data_func = get_tablenames_by_raft
+    get_data = get_tablenames_by_raft
 
-    def __init__(self, analysis_func, argnames):
+    def __init__(self, task):
         """C'tor
-        
-        @param analysis_func (function) Function that does the actual analysis for one CCD
-        @param argnames (list)          List of the keyword arguments need by that function.
-                                        Used to look up defaults
+
+        @param task (AnalysisTask)     Task that this will run
         """
-        AnalysisByRaft.__init__(self, analysis_func, argnames)
+        AnalysisByRaft.__init__(self, task)
 
 
 class FlatSummaryByRaft(SummaryAnalysisIterator):
     """Small class to iterate an analysis function over all the slots in a raft"""
 
-    data_func = get_raft_flat_tablefiles
+    get_data = get_raft_flat_tablefiles
 
-    def __init__(self, analysis_func, argnames):
+    def __init__(self, task):
         """C'tor
 
-        @param analysis_func (function) Function that does the actual analysis for one CCD
-        @param argnames (list)          List of the keyword arguments need by that function.
-                                        Used to look up defaults
+        @param task (AnalysisTask)     Task that this will run
         """
-        SummaryAnalysisIterator.__init__(self, analysis_func, argnames)
+        SummaryAnalysisIterator.__init__(self, task)
 
 
-class FlatSummaryAnalysisFunc(AnalysisFunc):
+class FlatSummaryAnalysisConfig(AnalysisConfig):
+    """Configurate for bias analyses"""
+    outdir = EOUtilConfig.clone_param('outdir')
+    dataset = EOUtilConfig.clone_param('dataset')
+    suffix = EOUtilConfig.clone_param('suffix')
+
+
+class FlatSummaryAnalysisTask(AnalysisTask):
     """Simple functor class to tie together standard flat data analysis
     """
 
     # These can overridden by the sub-class
+    ConfigClass = FlatSummaryAnalysisConfig
+    _DefaultName = "FlatSummaryAnalysisTask"
     iteratorClass = FlatSummaryByRaft
-    argnames = ['dataset', 'butler_repo']
-    tablename_func = slot_flat_tablename
-    plotname_func = slot_flat_plotname
+    tablefile_name = slot_flat_tablename
+    plotfile_name = slot_flat_plotname
 
-    def __init__(self, datasuffix=""):
+    def __init__(self, **kwargs):
         """ C'tor
-        @param datasuffix (str)        Suffix for filenames
         @param kwargs:
         """
-        AnalysisFunc.__init__(self, datasuffix)
+        AnalysisTask.__init__(self, **kwargs)
+
+    def extract(self, butler, data, **kwargs):
+        """This needs to be implemented by the sub-class"""
+        raise NotImplementedError("AnalysisFunc.extract is not overridden.")
+
+    def plot(self, dtables, figs, **kwargs):
+        """This needs to be implemented by the sub-class"""
+        raise NotImplementedError("AnalysisFunc.plot is not overridden.")

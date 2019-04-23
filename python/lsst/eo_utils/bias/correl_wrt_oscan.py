@@ -154,13 +154,9 @@ class CorrelWRTOScanTask(BiasAnalysisTask):
             image = get_raw_image(butler, ccd, amp)
             frames = get_image_frames_2d(image, regions)
 
-            ref_i_array = ref_frames[i]['imaging']
-            ref_s_array = ref_frames[i]['serial_overscan']
-            ref_p_array = ref_frames[i]['parallel_overscan']
-
-            del_i_array = frames['imaging'] - ref_i_array
-            del_s_array = frames['serial_overscan'] - ref_s_array
-            del_p_array = frames['parallel_overscan'] - ref_p_array
+            del_i_array = frames['imaging'] - ref_frames[i]['imaging']
+            del_s_array = frames['serial_overscan'] - ref_frames[i]['serial_overscan']
+            del_p_array = frames['parallel_overscan'] - ref_frames[i]['parallel_overscan']
 
             dd_s = del_s_array.mean(1)[0:nrow_i]-del_i_array.mean(1)
             dd_p = del_p_array.mean(0)[0:ncol_i]-del_i_array.mean(0)
@@ -354,5 +350,7 @@ class CorrelWRTOScanSummaryTask(BiasSummaryAnalysisTask):
         yvals_p = sumtable['p_correl_mean'].flatten().clip(0., 1.)
         runs = runtable['runs']
 
-        figs.plot_run_chart("s_correl_mean", runs, yvals_s, ylabel="Correlation between serial overscan and imaging")
-        figs.plot_run_chart("p_correl_mean", runs, yvals_p, ylabel="Correlation between parallel overscan and imaging")
+        figs.plot_run_chart("s_correl_mean", runs, yvals_s,
+                            ylabel="Correlation between serial overscan and imaging")
+        figs.plot_run_chart("p_correl_mean", runs, yvals_p,
+                            ylabel="Correlation between parallel overscan and imaging")

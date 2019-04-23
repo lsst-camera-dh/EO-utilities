@@ -1,6 +1,5 @@
 """This module contains functions to find files of a particular type using the data Butler"""
 
-from lsst.eo_utils.base.defaults import BUTLER_TEST_TYPES
 from lsst.eo_utils.base.butler_utils import get_files_butler
 
 

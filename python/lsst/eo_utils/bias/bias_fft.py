@@ -68,7 +68,7 @@ class BiasFFTTask(BiasAnalysisTask):
 
         bias_files = data['BIAS']
         mask_files = get_mask_files(**kwargs)
-        superbias_frame = get_superbias_frame(mask_files=mask_files, **kwargs)
+        superbias_frame = get_superbias_frame(self, mask_files=mask_files, **kwargs)
 
         sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
         sys.stdout.flush()
@@ -141,7 +141,6 @@ class BiasFFTTask(BiasAnalysisTask):
         bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
         ifile = kwargs.get('ifile', 0)
         nfiles = kwargs.get('nfiles', 1)
-        std = kwargs.get('std', False)
         superbias_frame = kwargs.get('superbias_frame', None)
 
         amps = get_amp_list(butler, ccd)
@@ -158,13 +157,13 @@ class BiasFFTTask(BiasAnalysisTask):
                 superbias_im = None
             image = unbias_amp(im, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
             frames = get_image_frames_2d(image, regions)
+            key_str = "fftpow_%s_a%02i" % (slot, i)
 
             for key, region in zip(REGION_KEYS, REGION_NAMES):
-                struct = array_struct(frames[region], do_std=std)
+                struct = array_struct(frames[region], do_std=kwargs.get('std', False))
                 fftpow = np.abs(fftpack.fft(struct['rows']-struct['rows'].mean()))
                 nval = len(fftpow)
                 fftpow /= nval/2
-                key_str = "fftpow_%s_a%02i" % (slot, i)
                 if key_str not in data[key]:
                     data[key][key_str] = np.ndarray((int(nval/2), nfiles))
                 data[key][key_str][:, ifile] = np.sqrt(fftpow[0:int(nval/2)])
@@ -178,7 +177,7 @@ class SuperbiasFFTConfig(BiasAnalysisConfig):
     mask = EOUtilConfig.clone_param('mask')
 
 
-class SuperbiasFFTTask(BiasAnalysisTask):
+class SuperbiasFFTTask(BiasFFTTask):
     """Class to analyze the overscan bias as a function of row number"""
 
     ConfigClass = SuperbiasFFTConfig
@@ -189,7 +188,7 @@ class SuperbiasFFTTask(BiasAnalysisTask):
     plotfile_name = slot_superbias_plotname
 
     def __init__(self, **kwargs):
-        BiasAnalysisTask.__init__(self, **kwargs)
+        BiasFFTTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
         """Extract the FFTs of the row-wise and col-wise struture
@@ -214,7 +213,7 @@ class SuperbiasFFTTask(BiasAnalysisTask):
             sys.stdout.write("Ignoring raft_data in extract_superbias_fft_raft")
 
         mask_files = get_mask_files(**kwargs)
-        superbias = get_superbias_frame(mask_files=mask_files, **kwargs)
+        superbias = get_superbias_frame(self, mask_files=mask_files, **kwargs)
 
         fft_data = {}
 
@@ -224,9 +223,9 @@ class SuperbiasFFTTask(BiasAnalysisTask):
             nfreqs = len(freqs)
             fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
 
-        BiasFFTTask.get_ccd_data(None, superbias, fft_data,
-                                 slot=slot, bias_type=None,
-                                 std=False, superbias_frame=None)
+        self.get_ccd_data(None, superbias, fft_data,
+                          slot=slot, bias_type=None,
+                          std=False, superbias_frame=None)
 
         sys.stdout.write("!\n")
         sys.stdout.flush()
@@ -236,10 +235,6 @@ class SuperbiasFFTTask(BiasAnalysisTask):
         for key in REGION_KEYS:
             dtables.make_datatable('biasfft-%s' % key, fft_data[key])
         return dtables
-
-    def plot(self, dtables, figs, **kwargs):
-        """Just pass along to bias_fft.plot"""
-        BiasFFTTask.plot(dtables, figs, **kwargs)
 
 
 class BiasFFTStatsConfig(BiasAnalysisConfig):

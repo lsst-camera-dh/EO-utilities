@@ -362,7 +362,7 @@ def unbias_amp(im, serial_oscan, bias_type=None, superbias_im=None, region=None)
         if superbias_im is not None:
             image -= superbias_im
         if region is not None:
-            image = imutils.trim(image, region)
+            image = imutil.trim(image, region)
 
     return image
 
