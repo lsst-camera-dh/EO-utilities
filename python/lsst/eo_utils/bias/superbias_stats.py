@@ -25,20 +25,28 @@ from .file_utils import raft_superbias_tablename, raft_superbias_plotname,\
 from .meta_analysis import SuperbiasSummaryByRaft, BiasSummaryAnalysisFunc
 
 
-class superbias_stats(BiasAnalysisFunc):
+class SuperbiasStatsConfig(BiasAnalysisConfig):
+    """Configuration for SuperbiasStatsTask"""
+    suffix = EOUtilConfig.clone_param('suffix', default='stats')
+    bias = EOUtilConfig.clone_param('bias')
+    mask = EOUtilConfig.clone_param('mask')
+    stat = EOUtilConfig.clone_param('stat')
+
+
+class SuperbiasStatsTask(BiasAnalysisTask):
     """Class to analyze the overscan bias as a function of row number"""
 
-    argnames = STANDARD_RAFT_ARGS + ['stat', 'mask', 'superbias']
-    analysisClass = BiasAnalysisByRaft
-    tablename_func = raft_superbias_tablename
-    plotname_func = raft_superbias_plotname
+    ConfigClass = SuperbiasStatsConfig
+    _DefaultName = "SuperbiasStatsTask"
+    iteratorClass = BiasAnalysisByRaft
+    tablefile_name = raft_superbias_tablename
+    plotfile_name = raft_superbias_plotname
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """C'tor"""
-        BiasAnalysisFunc.__init__(self, "stats")
+        BiasAnalysisTask.__init__(self, **kwargs)
 
-    @staticmethod
-    def extract(butler, data, **kwargs):
+    def extract(self, butler, data, **kwargs):
         """Extract the correlations between the serial overscan for each amp on a raft
 
         @param butler (`Butler`)   The data butler
@@ -48,6 +56,7 @@ class superbias_stats(BiasAnalysisFunc):
         run_num (str)              Run number, i.e,. '6106D'
         outdir (str)               Output directory
         """
+        self.safe_update(**kwargs)
         slots = ALL_SLOTS
 
         kwcopy = kwargs.copy()
@@ -71,8 +80,7 @@ class superbias_stats(BiasAnalysisFunc):
         return dtables
 
 
-    @staticmethod
-    def plot(dtables, figs):
+    def plot(self, dtables, figs, **kwargs):
         """Plot the stats on the superbias frames
 
         @param dtables (TableDict)  The data
@@ -113,21 +121,28 @@ class superbias_stats(BiasAnalysisFunc):
             stats_data['max'][islot, i] = im.array.max()
 
 
+class SuperbiasSummaryConfig(BiasSummaryAnalysisConfig):
+    """Configuration for CorrelWRTOScanSummaryTask"""
+    suffix = EOUtilConfig.clone_param('suffix', default='_stats_sum')
+    dataset = EOUtilConfig.clone_param('dataset')
+    bias = EOUtilConfig.clone_param('bias')
+    superbias = EOUtilConfig.clone_param('superbias')
 
-class superbias_stats_summary(BiasSummaryAnalysisFunc):
+
+class SuperbiasSummaryTask(BiasSummaryAnalysisTask):
     """Class to analyze the overscan bias as a function of row number"""
 
-    argnames = ['dataset', 'butler_repo', 'bias', 'skip', 'plot']
+    ConfigClass = SuperbiasSummaryConfig
+    _DefaultName = "SuperbiasSummaryTask"
     iteratorClass = SuperbiasSummaryByRaft
-    tablename_func = superbias_summary_tablename
-    plotname_func = superbias_summary_plotname
+    tablefile_name = superbias_summary_tablename
+    plotfile_name = superbias_summary_plotname
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """C'tor"""
-        BiasSummaryAnalysisFunc.__init__(self, "_stats")
+        BiasSummaryAnalysisTask.__init__(self, **kwargs)
 
-    @staticmethod
-    def extract(butler, data, **kwargs):
+    def extract(self, butler, data, **kwargs):
         """Make a summry table of the bias FFT data
 
         @param filedict (dict)      The files we are analyzing
@@ -137,6 +152,8 @@ class superbias_stats_summary(BiasSummaryAnalysisFunc):
 
         @returns (TableDict)
         """
+        self.safe_update(**kwargs)
+
         if butler is not None:
             sys.stdout.write("Ignoring butler in superbias_stats_summary.extract %s\n" % kwargs)
 
@@ -151,13 +168,14 @@ class superbias_stats_summary(BiasSummaryAnalysisFunc):
         return dtables
 
 
-    @staticmethod
-    def plot(dtables, figs):
+    def plot(self, dtables, figs, **kwargs):
         """Plot the summary data from the superbias statistics study
 
         @param dtables (TableDict)    The data we are ploting
         @param fgs (FigureDict)       Keeps track of the figures
         """
+        self.safe_update(**kwargs)
+
         sumtable = dtables['stats']
         runtable = dtables['runs']
         yvals = sumtable['mean'].flatten().clip(0., 30.)

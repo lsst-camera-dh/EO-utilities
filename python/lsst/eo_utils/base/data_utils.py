@@ -149,7 +149,6 @@ def vstack_tables(filedict, **kwargs):
     for irun, pair in enumerate(sorted(filedict.items())):
         dtables = TableDict(pair[1], [tablename])
         table = dtables[tablename]
-        print(table)
         if keep_cols is not None:
             table.keep_columns(keep_cols)
         table.add_column(Column(name='run', data=irun*np.ones((len(table)), int)))
