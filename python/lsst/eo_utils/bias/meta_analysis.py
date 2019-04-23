@@ -4,19 +4,21 @@ import sys
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
+from lsst.eo_utils.base.config_utils import EOUtilConfig
+
 from lsst.eo_utils.base.file_utils import read_runlist
 
 from lsst.eo_utils.base.iter_utils import AnalysisIterator,\
     SummaryAnalysisIterator, AnalysisByRaft
 
-from lsst.eo_utils.base.analysis import AnalysisFunc
+from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
 from .file_utils import slot_bias_tablename,\
     slot_bias_plotname, raft_bias_tablename, raft_superbias_tablename
 
 
 
-def get_tablenames_by_raft(butler, run_num, **kwargs):
+def get_tablenames_by_raft(caller, butler, run, **kwargs):
     """Extract the statistics of the FFT of the bias
 
     @param butler (`Butler`)    The data butler
@@ -26,24 +28,24 @@ def get_tablenames_by_raft(butler, run_num, **kwargs):
         superbias (str)
     """
     kwcopy = kwargs.copy()
-    kwcopy['run_num'] = run_num
+    kwcopy['run'] = run
 
     out_dict = {}
-    raft_list = AnalysisIterator.get_raft_list(butler, run_num)
+    raft_list = AnalysisIterator.get_raft_list(butler, run)
 
     for raft in raft_list:
         kwcopy['raft'] = raft
         slot_dict = {}
         for slot in ALL_SLOTS:
             kwcopy['slot'] = slot
-            basename = slot_bias_tablename(**kwcopy)
+            basename = slot_bias_tablename(caller, **kwcopy)
             datapath = basename + '.fits'
             slot_dict[slot] = datapath
         out_dict[raft] = slot_dict
     return out_dict
 
 
-def get_raft_bias_tablefiles(butler, dataset, **kwargs):
+def get_raft_bias_tablefiles(caller, butler, dataset, **kwargs):
     """Extract the statistics of the FFT of the bias
 
     @param butler (`Butler`)    The data butler
@@ -65,16 +67,16 @@ def get_raft_bias_tablefiles(butler, dataset, **kwargs):
     filedict = {}
     for runinfo in run_list:
         raft = runinfo[0].replace('-Dev', '')
-        run_num = runinfo[1]
-        run_key = "%s_%s" % (raft, run_num)
-        kwcopy['run_num'] = run_num
+        run = runinfo[1]
+        run_key = "%s_%s" % (raft, run)
+        kwcopy['run'] = run
         kwcopy['raft'] = raft
-        filedict[run_key] = raft_bias_tablename(**kwcopy) + '.fits'
+        filedict[run_key] = raft_bias_tablename(caller, **kwcopy) + '.fits'
 
     return filedict
 
 
-def get_raft_superbias_tablefiles(butler, dataset, **kwargs):
+def get_raft_superbias_tablefiles(caller, butler, dataset, **kwargs):
     """Extract the statistics of the FFT of the bias
 
     @param butler (`Butler`)    The data butler
@@ -97,11 +99,11 @@ def get_raft_superbias_tablefiles(butler, dataset, **kwargs):
     filedict = {}
     for runinfo in run_list:
         raft = runinfo[0].replace('-Dev', '')
-        run_num = runinfo[1]
-        run_key = "%s_%s" % (raft, run_num)
-        kwcopy['run_num'] = run_num
+        run = runinfo[1]
+        run_key = "%s_%s" % (raft, run)
+        kwcopy['run'] = run
         kwcopy['raft'] = raft
-        filedict[run_key] = raft_superbias_tablename(**kwcopy) + '.fits'
+        filedict[run_key] = raft_superbias_tablename(caller, **kwcopy) + '.fits'
 
     return filedict
 
@@ -109,62 +111,64 @@ def get_raft_superbias_tablefiles(butler, dataset, **kwargs):
 class BiasTableAnalysisByRaft(AnalysisByRaft):
     """Small class to iterate an analysis function over all the slots in a raft"""
 
-    data_func = get_tablenames_by_raft
+    get_data = get_tablenames_by_raft
 
-    def __init__(self, analysis_func, argnames):
+    def __init__(self, task):
         """C'tor
         
-        @param analysis_func (function) Function that does the actual analysis for one CCD
-        @param argnames (list)          List of the keyword arguments need by that function.
-                                        Used to look up defaults
+        @param task (AnalysisTask)     Task that this will run
         """
-        AnalysisByRaft.__init__(self, analysis_func, argnames)
+        AnalysisByRaft.__init__(self, task)
 
 
 class BiasSummaryByRaft(SummaryAnalysisIterator):
     """Small class to iterate an analysis function over all the slots in a raft"""
 
-    data_func = get_raft_bias_tablefiles
+    get_data = get_raft_bias_tablefiles
 
-    def __init__(self, analysis_func, argnames):
+    def __init__(self, task):
         """C'tor
 
-        @param analysis_func (function) Function that does the actual analysis for one CCD
-        @param argnames (list)          List of the keyword arguments need by that function.
-                                        Used to look up defaults
+        @param task (AnalysisTask)     Task that this will run
         """
-        SummaryAnalysisIterator.__init__(self, analysis_func, argnames)
+        SummaryAnalysisIterator.__init__(self, task)
 
 
 class SuperbiasSummaryByRaft(SummaryAnalysisIterator):
     """Small class to iterate an analysis task over all the raft and then all the slots in a raft"""
 
-    data_func = get_raft_superbias_tablefiles
+    get_data = get_raft_superbias_tablefiles
 
-    def __init__(self, analysis_func, argnames):
+    def __init__(self, task):
         """C'tor
 
-        @param analysis_func (function) Function that does the actual analysis for one CCD
-        @param argnames (list)          List of the keyword arguments need by that function.
-                                        Used to look up defaults
+        @param task (AnalysisTask)     Task that this will run
         """
-        SummaryAnalysisIterator.__init__(self, analysis_func, argnames)
+        SummaryAnalysisIterator.__init__(self, task)
 
 
 
-class BiasSummaryAnalysisFunc(AnalysisFunc):
+class BiasSummaryAnalysisConfig(AnalysisConfig):
+    """Configurate for bias analyses"""
+    outdir = EOUtilConfig.clone_param('outdir')
+    dataset = EOUtilConfig.clone_param('dataset')
+    suffix = EOUtilConfig.clone_param('suffix')
+
+
+class BiasSummaryAnalysisTask(AnalysisTask):
     """Simple functor class to tie together standard bias data analysis
     """
 
     # These can overridden by the sub-class
+    ConfigClass = BiasSummaryAnalysisConfig
+    _DefaultName = "BiasSummaryAnalysisTask"
     iteratorClass = BiasSummaryByRaft
-    argnames = ['dataset', 'butler_repo']
-    tablename_func = slot_bias_tablename
-    plotname_func = slot_bias_plotname
+    tablefile_name = slot_bias_tablename
+    plotfile_name = slot_bias_plotname
 
-    def __init__(self, datasuffix=""):
+    def __init__(self, **kwargs):
         """ C'tor
         @param datasuffix (str)        Suffix for filenames
         @param kwargs:
         """
-        AnalysisFunc.__init__(self, datasuffix)
+        super(BiasSummaryAnalysisTask, self).__init__(**kwargs)

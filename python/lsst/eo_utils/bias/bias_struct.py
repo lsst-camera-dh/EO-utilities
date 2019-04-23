@@ -6,7 +6,7 @@ import numpy as np
 
 from lsst.eo_utils.base.defaults import DEFAULT_BIAS_TYPE
 
-from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
+from lsst.eo_utils.base.config_utils import EOUtilConfig
 
 from lsst.eo_utils.base.file_utils import get_mask_files
 
@@ -21,20 +21,46 @@ from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES, REGION_LAB
 from .file_utils import get_superbias_frame,\
     slot_superbias_tablename, slot_superbias_plotname
 
-from .analysis import BiasAnalysisFunc, BiasAnalysisBySlot
+from .analysis import BiasAnalysisTask, BiasAnalysisConfig, BiasAnalysisBySlot
 
 
-class bias_struct(BiasAnalysisFunc):
+
+def plot_bias_struct(caller, dtables, figs, **kwargs):
+    """Plot the bias structure
+
+    @param dtables (`TableDict`)  The data
+    @param figs (`FigureDict`)    Object to store the figues
+    """
+    for rkey, rlabel in zip(REGION_KEYS, REGION_LABELS):
+        for dkey in ['row', 'col']:
+            datakey = "biasst-%s_%s" % (dkey, rkey)
+            figs.setup_amp_plots_grid(datakey, title="%s, profile by %s" % (rlabel, dkey),
+                                      xlabel=dkey, ylabel="ADU")
+            figs.plot_xy_amps_from_tabledict(dtables, datakey, datakey,
+                                             x_name="%s_%s" % (dkey, rkey), y_name="biasst")
+
+
+class BiasStructConfig(BiasAnalysisConfig):
+    """Configuration for BiasVRowTask"""
+    suffix = EOUtilConfig.clone_param('suffix', default='biasst')
+    bias = EOUtilConfig.clone_param('bias')
+    mask = EOUtilConfig.clone_param('mask')
+    std = EOUtilConfig.clone_param('std')
+
+
+class BiasStructTask(BiasAnalysisTask):
     """Class to analyze the overscan bias as a function of row number"""
 
-    argnames = STANDARD_SLOT_ARGS + ['mask', 'bias', 'std', 'mask']
+    ConfigClass = BiasStructConfig
+    _DefaultName = "BiasStructTask"
     iteratorClass = BiasAnalysisBySlot
+    plot = plot_bias_struct
 
-    def __init__(self):
-        BiasAnalysisFunc.__init__(self, "biasst")
+    def __init__(self, **kwargs):
+        """ C'tor """
+        BiasAnalysisTask.__init__(self, **kwargs)
 
-    @staticmethod
-    def extract(butler, data, **kwargs):
+    def extract(self, butler, data, **kwargs):
         """Plot the row-wise and col-wise struture
         in a series of bias frames
 
@@ -46,10 +72,9 @@ class bias_struct(BiasAnalysisFunc):
         superbias (str)      Method to use for superbias subtraction
         std (bool)           Plot standard deviation instead of median
         """
-        slot = kwargs['slot']
-        std = kwargs.get('std', False)
-        bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
-
+        self.safe_update(**kwargs)
+       
+        slot = self.config.slot
         bias_files = data['BIAS']
         mask_files = get_mask_files(**kwargs)
         superbias_frame = get_superbias_frame(mask_files=mask_files, **kwargs)
@@ -70,10 +95,10 @@ class bias_struct(BiasAnalysisFunc):
                 for key, val in dim_array_dict.items():
                     biasstruct_data[key] = {key:val}
 
-            bias_struct.get_ccd_data(butler, ccd, biasstruct_data,
-                                     ifile=ifile, nfiles=len(bias_files),
-                                     slot=slot, bias_type=bias_type,
-                                     std=std, superbias_frame=superbias_frame)
+            self.get_ccd_data(butler, ccd, biasstruct_data,
+                              slot=slot, bias_type=self.config.bias,
+                              std=self.config.std, ifile=ifile, nfiles=len(bias_files),
+                              superbias_frame=superbias_frame)
 
         sys.stdout.write("!\n")
         sys.stdout.flush()
@@ -84,26 +109,11 @@ class bias_struct(BiasAnalysisFunc):
             dtables.make_datatable('biasst-%s' % key, val)
         return dtables
 
-
-    @staticmethod
-    def plot(dtables, figs):
-        """Plot the bias structure
-
-        @param dtables (`TableDict`)  The data
-        @param figs (`FigureDict`)    Object to store the figues
-        """
-        for rkey, rlabel in zip(REGION_KEYS, REGION_LABELS):
-            for dkey in ['row', 'col']:
-                datakey = "biasst-%s_%s" % (dkey, rkey)
-                figs.setup_amp_plots_grid(datakey, title="%s, profile by %s" % (rlabel, dkey),
-                                          xlabel=dkey, ylabel="ADU")
-                figs.plot_xy_amps_from_tabledict(dtables, datakey, datakey,
-                                                 x_name="%s_%s" % (dkey, rkey), y_name="biasst")
-
     @staticmethod
     def get_ccd_data(butler, ccd, data, **kwargs):
         """Get the bias values and update the data dictionary
 
+        @param caller (`Task`)     Task that calls this function
         @param butler (`Butler`)   The data butler
         @param ccd (`MaskedCCD`)   The ccd we are getting data from
         @param data (dict)         The data we are updating
@@ -115,10 +125,10 @@ class bias_struct(BiasAnalysisFunc):
         std (bool)                     Used standard deviasion instead of mean
         superbias_frame (`MaskedCCD`)  The superbias
         """
-        slot = kwargs['slot']
-        bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
         ifile = kwargs.get('ifile', 0)
         nfiles = kwargs.get('nfiles', 1)
+        slot = kwargs.get('slot')
+        bias_type = kwargs.get('bias_type')
         std = kwargs.get('std', False)
         superbias_frame = kwargs.get('superbias_frame', None)
 
@@ -147,20 +157,31 @@ class bias_struct(BiasAnalysisFunc):
                 data[framekey_col][key_str][:, ifile] = struct['cols']
 
 
-class superbias_struct(BiasAnalysisFunc):
+class SuperbiasStructConfig(BiasAnalysisConfig):
+    """Configuration for BiasVRowTask"""
+    suffix = EOUtilConfig.clone_param('suffix', default='sbiasst')
+    superbias = EOUtilConfig.clone_param('superbias')
+    mask = EOUtilConfig.clone_param('mask')
+    std = EOUtilConfig.clone_param('std')
+    stat = EOUtilConfig.clone_param('stat')
+
+
+class SuperbiasStructTask(BiasAnalysisTask):
     """Class to analyze the overscan bias as a function of row number"""
 
-    argnames = STANDARD_SLOT_ARGS + ['mask', 'superbias', 'std', 'stat']
+    ConfigClass = SuperbiasStructConfig
+    _DefaultName = "SuperbiasStructTask"
     iteratorClass = BiasAnalysisBySlot
-    tablename_func = slot_superbias_tablename
-    plotname_func = slot_superbias_plotname
 
-    def __init__(self):
+    tablefile_name = slot_superbias_tablename
+    plotfile_name = slot_superbias_plotname
+    plot = plot_bias_struct
+
+    def __init__(self, **kwargs):
         """C'tor"""
-        BiasAnalysisFunc.__init__(self, "sbiasst")
+        BiasAnalysisTask.__init__(self, **kwargs)
 
-    @staticmethod
-    def extract(butler, data, **kwargs):
+    def extract(self, butler, data, **kwargs):
         """Extract the row-wise and col-wise struture  in a superbias frame
 
         @param butler (`Butler`)   The data butler
@@ -173,8 +194,9 @@ class superbias_struct(BiasAnalysisFunc):
             outdir (str)         Output directory
             std (bool)           Plot standard deviation instead of median
         """
-        slot = kwargs['slot']
-        std = kwargs.get('std', False)
+        self.safe_update(**kwargs)
+        
+        slot = self.config.slot
 
         if butler is not None:
             sys.stdout.write("Ignoring butler in superbias_struct.extract")
@@ -190,9 +212,9 @@ class superbias_struct(BiasAnalysisFunc):
         for key, val in dim_array_dict.items():
             biasstruct_data[key] = {key:val}
 
-        bias_struct.get_ccd_data(None, superbias, biasstruct_data,
-                                 slot=slot, bias_type=kwargs.get('superbias'),
-                                 std=std, superbias_frame=None)
+        BiasStructTask.get_ccd_data(None, superbias, biasstruct_data,
+                                    slot=slot, bias_type=None,
+                                    std=self.config.std, superbias_frame=None)
 
         sys.stdout.write("!\n")
         sys.stdout.flush()
@@ -203,7 +225,3 @@ class superbias_struct(BiasAnalysisFunc):
             dtables.make_datatable('biasst-%s' % key, val)
         return dtables
 
-    @staticmethod
-    def plot(dtables, figs):
-        """Just pass along to bias_struct.plot"""
-        return bias_struct.plot(dtables, figs)

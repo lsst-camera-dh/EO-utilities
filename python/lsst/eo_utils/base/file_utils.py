@@ -20,6 +20,9 @@ from .defaults import MASK_TEST_TYPES, SLOT_FORMAT_STRING,\
      RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING, ALL_RAFTS
 
 
+MASKFILENAME_DEFAULTS = dict(outdir='analysis', raft=None, run=None, slot=None, suffix='_mask.fits')
+
+
 def makedir_safe(filepath):
     """Make a directory needed to write a file
 
@@ -31,10 +34,10 @@ def makedir_safe(filepath):
         pass
 
 
-def get_hardware_type_and_id(run_num):
+def get_hardware_type_and_id(run):
     """Return the hardware type and hardware id for a given run
 
-    @param run_num(str)   The number number we are reading
+    @param run(str)   The number number we are reading
 
     @returns (tuple)
       htype (str) The hardware type, either
@@ -42,12 +45,12 @@ def get_hardware_type_and_id(run_num):
                         'LCA-11021' (single raft)
       hid (str) The hardware id, e.g., RMT-004-Dev
     """
-    if run_num.find('D') >= 0:
+    if run.find('D') >= 0:
         db = 'Dev'
     else:
         db = 'Prod'
     er = exploreRun(db=db)
-    hsn = er.hardware_sn(run=run_num)
+    hsn = er.hardware_sn(run=run)
     tokens = hsn.split('_')
     htype = tokens[0]
     hid = tokens[1].replace('-Dev', '')
@@ -57,7 +60,7 @@ def get_hardware_type_and_id(run_num):
 def get_slot_file_basename(**kwargs):
     """Return the filename for an output file from a slot-level analysis
 
-    The format is {outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}-{slot}{suffix}
+    The format is {outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}{suffix}
 
     @param kwargs       Passed to the SLOT_FORMAT_STRING.format statement
 
@@ -69,7 +72,7 @@ def get_slot_file_basename(**kwargs):
 def get_raft_file_basename(**kwargs):
     """Return the filename for an output file from a raft-level analysis
 
-    The format is {outdir}/{fileType}/{raft}/{testType}/{raft}-{run_num}{suffix}
+    The format is {outdir}/{fileType}/{raft}/{testType}/{raft}-{run}{suffix}
 
     @param kwargs       Passed to the RAFT_FORMAT_STRING.format statement
 
@@ -89,13 +92,13 @@ def get_summary_file_basename(**kwargs):
     return str(SUMMARY_FORMAT_STRING.format(**kwargs))
 
 
-def mask_filename(outdir, raft, run_num, slot, **kwargs):
+def mask_filename(outdir, raft, run, slot, **kwargs):
     """Return the filename for a mask file
 
     The following parameters are passed to the SLOT_FORMAT_STRING.format stateme
     @param outdir (str)
     @param raft (str)
-    @param run_num (str)
+    @param run (str)
     @param slot (str)
     @param kwargs:
         suffix (str)
@@ -103,7 +106,7 @@ def mask_filename(outdir, raft, run_num, slot, **kwargs):
     @returns (str) The path for the file.
     """
     return get_slot_file_basename(outdir=outdir, fileType='masks',
-                                  raft=raft, testType='', run_num=run_num,
+                                  raft=raft, testType='', run=run,
                                   slot=slot, suffix=kwargs.get('suffix', '_mask.fits'))
 
 
@@ -212,7 +215,7 @@ def read_runlist(filepath):
                              Each line should contain raft and run number, e.g.,
                              RTM-004-Dev 6106D
 
-    @returns (list)          A list of tuples with (raft, run_num)
+    @returns (list)          A list of tuples with (raft, run)
     """
     fin = open(filepath)
     lin = fin.readline()
@@ -226,14 +229,14 @@ def read_runlist(filepath):
     return outlist
 
 
-def get_raft_names_dc(run_num):
+def get_raft_names_dc(run):
     """Get the list of rafts used for a particular run
 
-    @param run_num(str)   The number number we are reading
+    @param run(str)   The number number we are reading
 
     @returns (list) of raft names
     """
-    hinfo = get_hardware_type_and_id(run_num)
+    hinfo = get_hardware_type_and_id(run)
 
     htype = hinfo[0]
     hid = hinfo[1]

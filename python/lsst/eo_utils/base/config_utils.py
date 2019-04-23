@@ -4,6 +4,8 @@ offline analysis of LSST Electrical-Optical testing"""
 import sys
 import os
 import argparse
+import copy
+
 from collections import OrderedDict
 
 import lsst.pex.config as pexConfig
@@ -28,6 +30,8 @@ class EOUtilConfig(pexConfig.Config):
     batch_args = pexConfig.Field("Arguments to pass to batch command", str, default=DEFAULT_BATCH_ARGS)
     run = pexConfig.Field("Run ID", str, default=None)
     dataset = pexConfig.Field("dataset", str, default=None)
+    slot = pexConfig.Field("Slot ID", str, default=None)
+    raft = pexConfig.Field("Raft Slot", str, default=None)
     slots = pexConfig.ListField("Slot ID(s)", str, default=None)
     rafts = pexConfig.ListField("Raft Slot(s)", str, default=None)
     bias = pexConfig.Field("Method to use for unbiasing", str, default=None)
@@ -41,6 +45,8 @@ class EOUtilConfig(pexConfig.Config):
     nbins = pexConfig.Field("Number of bins in histogram", int, default=DEFAULT_NBINS)
     mask = pexConfig.Field("Use the mask files", bool, default=False)
     plot = pexConfig.Field("Make plots", bool, default=False)
+    suffix = pexConfig.Field("Suffix for output files", str, default="")
+    interactive = pexConfig.Field("Run analysis interactively", bool, default=False)
     std = pexConfig.Field("Plot standard deviation instead of mean", bool, default=False)
     covar = pexConfig.Field("Plot covarience instead of correlation factor", bool, default=False)
     skip = pexConfig.Field("Skip the main analysis and only make plots", bool, default=False)
@@ -49,6 +55,14 @@ class EOUtilConfig(pexConfig.Config):
     use_all = pexConfig.Field("Use all fe55 clusters", bool, default=False)
 
 
+    @classmethod
+    def clone_param(cls, parName, **kwargs):
+        """@returns (`pexConfig.Field`) cloned version of parameter"""
+        retVal = copy.deepcopy(cls.__dict__[parName])
+        if 'default' in kwargs:
+            retVal.default = kwargs['default']
+        return retVal
+
     def to_odict(self):
         """@returns (dict) Parameters as an OrderedDict mapping name to (type, default, doc) tuple"""
         o_dict = OrderedDict()
@@ -56,6 +70,8 @@ class EOUtilConfig(pexConfig.Config):
             o_dict[key] = (val.dtype, val.default, val.__doc__)
         return o_dict
 
+        
+    
 
 # Turn the object about into an ordered dictionary
 DEFAULT_CONFIG = EOUtilConfig()
@@ -88,6 +104,36 @@ def add_arguments(parser, arg_dict):
                                 type=argtype,
                                 default=argdefault,
                                 help=arghelp)
+
+
+
+def add_pex_arguments(parser, pexClass):
+    """Adds a set of arguments to the argument parser
+
+    @param parser (dict)    The argument parser we are using
+    @param pexClass (`pexConfig`)  A config class
+    """
+    for key, val in pexClass._fields.items():
+        if type(val) in [pexConfig.listField.List]:
+            parser.add_argument("--%s" % key,
+                                action='append',
+                                type=val.dtype,
+                                default=val.default,
+                                help=val.doc)
+        elif val.dtype in [bool]:
+            parser.add_argument("--%s" % key,
+                                action='store_true',
+                                default=val.default,
+                                help=val.doc)
+        else:
+            parser.add_argument("--%s" % key,
+                                type=val.dtype,
+                                default=val.default,
+                                help=val.doc)
+
+
+
+
 
 def make_argstring(arg_dict):
     """Turns a dictionary of arguments into string with command line options
@@ -203,3 +249,25 @@ def copy_dict(in_dict, def_dict):
     """
     outdict = {key:in_dict.get(key, val) for key, val in def_dict.items()}
     return outdict
+
+
+def copy_pex_fields(field_names, target_class, library_class):
+    """Copy a set of pexConfig.Field objects to a target class
+    
+    This is a way to make sure that all config classes in this
+    package are using the same pexConfig.Field object and 
+    share the same parameters when appropriate
+
+    @param field_names (list)                 : Name of parameters to copy
+    @param target_class (`pexConfig.Config`)  : Class to add parameters to
+    @param library_class (`pexConfig.Config`) : Class to copy parameters from
+    """
+    for fname in field_names:
+        try:
+            item = library_class.__dict__[fname]
+        except KeyError:            
+            raise KeyError("Field %s does not exist in class %s\n" % (fname, type(library_class)))
+        if isinstance(item, pexConfig.Field):
+            setattr(target_class, fname, copy.deepcopy(item))
+        else:
+            raise TypeError("Field %s does in class %s\n is not a pexConfig.Field" % (fname, type(library_class)))

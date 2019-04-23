@@ -6,7 +6,7 @@ import numpy as np
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
+from lsst.eo_utils.base.config_utils import EOUtilConfig
 
 from lsst.eo_utils.base.file_utils import get_mask_files
 
@@ -20,26 +20,34 @@ from lsst.eo_utils.base.image_utils import get_dims_from_ccd, get_ccd_from_id,\
 from .file_utils import raft_bias_tablename, raft_bias_plotname,\
     bias_summary_tablename, bias_summary_plotname
 
-from .analysis import BiasAnalysisFunc, BiasAnalysisBySlot
+from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisBySlot
 
 from .meta_analysis import BiasSummaryByRaft, BiasTableAnalysisByRaft,\
-    BiasSummaryAnalysisFunc
+    BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask
 
 
 
-class correl_wrt_oscan(BiasAnalysisFunc):
+class CorrelWRTOScanConfig(BiasAnalysisConfig):
+    """Configuration for BiasVRowTask"""
+    suffix = EOUtilConfig.clone_param('suffix', default='biasoscorr')
+    bias = EOUtilConfig.clone_param('bias')
+    mask = EOUtilConfig.clone_param('mask')
+
+
+class CorrelWRTOScanTask(BiasAnalysisTask):
     """Class to analyze correlations between the imaging section
     and the overscan regions in a series of bias frames"""
 
-    argnames = STANDARD_SLOT_ARGS + ['rafts', 'mask']
+    ConfigClass = CorrelWRTOScanConfig
+    _DefaultName = "CorrelWRTOScanTask"
     iteratorClass = BiasAnalysisBySlot
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """C'tor"""
-        BiasAnalysisFunc.__init__(self, "biasoscorr")
+        BiasAnalysisTask.__init__(self, **kwargs)
 
-    @staticmethod
-    def extract(butler, data, **kwargs):
+
+    def extract(self, butler, data, **kwargs):
         """Extract the correlations between the imaging section
         and the overscan regions in a series of bias frames
 
@@ -50,7 +58,8 @@ class correl_wrt_oscan(BiasAnalysisFunc):
 
         @returns (`TableDict`) with the extracted data
         """
-        slot = kwargs['slot']
+        self.safe_update(**kwargs)
+        slot = self.config.slot
 
         bias_files = data['BIAS']
         mask_files = get_mask_files(**kwargs)
@@ -80,9 +89,9 @@ class correl_wrt_oscan(BiasAnalysisFunc):
                     image = get_raw_image(butler, ccd, amp)
                     ref_frames[i] = get_image_frames_2d(image, regions)
                     continue
-            correl_wrt_oscan.get_ccd_data(butler, ccd, ref_frames,
-                                          ifile=ifile, s_correl=s_correl, p_correl=p_correl,
-                                          nrow_i=nrow_i, ncol_i=ncol_i)
+            self.get_ccd_data(butler, ccd, ref_frames,
+                              ifile=ifile, s_correl=s_correl, p_correl=p_correl,
+                              nrow_i=nrow_i, ncol_i=ncol_i)
 
         sys.stdout.write("!\n")
         sys.stdout.flush()
@@ -98,13 +107,13 @@ class correl_wrt_oscan(BiasAnalysisFunc):
         return dtables
 
 
-    @staticmethod
-    def plot(dtables, figs):
+    def plot(self, dtables, figs, **kwargs):
         """Plot the bias structure
 
         @param dtables (`TableDict`)  The data
         @param figs (`FigureDict`)    Object to store the figues
         """
+        self.safe_update(**kwargs)
         figs.setup_amp_plots_grid("oscorr-row", title="Correlation: imaging region and serial overscan",
                                   xlabel="Correlation",
                                   ylabel="Number of frames")
@@ -164,22 +173,28 @@ class correl_wrt_oscan(BiasAnalysisFunc):
                                                dd_p[mask_p])[0, 1]
 
 
+class CorrelWRTOScanStatsConfig(BiasAnalysisConfig):
+    """Configuration for BiasVRowTask"""
+    suffix = EOUtilConfig.clone_param('suffix', default='_biasoscorr')
+    bias = EOUtilConfig.clone_param('bias')
+    superbias = EOUtilConfig.clone_param('superbias')
 
-class correl_wrt_oscan_stats(BiasAnalysisFunc):
+
+class CorrelWRTOScanStatsTask(BiasAnalysisTask):
     """Class to analyze the overscan correlation with imaging region"""
 
-    argnames = STANDARD_SLOT_ARGS + ['bias', 'superbias']
+    ConfigClass = CorrelWRTOScanStatsConfig
+    _DefaultName = "CorrelWRTOScanStatsTask"
     iteratorClass = BiasTableAnalysisByRaft
-    tablename_func = raft_bias_tablename
-    plotname_func = raft_bias_plotname
+    tablefile_name = raft_bias_tablename
+    plotfile_name = raft_bias_plotname
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """C'tor """
-        BiasAnalysisFunc.__init__(self, "biasoscorr_stats")
+        BiasAnalysisTask.__init__(self, **kwargs)
 
 
-    @staticmethod
-    def extract(butler, data, **kwargs):
+    def extract(self, butler, data, **kwargs):
         """Extract the bias as function of row
 
         @param butler (`Butler`)   The data butler
@@ -188,6 +203,8 @@ class correl_wrt_oscan_stats(BiasAnalysisFunc):
 
         @returns (TableDict) with the extracted data
         """
+        self.safe_update(**kwargs)
+
         if butler is not None:
             sys.stdout.write("Ignoring butler in bias_fft_stats.extract\n")
 
@@ -215,13 +232,13 @@ class correl_wrt_oscan_stats(BiasAnalysisFunc):
             sys.stdout.flush()
 
             basename = data[slot]
-            datapath = basename.replace('.fits', '_biasoscorr.fits')
+            datapath = basename.replace('.fits', 'biasoscorr.fits')
 
             try:
                 dtables = TableDict(datapath, [datakey])
                 table = dtables[datakey]
             except FileNotFoundError:
-                sys.stderr.write("Warning, could not open %s" % datapath)
+                sys.stderr.write("Warning, could not open %s\n" % datapath)
                 table = None
 
             for amp in range(16):
@@ -262,13 +279,13 @@ class correl_wrt_oscan_stats(BiasAnalysisFunc):
         return outtables
 
 
-    @staticmethod
-    def plot(dtables, figs):
+    def plot(self, dtables, figs, **kwargs):
         """Plot the summary data from the bias fft statistics study
 
         @param dtables (TableDict)    The data we are ploting
         @param fgs (FigureDict)       Keeps track of the figures
         """
+        self.safe_update(**kwargs)
         sumtable = dtables['biasoscorr_stats']
         figs.plot_stat_color('mean_oscorr_s', sumtable['s_correl_mean'].reshape(9,16))
         figs.plot_stat_color('mean_oscorr_p', sumtable['p_correl_mean'].reshape(9,16))
@@ -276,22 +293,27 @@ class correl_wrt_oscan_stats(BiasAnalysisFunc):
 
 
 
+class CorrelWRTOScanSummaryConfig(BiasSummaryAnalysisConfig):
+    """Configuration for CorrelWRTOScanSummaryTask"""
+    suffix = EOUtilConfig.clone_param('suffix', default='_biasoscorr_sum')
+    bias = EOUtilConfig.clone_param('bias')
+    superbias = EOUtilConfig.clone_param('superbias')
 
 
-class correl_wrt_oscan_summary(BiasSummaryAnalysisFunc):
+class CorrelWRTOScanSummaryTask(BiasSummaryAnalysisTask):
     """Class to analyze the overscan bias as a function of row number"""
 
-    argnames = ['dataset', 'butler_repo', 'bias', 'superbias', 'skip', 'plot']
+    ConfigClass = CorrelWRTOScanSummaryConfig
+    _DefaultName = "CorrelWRTOScanSummaryTask"
     iteratorClass = BiasSummaryByRaft
-    tablename_func = bias_summary_tablename
-    plotname_func = bias_summary_plotname
+    tablefile_name = bias_summary_tablename
+    plotfile_name = bias_summary_plotname
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """C'tor"""
-        BiasSummaryAnalysisFunc.__init__(self, "_biasoscorr_sum")
+        BiasSummaryAnalysisTask.__init__(self, **kwargs)
 
-    @staticmethod
-    def extract(butler, data, **kwargs):
+    def extract(self, butler, data, **kwargs):
         """Make a summry table of the bias FFT data
 
         @param filedict (dict)      The files we are analyzing
@@ -301,11 +323,13 @@ class correl_wrt_oscan_summary(BiasSummaryAnalysisFunc):
 
         @returns (TableDict)
         """
+        self.safe_update(**kwargs)
+
         if butler is not None:
             sys.stdout.write("Ignoring butler in correl_wrt_oscan_summary.extract\n")
 
         for key,val in data.items():
-            data[key] = val.replace('.fits', '_biasoscorr_stats.fits')
+            data[key] = val.replace('.fits', 'biasoscorr_stats.fits')
 
         if not kwargs.get('skip', False):
             outtable = vstack_tables(data, tablename='biasoscorr_stats')
@@ -316,13 +340,14 @@ class correl_wrt_oscan_summary(BiasSummaryAnalysisFunc):
         return dtables
 
 
-    @staticmethod
-    def plot(dtables, figs):
+    def plot(self, dtables, figs, **kwargs):
         """Plot the summary data from the superbias statistics study
 
         @param dtables (TableDict)    The data we are ploting
         @param fgs (FigureDict)       Keeps track of the figures
         """
+        self.safe_update(**kwargs)
+
         sumtable = dtables['biasoscorr_sum']
         runtable = dtables['runs']
 

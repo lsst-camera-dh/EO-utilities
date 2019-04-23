@@ -8,7 +8,7 @@ import lsst.eotest.image_utils as imutil
 
 from lsst.eo_utils.base.defaults import DEFAULT_BIAS_TYPE
 
-from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
+from lsst.eo_utils.base.config_utils import EOUtilConfig
 
 from lsst.eo_utils.base.data_utils import TableDict
 
@@ -17,21 +17,26 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_dims_from_ccd,\
     get_ccd_from_id, get_raw_image, get_geom_regions, get_amp_list
 
-from .analysis import BiasAnalysisFunc, BiasAnalysisBySlot
+from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisBySlot
 
 
-class bias_v_row(BiasAnalysisFunc):
+class BiasVRowConfig(BiasAnalysisConfig):
+    """Configuration for BiasVRowTask"""
+    suffix = EOUtilConfig.clone_param('suffix', default='biasval')
+    bias = EOUtilConfig.clone_param('bias')
+
+
+class BiasVRowTask(BiasAnalysisTask):
     """Class to analyze the overscan bias as a function of row number"""
-
-    argnames = STANDARD_SLOT_ARGS + ['bias', 'rafts']
+    ConfigClass = BiasVRowConfig
+    _DefaultName = "BiasVRowTask"
     iteratorClass = BiasAnalysisBySlot
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """C'tor"""
-        BiasAnalysisFunc.__init__(self, "biasval")
+        BiasAnalysisTask.__init__(self, **kwargs)
 
-    @staticmethod
-    def extract(butler, data, **kwargs):
+    def extract(self, butler, data, **kwargs):
         """Extract the bias as function of row
 
         @param butler (`Butler`)   The data butler
@@ -42,8 +47,10 @@ class bias_v_row(BiasAnalysisFunc):
 
         @returns (`TableDict`) with the extracted data
         """
-        slot = kwargs['slot']
-        bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
+        self.safe_update(**kwargs)
+
+        slot = self.config.slot
+        bias_type = self.config.bias
 
         bias_files = data['BIAS']
 
@@ -61,9 +68,8 @@ class bias_v_row(BiasAnalysisFunc):
                 dims = get_dims_from_ccd(butler, ccd)
                 xrow_s = np.linspace(0, dims['nrow_s']-1, dims['nrow_s'])
 
-            bias_v_row.get_ccd_data(butler, ccd, biasval_data,
-                                    ifile=ifile, nfiles=len(bias_files),
-                                    slot=slot, bias_type=bias_type)
+            self.get_ccd_data(butler, ccd, biasval_data,
+                              ifile=ifile, nfiles=len(bias_files))
 
             #Need to truncate the row array to match the data
             a_row = biasval_data[sorted(biasval_data.keys())[0]]
@@ -78,34 +84,31 @@ class bias_v_row(BiasAnalysisFunc):
         return dtables
 
 
-    @staticmethod
-    def plot(dtables, figs):
+    def plot(self, dtables, figs, **kwargs):
         """Plot the bias as function of row
 
         @param dtables (`TableDict`)  The data
         @param figs (`FigureDict`)    Object to store the figues
         """
+        self.safe_update(**kwargs)
         figs.setup_amp_plots_grid("biasval", title="Bias by row",
                                   xlabel="row", ylabel="Magnitude [ADU]")
         figs.plot_xy_amps_from_tabledict(dtables, 'biasval', 'biasval',
                                          x_name='row_s', y_name='biasval')
 
 
-    @staticmethod
-    def get_ccd_data(butler, ccd, data, **kwargs):
+    def get_ccd_data(self, butler, ccd, data, **kwargs):
         """Get the bias values and update the data dictionary
 
         @param butler (`Butler`)   The data butler
         @param ccd (`MaskedCCD`)   The ccd we are getting data from
         @param data (dict)         The data we are updating
         @param kwargs:
-        slot  (str)       The slot number
-        ifile (int)       The file index
-        nfiles (int)      Total number of files
-        bias_type (str)   Method to use to construct bias
+            ifile (int)       The file index
+            nfiles (int)      Total number of files
         """
-        slot = kwargs['slot']
-        bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
+        slot = self.config.slot
+        bias_type = self.config.bias
         ifile = kwargs['ifile']
         nfiles = kwargs['nfiles']
 
