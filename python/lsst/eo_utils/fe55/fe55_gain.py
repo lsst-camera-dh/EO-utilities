@@ -93,12 +93,12 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
                     mask = (np.fabs(table['XPOS'] - table['XPEAK']) < 1)*\
                         (np.fabs(table['YPOS'] - table['YPEAK']) < 1)
                 tablevals = table[mask]['DN']
-                gf = Fe55GainFitter(tablevals)
+                gainfitter = Fe55GainFitter(tablevals)
                 try:
-                    kalpha_peak, kalpha_sigma = gf.fit(bins=100)
-                    gain = gf.gain
-                    gain_error = gf.gain_error
-                    pars = gf.pars
+                    kalpha_peak, kalpha_sigma = gainfitter.fit(bins=100)
+                    gain = gainfitter.gain
+                    gain_error = gainfitter.gain_error
+                    pars = gainfitter.pars
                 except Exception:
                     kalpha_peak, kalpha_sigma = (np.nan, np.nan)
                     gain = np.nan
@@ -108,15 +108,15 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
                 data_dict['kalpha_sigma'].append(kalpha_sigma)
                 data_dict['gain'].append(gain)
                 data_dict['gain_error'].append(gain_error)
-                xr = gf.xrange
+                xra = gainfitter.xrange
                 data_dict['ncluster'].append(mask.size)
                 data_dict['ngood'].append(mask.sum())
-                if xr is None:
+                if xra is None:
                     data_dict['fit_xmin'].append(np.nan)
                     data_dict['fit_xmax'].append(np.nan)
                 else:
-                    data_dict['fit_xmin'].append(xr[0])
-                    data_dict['fit_xmax'].append(xr[1])
+                    data_dict['fit_xmin'].append(xra[0])
+                    data_dict['fit_xmax'].append(xra[1])
                 data_dict['fit_pars'].append(pars)
                 data_dict['fit_nbins'].append(100.)
                 data_dict['sigmax_median'].append(np.median(table['SIGMAX']))
@@ -186,11 +186,11 @@ class Fe55GainSummaryTask(Fe55SummaryAnalysisTask):
         for key, val in data.items():
             data[key] = val.replace('.fits', insuffix)
 
-        REMOVE_COLS = ['fit_pars']
+        remove_cols = ['fit_pars']
 
         if not kwargs.get('skip', False):
             outtable = vstack_tables(data, tablename='fe55_gain_stats',
-                                     remove_cols=REMOVE_COLS)
+                                     remove_cols=remove_cols)
 
         dtables = TableDict()
         dtables.add_datatable('fe55_gain_sum', outtable)

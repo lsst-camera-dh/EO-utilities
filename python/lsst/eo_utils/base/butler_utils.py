@@ -5,7 +5,7 @@ from lsst.daf.persistence import Butler
 from .defaults import BUTLER_REPO_DICT
 
 
-def get_butler(repo, **kwargs):
+def get_butler_by_repo(repo, **kwargs):
     """Construct and return a Bulter for the requested repository
 
     @param: repo (str)     Name of the repo, 'TS8' | 'BOT'

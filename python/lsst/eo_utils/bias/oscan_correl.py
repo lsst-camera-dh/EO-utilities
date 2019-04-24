@@ -132,8 +132,8 @@ class OscanCorrelTask(BiasAnalysisTask):
 
             regions = get_geom_regions(butler, ccd, amp)
             serial_oscan = regions['serial_overscan']
-            im = get_raw_image(butler, ccd, amp)
-            image = unbias_amp(im, serial_oscan, bias_type=None, superbias_im=superbias_im)
+            img = get_raw_image(butler, ccd, amp)
+            image = unbias_amp(img, serial_oscan, bias_type=None, superbias_im=superbias_im)
             serial_oscan.grow(-boundry)
             oscan_data = image[serial_oscan]
             step_x = regions['step_x']

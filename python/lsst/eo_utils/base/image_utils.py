@@ -291,7 +291,8 @@ def get_image_frames_2d(img, regions, regionlist=None):
     try:
         o_dict = {key:img[regions[key]].getArray()[::step_x, ::step_y] for key in regionlist}
     except AttributeError:
-        o_dict = {key:img[regions[key]].getImage().getArray()[::step_x, ::step_y] for key in regionlist}
+        o_dict = {key:img[regions[key]].getImage().getArray()[::step_x, ::step_y]
+                  for key in regionlist}
     return o_dict
 
 

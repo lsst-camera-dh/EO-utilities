@@ -68,12 +68,12 @@ class FigureDict:
 
 
     def get_amp_axes(self, key, iamp):
-        """Return some the axis object for a particular amp
+        """Return some the axes object for a particular amp
 
         @param key (str)   Key for the figure.
         @param iamp (int)  Amplifier index
 
-        @returns (axis) requested object
+        @returns (axes) requested object
         """
         return self._fig_dict[key]['axs'].flat[iamp]
 
@@ -90,22 +90,22 @@ class FigureDict:
 
         @returns (dict)
             fig (matplotlib.figure.Figure)
-            axis (matplotlib.Axes._subplots.AxesSubplot)
+            axes (matplotlib.Axes._subplots.AxesSubplot)
         """
         title = kwargs.get('title', None)
         xlabel = kwargs.get('xlabel', None)
         ylabel = kwargs.get('ylabel', None)
         figsize = kwargs.get('figsize', (15, 10))
 
-        fig, axis = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=figsize)
         if title is not None:
             fig.suptitle(title)
         if xlabel is not None:
-            axis.set_xlabel(xlabel)
+            axes.set_xlabel(xlabel)
         if ylabel is not None:
-            axis.set_ylabel(ylabel)
+            axes.set_ylabel(ylabel)
 
-        o_dict = dict(fig=fig, axis=axis)
+        o_dict = dict(fig=fig, axes=axes)
         self._fig_dict[key] = o_dict
         return o_dict
 
@@ -251,8 +251,8 @@ class FigureDict:
         @param fftpow (numpy.ndarray) The power corresponding to the frequencies
         """
         n_row = len(fftpow)
-        ax = self._fig_dict[key]['axs'].flat[iamp]
-        ax.plot(freqs[0:int(n_row/2)], fftpow[0:int(n_row/2)])
+        axes = self._fig_dict[key]['axs'].flat[iamp]
+        axes.plot(freqs[0:int(n_row/2)], fftpow[0:int(n_row/2)])
 
     def plot_hist(self, key, iamp, data, **kwargs):
         """Histograms data and plots it
@@ -268,14 +268,14 @@ class FigureDict:
         xmin = kwargs.get('xmin', None)
         xmax = kwargs.get('xmax', None)
         if xmin is not None and xmax is not None:
-            xr = (xmin, xmax)
+            xra = (xmin, xmax)
         else:
-            xr = None
+            xra = None
 
-        hist = np.histogram(data, bins=kwargs['nbins'], range=xr)
+        hist = np.histogram(data, bins=kwargs['nbins'], range=xra)
         bins = (hist[1][0:-1] + hist[1][1:])/2.
-        ax = self._fig_dict[key]['axs'].flat[iamp]
-        ax.plot(bins, hist[0])
+        axes = self._fig_dict[key]['axs'].flat[iamp]
+        axes.plot(bins, hist[0])
 
     def plot(self, key, iamp, xdata, ydata, **kwargs):
         """Plot x versus y data for one amp
@@ -304,10 +304,10 @@ class FigureDict:
         means = kwargs.pop('means')
         stds = kwargs.pop('stds')
 
-        ax = self._fig_dict[key]['axs'].flat[iamp]
-        ax.fill_between(xvals, kwargs.pop('mins'), kwargs.pop('maxs'), color='green')
-        ax.fill_between(xvals, means-stds, means+stds, color='yellow')
-        ax.plot(xvals, kwargs.pop('medians'), '.')
+        axes = self._fig_dict[key]['axs'].flat[iamp]
+        axes.fill_between(xvals, kwargs.pop('mins'), kwargs.pop('maxs'), color='green')
+        axes.fill_between(xvals, means-stds, means+stds, color='yellow')
+        axes.plot(xvals, kwargs.pop('medians'), '.')
 
 
     def plot_single(self, key, xdata, ydata):
@@ -317,14 +317,14 @@ class FigureDict:
         @param xdata (numpy.ndarray)   Data to histogram
         @param ydata (numpy.ndarray)   Data to histogram
         """
-        self._fig_dict[key]['ax'].plot(xdata, ydata)
+        self._fig_dict[key]['axes'].plot(xdata, ydata)
 
-    def plot_xy_axs_from_tabledict(self, fd, key, idx, plotkey, **kwargs):
+    def plot_xy_axs_from_tabledict(self, dtables, key, idx, plotkey, **kwargs):
         """Plot x versus y data for each sub-figure using data in a table
 
-        @param fd (TableDict)          Data
+        @param dtables (TableDict)     Data
         @param key (str)               Key for the data
-        @param idx (int)               Axes index
+        @param idx (int)               Axis index
         @param plotkey (str)           Key for the plot
         @param kwargs:
            x_name (str) Name for the x-axis data
@@ -337,22 +337,22 @@ class FigureDict:
         ymin = kwargs.get('ymin', -np.inf)
         ymax = kwargs.get('ymax', np.inf)
 
-        file_data = fd.get_table('files')
-        df = fd.get_table(key)
-        xcol = df[x_name]
-        for col in df.columns:
+        file_data = dtables['files']
+        dtab = dtables[key]
+        xcol = dtab[x_name]
+        for col in dtab.columns:
             if col.find(y_name) != 0:
                 continue
-            valarray = df[col]
+            valarray = dtab[col]
             for row, test_type in zip(valarray.T, file_data['testtype']):
                 self.plot(plotkey, idx, xcol, row.clip(ymin, ymax),
                           color=TESTCOLORMAP.get(test_type, 'gray'))
 
 
-    def plot_xy_from_tabledict(self, fd, key, plotkey, **kwargs):
+    def plot_xy_from_tabledict(self, dtables, key, plotkey, **kwargs):
         """Plot x versus y data for each column in a table on a single plot
 
-        @param fd (TableDict)          Data
+        @param dtables (TableDict)     Data
         @param key (str)               Key for the data
         @param plotkey (str)           Key for the plot
         @param kwargs:
@@ -366,15 +366,15 @@ class FigureDict:
         ymin = kwargs.get('ymin', -np.inf)
         ymax = kwargs.get('ymax', np.inf)
 
-        df = fd.get_table(key)
-        xcol = df[x_name]
-        for col in df.columns:
+        dtab = dtables.get_table(key)
+        xcol = dtab[x_name]
+        for col in dtab.columns:
             if col.find(y_name) != 0:
                 continue
-            self.plot_single(plotkey, xcol, df[col].clip(ymin, ymax))
+            self.plot_single(plotkey, xcol, dtab[col].clip(ymin, ymax))
 
 
-    def plot_xy_amps_from_tabledict(self, fd, key, plotkey, **kwargs):
+    def plot_xy_amps_from_tabledict(self, dtables, key, plotkey, **kwargs):
         """Plot x versus y data for each column in a table for each sub-plot
 
         @param fd (TableDict)          Data
@@ -389,14 +389,14 @@ class FigureDict:
         ymin = kwargs.get('ymin', -np.inf)
         ymax = kwargs.get('ymax', np.inf)
 
-        file_data = fd.get_table('files')
-        df = fd.get_table(key)
-        xcol = df[x_name]
-        for col in df.columns:
+        file_data = dtables['files']
+        dtab = dtables[key]
+        xcol = dtab[x_name]
+        for col in dtab.columns:
             if col.find(y_name) != 0:
                 continue
             amp = int(col.split('_')[-1][1:])
-            valarray = df[col]
+            valarray = dtab[col]
             if len(valarray.shape) == 1:
                 rows = [valarray]
                 ttypes = [file_data['testtype'][0]]
@@ -436,27 +436,27 @@ class FigureDict:
             vrange = interval.get_limits(np.abs(data.flatten()))
 
         fig = plt.figure(figsize=figsize)
-        ax = fig.add_subplot(111)
+        axes = fig.add_subplot(111)
 
         if title is not None:
-            ax.set_title(title)
+            axes.set_title(title)
 
         norm = ImageNormalize(vmin=vrange[0], vmax=vrange[1])
-        im = ax.imshow(data, interpolation='none', norm=norm)
-        cbar = plt.colorbar(im)
+        img = axes.imshow(data, interpolation='none', norm=norm)
+        cbar = plt.colorbar(img)
 
         if slots is not None:
             amps = 16
             major_locs = [i*amps - 0.5 for i in range(len(slots) + 1)]
             minor_locs = [amps//2 + i*amps for i in range(len(slots))]
-            for axis in (ax.xaxis, ax.yaxis):
+            for axis in (axes.xaxis, axes.yaxis):
                 axis.set_tick_params(which='minor', length=0)
                 axis.set_major_locator(ticker.FixedLocator(major_locs))
                 axis.set_major_formatter(ticker.FixedFormatter(['']*len(major_locs)))
                 axis.set_minor_locator(ticker.FixedLocator(minor_locs))
                 axis.set_minor_formatter(ticker.FixedFormatter(slots))
 
-        o_dict = dict(fig=fig, ax=ax, im=im, cbar=cbar)
+        o_dict = dict(fig=fig, axes=axes, img=img, cbar=cbar)
         self._fig_dict[key] = o_dict
         return o_dict
 
@@ -481,16 +481,16 @@ class FigureDict:
         title = kwargs.get('title', None)
         clabel = kwargs.pop('clabel', None)
         figsize = kwargs.pop('figsize', (14, 8))
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
-        ax.set_xlabel(kwargs.pop('xlabel', "Amp. Index"))
-        ax.set_ylabel(kwargs.pop('ylabel', "Slot Index"))
-        im = ax.imshow(data, interpolation='nearest', **kwargs)
+        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+        axes.set_xlabel(kwargs.pop('xlabel', "Amp. Index"))
+        axes.set_ylabel(kwargs.pop('ylabel', "Slot Index"))
+        img = axes.imshow(data, interpolation='nearest', **kwargs)
         if title is not None:
-            ax.set_title(title)
-        cbar = fig.colorbar(im, ax=ax)
+            axes.set_title(title)
+        cbar = fig.colorbar(img, axis=axes)
         if clabel is not None:
             cbar.ax.set_ylabel(clabel, rotation=-90, va='bottom')
-        o_dict = dict(fig=fig, ax=ax, im=im, cbar=cbar)
+        o_dict = dict(fig=fig, axes=axes, img=img, cbar=cbar)
         self._fig_dict[key] = o_dict
         return o_dict
 
@@ -502,9 +502,9 @@ class FigureDict:
         @param butler (`Butler`)  The data butler
         @param ccd (`MaskedCCD`)  name of the file containing data to be plotted
         @param kwargs
-            vmin (float)          minimum value for color axis
-            vmax (float)          maximum value for color axis
-            bias (str)            method used to subtract bias 'none', 'mean', 'row', 'func' or 'spline'.
+            vmin (float)          minimum value for color axes
+            vmax (float)          maximum value for color axes
+            bias (str)            method used to subtract bias
             superbias (str)       file with superbias image to subtract
             subtract_mean (bool)  Flag to subtract mean value from each image
 
@@ -535,14 +535,14 @@ class FigureDict:
             else:
                 superbias_im = None
 
-            im = get_raw_image(butler, ccd, amp)
-            image = unbias_amp(im, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+            img = get_raw_image(butler, ccd, amp)
+            image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
 
-            dd = image.array
+            darray = image.array
             if subtract_mean:
-                dd -= dd.mean()
+                darray -= darray.mean()
 
-            axs[idx].imshow(dd, origin='low', interpolation='none', vmin=vmin, vmax=vmax)
+            axs[idx].imshow(darray, origin='low', interpolation='none', vmin=vmin, vmax=vmax)
             axs[idx].set_title('Amp {}'.format(amp))
 
         plt.tight_layout()
@@ -561,7 +561,7 @@ class FigureDict:
             vmin (float)          minimum value for x-axis
             vmax (float)          maximum value for x-axis
             nbins (int)           number of bins to use in historam
-            bias (str)            method used to subtract bias 'none', 'mean', 'row', 'func' or 'spline'.
+            bias (str)            method used to subtract bias
             superbias (str)       file with superbias image to subtract
             subtract_mean (bool)  Flag to subtract mean value from each image
 
@@ -586,7 +586,7 @@ class FigureDict:
 
             regions = get_geom_regions(butler, ccd, amp)
             serial_oscan = regions['serial_overscan']
-            im = get_raw_image(butler, ccd, amp)
+            img = get_raw_image(butler, ccd, amp)
             if superbias_frame is not None:
                 if butler is not None:
                     superbias_im = get_raw_image(None, superbias_frame, amp+1)
@@ -595,17 +595,17 @@ class FigureDict:
             else:
                 superbias_im = None
 
-            image = unbias_amp(im, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+            image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
             regions = get_geom_regions(butler, ccd, amp)
             frames = get_image_frames_2d(image, regions)
 
-            dd = frames[region]
+            darray = frames[region]
 
             if subtract_mean:
-                dd -= dd.mean()
+                darray -= darray.mean()
 
-            ax = axs.flat[idx]
-            ax.hist(dd.flat, bins=nbins, range=(vmin, vmax))
+            axes = axs.flat[idx]
+            axes.hist(darray.flat, bins=nbins, range=(vmin, vmax))
 
         plt.tight_layout()
 
@@ -626,18 +626,18 @@ class FigureDict:
             ylabel (str)          y-axis label
             vmin (float)          minimum value for color axis
             vmax (float)          maximum value for color axis
-            bias (str)            method used to subtract bias 'none', 'mean', 'row', 'func' or 'spline'.
+            bias (str)            method used to subtract bias
         """
         kwcopy = kwargs.copy()
         yerrs = kwcopy.pop('yerrs', None)
         title = kwcopy.pop('title', None)
         fig = plt.figure(figsize=kwcopy.pop('figsize', (14, 8)))
-        ax = fig.add_subplot(111)
+        axes = fig.add_subplot(111)
 
         if title is not None:
-            ax.set_title(title)
+            axes.set_title(title)
 
-        ax.set_ylabel(kwcopy.pop('ylabel', "Value"))
+        axes.set_ylabel(kwcopy.pop('ylabel', "Value"))
         n_runs = len(runs)
         n_data = yvals.size
         n_amps = int(n_data / n_runs)
@@ -645,16 +645,16 @@ class FigureDict:
         xvals = np.linspace(0, n_data-1, n_data)
 
         if yerrs is None:
-            ax.plot(xvals, yvals, 'b.', **kwcopy)
+            axes.plot(xvals, yvals, 'b.', **kwcopy)
         else:
-            ax.errorbar(xvals, yvals, yerr=yerrs, fmt='b.', **kwcopy)
+            axes.errorbar(xvals, yvals, yerr=yerrs, fmt='b.', **kwcopy)
 
         locs = [n_amps//2 + i*n_amps for i in range(n_runs)]
-        ax.set_xticks(locs)
-        ax.set_xticklabels(runs, rotation=90)
+        axes.set_xticks(locs)
+        axes.set_xticklabels(runs, rotation=90)
         fig.tight_layout()
 
-        o_dict = dict(fig=fig, ax=ax)
+        o_dict = dict(fig=fig, axes=axes)
         self._fig_dict[key] = o_dict
         return o_dict
 

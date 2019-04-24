@@ -113,10 +113,10 @@ class BiasVRowTask(BiasAnalysisTask):
         for i, amp in enumerate(amps):
             regions = get_geom_regions(butler, ccd, amp)
             serial_oscan = regions['serial_overscan']
-            im = get_raw_image(butler, ccd, amp)
-            bim = imutil.bias_image(im, serial_oscan, bias_method=bias_type)
-            bim_row_mean = bim[serial_oscan].getArray().mean(1)
+            img = get_raw_image(butler, ccd, amp)
+            bimg = imutil.bias_image(img, serial_oscan, bias_method=bias_type)
+            bimg_row_mean = bimg[serial_oscan].getArray().mean(1)
             key_str = "biasval_%s_a%02i" % (slot, i)
             if key_str not in data:
-                data[key_str] = np.ndarray((len(bim_row_mean), nfiles))
-            data[key_str][:, ifile] = bim_row_mean
+                data[key_str] = np.ndarray((len(bimg_row_mean), nfiles))
+            data[key_str][:, ifile] = bimg_row_mean

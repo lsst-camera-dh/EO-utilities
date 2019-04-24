@@ -17,7 +17,7 @@ from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES,\
-    get_readout_frequencies_from_ccd, get_ccd_from_id, get_raw_image,\
+    get_readout_freqs_from_ccd, get_ccd_from_id, get_raw_image,\
     get_geom_regions, get_amp_list, get_image_frames_2d, array_struct, unbias_amp
 
 from .file_utils import get_superbias_frame,\
@@ -82,7 +82,7 @@ class BiasFFTTask(BiasAnalysisTask):
 
             ccd = get_ccd_from_id(butler, bias_file, mask_files)
             if ifile == 0:
-                freqs_dict = get_readout_frequencies_from_ccd(butler, ccd)
+                freqs_dict = get_readout_freqs_from_ccd(butler, ccd)
             for key in REGION_KEYS:
                 freqs = freqs_dict['freqs_%s' % key]
                 nfreqs = len(freqs)
@@ -147,7 +147,7 @@ class BiasFFTTask(BiasAnalysisTask):
         for i, amp in enumerate(amps):
             regions = get_geom_regions(butler, ccd, amp)
             serial_oscan = regions['serial_overscan']
-            im = get_raw_image(butler, ccd, amp)
+            img = get_raw_image(butler, ccd, amp)
             if superbias_frame is not None:
                 if butler is not None:
                     superbias_im = get_raw_image(None, superbias_frame, amp+1)
@@ -155,7 +155,7 @@ class BiasFFTTask(BiasAnalysisTask):
                     superbias_im = get_raw_image(None, superbias_frame, amp)
             else:
                 superbias_im = None
-            image = unbias_amp(im, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+            image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
             frames = get_image_frames_2d(image, regions)
             key_str = "fftpow_%s_a%02i" % (slot, i)
 
@@ -217,7 +217,7 @@ class SuperbiasFFTTask(BiasFFTTask):
 
         fft_data = {}
 
-        freqs_dict = get_readout_frequencies_from_ccd(None, superbias)
+        freqs_dict = get_readout_freqs_from_ccd(None, superbias)
         for key in REGION_KEYS:
             freqs = freqs_dict['freqs_%s' % key]
             nfreqs = len(freqs)
@@ -375,9 +375,9 @@ class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
         for key, val in data.items():
             data[key] = val.replace('_biasfft_sum.fits', '_biasfft_stats.fits')
 
-        KEEP_COLS = ['fftpow_maxval', 'fftpow_argmax', 'slot', 'amp']
+        keep_cols = ['fftpow_maxval', 'fftpow_argmax', 'slot', 'amp']
 
-        outtable = vstack_tables(data, tablename='biasfft_stats', keep_cols=KEEP_COLS)
+        outtable = vstack_tables(data, tablename='biasfft_stats', keep_cols=keep_cols)
 
         dtables = TableDict()
         dtables.add_datatable('biasfft_sum', outtable)

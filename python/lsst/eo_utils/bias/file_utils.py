@@ -100,7 +100,7 @@ SBIAS_SUMMARY_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots',
 def raft_bias_tablename(caller, **kwargs):
     """Return the filename for a raft level plot
 
-    The format is {outdir}/tables/{raft}/bias/{raft}-{run}-RFT_b-{bias_type}_s-{superbias_type}{suffix}
+    The format is {outdir}/tables/{raft}/bias/{raft}-{run}-RFT_b-{bias}_s-{superbias}{suffix}
 
     @param caller ('Task')  Object calling this function
     @param kwargs:          Passed to get_bias_suffix and get_raft_file_basename
@@ -115,7 +115,7 @@ def raft_bias_tablename(caller, **kwargs):
 def raft_bias_plotname(caller, **kwargs):
     """Return the filename for a raft level plot
 
-    The format is {outdir}/plots/{raft}/bias/{raft}-{run}-{slot}_b-{bias_type}_s-{superbias_type}{suffix}
+    The format is {outdir}/plots/{raft}/bias/{raft}-{run}-{slot}_b-{bias}_s-{superbias}{suffix}
 
     @param caller ('Task')  Object calling this function
     @param kwargs:          Passed to get_bias_suffix and get_raft_file_basename
@@ -170,7 +170,7 @@ def get_bias_suffix(**kwargs):
 
 def get_superbias_suffix(**kwargs):
     """Return the suffix for bias files
-    
+
     @param kwargs (dict)
         superbias_type(str)
         std (bool)

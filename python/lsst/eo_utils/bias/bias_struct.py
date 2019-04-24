@@ -134,12 +134,12 @@ class BiasStructTask(BiasAnalysisTask):
         for i, amp in enumerate(amps):
             regions = get_geom_regions(butler, ccd, amp)
             serial_oscan = regions['serial_overscan']
-            im = get_raw_image(butler, ccd, amp)
+            img = get_raw_image(butler, ccd, amp)
             if superbias_frame is not None:
                 superbias_im = get_raw_image(butler, superbias_frame, amp)
             else:
                 superbias_im = None
-            image = unbias_amp(im, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+            image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
             frames = get_image_frames_2d(image, regions)
 
             for key, region in zip(REGION_KEYS, REGION_NAMES):

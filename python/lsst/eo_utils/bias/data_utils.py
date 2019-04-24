@@ -29,7 +29,7 @@ def stack_by_amps(stack_arrays, butler, ccd, **kwargs):
 
         regions = get_geom_regions(butler, ccd, amp)
         serial_oscan = regions['serial_overscan']
-        im = get_raw_image(butler, ccd, amp)
+        img = get_raw_image(butler, ccd, amp)
         if superbias_frame is not None:
             if butler is not None:
                 superbias_im = get_raw_image(None, superbias_frame, amp+1)
@@ -37,7 +37,7 @@ def stack_by_amps(stack_arrays, butler, ccd, **kwargs):
                 superbias_im = get_raw_image(None, superbias_frame, amp)
         else:
             superbias_im = None
-        image = unbias_amp(im, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+        image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
         frames = get_image_frames_2d(image, regions)
 
         for key, region in zip(REGION_KEYS, REGION_NAMES):

@@ -42,7 +42,7 @@ SFLAT_SUMMARY_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots',
 def raft_flat_tablename(caller, **kwargs):
     """Return the filename for a raft level plot
 
-    The format is {outdir}/tables/{raft}/flat/{raft}-{run}-RFT_b-{flat_type}_s-{superflat_type}{suffix}
+    The format is {outdir}/tables/{raft}/flat/{raft}-{run}-RFT_b-{bias}_s-{superbias}{suffix}
 
     @param caller ('Task')  Object calling this function
     @param kwargs:          Passed to get_flat_suffix and get_raft_file_basename
@@ -56,7 +56,7 @@ def raft_flat_tablename(caller, **kwargs):
 def raft_flat_plotname(caller, **kwargs):
     """Return the filename for a raft level plot
 
-    The format is {outdir}/plots/{raft}/flat/{raft}-{run}-{slot}_b-{flat_type}_s-{superflat_type}{suffix}
+    The format is {outdir}/plots/{raft}/flat/{raft}-{run}-{slot}_b-{bias}_s-{superbias}{suffix}
 
     @param caller ('Task')  Object calling this function
     @param kwargs:          Passed to get_flat_suffix and get_raft_file_basename
@@ -70,7 +70,7 @@ def raft_flat_plotname(caller, **kwargs):
 def slot_flat_tablename(caller, **kwargs):
     """Return the filename for a plot made from a flat file
 
-    The format is {outdir}/tables/{raft}/flat/{raft}-{run}-{slot}_b-{flat_type}_s-{superflat_type}
+    The format is {outdir}/tables/{raft}/flat/{raft}-{run}-{slot}_b-{bias}_s-{superbias}
 
     @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_flat_suffix and get_slot_file_basename
@@ -84,7 +84,7 @@ def slot_flat_tablename(caller, **kwargs):
 def slot_flat_plotname(caller, **kwargs):
     """Return the filename for a plot made from a flat file
 
-    The format is {outdir}/plots/{raft}/flat/{raft}-{run}-{slot}_b-{flat_type}_s-{superflat_type}
+    The format is {outdir}/plots/{raft}/flat/{raft}-{run}-{slot}_b-{bias}_s-{superbias}
 
     @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_flat_suffix and get_slot_file_basename
@@ -98,7 +98,7 @@ def slot_flat_plotname(caller, **kwargs):
 def slot_superflat_tablename(caller, **kwargs):
     """Return the filename for a plot made from a superflat file
 
-    The format is {outdir}/tables/{raft}/superflat/{raft}-{run}-{slot}_b-{superflat_type}
+    The format is {outdir}/tables/{raft}/superflat/{raft}-{run}-{slot}_b-{bias}
 
     @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_superflat_suffix and get_slot_file_basename
@@ -124,7 +124,7 @@ def slot_superflat_plotname(caller, **kwargs):
 def raft_superflat_tablename(caller, **kwargs):
     """Return the filename for a plot made from a superflat file
 
-    The format is {outdir}/tables/{raft}/superflat/{raft}-{run}-{slot}_b-{superflat_type}
+    The format is {outdir}/tables/{raft}/superflat/{raft}-{run}-{slot}_b-{bias}
 
     @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_superflat_suffix and get_raft_file_basename
@@ -138,7 +138,7 @@ def raft_superflat_tablename(caller, **kwargs):
 def raft_superflat_plotname(caller, **kwargs):
     """Return the filename for a plot made from a superflat file
 
-    The format is {outdir}/plots/{raft}/superflat/{raft}-{run}-{slot}_b-{superflat_type}
+    The format is {outdir}/plots/{raft}/superflat/{raft}-{run}-{slot}_b-{bias}
 
     @param caller ('Task')  Object calling this function
     @param kwargs           Passed to get_superflat_suffix and get_raft_file_basename

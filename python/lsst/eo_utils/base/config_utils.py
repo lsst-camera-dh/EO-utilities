@@ -9,6 +9,7 @@ import copy
 from collections import OrderedDict
 
 import lsst.pex.config as pexConfig
+import lsst.pipe.base as pipeBase
 
 from .defaults import DEFAULT_OUTDIR, DEFAULT_LOGFILE, DEFAULT_NBINS, DEFAULT_BATCH_ARGS
 
@@ -147,7 +148,7 @@ def add_arguments(parser, arg_dict):
 
 
 
-def add_pex_arguments(parser, pex_class, exclude):
+def add_pex_arguments(parser, pex_class, exclude=None):
     """Adds a set of arguments to the argument parser (or parser group)
 
     @param parser (`argumentParser`)   The argument parser we are using
@@ -279,10 +280,7 @@ def setup_parser(argnames, arg_dict=None, **kwargs):
                                      description=description)
 
     use_arg_dict = get_config_defaults(argnames, arg_dict, **kwargs)
-
-    arg_group = parser.add_argument_group("handler", "Arguments for analysis wrapper")
-
-    add_arguments(arg_group, use_arg_dict)
+    add_arguments(parser, use_arg_dict)
     return parser
 
 
@@ -320,3 +318,47 @@ def copy_pex_fields(field_names, target_class, library_class):
         else:
             raise TypeError("Field %s in class %s\n is not a pexConfig.Field" %
                             (fname, type(library_class)))
+
+
+
+class Configurable(pipeBase.Task):
+    """A small interface on top of `pipeBase.Task` to make
+    it easier to handle configuration from various sources
+    """
+    _DefaultName = "Configurable"
+
+    def __init__(self, **kwargs):
+        """ C'tor
+
+        @param kwargs:    Used to override configruation
+        """
+        super(Configurable, self).__init__()
+        self.safe_update(**kwargs)
+
+    def safe_update(self, **kwargs):
+        """ C'tor
+        Update the configuration from a set of kw
+
+        @returns (dict)   The key, val pairs not in the configuration class
+        """
+        base_dict = self.config.toDict()
+        update_dict = {}
+        remain_dict = {}
+        for key, val in kwargs.items():
+            if key in base_dict:
+                update_dict[key] = val
+            else:
+                remain_dict[key] = val
+        self.config.update(**update_dict)
+        return remain_dict
+
+
+    def extract_config_vals(self, def_dict):
+        """ C'tor
+        Extract a set of configuration values to a dict
+
+        @param data (dict)         Dictionary pointing to the bias and mask files
+
+        @returns (dict)            Dictionary with the output values
+        """
+        return copy_dict(self.config.toDict(), def_dict)

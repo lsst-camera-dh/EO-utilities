@@ -1,11 +1,13 @@
-"""Utilities for offline data analysis of LSST Electrical-Optical testing"""
+"""Utilities for offline data analysis of LSST Electrical-Optical testing
+
+This module contains base classes for various types of analyses.
+"""
 
 import lsst.pex.config as pexConfig
-import lsst.pipe.base as pipeBase
 
 from .file_utils import makedir_safe
 
-from .config_utils import EOUtilConfig, copy_dict
+from .config_utils import EOUtilConfig, Configurable
 
 from .data_utils import TableDict
 
@@ -20,7 +22,7 @@ class BaseAnalysisConfig(pexConfig.Config):
     butler_repo = EOUtilConfig.clone_param('butler_repo')
 
 
-class BaseAnalysisTask(pipeBase.Task):
+class BaseAnalysisTask(Configurable):
     """Simple functor class to tie together standard data analysis
     """
     ConfigClass = BaseAnalysisConfig
@@ -34,31 +36,7 @@ class BaseAnalysisTask(pipeBase.Task):
 
         @param kwargs:    Used to override configruation
         """
-        super(BaseAnalysisTask, self).__init__()
-        self.safe_update(**kwargs)
-
-
-    def safe_update(self, **kwargs):
-        """ C'tor
-        Update the configuration from a set of kw
-        """
-        base_dict = self.config.toDict()
-        update_dict = {}
-        for key, val in kwargs.items():
-            if key in base_dict:
-                update_dict[key] = val
-        self.config.update(**update_dict)
-
-
-    def extract_config_vals(self, def_dict):
-        """ C'tor
-        Extract a set of configuration values to a dict
-
-        @param data (dict)         Dictionary pointing to the bias and mask files
-
-        @returns (dict)            Dictionary with the output values
-        """
-        return copy_dict(self.config.toDict(), def_dict)
+        Configurable.__init__(**kwargs)
 
     def __call__(self, butler, data, **kwargs):
         """Tie together the functions
@@ -69,7 +47,7 @@ class BaseAnalysisTask(pipeBase.Task):
         raise NotImplementedError('BaseAnalysisTask.__call__')
 
     @classmethod
-    def parseAndRun(cls):
+    def parse_and_run(cls):
         """Run the analysis"""
         functor = cls()
         handler = cls.iteratorClass(functor)

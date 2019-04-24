@@ -4,20 +4,26 @@ import sys
 import os
 
 import lsst.pex.config as pexConfig
-import lsst.pipe.base as pipeBase
 
 from .defaults import ALL_SLOTS
 
-from .config_utils import EOUtilConfig, setup_parser, add_pex_arguments, make_argstring, get_config_values
+from .config_utils import EOUtilConfig, Configurable,\
+    setup_parser, add_pex_arguments,\
+    make_argstring, get_config_values
 
 from .file_utils import get_hardware_type_and_id, get_raft_names_dc, read_runlist
 
-from .butler_utils import getButler, get_hardware_info, get_raft_names_butler
+from .butler_utils import get_butler_by_repo, get_hardware_info, get_raft_names_butler
 
 from .batch_utils import dispatch_job
 
 
-class AnalysisHandlerConfig:
+class AnalysisHandlerConfig(pexConfig.Config):
+    """Configuration for EO analysis handler
+
+    These control the job execution options, such as
+    sending the job to the batch farm.
+    """
     interactive = EOUtilConfig.clone_param('interactive')
     batch = EOUtilConfig.clone_param('batch')
     dry_run = EOUtilConfig.clone_param('dry_run')
@@ -26,7 +32,7 @@ class AnalysisHandlerConfig:
     butler_repo = EOUtilConfig.clone_param('butler_repo')
 
 
-class AnalysisHandler(pipeBase.Task):
+class AnalysisHandler(Configurable):
     """Small class to iterate run an analysis, and provied an interface to the batch system
 
     Sub-classes will need to specify a data_func static member to get the data to analyze.
@@ -39,26 +45,14 @@ class AnalysisHandler(pipeBase.Task):
 
     exclude_pars = []
 
-    def __init__(self, task):
+    def __init__(self, task, **kwargs):
         """C'tor
         @param task (`AnalysisTask`)     Task that this will run
         """
+        Configurable.__init__(self, **kwargs)
         self._task = task
 
-
-    def safe_update(self, **kwargs):
-        """ C'tor
-        Update the configuration from a set of kw
-        """
-        base_dict = self.config.toDict()
-        update_dict = {}
-        for key, val in kwargs.items():
-            if key in base_dict:
-                update_dict[key] = val
-        self.config.update(**update_dict)
-
-
-    def get_butler(self, **kwargs):
+    def get_butler(self):
         """Return a data Butler
 
         @param: bulter_repo (str)  Key specifying the data repo
@@ -66,9 +60,7 @@ class AnalysisHandler(pipeBase.Task):
 
         @returns (`Butler`)        The requested data Butler
         """
-        self.safe_update(**kwargs)
-        return getButler(self.config.butler_repo)
-
+        return get_butler_by_repo(self.config.butler_repo)
 
     def run_analysis(self, **kwargs):
         """Run the analysis over all of the requested objects.
@@ -85,9 +77,12 @@ class AnalysisHandler(pipeBase.Task):
         self.safe_update(**kwargs)
         if self.config.interactive:
             #FIXME
-            arg_dict = get_config_values(self.argnames, **kwargs)
+            #arg_dict = get_config_values(self.argnames, **kwargs)
+            pass
         else:
-            parser = setup_parser(self.argnames)
+            parser = setup_parser([])
+            handler_group = parser.add_argument_group("handler", "Arguments for job handler")
+            add_pex_arguments(handler_group, self.ConfigClass)
             task_group = parser.add_argument_group("task", "Arguments for analysis task")
             add_pex_arguments(task_group, self._task.ConfigClass, self.exclude_pars)
             args = parser.parse_args()
@@ -131,11 +126,12 @@ class SimpleAnalysisHandler(AnalysisHandler):
 
             The remaining kwargs are passed to the job
         """
+        kwremain = self.safe_update(**kwargs)
         if self.config.batch is None:
-            self.call_analysis_task(**kwargs)
+            self.call_analysis_task(**kwremain)
         else:
             jobname = os.path.basename(sys.argv[0])
-            dispatch_kw = dict(optstring=make_argstring, 
+            dispatch_kw = dict(optstring=make_argstring(**kwremain),
                                batch_args=self.config.batch_args,
                                dry_run=self.config.dry_run,
                                use_batch=True)
@@ -144,6 +140,11 @@ class SimpleAnalysisHandler(AnalysisHandler):
 
 
 class AnalysisIteratorConfig(AnalysisHandlerConfig):
+    """Configuration for EO analysis iterator
+
+    These control the job iteration options, basically
+    the list of runs to loop over.
+    """
     dataset = EOUtilConfig.clone_param('dataset')
     runs = EOUtilConfig.clone_param('runs')
 
@@ -249,28 +250,25 @@ class AnalysisIterator(AnalysisHandler):
             slots (list)              List of slot for parallel analysis
             butler_repo (str)         Name of the Butler repo
         """
-        runs = kwargs.pop('runs', None)
-        dataset = kwargs.pop('dataset', None)
-        batch = kwargs.pop('batch', None)
-        butler_repo = kwargs.get('butler_repo', None)
+        kw_remain = self.safe_update(**kwargs)
 
-        if dataset is not None and runs is not None:
+        if self.config.dataset is not None and self.config.runs is not None:
             raise ValueError("Either runs or dataset should be set, not both")
-        if dataset is not None:
-            runlist = read_runlist("%s_runs.txt" % dataset)
+        if self.config.dataset is not None:
+            runlist = read_runlist("%s_runs.txt" % self.config.dataset)
             runs = [pair[1] for pair in runlist]
-        elif runs is not None:
-            pass
+        elif self.config.runs is not None:
+            runs = self.config.runs
         else:
             raise ValueError("Either runs or dataset must be set")
 
-        if butler_repo is None:
+        if self.config.butler_repo is None:
             butler = None
         else:
-            butler = self.get_butler(butler_repo)
+            butler = self.get_butler()
 
         for run in runs:
-            self.dispatch_single_run(run, butler, batch, **kwargs)
+            self.dispatch_single_run(run, butler, self.config.batch, **kw_remain)
 
 
 def iterate_over_slots(analysis_task, butler, data_files, **kwargs):
@@ -310,6 +308,8 @@ def iterate_over_rafts(analysis_task, butler, data_files, **kwargs):
 
 
 class AnalysisBySlotConfig(AnalysisIteratorConfig):
+    """Additional configuration for EO analysis iterator for slot-based analysis
+    """
     slots = EOUtilConfig.clone_param('slots')
 
 
@@ -360,6 +360,8 @@ class AnalysisBySlot(AnalysisIterator):
 
 
 class AnalysisByRaftConfig(AnalysisIteratorConfig):
+    """Additional configuration for EO analysis iterator for raft-based analysis
+    """
     slots = EOUtilConfig.clone_param('rafts')
 
 
@@ -382,7 +384,6 @@ class AnalysisByRaft(AnalysisIterator):
         @param task (`AnalysisTask`)     Task that this will run
         """
         AnalysisIterator.__init__(self, task)
-        self.argnames += ['rafts']
 
     def get_data(self, butler, datakey, **kwargs):
         """Function to get the data
@@ -458,15 +459,14 @@ class SummaryAnalysisIterator(AnalysisHandler):
 
         If batch is not None then it will send the jobs the the batch.
         """
-        batch = kwargs.pop('batch')
-        dataset = kwargs.pop('dataset')
+        kw_remain = self.safe_upate(**kwargs)
 
-        if batch is None:
-            self.call_analysis_task(dataset, **kwargs)
+        if self.config.batch is None:
+            self.call_analysis_task(self.config.dataset, **kw_remain)
         else:
             jobname = os.path.basename(sys.argv[0])
-            logfile = kwargs.get('logfile', 'temp.log')
-            batch_args = kwargs.pop('batch_args')
-            kwargs['optstring'] = make_argstring(kwargs)
-            kwargs['batch_args'] = batch_args
-            dispatch_job(jobname, logfile, dataset=dataset, **kwargs)
+            kw_remain['optstring'] = make_argstring(kw_remain)
+            kw_remain['batch_args'] = self.config.batch_args
+            kw_remain['batch'] = self.config.batch
+            kw_remain['dataset'] = self.config.dataset
+            dispatch_job(jobname, self.config.logfile, **kw_remain)

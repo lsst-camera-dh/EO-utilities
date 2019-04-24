@@ -56,13 +56,13 @@ class PTCTask(FlatAnalysisTask):
         FlatAnalysisTask.__init__(self, **kwargs)
         self.stat_ctrl = afwMath.StatisticsControl()
 
-    def mean(self, im):
+    def mean(self, img):
         """Return the mean of an image"""
-        return afwMath.makeStatistics(im, afwMath.MEAN, self.stat_ctrl).getValue()
+        return afwMath.makeStatistics(img, afwMath.MEAN, self.stat_ctrl).getValue()
 
-    def var(self, im):
+    def var(self, img):
         """Return the variance of an image"""
-        return afwMath.makeStatistics(im, afwMath.STDEVCLIP, self.stat_ctrl).getValue()**2
+        return afwMath.makeStatistics(img, afwMath.STDEVCLIP, self.stat_ctrl).getValue()**2
 
 
     def extract(self, butler, data, **kwargs):
@@ -216,9 +216,9 @@ class PTCStatsTask(FlatAnalysisTask):
                 med_gain = np.median(mean/var)
                 frac_resids = np.abs((var - mean/med_gain)/var)
                 index = np.where(frac_resids < 0.2)
-                p0 = 0, med_gain
+                init_pars = 0, med_gain
                 try:
-                    results = scipy.optimize.leastsq(residuals, p0, full_output=1,
+                    results = scipy.optimize.leastsq(residuals, init_pars, full_output=1,
                                                      args=(mean[index], var[index]))
                     pars, cov = results[:2]
                     ptc_alpha = pars[0]
@@ -273,14 +273,14 @@ class PTCStatsTask(FlatAnalysisTask):
         for slot in ALL_SLOTS:
             figs.setup_amp_plots_grid(slot, xlabel="Mean [ADU]", ylabel="Var [ADU**2]")
             for amp in range(16):
-                ax = figs.get_amp_axes(slot, amp)
-                ax.set_xscale('log')
-                ax.set_yscale('log')
-                ax.scatter(ptc_means[idx], ptc_vars[idx])
+                axes = figs.get_amp_axes(slot, amp)
+                axes.set_xscale('log')
+                axes.set_yscale('log')
+                axes.scatter(ptc_means[idx], ptc_vars[idx])
                 xvals = np.logspace(log_xmins[idx], log_xmaxs[idx], 100)
                 ptc_pars = (alphas[idx], gains[idx])
                 yvals = ptc_func(ptc_pars, xvals)
-                ax.plot(xvals, yvals, 'r-')
+                axes.plot(xvals, yvals, 'r-')
                 idx += 1
 
     def plot(self, dtables, figs, **kwargs):
@@ -335,11 +335,11 @@ class PTCSummaryTask(FlatSummaryAnalysisTask):
         for key, val in data.items():
             data[key] = val.replace('.fits', insuffix)
 
-        REMOVE_COLS = ['ptc_means', 'ptc_vars']
+        remove_cols = ['ptc_means', 'ptc_vars']
 
         if not kwargs.get('skip', False):
             outtable = vstack_tables(data, tablename='ptc_stats',
-                                     remove_cols=REMOVE_COLS)
+                                     remove_cols=remove_cols)
 
         dtables = TableDict()
         dtables.add_datatable('ptc_sum', outtable)

@@ -114,17 +114,19 @@ class CorrelWRTOScanTask(BiasAnalysisTask):
         @param figs (`FigureDict`)    Object to store the figues
         """
         self.safe_update(**kwargs)
-        figs.setup_amp_plots_grid("oscorr-row", title="Correlation: imaging region and serial overscan",
+        figs.setup_amp_plots_grid("oscorr-row",
+                                  title="Correlation: imaging region and serial overscan",
                                   xlabel="Correlation",
                                   ylabel="Number of frames")
-        figs.setup_amp_plots_grid("oscorr-col", title="Correlation: imaging region and paralell overscan",
+        figs.setup_amp_plots_grid("oscorr-col",
+                                  title="Correlation: imaging region and paralell overscan",
                                   xlabel="Correlation",
                                   ylabel="Number of frames")
 
-        df = dtables.get_table("correl")
+        dtab = dtables.get_table("correl")
         for i in range(16):
-            s_correl = df['s_correl_a%02i' % i]
-            p_correl = df['p_correl_a%02i' % i]
+            s_correl = dtab['s_correl_a%02i' % i]
+            p_correl = dtab['p_correl_a%02i' % i]
             figs.get_obj('oscorr-row', 'axs').flat[i].hist(s_correl, bins=100, range=(-1., 1.))
             figs.get_obj('oscorr-col', 'axs').flat[i].hist(p_correl, bins=100, range=(-1., 1.))
 

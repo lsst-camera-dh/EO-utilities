@@ -86,7 +86,7 @@ class SuperbiasTask(BaseAnalysisTask):
         if stat_type.upper() in afwMath.__dict__:
             statistic = afwMath.__dict__[stat_type.upper()]
         else:
-            raise ValueError("Can not convert %s to a valid statistic to perform stacking" % stat_type)
+            raise ValueError("Can not convert %s to a valid statistic" % stat_type)
 
         sbias = make_superbias(butler, bias_files, statistic=statistic, bias_type=bias_type)
         return sbias
@@ -115,7 +115,8 @@ class SuperbiasTask(BaseAnalysisTask):
 
         if not kwargs.get('skip', False):
             out_data = self.extract(butler, slot_data, **kwargs)
-            imutil.writeFits(out_data, output_file, SBIAS_TEMPLATE, kwargs.get('bitpix', DEFAULT_BITPIX))
+            imutil.writeFits(out_data, output_file, SBIAS_TEMPLATE,
+                             kwargs.get('bitpix', DEFAULT_BITPIX))
             if butler is not None:
                 flip_data_in_place(output_file)
 
