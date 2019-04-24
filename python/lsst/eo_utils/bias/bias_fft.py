@@ -239,7 +239,7 @@ class SuperbiasFFTTask(BiasFFTTask):
 
 class BiasFFTStatsConfig(BiasAnalysisConfig):
     """Configuration for OscanAmpStackStatsTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='_biasfft_stats')
+    suffix = EOUtilConfig.clone_param('suffix', default='biasfft_stats')
     bias = EOUtilConfig.clone_param('bias')
     superbias = EOUtilConfig.clone_param('superbias')
 
@@ -296,7 +296,7 @@ class BiasFFTStatsTask(BiasAnalysisTask):
             sys.stdout.flush()
 
             basename = data[slot]
-            datapath = basename.replace('.fits', '_biasfft.fits')
+            datapath = basename.replace('_biasfft_stats.fits', '_biasfft.fits')
 
             dtables = TableDict(datapath, [datakey])
             table = dtables[datakey]
@@ -339,7 +339,7 @@ class BiasFFTStatsTask(BiasAnalysisTask):
 
 class BiasFFTSummaryConfig(BiasSummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='_biasfft_sum')
+    suffix = EOUtilConfig.clone_param('suffix', default='biasfft_sum')
     bias = EOUtilConfig.clone_param('bias')
     superbias = EOUtilConfig.clone_param('superbias')
 
@@ -373,7 +373,7 @@ class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
             sys.stdout.write("Ignoring butler in bias_fft_summary.extract\n")
 
         for key, val in data.items():
-            data[key] = val.replace('.fits', '_biasfft_stats.fits')
+            data[key] = val.replace('_biasfft_sum.fits', '_biasfft_stats.fits')
 
         KEEP_COLS = ['fftpow_maxval', 'fftpow_argmax', 'slot', 'amp']
 
