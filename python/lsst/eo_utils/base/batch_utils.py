@@ -22,7 +22,7 @@ def dispatch_job(jobname, logfile, **kwargs):
             dry_run (bool)     Print batch command but do not run it
             use_batch (bool)   Send command to batch farm
     """
-    bsub_args = kwargs.get('bsub_args', None)
+    batch_args = kwargs.get('batch_args', None)
     optstring = kwargs.get('optstring', None)
     dry_run = kwargs.get('dry_run', False)
     run_num = kwargs.get('run', None)
@@ -30,7 +30,7 @@ def dispatch_job(jobname, logfile, **kwargs):
     if kwargs.get('use_batch', False):
         sub_com = "bsub -o %s" % logfile
         if bsub_args is not None:
-            sub_com += " %s " % bsub_args
+            sub_com += " %s " % batch_args
     else:
         sub_com = ""
 
