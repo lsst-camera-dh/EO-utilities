@@ -6,7 +6,7 @@ from lsst.eo_utils.bias.bias_fft import SuperbiasFFTTask
 
 def main():
     """Hook for setup.py"""
-    SuperbiasFFTTask.run()
+    SuperbiasFFTTask.parseAndRun()
 
 if __name__ == '__main__':
     main()

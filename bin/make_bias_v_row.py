@@ -7,7 +7,7 @@ from lsst.eo_utils.bias.bias_v_row import BiasVRowTask
 
 def main():
     """Hook for setup.py"""
-    BiasVRowTask.run()
+    BiasVRowTask.parseAndRun()
 
 if __name__ == '__main__':
     main()

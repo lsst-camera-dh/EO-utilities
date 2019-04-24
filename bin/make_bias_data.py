@@ -6,7 +6,7 @@ from lsst.eo_utils.bias.bias_data import bias_data
 
 def main():
     """Hook for setup.py"""
-    bias_data.run()
+    bias_data.parseAndRun()
 
 if __name__ == '__main__':
     main()

@@ -9,7 +9,7 @@ from lsst.eo_utils.bias.oscan_correl import OscanCorrelTask
 
 def main():
     """Hook for setup.py"""
-    OscanCorrelTask.run()
+    OscanCorrelTask.parseAndRun()
 
 if __name__ == '__main__':
     main()

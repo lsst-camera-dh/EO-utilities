@@ -6,7 +6,7 @@ from lsst.eo_utils.bias.bias_fft import BiasFFTSummaryTask
 
 def main():
     """Hook for setup.py"""
-    BiasFFTSummaryTask.run()
+    BiasFFTSummaryTask.parseAndRun()
 
 if __name__ == '__main__':
     main()

@@ -6,7 +6,7 @@ from lsst.eo_utils.bias.correl_wrt_oscan import CorrelWRTOScanSummaryTask
 
 def main():
     """Hook for setup.py"""
-    CorrelWRTOScanSummaryTask.run()
+    CorrelWRTOScanSummaryTask.parseAndRun()
 
 if __name__ == '__main__':
     main()

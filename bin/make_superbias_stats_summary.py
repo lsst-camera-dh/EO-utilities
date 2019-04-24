@@ -6,7 +6,7 @@ from lsst.eo_utils.bias.superbias_stats import SuperbiasSummaryTask
 
 def main():
     """Hook for setup.py"""
-    SuperbiasSummaryTask.run()
+    SuperbiasSummaryTask.parseAndRun()
 
 if __name__ == '__main__':
     main()
