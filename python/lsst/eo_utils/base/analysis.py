@@ -69,7 +69,7 @@ class BaseAnalysisTask(pipeBase.Task):
         raise NotImplementedError('BaseAnalysisTask.__call__')
 
     @classmethod
-    def run(cls):
+    def parseAndRun(cls):
         """Run the analysis"""
         functor = cls()
         handler = cls.iteratorClass(functor)
@@ -159,7 +159,7 @@ class AnalysisTask(BaseAnalysisTask):
         """
         self.safe_update(**kwargs)
         dtables = self.make_datatables(butler, data, **kwargs)
-        if kwargs.get('plot', False):
+        if self.config.plot:
             self.make_plots(dtables, **kwargs)
 
     def extract(self, butler, data, **kwargs):
