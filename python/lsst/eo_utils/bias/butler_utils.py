@@ -21,7 +21,7 @@ def get_bias_files_butler(butler, run_id, **kwargs):
         acq_types = BUTLER_TEST_TYPES
 
     return get_files_butler(butler, run_id,
-                            testTypes=acq_types,
-                            imageType="BIAS",
+                            testtypes=acq_types,
+                            imagetype='BIAS',
                             outkey='BIAS',
                             **kwargs)

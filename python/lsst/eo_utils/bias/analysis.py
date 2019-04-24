@@ -30,6 +30,7 @@ def get_bias_data(caller, butler, run_num, **kwargs):
     @returns (dict) Dictionary mapping slot to file names
     """
     kwargs.pop('run', None)
+
     if butler is None:
         retval = get_bias_files_run(run_num, **kwargs)
     else:

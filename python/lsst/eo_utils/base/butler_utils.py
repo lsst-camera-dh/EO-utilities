@@ -179,6 +179,7 @@ def get_files_butler(butler, run_id, **kwargs):
     imagetype = kwargs.get('imagetype')
     nfiles = kwargs.get('nfiles', None)
     rafts = kwargs.get('rafts', None)
+    slots = kwargs.get('rafts', None)
     outkey = kwargs.get('outkey', imagetype)
 
     outdict = {}
@@ -191,10 +192,10 @@ def get_files_butler(butler, run_id, **kwargs):
         if raft not in outdict:
             outdict[raft] = {}
 
-        slots = butler.queryMetadata('raw', 'detectorname', dict(run=run_id,
-                                                                 imagetype=imagetype,
-                                                                 raftname=raft))
-
+        if slots is None:
+            slots = butler.queryMetadata('raw', 'detectorname', dict(run=run_id,
+                                                                     imagetype=imagetype,
+                                                                     raftname=raft))
         for slot in slots:
             bias_kwargs['detectorname'] = slot
             outdict[raft][slot] = {outkey:get_data_ref_list(butler, run_id, **bias_kwargs)}

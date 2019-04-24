@@ -669,7 +669,7 @@ class FigureDict:
         fig.savefig(filename)
         plt.close(fig)
 
-    def save_all(self, basename):
+    def save_all(self, basename, ftype='png'):
         """Save all the figures
 
         The files will be named {basename}_{key}.png
@@ -683,5 +683,5 @@ class FigureDict:
 
         for key, val in self._fig_dict.items():
             fig = val['fig']
-            fig.savefig("%s_%s.png" % (basename, key))
+            fig.savefig("%s_%s.%s" % (basename, key, ftype))
             plt.close(fig)

@@ -19,7 +19,6 @@ from .iter_utils import SimpleAnalysisHandler
 
 class BaseAnalysisConfig(pexConfig.Config):
     """Configuration for EO analysis tasks"""
-    butler_repo = EOUtilConfig.clone_param('butler_repo')
 
 
 class BaseAnalysisTask(Configurable):
@@ -36,7 +35,7 @@ class BaseAnalysisTask(Configurable):
 
         @param kwargs:    Used to override configruation
         """
-        Configurable.__init__(**kwargs)
+        Configurable.__init__(self, **kwargs)
 
     def __call__(self, butler, data, **kwargs):
         """Tie together the functions
@@ -59,7 +58,6 @@ class AnalysisConfig(BaseAnalysisConfig):
     skip = EOUtilConfig.clone_param('skip')
     plot = EOUtilConfig.clone_param('plot')
     suffix = EOUtilConfig.clone_param('suffix')
-    interactive = EOUtilConfig.clone_param('interactive')
 
 
 class AnalysisTask(BaseAnalysisTask):
@@ -120,13 +118,13 @@ class AnalysisTask(BaseAnalysisTask):
         """
         figs = FigureDict()
         self.plot(dtables, figs, **kwargs)
-        if self.config.interactive:
+        if self.config.plot == 'display':
             figs.save_all(None)
             return figs
 
         plotbase = self.plotfile_name(**kwargs)
         makedir_safe(plotbase)
-        figs.save_all(plotbase)
+        figs.save_all(plotbase, self.config.plot)
         return None
 
     def __call__(self, butler, data, **kwargs):
@@ -137,7 +135,7 @@ class AnalysisTask(BaseAnalysisTask):
         """
         self.safe_update(**kwargs)
         dtables = self.make_datatables(butler, data, **kwargs)
-        if self.config.plot:
+        if self.config.plot is not None:
             self.make_plots(dtables, **kwargs)
 
     def extract(self, butler, data, **kwargs):

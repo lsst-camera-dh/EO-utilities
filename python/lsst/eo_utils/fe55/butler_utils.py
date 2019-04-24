@@ -21,7 +21,7 @@ def get_fe55_files_butler(butler, run_id, **kwargs):
         acq_types = BUTLER_TEST_TYPES
 
     return get_files_butler(butler, run_id,
-                            testTypes=acq_types,
-                            imageType="FE55",
+                            testtypes=acq_types,
+                            imagetype="FE55",
                             outkey='FE55',
                             **kwargs)

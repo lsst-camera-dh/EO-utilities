@@ -66,7 +66,7 @@ class OscanAmpStackTask(BiasAnalysisTask):
         slot = self.config.slot
 
         bias_files = data['BIAS']
-        mask_files = get_mask_files(**kwargs)
+        mask_files = get_mask_files(self, **kwargs)
         superbias_frame = get_superbias_frame(self, mask_files=mask_files, **kwargs)
 
         sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))

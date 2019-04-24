@@ -62,7 +62,7 @@ class CorrelWRTOScanTask(BiasAnalysisTask):
         slot = self.config.slot
 
         bias_files = data['BIAS']
-        mask_files = get_mask_files(**kwargs)
+        mask_files = get_mask_files(self, **kwargs)
 
         sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
         sys.stdout.flush()

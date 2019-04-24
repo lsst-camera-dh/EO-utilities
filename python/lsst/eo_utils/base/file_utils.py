@@ -210,12 +210,12 @@ def get_mask_files_run(run_id, **kwargs):
             mask_types = DATACAT_BOT_MASK_TEST_TYPES
 
     return get_files_for_run(run_id,
-                             testTypes=mask_types,
+                             testtypes=mask_types,
                              outkey='MASK',
                              matchstr='_mask')
 
 
-def get_mask_files(**kwargs):
+def get_mask_files(caller, **kwargs):
     """Get the name of the merged mask file
 
     @param kwargs   These are passed to mask_filename execpt for:
@@ -226,7 +226,7 @@ def get_mask_files(**kwargs):
     if kwargs.get('mask', False):
         kwcopy = kwargs.copy()
         kwcopy['suffix'] = '_mask.fits'
-        mask_files = [mask_filename(**kwcopy)]
+        mask_files = [mask_filename(caller, **kwcopy)]
     else:
         mask_files = []
     return mask_files

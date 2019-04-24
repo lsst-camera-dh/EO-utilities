@@ -33,8 +33,6 @@ class EOUtilConfig(pexConfig.Config):
                               default=False)
     batch_args = pexConfig.Field("Arguments to pass to batch command", str,
                                  default=DEFAULT_BATCH_ARGS)
-    interactive = pexConfig.Field("Run analysis interactively", bool,
-                                  default=False)
 
     # Options for the data source
     butler_repo = pexConfig.Field("Butler repository", str, default=None)
@@ -60,8 +58,8 @@ class EOUtilConfig(pexConfig.Config):
                              default=DEFAULT_OUTDIR)
     suffix = pexConfig.Field("Suffix for output files", str,
                              default="")
-    plot = pexConfig.Field("Make plots", bool,
-                           default=False)
+    plot = pexConfig.Field("Make plots", str,
+                           default=None)
     skip = pexConfig.Field("Skip the main analysis and only make plots", bool,
                            default=False)
 
@@ -105,48 +103,6 @@ class EOUtilConfig(pexConfig.Config):
             ret_val.default = kwargs['default']
         return ret_val
 
-    def to_odict(self):
-        """@returns (dict) OrderedDict mapping paramteter name to (type, default, doc) tuple"""
-        o_dict = OrderedDict()
-        for key, val in self._fields.items():
-            o_dict[key] = (val.dtype, val.default, val.__doc__)
-        return o_dict
-
-
-
-# Turn the object above into an ordered dictionary
-DEFAULT_CONFIG = EOUtilConfig()
-DEFAULTS = DEFAULT_CONFIG.to_odict()
-
-
-def add_arguments(parser, arg_dict):
-    """Adds a set of arguments to the argument parser (or parser group)
-
-    @param parser (`argumentParser`)    The argument parser we are using
-    @param arg_dict (dict)              The dictionary mapping argument name
-                                        to (type, default, helpstring) tuple
-    """
-    for argname, argpars in arg_dict.items():
-        argtype, argdefault, arghelp = argpars
-        if argdefault is not None:
-            arghelp += ": [%s]" % argdefault
-        if argtype in [pexConfig.listField.List]:
-            parser.add_argument("--%s" % argname,
-                                action='append',
-                                default=argdefault,
-                                help=arghelp)
-        elif argtype in [bool]:
-            parser.add_argument("--%s" % argname,
-                                action='store_true',
-                                default=argdefault,
-                                help=arghelp)
-        else:
-            parser.add_argument("--%s" % argname,
-                                type=argtype,
-                                default=argdefault,
-                                help=arghelp)
-
-
 
 def add_pex_arguments(parser, pex_class, exclude=None):
     """Adds a set of arguments to the argument parser (or parser group)
@@ -160,10 +116,10 @@ def add_pex_arguments(parser, pex_class, exclude=None):
     for key, val in pex_class._fields.items():
         if key in exclude:
             continue
-        if isinstance(val, pexConfig.listField.List):
+        if isinstance(val, pexConfig.listField.ListField):
             parser.add_argument("--%s" % key,
                                 action='append',
-                                type=val.dtype,
+                                type=val.itemtype,
                                 default=val.default,
                                 help=val.doc)
         elif val.dtype in [bool]:
@@ -178,10 +134,7 @@ def add_pex_arguments(parser, pex_class, exclude=None):
                                 help=val.doc)
 
 
-
-
-
-def make_argstring(arg_dict):
+def make_argstring(**kwargs):
     """Turns a dictionary of arguments into string with command line options
 
     @param arg_dict (dict)  The dictionary mapping argument name to value
@@ -189,7 +142,7 @@ def make_argstring(arg_dict):
     @returns (str) The corresponding string for a command line
     """
     ostring = ""
-    for key, value in arg_dict.items():
+    for key, value in kwargs.items():
         if value is None:
             continue
         elif isinstance(value, bool):
@@ -221,66 +174,25 @@ def copy_items(arg_dict, argnames):
     return outdict
 
 
-def get_config_defaults(argnames, arg_dict=None, **kwargs):
-    """Gets default values for selected arguments
 
-    @param argnames (list)  List of keys to copy to the output dictionary
-    @param arg_dict (dict)  The dictionary mapping name to (type, default, helpstring) tuple
-    @param kwargs:
-        All other keyword arguments will be used to update the defaults
-
-    @returns (dict) mapping parameter name to (type, default, helpstring) tuple
-    """
-    if arg_dict is None:
-        arg_dict = DEFAULTS
-
-    use_arg_dict = copy_items(arg_dict, argnames)
-    use_arg_dict.update(**kwargs)
-    return use_arg_dict
-
-
-def get_config_values(argnames, arg_dict=None, **kwargs):
-    """Gets default values for selected arguments
-
-    @param argnames (list)  List of keys to copy to the output dictionary
-    @param arg_dict (dict)  The dictionary mapping name to (type, default, helpstring) tuple
-    @param kwargs:
-        All other keyword arguments will be used to update the values
-
-    @returns (dict) mapping parameter name to value
-    """
-    defaults = get_config_defaults(argnames, arg_dict)
-    outdict = {}
-    for argname, argpars in defaults.items():
-        outdict[argname] = argpars[1]
-    outdict.update(**kwargs)
-    return outdict
-
-
-def setup_parser(argnames, arg_dict=None, **kwargs):
+def setup_parser(**kwargs):
     """Creates an ArgumentParser and adds selected arguments
 
     @param argnames (list)  List of keys to copy to the output dictionary
     @param arg_dict (dict)  The dictionary mapping name to (type, default, helpstring) tuple
     @param kwargs:
         usage (str)             The usage string for the ArgumentParser
-        description (str)       The description for the ArgumentParser
-                                All other keyword arguments will be treated as addtional
-                                parameters and passed to the ArgumentParser
+                                All other keyword arguments will passed to the ArgumentParser c'tor
 
     @returns (`argparse.ArgumentParser`) Argument parser loaded with the requested arguments
     """
 
     usage = kwargs.pop('usage', None)
-    description = kwargs.pop('description', None)
     if usage is None:
         usage = "%s [options]" % os.path.basename(sys.argv[0])
 
-    parser = argparse.ArgumentParser(usage=usage,
-                                     description=description)
+    parser = argparse.ArgumentParser(usage=usage, *kwargs)
 
-    use_arg_dict = get_config_defaults(argnames, arg_dict, **kwargs)
-    add_arguments(parser, use_arg_dict)
     return parser
 
 

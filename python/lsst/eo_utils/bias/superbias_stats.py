@@ -69,7 +69,7 @@ class SuperbiasStatsTask(BiasAnalysisTask):
         stats_data = {}
         for islot, slot in enumerate(slots):
             kwcopy['slot'] = slot
-            mask_files = get_mask_files(**kwcopy)
+            mask_files = get_mask_files(self, **kwcopy)
             superbias = get_superbias_frame(self, mask_files=mask_files, **kwcopy)
             self.get_superbias_stats(None, superbias, stats_data,
                                      islot=islot, slot=slot)

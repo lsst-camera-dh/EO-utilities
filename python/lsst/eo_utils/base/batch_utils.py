@@ -26,8 +26,9 @@ def dispatch_job(jobname, logfile, **kwargs):
     optstring = kwargs.get('optstring', None)
     dry_run = kwargs.get('dry_run', False)
     run_num = kwargs.get('run', None)
+    batch = kwargs.get('batch', 'native')
 
-    if kwargs.get('use_batch', False):
+    if batch.find('bsub') >= 0:
         sub_com = "bsub -o %s" % logfile
         if batch_args is not None:
             sub_com += " %s " % batch_args

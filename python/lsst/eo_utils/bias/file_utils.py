@@ -368,8 +368,8 @@ def get_bias_files_run(run_id, **kwargs):
             acq_types = DATACAT_BOT_TEST_TYPES
 
     return get_files_for_run(run_id,
-                             imageType="BIAS",
-                             testTypes=acq_types,
+                             imagetype="BIAS",
+                             testtypes=acq_types,
                              outkey='BIAS',
                              **kwargs)
 

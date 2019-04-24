@@ -20,7 +20,7 @@ def get_flat_files_butler(butler, run_id, **kwargs):
         acq_types = ["FLAT"]
 
     return get_files_butler(butler, run_id,
-                            testTypes=acq_types,
-                            imageType="FLAT",
+                            testtypes=acq_types,
+                            imagetype="FLAT",
                             outkey='FLAT',
                             **kwargs)

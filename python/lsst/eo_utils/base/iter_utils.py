@@ -9,7 +9,7 @@ from .defaults import ALL_SLOTS
 
 from .config_utils import EOUtilConfig, Configurable,\
     setup_parser, add_pex_arguments,\
-    make_argstring, get_config_values
+    make_argstring
 
 from .file_utils import get_hardware_type_and_id, get_raft_names_dc, read_runlist
 
@@ -24,7 +24,6 @@ class AnalysisHandlerConfig(pexConfig.Config):
     These control the job execution options, such as
     sending the job to the batch farm.
     """
-    interactive = EOUtilConfig.clone_param('interactive')
     batch = EOUtilConfig.clone_param('batch')
     dry_run = EOUtilConfig.clone_param('dry_run')
     logfile = EOUtilConfig.clone_param('logfile')
@@ -51,6 +50,7 @@ class AnalysisHandler(Configurable):
         """
         Configurable.__init__(self, **kwargs)
         self._task = task
+        self._butler = None
 
     def get_butler(self):
         """Return a data Butler
@@ -60,7 +60,11 @@ class AnalysisHandler(Configurable):
 
         @returns (`Butler`)        The requested data Butler
         """
-        return get_butler_by_repo(self.config.butler_repo)
+        if self.config.butler_repo is None:
+            self._butler = None
+        else:
+            self._butler = get_butler_by_repo(self.config.butler_repo)
+        return self._butler
 
     def run_analysis(self, **kwargs):
         """Run the analysis over all of the requested objects.
@@ -75,19 +79,15 @@ class AnalysisHandler(Configurable):
              If batch is not None then it will send the jobs the the batch.
         """
         self.safe_update(**kwargs)
-        if self.config.interactive:
-            #FIXME
-            #arg_dict = get_config_values(self.argnames, **kwargs)
-            pass
-        else:
-            parser = setup_parser([])
-            handler_group = parser.add_argument_group("handler", "Arguments for job handler")
-            add_pex_arguments(handler_group, self.ConfigClass)
-            task_group = parser.add_argument_group("task", "Arguments for analysis task")
-            add_pex_arguments(task_group, self._task.ConfigClass, self.exclude_pars)
-            args = parser.parse_args()
-            arg_dict = args.__dict__.copy()
-            arg_dict.update(**kwargs)
+
+        parser = setup_parser()
+        handler_group = parser.add_argument_group("handler", "Arguments for job handler")
+        add_pex_arguments(handler_group, self.ConfigClass)
+        task_group = parser.add_argument_group("task", "Arguments for analysis task")
+        add_pex_arguments(task_group, self._task.ConfigClass, self.exclude_pars)
+        args = parser.parse_args()
+        arg_dict = args.__dict__.copy()
+        arg_dict.update(**kwargs)
 
         self.run_with_args(**arg_dict)
 
@@ -114,7 +114,21 @@ class SimpleAnalysisHandler(AnalysisHandler):
 
     def call_analysis_task(self, **kwargs):
         """Jusgt call the analysis function"""
+        kwargs.setdefault('butler', self._butler)
         return self._task(**kwargs)
+
+    def get_dispatch_args(self, **kwargs):
+        """Get the arguments to use to dispatch a sub-job
+
+        @param kwargs:                Passed to job
+        """
+        ret_dict = dict(optstring=make_argstring(**kwargs),
+                        batch_args=self.config.batch_args,
+                        batch=self.config.batch,
+                        dataset=self.config.dataset,
+                        dry_run=self.config.dry_run)
+        return ret_dict
+
 
     def run_with_args(self, **kwargs):
         """Run the analysis over all of the requested objects.
@@ -131,12 +145,8 @@ class SimpleAnalysisHandler(AnalysisHandler):
             self.call_analysis_task(**kwremain)
         else:
             jobname = os.path.basename(sys.argv[0])
-            dispatch_kw = dict(optstring=make_argstring(**kwremain),
-                               batch_args=self.config.batch_args,
-                               dry_run=self.config.dry_run,
-                               use_batch=True)
+            dispatch_kw = self.get_dispatch_args(**kwremain)
             dispatch_job(jobname, self.config.logfile, **dispatch_kw)
-
 
 
 class AnalysisIteratorConfig(AnalysisHandlerConfig):
@@ -204,38 +214,47 @@ class AnalysisIterator(AnalysisHandler):
         return retval
 
 
-    def dispatch_single_run(self, run, butler, batch, **kwargs):
+    def get_dispatch_args(self, run, **kwargs):
+        """Get the arguments to use to dispatch a sub-job
+
+        @param run (str)              The run number
+        @param kwargs:                Passed to job
+        """
+        if self.config.butler_repo is None:
+            optstring = make_argstring(**kwargs)
+        else:
+            optstring = make_argstring(butler_repo=self.config.butler_repo, **kwargs)
+        ret_dict = dict(optstring=optstring,
+                        batch_args=self.config.batch_args,
+                        batch=self.config.batch,
+                        dataset=self.config.dataset,
+                        dry_run=self.config.dry_run,
+                        run=run)
+        return ret_dict
+
+
+    def dispatch_single_run(self, run, **kwargs):
         """Run the analysis over all of the requested objects.
 
         @param run (str)              The run number
-        @param butler (`Butler`)      The data Butler
         @param kwargs:                Passed to job
         """
-        if batch is None:
-            kwargs.pop('butler_repo', None)
-            kwargs['butler'] = butler
+        if self.config.batch is None:
             self.call_analysis_task(run, **kwargs)
-        elif batch == 'slot':
+        elif self.config.batch == 'slot':
             jobname = os.path.basename(sys.argv[0])
-            logfile = kwargs.get('logfile', 'temp.log')
             slots = kwargs.pop('slots')
             if slots is None:
                 slots = ALL_SLOTS
             for slot in slots:
+                logfile_slot = self.config.logfile.replace('.log', '_%s.log' % slot)
                 kwargs['slots'] = slot
-                kwargs.pop('optstring', None)
-                batch_args = kwargs.pop('batch_args')
-                kwargs['optstring'] = make_argstring(kwargs)
-                kwargs['batch_args'] = batch_args
-                logfile_slot = logfile.replace('.log', '_%s.log' % slot)
-                dispatch_job(jobname, logfile_slot, run=run, **kwargs)
+                kw_remain = self.get_dispatch_args(run, **kwargs)
+                dispatch_job(jobname, logfile_slot, **kw_remain)
         else:
             jobname = os.path.basename(sys.argv[0])
-            logfile = kwargs.get('logfile', 'temp.log')
-            batch_args = kwargs.pop('batch_args')
-            kwargs['optstring'] = make_argstring(kwargs)
-            kwargs['batch_args'] = batch_args
-            dispatch_job(jobname, logfile, run=run, **kwargs)
+            kw_remain = self.get_dispatch_args(run, **kwargs)
+            dispatch_job(jobname, self.config.logfile, **kw_remain)
 
 
     def run_with_args(self, **kwargs):
@@ -251,6 +270,8 @@ class AnalysisIterator(AnalysisHandler):
             butler_repo (str)         Name of the Butler repo
         """
         kw_remain = self.safe_update(**kwargs)
+        kw_remain['slots'] = kwargs.get('slots', None)
+        kw_remain['rafts'] = kwargs.get('rafts', None)
 
         if self.config.dataset is not None and self.config.runs is not None:
             raise ValueError("Either runs or dataset should be set, not both")
@@ -262,13 +283,10 @@ class AnalysisIterator(AnalysisHandler):
         else:
             raise ValueError("Either runs or dataset must be set")
 
-        if self.config.butler_repo is None:
-            butler = None
-        else:
-            butler = self.get_butler()
+        self.get_butler()
 
         for run in runs:
-            self.dispatch_single_run(run, butler, self.config.batch, **kw_remain)
+            self.dispatch_single_run(run, **kw_remain)
 
 
 def iterate_over_slots(analysis_task, butler, data_files, **kwargs):
@@ -345,16 +363,15 @@ class AnalysisBySlot(AnalysisIterator):
         @param run (str)  The run identifier
         @param kwargs         Passed to the analysis function
         """
-        butler = kwargs.pop('butler', None)
-        htype, hid = self.get_hardware(butler, run)
-        data_files = self.get_data(butler, run, **kwargs)
+        htype, hid = self.get_hardware(self._butler, run)
+        data_files = self.get_data(self._butler, run, **kwargs)
 
         kwargs['run'] = run
         if htype == "LCA-10134":
-            iterate_over_rafts(self._task, butler, data_files, **kwargs)
+            iterate_over_rafts(self._task, self._butler, data_files, **kwargs)
         elif htype == "LCA-11021":
             kwargs['raft'] = hid
-            iterate_over_slots(self._task, butler, data_files[hid], **kwargs)
+            iterate_over_slots(self._task, self._butler, data_files[hid], **kwargs)
         else:
             raise ValueError("Do not recognize hardware type for run %s: %s" % (run, htype))
 
@@ -400,17 +417,16 @@ class AnalysisByRaft(AnalysisIterator):
         @param run (str)  The run identifier
         @param kwargs         Passed to the analysis functions
         """
-        butler = kwargs.pop('butler', None)
-        htype, hid = self.get_hardware(butler, run)
-        data_files = self.get_data(butler, run, **kwargs)
+        htype, hid = self.get_hardware(self._butler, run)
+        data_files = self.get_data(self._butler, run, **kwargs)
 
         kwargs['run'] = run
         if htype == "LCA-10134":
-            iterate_over_rafts(self._task, butler, data_files, **kwargs)
+            iterate_over_rafts(self._task, self._butler, data_files, **kwargs)
         elif htype == "LCA-11021":
             kwargs['raft'] = hid
             if self._task is not None:
-                self._task(butler, data_files[hid], **kwargs)
+                self._task(self._butler, data_files[hid], **kwargs)
         else:
             raise ValueError("Do not recognize hardware type for run %s: %s" % (run, htype))
 
@@ -447,6 +463,18 @@ class SummaryAnalysisIterator(AnalysisHandler):
         data_files = self.get_data(None, dataset, **kwargs)
         self._task(None, data_files, dataset=dataset, **kwargs)
 
+    def get_dispatch_args(self, **kwargs):
+        """Get the arguments to use to dispatch a sub-job
+
+        @param kwargs:                Passed to job
+        """
+        ret_dict = dict(optstring=make_argstring(**kwargs),
+                        batch_args=self.config.batch_args,
+                        batch=self.config.batch,
+                        dataset=self.config.dataset,
+                        dry_run=self.config.dry_run)
+        return ret_dict
+
 
     def run_with_args(self, **kwargs):
         """Run the analysis over all of the requested objects.
@@ -459,14 +487,11 @@ class SummaryAnalysisIterator(AnalysisHandler):
 
         If batch is not None then it will send the jobs the the batch.
         """
-        kw_remain = self.safe_upate(**kwargs)
+        kw_remain = self.safe_update(**kwargs)
 
         if self.config.batch is None:
             self.call_analysis_task(self.config.dataset, **kw_remain)
         else:
             jobname = os.path.basename(sys.argv[0])
-            kw_remain['optstring'] = make_argstring(kw_remain)
-            kw_remain['batch_args'] = self.config.batch_args
-            kw_remain['batch'] = self.config.batch
-            kw_remain['dataset'] = self.config.dataset
-            dispatch_job(jobname, self.config.logfile, **kw_remain)
+            dispatch_kw = self.get_dispatch_args(**kw_remain)
+            dispatch_job(jobname, self.config.logfile, **dispatch_kw)

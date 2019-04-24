@@ -79,7 +79,7 @@ class PTCTask(FlatAnalysisTask):
         slot = kwargs['slot']
 
         flat_files = data['FLAT']
-        mask_files = get_mask_files(**kwargs)
+        mask_files = get_mask_files(self, **kwargs)
         superbias_frame = get_superbias_frame(mask_files=mask_files, **kwargs)
 
         ptc_data = dict()
