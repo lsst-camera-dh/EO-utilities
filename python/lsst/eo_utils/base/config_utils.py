@@ -29,6 +29,7 @@ class EOUtilConfig(pexConfig.Config):
     dry_run = pexConfig.Field("Print batch command, do not send job", bool, default=False)
     batch_args = pexConfig.Field("Arguments to pass to batch command", str, default=DEFAULT_BATCH_ARGS)
     run = pexConfig.Field("Run ID", str, default=None)
+    runs = pexConfig.ListField("Run IDs", str, default=None)
     dataset = pexConfig.Field("dataset", str, default=None)
     slot = pexConfig.Field("Slot ID", str, default=None)
     raft = pexConfig.Field("Raft Slot", str, default=None)
@@ -107,13 +108,18 @@ def add_arguments(parser, arg_dict):
 
 
 
-def add_pex_arguments(parser, pexClass):
+def add_pex_arguments(parser, pexClass, exclude):
     """Adds a set of arguments to the argument parser
 
-    @param parser (dict)    The argument parser we are using
+    @param parser (dict)           The argument parser we are using
     @param pexClass (`pexConfig`)  A config class
+    @param exclude (list)          Name of parameters to exclude
     """
+    if exclude is None:
+        exclude = []
     for key, val in pexClass._fields.items():
+        if key in exclude:
+            continue
         if isinstance(val, pexConfig.listField.List):
             parser.add_argument("--%s" % key,
                                 action='append',
@@ -234,7 +240,10 @@ def setup_parser(argnames, arg_dict=None, **kwargs):
                                      description=description)
 
     use_arg_dict = get_config_defaults(argnames, arg_dict, **kwargs)
-    add_arguments(parser, use_arg_dict)
+
+    arg_group = parser.add_argument_group("handler", "Arguments for analysis wrapper")
+
+    add_arguments(arg_group, use_arg_dict)
     return parser
 
 
