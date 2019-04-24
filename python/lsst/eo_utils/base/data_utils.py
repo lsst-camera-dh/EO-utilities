@@ -59,17 +59,17 @@ class TableDict:
 
         @returns (`Table`) newly created table
         """
-        df = Table(data)
-        self._table_dict[key] = df
-        return df
+        tab = Table(data)
+        self._table_dict[key] = tab
+        return tab
 
-    def add_datatable(self, key, df):
+    def add_datatable(self, key, tab):
         """Add a Table
 
         @param key (str)        Key for this Table
         @param df (dict)        Table we are adding
         """
-        self._table_dict[key] = df
+        self._table_dict[key] = tab
 
 
     def make_datatables(self, data):

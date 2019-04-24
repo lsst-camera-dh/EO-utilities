@@ -90,22 +90,22 @@ class FigureDict:
 
         @returns (dict)
             fig (matplotlib.figure.Figure)
-            ax (matplotlib.Axes._subplots.AxesSubplot)
+            axis (matplotlib.Axes._subplots.AxesSubplot)
         """
         title = kwargs.get('title', None)
         xlabel = kwargs.get('xlabel', None)
         ylabel = kwargs.get('ylabel', None)
         figsize = kwargs.get('figsize', (15, 10))
 
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+        fig, axis = plt.subplots(nrows=1, ncols=1, figsize=figsize)
         if title is not None:
             fig.suptitle(title)
         if xlabel is not None:
-            ax.set_xlabel(xlabel)
+            axis.set_xlabel(xlabel)
         if ylabel is not None:
-            ax.set_ylabel(ylabel)
+            axis.set_ylabel(ylabel)
 
-        o_dict = dict(fig=fig, ax=ax)
+        o_dict = dict(fig=fig, axis=axis)
         self._fig_dict[key] = o_dict
         return o_dict
 

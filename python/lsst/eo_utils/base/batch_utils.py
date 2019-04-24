@@ -29,7 +29,7 @@ def dispatch_job(jobname, logfile, **kwargs):
 
     if kwargs.get('use_batch', False):
         sub_com = "bsub -o %s" % logfile
-        if bsub_args is not None:
+        if batch_args is not None:
             sub_com += " %s " % batch_args
     else:
         sub_com = ""

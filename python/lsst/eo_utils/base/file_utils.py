@@ -46,11 +46,11 @@ def get_hardware_type_and_id(run):
       hid (str) The hardware id, e.g., RMT-004-Dev
     """
     if run.find('D') >= 0:
-        db = 'Dev'
+        db_ = 'Dev'
     else:
-        db = 'Prod'
-    er = exploreRun(db=db)
-    hsn = er.hardware_sn(run=run)
+        db_ = 'Prod'
+    ex_run = exploreRun(db=db_)
+    hsn = ex_run.hardware_sn(run=run)
     tokens = hsn.split('_')
     htype = tokens[0]
     hid = tokens[1].replace('-Dev', '')
@@ -143,23 +143,24 @@ def get_files_for_run(run_id, **kwargs):
 
     @returns (dict) Dictionary mapping slot to file names
     """
-    testTypes = kwargs.get('testTypes')
-    imageType = kwargs.get('imageType')
-    outkey = kwargs.get('outkey', imageType)
+    testtypes = kwargs.get('testtypes')
+    imagetype = kwargs.get('imagetype')
+    outkey = kwargs.get('outkey', imagetype)
     matchstr = kwargs.get('matchstr', None)
     nfiles = kwargs.get('nfiles', None)
 
     outdict = {}
 
     if run_id.find('D') >= 0:
-        db = 'Dev'
+        db_ = 'Dev'
     else:
-        db = 'Prod'
-    handler = get_EO_analysis_files(db=db)
+        db_ = 'Prod'
+    handler = get_EO_analysis_files(db=db_)
     hinfo = get_hardware_type_and_id(run_id)
 
-    for test_type in testTypes:
-        r_dict = handler.get_files(testName=test_type, run=run_id, imgtype=imageType, matchstr=matchstr)
+    for test_type in testtypes:
+        r_dict = handler.get_files(testName=test_type, run=run_id,
+                                   imgtype=imagetype, matchstr=matchstr)
         for key, val in r_dict.items():
             if hinfo[0] == 'LCA-11021':
                 # Raft level data

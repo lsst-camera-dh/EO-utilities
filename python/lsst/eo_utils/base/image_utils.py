@@ -25,9 +25,9 @@ REGION_NAMES = ['imaging', 'serial_overscan', 'parallel_overscan']
 REGION_LABELS = ['Imaging region', 'Serial overscan', 'Parallel overscan']
 
 try:
-    afwImage_Mask = afwImage.MaskU
+    AFWIMAGE_MASK = afwImage.MaskU
 except AttributeError:
-    afwImage_Mask = afwImage.Mask
+    AFWIMAGE_MASK = afwImage.Mask
 
 
 def get_dims_from_ccd(butler, ccd):
@@ -59,7 +59,7 @@ def get_dims_from_ccd(butler, ccd):
     return o_dict
 
 
-def get_readout_frequencies_from_ccd(butler, ccd):
+def get_readout_freqs_from_ccd(butler, ccd):
     """Get the frequencies corresponding to the FFTs
 
     @param butler (`Butler`)                      Data Butler (or none)
@@ -233,26 +233,26 @@ def get_raw_image(butler, ccd, amp):
     @param amp (int)                          AmplifierIndex
     """
     if butler is None:
-        im = ccd[amp].getImage()
+        img = ccd[amp].getImage()
     else:
         geom = ccd.getDetector()
-        im = ccd.maskedImage[geom[amp].getRawBBox()].image
-    return im
+        img = ccd.maskedImage[geom[amp].getRawBBox()].image
+    return img
 
 
-def get_ccd_from_id(butler, dataId, mask_files):
+def get_ccd_from_id(butler, data_id, mask_files):
     """Get the Geometry for a particular dataId or file
 
     @param butler (`Butler`)     Data Butler (or none)
-    @param dataId (dict or str)  Data identifier
+    @param data_id (dict or str) Data identifier
     @param mask_files (list)     List of mask files
 
     @returns (`MaskedCCD` or `ExposureF`) CCD image
     """
     if butler is None:
-        exposure = MaskedCCD(str(dataId), mask_files=mask_files)
+        exposure = MaskedCCD(str(data_id), mask_files=mask_files)
     else:
-        exposure = butler.get('raw', dataId)
+        exposure = butler.get('raw', data_id)
         apply_masks(butler, exposure, mask_files)
     return exposure
 
@@ -342,10 +342,10 @@ def array_struct(i_array, clip=None, do_std=False):
     return o_dict
 
 
-def unbias_amp(im, serial_oscan, bias_type=None, superbias_im=None, region=None):
+def unbias_amp(img, serial_oscan, bias_type=None, superbias_im=None, region=None):
     """Unbias the data from a particular amp
 
-    @param ccd (ImageF)                    The data
+    @param img (ImageF)                    The data
     @param serial_oscan (Box2I)            Serial overscan bounding box
     @param bias_type (str)                 Method of unbiasing to applly
     @param superbias_im (ImageF)           Optional superbias frame to subtract off
@@ -353,12 +353,12 @@ def unbias_amp(im, serial_oscan, bias_type=None, superbias_im=None, region=None)
     @returns (MaskedImageF) The unbiased image
     """
     if bias_type is not None:
-        image = imutil.unbias_and_trim(im, serial_oscan,
+        image = imutil.unbias_and_trim(img, serial_oscan,
                                        bias_method=bias_type,
                                        bias_frame=superbias_im,
                                        imaging=region)
     else:
-        image = im
+        image = img
         if superbias_im is not None:
             image -= superbias_im
         if region is not None:
@@ -395,11 +395,11 @@ def make_superbias(butler, bias_files, statistic=afwMath.MEDIAN, **kwargs):
         for amp in amps:
             regions = get_geom_regions(butler, ccd, amp)
             serial_oscan = regions['serial_overscan']
-            im = get_raw_image(butler, ccd, amp)
+            img = get_raw_image(butler, ccd, amp)
             if ifile == 0:
-                amp_stack_dict[amp] = [unbias_amp(im, serial_oscan, bias_type=bias_type)]
+                amp_stack_dict[amp] = [unbias_amp(img, serial_oscan, bias_type=bias_type)]
             else:
-                amp_stack_dict[amp].append(unbias_amp(im, serial_oscan, bias_type=bias_type))
+                amp_stack_dict[amp].append(unbias_amp(img, serial_oscan, bias_type=bias_type))
 
 
     for key, val in amp_stack_dict.items():
@@ -422,7 +422,7 @@ def read_masks(maskfile):
     """
     mask_list = []
     for i in range(16):
-        amask = afwImage_Mask(maskfile, i+1)
+        amask = AFWIMAGE_MASK(maskfile, i+1)
         mask_list.append(amask)
     return mask_list
 

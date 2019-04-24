@@ -22,50 +22,90 @@ STANDARD_RAFT_ARGS = ['run', 'butler_repo', 'outdir',
 
 class EOUtilConfig(pexConfig.Config):
     """A simple class to manage configuration parameters for EO analysis tasks"""
-    input = pexConfig.Field("Input file", str, default=None)
-    output = pexConfig.Field("Output file", str, default=None)
-    logfile = pexConfig.Field("Log file", str, default=DEFAULT_LOGFILE)
-    batch = pexConfig.Field("Dispatch job to batch", str, default=None)
-    dry_run = pexConfig.Field("Print batch command, do not send job", bool, default=False)
-    batch_args = pexConfig.Field("Arguments to pass to batch command", str, default=DEFAULT_BATCH_ARGS)
+
+    # Options for job control
+    logfile = pexConfig.Field("Log file", str,
+                              default=DEFAULT_LOGFILE)
+    batch = pexConfig.Field("Dispatch job to batch", str,
+                            default=None)
+    dry_run = pexConfig.Field("Print batch command, do not send job", bool,
+                              default=False)
+    batch_args = pexConfig.Field("Arguments to pass to batch command", str,
+                                 default=DEFAULT_BATCH_ARGS)
+    interactive = pexConfig.Field("Run analysis interactively", bool,
+                                  default=False)
+
+    # Options for the data source
+    butler_repo = pexConfig.Field("Butler repository", str, default=None)
+
+    # Options for selecing input data
+    dataset = pexConfig.Field("dataset", str, default=None)
     run = pexConfig.Field("Run ID", str, default=None)
     runs = pexConfig.ListField("Run IDs", str, default=None)
-    dataset = pexConfig.Field("dataset", str, default=None)
     slot = pexConfig.Field("Slot ID", str, default=None)
-    raft = pexConfig.Field("Raft Slot", str, default=None)
     slots = pexConfig.ListField("Slot ID(s)", str, default=None)
+    raft = pexConfig.Field("Raft Slot", str, default=None)
     rafts = pexConfig.ListField("Raft Slot(s)", str, default=None)
-    bias = pexConfig.Field("Method to use for unbiasing", str, default=None)
-    superbias = pexConfig.Field("Version of superbias frame to use", str, default=None)
-    stat = pexConfig.Field("Statistic to use to stack images", str, default=None)
-    butler_repo = pexConfig.Field("Butler repository", str, default=None)
     nfiles = pexConfig.Field("Number of files to use", int, default=None)
-    outdir = pexConfig.Field("Output file path root", str, default=DEFAULT_OUTDIR)
-    vmin = pexConfig.Field("Color scale minimum value", float, default=None)
-    vmax = pexConfig.Field("Color scale maximum value", float, default=None)
-    nbins = pexConfig.Field("Number of bins in histogram", int, default=DEFAULT_NBINS)
+
+    # Options for input data processing
+    bias = pexConfig.Field("Method to use for unbiasing", str, default=None)
+    superbias = pexConfig.Field("Version of superbias frame to use", str,
+                                default=None)
     mask = pexConfig.Field("Use the mask files", bool, default=False)
-    plot = pexConfig.Field("Make plots", bool, default=False)
-    suffix = pexConfig.Field("Suffix for output files", str, default="")
-    interactive = pexConfig.Field("Run analysis interactively", bool, default=False)
-    std = pexConfig.Field("Plot standard deviation instead of mean", bool, default=False)
-    covar = pexConfig.Field("Plot covarience instead of correlation factor", bool, default=False)
-    skip = pexConfig.Field("Skip the main analysis and only make plots", bool, default=False)
-    subtract_mean = pexConfig.Field("Subtract the mean from all images frames", bool, default=False)
-    stats_hist = pexConfig.Field("Make a histogram of the distribution", bool, default=False)
+
+    # Options for where to put output data and what to include
+    outdir = pexConfig.Field("Output file path root", str,
+                             default=DEFAULT_OUTDIR)
+    suffix = pexConfig.Field("Suffix for output files", str,
+                             default="")
+    plot = pexConfig.Field("Make plots", bool,
+                           default=False)
+    skip = pexConfig.Field("Skip the main analysis and only make plots", bool,
+                           default=False)
+
+    # Options for what to compute
+    std = pexConfig.Field("Plot standard deviation instead of mean", bool,
+                          default=False)
+    covar = pexConfig.Field("Plot covarience instead of correlation factor", bool,
+                            default=False)
+    stat = pexConfig.Field("Statistic to use to stack images", str,
+                           default=None)
+    subtract_mean = pexConfig.Field("Subtract the mean from all images frames", bool,
+                                    default=False)
+
+    # Plotting options
+    stats_hist = pexConfig.Field("Make a histogram of the distribution", bool,
+                                 default=False)
+    vmin = pexConfig.Field("Color scale minimum value", float,
+                           default=None)
+    vmax = pexConfig.Field("Color scale maximum value", float,
+                           default=None)
+    nbins = pexConfig.Field("Number of bins in histogram", int,
+                            default=DEFAULT_NBINS)
+    subtract_mean = pexConfig.Field("Subtract the mean from all images frames", bool,
+                                    default=False)
+
+    # Options for Fe55 Tasks
     use_all = pexConfig.Field("Use all fe55 clusters", bool, default=False)
 
 
     @classmethod
-    def clone_param(cls, parName, **kwargs):
-        """@returns (`pexConfig.Field`) cloned version of parameter"""
-        retVal = copy.deepcopy(cls.__dict__[parName])
+    def clone_param(cls, par_name, **kwargs):
+        """
+        @param par_name       Parameter to clone
+        @param kwargs:
+            default          Set the default value for the cloned version
+
+        @returns (`pexConfig.Field`) cloned version of parameter
+        """
+        ret_val = copy.deepcopy(cls.__dict__[par_name])
         if 'default' in kwargs:
-            retVal.default = kwargs['default']
-        return retVal
+            ret_val.default = kwargs['default']
+        return ret_val
 
     def to_odict(self):
-        """@returns (dict) Parameters as an OrderedDict mapping name to (type, default, doc) tuple"""
+        """@returns (dict) OrderedDict mapping paramteter name to (type, default, doc) tuple"""
         o_dict = OrderedDict()
         for key, val in self._fields.items():
             o_dict[key] = (val.dtype, val.default, val.__doc__)
@@ -73,18 +113,17 @@ class EOUtilConfig(pexConfig.Config):
 
 
 
-
-# Turn the object about into an ordered dictionary
+# Turn the object above into an ordered dictionary
 DEFAULT_CONFIG = EOUtilConfig()
 DEFAULTS = DEFAULT_CONFIG.to_odict()
 
 
 def add_arguments(parser, arg_dict):
-    """Adds a set of arguments to the argument parser
+    """Adds a set of arguments to the argument parser (or parser group)
 
-    @param parser (dict)    The argument parser we are using
-    @param arg_dict (dict)  The dictionary mapping argument name
-                            to (type, default, helpstring) tuple
+    @param parser (`argumentParser`)    The argument parser we are using
+    @param arg_dict (dict)              The dictionary mapping argument name
+                                        to (type, default, helpstring) tuple
     """
     for argname, argpars in arg_dict.items():
         argtype, argdefault, arghelp = argpars
@@ -108,16 +147,16 @@ def add_arguments(parser, arg_dict):
 
 
 
-def add_pex_arguments(parser, pexClass, exclude):
-    """Adds a set of arguments to the argument parser
+def add_pex_arguments(parser, pex_class, exclude):
+    """Adds a set of arguments to the argument parser (or parser group)
 
-    @param parser (dict)           The argument parser we are using
-    @param pexClass (`pexConfig`)  A config class
-    @param exclude (list)          Name of parameters to exclude
+    @param parser (`argumentParser`)   The argument parser we are using
+    @param pex_class (`pexConfig`)     The configuration class we are using to fill the parser
+    @param exclude (list)              Name of parameters to exclude
     """
     if exclude is None:
         exclude = []
-    for key, val in pexClass._fields.items():
+    for key, val in pex_class._fields.items():
         if key in exclude:
             continue
         if isinstance(val, pexConfig.listField.List):
@@ -158,8 +197,8 @@ def make_argstring(arg_dict):
             else:
                 ostring += " --%s" % key
         elif isinstance(value, (list, pexConfig.listField.List)):
-            for vv in value:
-                ostring += " --%s %s" % (key, vv)
+            for val2 in value:
+                ostring += " --%s %s" % (key, val2)
         else:
             ostring += " --%s %s" % (key, value)
     return ostring
@@ -168,7 +207,7 @@ def make_argstring(arg_dict):
 def copy_items(arg_dict, argnames):
     """Copy a set of parameters tuples to an smaller dictionary
 
-    @param arg_dict (dict)  The dictionary mapping argument name to (type, default, helpstring) tuple
+    @param arg_dict (dict)  The dictionary mapping name to (type, default, helpstring) tuple
     @param argnames (list)  List of keys to copy to the output dictionary
 
     @returns (dict) Dictionary with only the arguments we have selected
@@ -185,9 +224,9 @@ def get_config_defaults(argnames, arg_dict=None, **kwargs):
     """Gets default values for selected arguments
 
     @param argnames (list)  List of keys to copy to the output dictionary
-    @param arg_dict (dict)  The dictionary mapping argument name to (type, default, helpstring) tuple
+    @param arg_dict (dict)  The dictionary mapping name to (type, default, helpstring) tuple
     @param kwargs:
-        All other keyword arguments will be treated as used to update the defaults
+        All other keyword arguments will be used to update the defaults
 
     @returns (dict) mapping parameter name to (type, default, helpstring) tuple
     """
@@ -203,9 +242,9 @@ def get_config_values(argnames, arg_dict=None, **kwargs):
     """Gets default values for selected arguments
 
     @param argnames (list)  List of keys to copy to the output dictionary
-    @param arg_dict (dict)  The dictionary mapping argument name to (type, default, helpstring) tuple
+    @param arg_dict (dict)  The dictionary mapping name to (type, default, helpstring) tuple
     @param kwargs:
-        All other keyword arguments will be treated as used to update the values
+        All other keyword arguments will be used to update the values
 
     @returns (dict) mapping parameter name to value
     """
@@ -221,14 +260,14 @@ def setup_parser(argnames, arg_dict=None, **kwargs):
     """Creates an ArgumentParser and adds selected arguments
 
     @param argnames (list)  List of keys to copy to the output dictionary
-    @param arg_dict (dict)  The dictionary mapping argument name to (type, default, helpstring) tuple
+    @param arg_dict (dict)  The dictionary mapping name to (type, default, helpstring) tuple
     @param kwargs:
         usage (str)             The usage string for the ArgumentParser
         description (str)       The description for the ArgumentParser
-        All other keyword arguments will be treated as addtional
-        parameters and passed to the ArgumentParser
+                                All other keyword arguments will be treated as addtional
+                                parameters and passed to the ArgumentParser
 
-    @returns (argparse.ArgumentParser) Argument parser loaded with the requested arguments
+    @returns (`argparse.ArgumentParser`) Argument parser loaded with the requested arguments
     """
 
     usage = kwargs.pop('usage', None)
@@ -251,7 +290,7 @@ def setup_parser(argnames, arg_dict=None, **kwargs):
 def copy_dict(in_dict, def_dict):
     """Copy a set of key-value pairs to an new dict
 
-    @param in_dict (dict)   The dictionary mapping argument name to (type, default, helpstring) tuple
+    @param in_dict (dict)   The dictionary mapping name to (type, default, helpstring) tuple
     @param def_dict (dict)  The dictionary with the default values
 
     @returns (dict) Dictionary with only the arguments we have selected
@@ -279,4 +318,5 @@ def copy_pex_fields(field_names, target_class, library_class):
         if isinstance(item, pexConfig.Field):
             setattr(target_class, fname, copy.deepcopy(item))
         else:
-            raise TypeError("Field %s in class %s\n is not a pexConfig.Field" % (fname, type(library_class)))
+            raise TypeError("Field %s in class %s\n is not a pexConfig.Field" %
+                            (fname, type(library_class)))
