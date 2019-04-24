@@ -7,7 +7,7 @@ from lsst.eo_utils.base.mask_analysis import MaskAddTask
 
 def main():
     """Hook for setup.py"""
-    MaskAddTask.parseAndRun()
+    MaskAddTask.parse_and_run()
 
 if __name__ == '__main__':
     main()

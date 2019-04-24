@@ -6,7 +6,7 @@ from lsst.eo_utils.bias.bias_struct import BiasStructTask
 
 def main():
     """Hook for setup.py"""
-    BiasStructTask.parseAndRun()
+    BiasStructTask.parse_and_run()
 
 
 if __name__ == '__main__':

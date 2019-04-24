@@ -6,7 +6,7 @@ from lsst.eo_utils.fe55.fe55_gain import fe55_gain_stats
 
 def main():
     """Hook for setup.py"""
-    fe55_gain_stats.parseAndRun()
+    fe55_gain_stats.parse_and_run()
 
 if __name__ == '__main__':
     main()

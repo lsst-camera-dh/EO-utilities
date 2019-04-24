@@ -6,7 +6,7 @@ from lsst.eo_utils.flat.ptc import ptc_analysis
 
 def main():
     """Hook for setup.py"""
-    ptc_analysis.parseAndRun()
+    ptc_analysis.parse_and_run()
 
 if __name__ == '__main__':
     main()

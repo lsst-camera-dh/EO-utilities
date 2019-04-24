@@ -8,7 +8,7 @@ from lsst.eo_utils.bias.oscan_amp_stack import OscanAmpStackSummaryTask
 
 def main():
     """Hook for setup.py"""
-    OscanAmpStackSummaryTask.parseAndRun()
+    OscanAmpStackSummaryTask.parse_and_run()
 
 if __name__ == '__main__':
     main()
