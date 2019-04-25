@@ -2,11 +2,11 @@
 
 """This module is just a command line to get summary gain data from fe55 analyses"""
 
-from lsst.eo_utils.fe55.fe55_gain import fe55_gain_stats
+from lsst.eo_utils.fe55.fe55_gain import Fe55GainStatsTask
 
 def main():
     """Hook for setup.py"""
-    fe55_gain_stats.parse_and_run()
+    Fe55GainStatsTask.parse_and_run()
 
 if __name__ == '__main__':
     main()

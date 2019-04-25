@@ -3,7 +3,6 @@
 """This module is just a command line interface to dispatch jobs to the SLAC batch farm"""
 
 import os
-import glob
 import argparse
 
 from lsst.eo_utils.base.file_utils import link_eo_results_runlist
@@ -14,10 +13,10 @@ SEARCHPATH = ['/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive/LCA-11021_RTM',
               '/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive-test/LCA-11021_RTM']
 
 
-GLOB_FORMAT = os.path.join('{path}', 'LCA-11021_{raft}*', '{run}', 'fe55_raft_analysis', 'v0', '*', '*_psf_results_nsig4.fits')
-OUTFORMAT = os.path.join('{outdir}', 'fe55', '{raft}', '{raft}-{run}-{slot}_fe55-clusters.fits')
-
-
+GLOB_FORMAT = os.path.join('{path}', 'LCA-11021_{raft}*', '{run}',
+                           'fe55_raft_analysis', 'v0', '*', '*_psf_results_nsig4.fits')
+OUTFORMAT = os.path.join('{outdir}', 'fe55', '{raft}',
+                         '{raft}-{run}-{slot}_fe55-clusters.fits')
 
 def main():
     """Hook for setup.py"""
