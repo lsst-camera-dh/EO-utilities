@@ -63,9 +63,9 @@ def get_raft_fe55_tablefiles(caller, butler, dataset, **kwargs):
     filedict = {}
     for runinfo in run_list:
         raft = runinfo[0].replace('-Dev', '')
-        run_num = runinfo[1]
-        run_key = "%s_%s" % (raft, run_num)
-        kwcopy['run_num'] = run_num
+        run = runinfo[1]
+        run_key = "%s_%s" % (raft, run)
+        kwcopy['run'] = run
         kwcopy['raft'] = raft
         filedict[run_key] = raft_fe55_tablename(caller, **kwcopy) + '.fits'
 

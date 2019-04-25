@@ -62,17 +62,28 @@ class SuperbiasStatsTask(BiasAnalysisTask):
 
         kwcopy = kwargs.copy()
         if butler is not None:
-            sys.stdout.write("Ignoring butler in superbias_stats.extract")
+            sys.stdout.write("Ignoring butler in superbias_stats.extract\n")
         if data is not None:
-            sys.stdout.write("Ignoring raft_data in superbias_stats.extract")
+            sys.stdout.write("Ignoring raft_data in superbias_stats.extract\n")
 
         stats_data = {}
+
+        sys.stdout.write("Working on 9 slots: ")
+        sys.stdout.flush()
+
         for islot, slot in enumerate(slots):
+
+            sys.stdout.write(" %s" % slot)
+            sys.stdout.flush()
+
             kwcopy['slot'] = slot
             mask_files = get_mask_files(self, **kwcopy)
             superbias = get_superbias_frame(self, mask_files=mask_files, **kwcopy)
             self.get_superbias_stats(None, superbias, stats_data,
                                      islot=islot, slot=slot)
+
+        sys.stdout.write(".\n")
+        sys.stdout.flush()
 
         dtables = TableDict()
         dtables.make_datatable('files', make_file_dict(None, slots))
@@ -124,10 +135,11 @@ class SuperbiasStatsTask(BiasAnalysisTask):
 
 class SuperbiasSummaryConfig(BiasSummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='_stats_sum')
+    suffix = EOUtilConfig.clone_param('suffix', default='sum')
     dataset = EOUtilConfig.clone_param('dataset')
     bias = EOUtilConfig.clone_param('bias')
     superbias = EOUtilConfig.clone_param('superbias')
+    stat = EOUtilConfig.clone_param('stat')
 
 
 class SuperbiasSummaryTask(BiasSummaryAnalysisTask):
@@ -159,7 +171,7 @@ class SuperbiasSummaryTask(BiasSummaryAnalysisTask):
             sys.stdout.write("Ignoring butler in superbias_stats_summary.extract %s\n" % kwargs)
 
         for key, val in data.items():
-            data[key] = val.replace('.fits', '_stdevclip_stats.fits')
+            data[key] = val.replace('_sum.fits', '_stats.fits')
 
         outtable = vstack_tables(data, tablename='stats')
 

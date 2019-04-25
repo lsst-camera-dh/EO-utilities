@@ -173,7 +173,7 @@ class CorrelWRTOScanTask(BiasAnalysisTask):
 
 class CorrelWRTOScanStatsConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='_biasoscorr')
+    suffix = EOUtilConfig.clone_param('suffix', default='biasoscorr_stats')
     bias = EOUtilConfig.clone_param('bias')
     superbias = EOUtilConfig.clone_param('superbias')
 
@@ -230,7 +230,7 @@ class CorrelWRTOScanStatsTask(BiasAnalysisTask):
             sys.stdout.flush()
 
             basename = data[slot]
-            datapath = basename.replace('.fits', 'biasoscorr.fits')
+            datapath = basename.replace('biasoscorr_stats.fits', 'biasoscorr.fits')
 
             try:
                 dtables = TableDict(datapath, [datakey])
@@ -292,7 +292,7 @@ class CorrelWRTOScanStatsTask(BiasAnalysisTask):
 
 class CorrelWRTOScanSummaryConfig(BiasSummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='_biasoscorr_sum')
+    suffix = EOUtilConfig.clone_param('suffix', default='biasoscorr_sum')
     bias = EOUtilConfig.clone_param('bias')
     superbias = EOUtilConfig.clone_param('superbias')
 
@@ -326,7 +326,7 @@ class CorrelWRTOScanSummaryTask(BiasSummaryAnalysisTask):
             sys.stdout.write("Ignoring butler in correl_wrt_oscan_summary.extract\n")
 
         for key, val in data.items():
-            data[key] = val.replace('.fits', 'biasoscorr_stats.fits')
+            data[key] = val.replace('biasoscorr_sum.fits', 'biasoscorr_stats.fits')
 
         if not kwargs.get('skip', False):
             outtable = vstack_tables(data, tablename='biasoscorr_stats')

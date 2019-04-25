@@ -41,6 +41,7 @@ def raft_fe55_tablename(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, RAFT_FE55_TABLENAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     if kwargs.get('use_all', False):
         kwcopy['suffix'] = '_all%s' % kwcopy['suffix']
     else:

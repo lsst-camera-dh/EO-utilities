@@ -26,7 +26,7 @@ class Fe55GainStatsConfig(Fe55AnalysisConfig):
     suffix = EOUtilConfig.clone_param('suffix', default='fe55_gain_stats')
     bias = EOUtilConfig.clone_param('bias')
     superbias = EOUtilConfig.clone_param('superbias')
-
+    use_all = EOUtilConfig.clone_param('use_all')
 
 class Fe55GainStatsTask(Fe55AnalysisTask):
     """Class to analyze the overscan fe55 as a function of row number"""
@@ -34,8 +34,8 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
     ConfigClass = Fe55GainStatsConfig
     _DefaultName = "Fe55GainStatsTask"
     iteratorClass = Fe55TableAnalysisByRaft
-    tablename_func = raft_fe55_tablename
-    plotname_func = raft_fe55_plotname
+    tablefile_name = raft_fe55_tablename
+    plotfile_name = raft_fe55_plotname
 
     def __init__(self, **kwargs):
         """C'tor """
@@ -146,7 +146,7 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
 
 class Fe55GainSummaryConfig(Fe55SummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='fe55_sum')
+    suffix = EOUtilConfig.clone_param('suffix', default='fe55_gain_sum')
     bias = EOUtilConfig.clone_param('bias')
     superbias = EOUtilConfig.clone_param('superbias')
     use_all = EOUtilConfig.clone_param('use_all')
@@ -155,7 +155,7 @@ class Fe55GainSummaryConfig(Fe55SummaryAnalysisConfig):
 class Fe55GainSummaryTask(Fe55SummaryAnalysisTask):
     """Class to analyze the overscan fe55 as a function of row number"""
 
-    ConfigClass = Fe55SummaryAnalysisConfig
+    ConfigClass = Fe55GainSummaryConfig
     _DefaultName = ""
     iteratorClass = Fe55SummaryByRaft
     tablefile_name = fe55_summary_tablename
