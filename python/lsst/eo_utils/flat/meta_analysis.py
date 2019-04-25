@@ -17,7 +17,6 @@ from lsst.eo_utils.flat.file_utils import slot_flat_tablename,\
     slot_flat_plotname, raft_flat_tablename
 
 
-
 def get_tablenames_by_raft(caller, butler, run_num, **kwargs):
     """Extract the statistics of the FFT of the bias
 
@@ -26,7 +25,7 @@ def get_tablenames_by_raft(caller, butler, run_num, **kwargs):
     @param kwargs:
     """
     kwcopy = kwargs.copy()
-    kwcopy['run_num'] = run_num
+    kwcopy['run'] = run_num
 
     out_dict = {}
     raft_list = AnalysisIterator.get_raft_list(butler, run_num)
@@ -36,8 +35,6 @@ def get_tablenames_by_raft(caller, butler, run_num, **kwargs):
         slot_dict = {}
         for slot in ALL_SLOTS:
             kwcopy['slot'] = slot
-            kwcopy['fileType'] = 'flat'
-            kwcopy['testType'] = ''
             basename = slot_flat_tablename(caller, **kwcopy)
             datapath = basename + '.fits'
             slot_dict[slot] = datapath
@@ -65,9 +62,9 @@ def get_raft_flat_tablefiles(caller, butler, dataset, **kwargs):
     filedict = {}
     for runinfo in run_list:
         raft = runinfo[0].replace('-Dev', '')
-        run_num = runinfo[1]
-        run_key = "%s_%s" % (raft, run_num)
-        kwcopy['run_num'] = run_num
+        run = runinfo[1]
+        run_key = "%s_%s" % (raft, run)
+        kwcopy['run'] = run
         kwcopy['raft'] = raft
         filedict[run_key] = raft_flat_tablename(caller, **kwcopy) + '.fits'
 

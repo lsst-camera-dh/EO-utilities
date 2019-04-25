@@ -17,7 +17,7 @@ from lsst.eo_utils.flat.butler_utils import get_flat_files_butler
 mpl_utils.set_plt_ioff()
 
 
-def get_flat_data(butler, run_num, **kwargs):
+def get_flat_data(caller, butler, run_num, **kwargs):
     """Get a set of flat and mask files out of a folder
 
     @param butler (`Bulter`)    The data Butler
@@ -32,6 +32,8 @@ def get_flat_data(butler, run_num, **kwargs):
         retval = get_flat_files_run(run_num, **kwargs)
     else:
         retval = get_flat_files_butler(butler, run_num, **kwargs)
+    if not retval:
+        sys.stdout.write("Warning, call to get_flat_data for %s returned no data" % caller)
 
     return retval
 

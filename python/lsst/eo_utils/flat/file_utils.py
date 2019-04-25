@@ -9,6 +9,7 @@ from lsst.eo_utils.base.config_utils import copy_dict
 from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_for_run,\
     get_slot_file_basename, get_raft_file_basename, get_summary_file_basename
 
+from lsst.eo_utils.bias.file_utils import get_bias_suffix
 
 
 RAFT_FLAT_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
@@ -50,6 +51,7 @@ def raft_flat_tablename(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, RAFT_FLAT_TABLENAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     return get_raft_file_basename(caller, **kwcopy)
 
 
@@ -64,6 +66,7 @@ def raft_flat_plotname(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, RAFT_FLAT_PLOTNAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     return get_raft_file_basename(caller, **kwcopy)
 
 
@@ -78,6 +81,7 @@ def slot_flat_tablename(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_FLAT_TABLENAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     return get_slot_file_basename(caller, **kwcopy)
 
 
@@ -92,6 +96,7 @@ def slot_flat_plotname(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_FLAT_PLOTNAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     return get_slot_file_basename(caller, **kwcopy)
 
 
@@ -106,6 +111,7 @@ def slot_superflat_tablename(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_SFLAT_TABLENAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     return get_slot_file_basename(caller, **kwcopy)
 
 
@@ -118,6 +124,7 @@ def slot_superflat_plotname(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_SFLAT_PLOTNAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     return get_slot_file_basename(caller, **kwcopy)
 
 
@@ -132,6 +139,7 @@ def raft_superflat_tablename(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, RAFT_SFLAT_TABLENAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     return get_raft_file_basename(caller, **kwcopy)
 
 
@@ -146,6 +154,7 @@ def raft_superflat_plotname(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, RAFT_SFLAT_PLOTNAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     return get_raft_file_basename(caller, **kwcopy)
 
 
@@ -159,6 +168,7 @@ def flat_summary_tablename(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, FLAT_SUMMARY_TABLENAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     return get_summary_file_basename(caller, **kwcopy)
 
 
@@ -173,6 +183,7 @@ def flat_summary_plotname(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, FLAT_SUMMARY_PLOTNAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     return get_summary_file_basename(caller, **kwcopy)
 
 
@@ -187,6 +198,7 @@ def superflat_summary_tablename(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SFLAT_SUMMARY_TABLENAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     return get_summary_file_basename(caller, **kwcopy)
 
 
@@ -201,6 +213,7 @@ def superflat_summary_plotname(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SFLAT_SUMMARY_PLOTNAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     return get_summary_file_basename(caller, **kwcopy)
 
 
@@ -223,7 +236,7 @@ def get_flat_files_run(run_id, **kwargs):
             acq_types = ['FLAT']
 
     return get_files_for_run(run_id,
-                             imageType="FLAT",
-                             testTypes=acq_types,
+                             imagetype="FLAT",
+                             testtypes=acq_types,
                              outkey='FLAT',
                              **kwargs)

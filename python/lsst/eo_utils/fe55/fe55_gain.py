@@ -23,7 +23,7 @@ from lsst.eo_utils.fe55.meta_analysis import Fe55SummaryByRaft, Fe55TableAnalysi
 
 class Fe55GainStatsConfig(Fe55AnalysisConfig):
     """Configuration for BiasVRowTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='ptc_stats')
+    suffix = EOUtilConfig.clone_param('suffix', default='fe55_gain_stats')
     bias = EOUtilConfig.clone_param('bias')
     superbias = EOUtilConfig.clone_param('superbias')
 
@@ -81,7 +81,7 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
             sys.stdout.flush()
 
             basename = data[slot]
-            datapath = basename.replace('.fits', '_fe55-clusters.fits')
+            datapath = basename.replace('fe55_gain_stats.fits', 'fe55_clusters.fits')
 
             dtables = TableDict(datapath)
 
@@ -146,7 +146,7 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
 
 class Fe55GainSummaryConfig(Fe55SummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='_fe55_sum')
+    suffix = EOUtilConfig.clone_param('suffix', default='fe55_sum')
     bias = EOUtilConfig.clone_param('bias')
     superbias = EOUtilConfig.clone_param('superbias')
     use_all = EOUtilConfig.clone_param('use_all')
@@ -179,12 +179,8 @@ class Fe55GainSummaryTask(Fe55SummaryAnalysisTask):
         if butler is not None:
             sys.stdout.write("Ignoring butler in fe55_gain_summary.extract\n")
 
-        if kwargs.get('use_all', False):
-            insuffix = '_fe55_gain_stats.fits'
-        else:
-            insuffix = '_fe55_gain_stats.fits'
         for key, val in data.items():
-            data[key] = val.replace('.fits', insuffix)
+            data[key] = val.replace('_fe55_gain_sum.fits', '_fe55_gain_stats.fits')
 
         remove_cols = ['fit_pars']
 

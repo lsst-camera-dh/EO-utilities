@@ -305,6 +305,7 @@ def bias_summary_tablename(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, BIAS_SUMMARY_TABLENAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     return get_summary_file_basename(caller, **kwcopy)
 
 
@@ -319,6 +320,7 @@ def bias_summary_plotname(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, BIAS_SUMMARY_PLOTNAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     return get_summary_file_basename(caller, **kwcopy)
 
 
@@ -333,6 +335,7 @@ def superbias_summary_tablename(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SBIAS_SUMMARY_TABLENAME_DEFAULTS)
+    kwcopy['suffix'] = get_superbias_suffix(**kwargs)
     return get_summary_file_basename(caller, **kwcopy)
 
 
@@ -347,7 +350,9 @@ def superbias_summary_plotname(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SBIAS_SUMMARY_PLOTNAME_DEFAULTS)
+    kwcopy['suffix'] = get_superbias_suffix(**kwargs)
     return get_summary_file_basename(caller, **kwcopy)
+
 
 def get_bias_files_run(run_id, **kwargs):
     """Get a set of bias and mask files out of a folder

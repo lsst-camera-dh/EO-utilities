@@ -3,11 +3,15 @@
 
 import sys
 
+import operator
+
 import scipy.optimize
 
 import numpy as np
 
 import lsst.afw.math as afwMath
+
+import lsst.afw.image as afwImage
 
 from lsst.eotest.sensor.ptcTask import ptc_func, residuals
 
@@ -80,12 +84,12 @@ class PTCTask(FlatAnalysisTask):
 
         flat_files = data['FLAT']
         mask_files = get_mask_files(self, **kwargs)
-        superbias_frame = get_superbias_frame(mask_files=mask_files, **kwargs)
+        superbias_frame = get_superbias_frame(self, mask_files=mask_files, **kwargs)
 
         ptc_data = dict()
         for i in range(1, 17):
-            ptc_data['AMP%02i_MEAN' % (i+1)] = []
-            ptc_data['AMP%02i_VAR' % (i+1)] = []
+            ptc_data['AMP%02i_MEAN' % i] = []
+            ptc_data['AMP%02i_VAR' % i] = []
 
         sys.stdout.write("Working on %s, %i files: \n" % (slot, len(flat_files)))
         for id_1, id_2 in zip(flat_files[::2], flat_files[1::2]):
@@ -204,13 +208,10 @@ class PTCStatsTask(FlatAnalysisTask):
             sys.stdout.write(" %s" % slot)
             sys.stdout.flush()
 
-            basename = data
-            datapath = basename.replace('.fits', '_ptc.fits')
-
-            dtables = TableDict(datapath)
+            dtables = TableDict(data[slot].replace('ptc_stats.fits', 'ptc.fits'))
             tab = dtables['ptc_stats']
 
-            for amp in range(16):
+            for amp in range(1, 17):
                 mean = tab["AMP%02i_MEAN" % (amp)]
                 var = tab["AMP%02i_VAR" % (amp)]
                 med_gain = np.median(mean/var)
@@ -243,7 +244,7 @@ class PTCStatsTask(FlatAnalysisTask):
                 data_dict['gain'].append(ptc_gain)
                 data_dict['gain_error'].append(ptc_gain_error)
                 data_dict['slot'].append(islot)
-                data_dict['amp'].append(amp)
+                data_dict['amp'].append(amp-1)
 
         sys.stdout.write(".\n")
         sys.stdout.flush()
@@ -298,7 +299,7 @@ class PTCStatsTask(FlatAnalysisTask):
 
 class PTCSummaryConfig(FlatSummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='_ptc_sum')
+    suffix = EOUtilConfig.clone_param('suffix', default='ptc_sum')
     bias = EOUtilConfig.clone_param('bias')
     superbias = EOUtilConfig.clone_param('superbias')
 
@@ -330,12 +331,10 @@ class PTCSummaryTask(FlatSummaryAnalysisTask):
         if butler is not None:
             sys.stdout.write("Ignoring butler in ptc_summary.extract\n")
 
-        insuffix = '_ptc_stats.fits'
-
         for key, val in data.items():
-            data[key] = val.replace('.fits', insuffix)
+            data[key] = val.replace('_ptc_sum.fits', '_ptc_stats.fits')
 
-        remove_cols = ['ptc_means', 'ptc_vars']
+        remove_cols = ['ptc_mean', 'ptc_var']
 
         if not kwargs.get('skip', False):
             outtable = vstack_tables(data, tablename='ptc_stats',

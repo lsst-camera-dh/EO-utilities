@@ -70,7 +70,7 @@ class OscanCorrelTask(BiasAnalysisTask):
             bias_files = data[slot]['BIAS']
 
             kwcopy['slot'] = slot
-            mask_files = get_mask_files(**kwcopy)
+            mask_files = get_mask_files(self, **kwcopy)
             superbias_frame = get_superbias_frame(self, mask_files=mask_files, **kwcopy)
 
             ccd = get_ccd_from_id(butler, bias_files[0], [])

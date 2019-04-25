@@ -172,7 +172,7 @@ class BiasFFTTask(BiasAnalysisTask):
 
 class SuperbiasFFTConfig(BiasAnalysisConfig):
     """Configuration for BiasFFTTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasfft')
+    suffix = EOUtilConfig.clone_param('suffix', default='sbiasfft')
     superbias = EOUtilConfig.clone_param('superbias')
     mask = EOUtilConfig.clone_param('mask')
 

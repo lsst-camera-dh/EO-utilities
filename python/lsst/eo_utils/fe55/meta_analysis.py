@@ -26,7 +26,7 @@ def get_tablenames_by_raft(caller, butler, run_num, **kwargs):
     @param kwargs:
     """
     kwcopy = kwargs.copy()
-    kwcopy['run_num'] = run_num
+    kwcopy['run'] = run_num
 
     out_dict = {}
     raft_list = AnalysisIterator.get_raft_list(butler, run_num)
@@ -36,8 +36,6 @@ def get_tablenames_by_raft(caller, butler, run_num, **kwargs):
         slot_dict = {}
         for slot in ALL_SLOTS:
             kwcopy['slot'] = slot
-            kwcopy['fileType'] = 'fe55'
-            kwcopy['testType'] = ''
             basename = slot_fe55_tablename(caller, **kwcopy)
             datapath = basename + '.fits'
             slot_dict[slot] = datapath

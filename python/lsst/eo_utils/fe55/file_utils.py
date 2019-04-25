@@ -11,6 +11,8 @@ from lsst.eo_utils.base.config_utils import copy_dict
 from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_for_run,\
     get_slot_file_basename, get_raft_file_basename, get_summary_file_basename
 
+from lsst.eo_utils.bias.file_utils import get_bias_suffix
+
 
 RAFT_FE55_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
                                     testType='fe55', run=None, suffix='')
@@ -57,6 +59,7 @@ def raft_fe55_plotname(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, RAFT_FE55_PLOTNAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     if kwargs.get('use_all', False):
         kwcopy['suffix'] = '_all%s' % kwcopy['suffix']
     else:
@@ -75,6 +78,7 @@ def slot_fe55_tablename(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_FE55_TABLENAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     return get_slot_file_basename(caller, **kwcopy)
 
 
@@ -88,6 +92,7 @@ def slot_fe55_plotname(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, SLOT_FE55_PLOTNAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     return get_slot_file_basename(caller, **kwcopy)
 
 
@@ -102,6 +107,7 @@ def fe55_summary_tablename(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, FE55_SUMMARY_TABLENAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     if kwargs.get('use_all', False):
         kwcopy['suffix'] = '_all%s' % kwcopy['suffix']
     else:
@@ -120,6 +126,7 @@ def fe55_summary_plotname(caller, **kwargs):
     @returns (str) The path for the file.
     """
     kwcopy = copy_dict(kwargs, FE55_SUMMARY_PLOTNAME_DEFAULTS)
+    kwcopy['suffix'] = get_bias_suffix(**kwargs)
     if kwargs.get('use_all', False):
         kwcopy['suffix'] = '_all%s' % kwcopy['suffix']
     else:
