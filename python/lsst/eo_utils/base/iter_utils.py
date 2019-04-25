@@ -454,14 +454,14 @@ class SummaryAnalysisIterator(AnalysisHandler):
         """
         raise NotImplementedError("SummaryAnalysisIterator.get_data")
 
-    def call_analysis_task(self, dataset, **kwargs):
+    def call_analysis_task(self, **kwargs):
         """Call the analysis function for one run
 
         @param run (str)  The run identifier
         @param kwargs         Passed to the analysis functions
         """
-        data_files = self.get_data(None, dataset, **kwargs)
-        self._task(None, data_files, dataset=dataset, **kwargs)
+        data_files = self.get_data(None, **kwargs)
+        self._task(None, data_files, **kwargs)
 
     def get_dispatch_args(self, **kwargs):
         """Get the arguments to use to dispatch a sub-job
@@ -471,7 +471,6 @@ class SummaryAnalysisIterator(AnalysisHandler):
         ret_dict = dict(optstring=make_argstring(**kwargs),
                         batch_args=self.config.batch_args,
                         batch=self.config.batch,
-                        dataset=self.config.dataset,
                         dry_run=self.config.dry_run)
         return ret_dict
 
@@ -490,7 +489,7 @@ class SummaryAnalysisIterator(AnalysisHandler):
         kw_remain = self.safe_update(**kwargs)
 
         if self.config.batch is None:
-            self.call_analysis_task(self.config.dataset, **kw_remain)
+            self.call_analysis_task(**kw_remain)
         else:
             jobname = os.path.basename(sys.argv[0])
             dispatch_kw = self.get_dispatch_args(**kw_remain)

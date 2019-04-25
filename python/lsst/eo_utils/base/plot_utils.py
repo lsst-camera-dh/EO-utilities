@@ -487,7 +487,7 @@ class FigureDict:
         img = axes.imshow(data, interpolation='nearest', **kwargs)
         if title is not None:
             axes.set_title(title)
-        cbar = fig.colorbar(img, axis=axes)
+        cbar = fig.colorbar(img, ax=axes)
         if clabel is not None:
             cbar.ax.set_ylabel(clabel, rotation=-90, va='bottom')
         o_dict = dict(fig=fig, axes=axes, img=img, cbar=cbar)

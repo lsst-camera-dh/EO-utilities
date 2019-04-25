@@ -45,6 +45,10 @@ class BaseAnalysisTask(Configurable):
         """
         raise NotImplementedError('BaseAnalysisTask.__call__')
 
+    def make_iterator(self):
+        """@returns (`AnalysisHandler`) an analysis iterator that using this task"""
+        return self.iteratorClass(self)
+
     @classmethod
     def parse_and_run(cls):
         """Run the analysis"""
