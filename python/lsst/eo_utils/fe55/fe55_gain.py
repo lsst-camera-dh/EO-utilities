@@ -12,7 +12,7 @@ from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
-from lsst.eo_utils.base.analysis import EO_TASK_FACTORY
+from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from lsst.eo_utils.fe55.file_utils import RAFT_FE55_TABLE_FORMATTER,\
     RAFT_FE55_PLOT_FORMATTER
@@ -25,6 +25,7 @@ from lsst.eo_utils.fe55.meta_analysis import Fe55SummaryByRaft, Fe55TableAnalysi
 
 class Fe55GainStatsConfig(Fe55AnalysisConfig):
     """Configuration for BiasVRowTask"""
+    insuffix = EOUtilOptions.clone_param('insuffix', default='fe55_clusters')
     suffix = EOUtilOptions.clone_param('suffix', default='fe55_gain_stats')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
@@ -150,6 +151,7 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
 
 class Fe55GainSummaryConfig(Fe55SummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
+    insuffix = EOUtilOptions.clone_param('insuffix', default='fe55_gain_stats')
     suffix = EOUtilOptions.clone_param('suffix', default='fe55_gain_sum')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
@@ -186,7 +188,7 @@ class Fe55GainSummaryTask(Fe55SummaryAnalysisTask):
 
         remove_cols = ['fit_pars']
 
-        if not kwargs.get('skip', False):
+        if not self.config.skip:
             outtable = vstack_tables(data, tablename='fe55_gain_stats',
                                      remove_cols=remove_cols)
 

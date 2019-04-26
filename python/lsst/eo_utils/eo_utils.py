@@ -12,7 +12,7 @@ from lsst.eo_utils.base.file_utils import FILENAME_FORMATS
 
 from lsst.eo_utils.base.data_utils import TableDict
 
-from lsst.eo_utils.base.analysis import EO_TASK_FACTORY
+from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 
 class EOUtilsConfig(pexConfig.Config):
@@ -36,7 +36,7 @@ class EOUtils(Configurable):
         Configurable.__init__(self, **kwargs)
 
 
-    def get_task_class(self, key):
+    def get_task(self, key):
         """Get the class associated to a particular task name
 
         @param key (str)        Name associated to that class
@@ -52,20 +52,8 @@ class EOUtils(Configurable):
         @returns (dict) of key:default_value pairs
         """
         config_class = self._task_factory[key].ConfigClass
-        ret_dict = {key:config_class._fields[key].default for key in configClass._fields.keys()}
+        ret_dict = {key:config_class._fields[key].default for key in config_class._fields.keys()}
         return ret_dict
-
-
-    def make_task(self, key, **kwargs):
-        """Construct a particular Task
-
-        @param key (str)        Name associated to the task class
-        @param kwargs           Passed to the class c'tor
-
-        @returns (`Task`)       Resulting object
-        """
-        return self._task_factory(key, **kwargs)
-
 
     def run_task(self, key, **kwargs):
         """Run a particular Task
@@ -83,10 +71,10 @@ class EOUtils(Configurable):
 
         @returns (str)          The filename
         """
-        task_class = self.get_task_class(key)
+        task = self.get_task(key)
         task_defs = self.get_task_defaults(key)
         task_defs.update(**kwargs)
-        return task_class.tablename_format(**task_defs)
+        return task.tablename_format(**task_defs)
 
     def get_task_plotfile(self, key, **kwargs):
         """Get the filenames associated to the plots producted by a particular task
@@ -96,10 +84,10 @@ class EOUtils(Configurable):
 
         @returns (str)          The filename
         """
-        task_class = self.get_task_class(key)
+        task = self.get_task(key)
         task_defs = self.get_task_defaults(key)
         task_defs.update(**kwargs)
-        return task_class.plotname_format(**task_defs)
+        return task.plotname_format(**task_defs)
 
 
     def display_plots(self, key, **kwargs):

@@ -8,7 +8,6 @@ from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.file_utils import get_mask_files
 
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
@@ -17,10 +16,9 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import  REGION_KEYS,\
     get_ccd_from_id, get_dimension_arrays_from_ccd
 
-from lsst.eo_utils.base.analysis import EO_TASK_FACTORY
+from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from .file_utils import get_superbias_frame,\
-    RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
+from .file_utils import RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
 
 from .data_utils import stack_by_amps, convert_stack_arrays_to_dict
 
@@ -67,8 +65,9 @@ class OscanAmpStackTask(BiasAnalysisTask):
         slot = self.config.slot
 
         bias_files = data['BIAS']
-        mask_files = get_mask_files(self, **kwargs)
-        superbias_frame = get_superbias_frame(self, mask_files=mask_files, **kwargs)
+
+        mask_files = self.get_mask_files()
+        superbias_frame = self.get_superbias_frame(mask_files=mask_files)
 
         sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
         sys.stdout.flush()
@@ -133,6 +132,7 @@ class OscanAmpStackTask(BiasAnalysisTask):
 
 class OscanAmpStackStatsConfig(BiasAnalysisConfig):
     """Configuration for OscanAmpStackStatsTask"""
+    insuffix = EOUtilOptions.clone_param('insuffix', default='biasosstack')
     suffix = EOUtilOptions.clone_param('suffix', default='biasosstack_stats')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
@@ -265,6 +265,7 @@ class OscanAmpStackStatsTask(BiasAnalysisTask):
 
 class OscanAmpStackSummaryConfig(BiasSummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
+    insuffix = EOUtilOptions.clone_param('insuffix', default='biasosstack_stats')
     suffix = EOUtilOptions.clone_param('suffix', default='biasosstack_sum')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')

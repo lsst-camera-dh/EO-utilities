@@ -6,8 +6,6 @@ import numpy as np
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.file_utils import get_mask_files
-
 from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
@@ -16,10 +14,10 @@ from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES, REGION_LAB
     get_dimension_arrays_from_ccd, get_ccd_from_id, get_raw_image,\
     get_geom_regions, get_amp_list, get_image_frames_2d, array_struct, unbias_amp
 
-from lsst.eo_utils.base.analysis import EO_TASK_FACTORY
+from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from .file_utils import get_superbias_frame,\
-    SLOT_SBIAS_TABLE_FORMATTER, SLOT_SBIAS_PLOT_FORMATTER
+from .file_utils import SLOT_SBIAS_TABLE_FORMATTER,\
+    SLOT_SBIAS_PLOT_FORMATTER
 
 from .analysis import BiasAnalysisTask, BiasAnalysisConfig, BiasAnalysisBySlot
 
@@ -59,8 +57,9 @@ class BiasStructTask(BiasAnalysisTask):
 
         slot = self.config.slot
         bias_files = data['BIAS']
-        mask_files = get_mask_files(self, **kwargs)
-        superbias_frame = get_superbias_frame(self, mask_files=mask_files, **kwargs)
+
+        mask_files = self.get_mask_files()
+        superbias_frame = self.get_superbias_frame(mask_files=mask_files)
 
         sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
         sys.stdout.flush()
@@ -79,8 +78,8 @@ class BiasStructTask(BiasAnalysisTask):
                     biasstruct_data[key] = {key:val}
 
             self.get_ccd_data(butler, ccd, biasstruct_data,
-                              slot=slot, bias_type=self.config.bias,
-                              std=self.config.std, ifile=ifile, nfiles=len(bias_files),
+                              slot=slot, ifile=ifile,
+                              nfiles_used=len(bias_files),
                               superbias_frame=superbias_frame)
 
         sys.stdout.write("!\n")
@@ -107,8 +106,7 @@ class BiasStructTask(BiasAnalysisTask):
                                                  x_name="%s_%s" % (dkey, rkey), y_name="biasst")
 
 
-    @staticmethod
-    def get_ccd_data(butler, ccd, data, **kwargs):
+    def get_ccd_data(self, butler, ccd, data, **kwargs):
         """Get the bias values and update the data dictionary
 
         @param caller (`Task`)     Task that calls this function
@@ -123,10 +121,9 @@ class BiasStructTask(BiasAnalysisTask):
         std (bool)                     Used standard deviasion instead of mean
         superbias_frame (`MaskedCCD`)  The superbias
         """
+        nfiles_used = kwargs.get('nfiles_used', 0)
         ifile = kwargs.get('ifile', 0)
-        nfiles = kwargs.get('nfiles', 1)
         slot = kwargs.get('slot')
-        bias_type = kwargs.get('bias_type')
         superbias_frame = kwargs.get('superbias_frame', None)
 
         amps = get_amp_list(butler, ccd)
@@ -138,18 +135,21 @@ class BiasStructTask(BiasAnalysisTask):
                 superbias_im = get_raw_image(butler, superbias_frame, amp)
             else:
                 superbias_im = None
-            image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+            image = unbias_amp(img, serial_oscan,
+                               bias_type=self.config.bias, superbias_im=superbias_im)
             frames = get_image_frames_2d(image, regions)
 
             for key, region in zip(REGION_KEYS, REGION_NAMES):
                 framekey_row = "row_%s" % key
                 framekey_col = "col_%s" % key
-                struct = array_struct(frames[region], do_std=kwargs.get('std', False))
+                struct = array_struct(frames[region], do_std=self.config.std)
                 key_str = "biasst_%s_a%02i" % (slot, i)
                 if key_str not in data[framekey_row]:
-                    data[framekey_row][key_str] = np.ndarray((len(struct['rows']), nfiles))
+                    data[framekey_row][key_str] = np.ndarray((len(struct['rows']),
+                                                              nfiles_used))
                 if key_str not in data[framekey_col]:
-                    data[framekey_col][key_str] = np.ndarray((len(struct['cols']), nfiles))
+                    data[framekey_col][key_str] = np.ndarray((len(struct['cols']),
+                                                              nfiles_used))
                 data[framekey_row][key_str][:, ifile] = struct['rows']
                 data[framekey_col][key_str][:, ifile] = struct['cols']
 
@@ -199,8 +199,8 @@ class SuperbiasStructTask(BiasStructTask):
         if data is not None:
             sys.stdout.write("Ignoring butler in superbias_struct.extract")
 
-        mask_files = get_mask_files(self, **kwargs)
-        superbias = get_superbias_frame(self, mask_files=mask_files, **kwargs)
+        mask_files = self.get_mask_files()
+        superbias = self.get_superbias_frame(mask_files=mask_files)
 
         biasstruct_data = {}
 
@@ -208,9 +208,9 @@ class SuperbiasStructTask(BiasStructTask):
         for key, val in dim_array_dict.items():
             biasstruct_data[key] = {key:val}
 
-        BiasStructTask.get_ccd_data(None, superbias, biasstruct_data,
-                                    slot=slot, bias_type=None,
-                                    std=self.config.std, superbias_frame=None)
+        self.get_ccd_data(None, superbias, biasstruct_data,
+                          slot=slot, bias_type=None,
+                          std=self.config.std, superbias_frame=None)
 
         sys.stdout.write("!\n")
         sys.stdout.flush()

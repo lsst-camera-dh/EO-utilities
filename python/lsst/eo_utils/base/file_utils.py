@@ -19,10 +19,9 @@ except ImportError:
 
 
 from .defaults import DATACAT_TS8_MASK_TEST_TYPES, DATACAT_BOT_MASK_TEST_TYPES,\
-    SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING, ALL_RAFTS
+    SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING,\
+    SUPERBIAS_FORMAT_STRING, ALL_RAFTS
 
-
-MASKFILENAME_DEFAULTS = dict(outdir='analysis', raft=None, run=None, slot=None, suffix='_mask.fits')
 
 
 def makedir_safe(filepath):
@@ -76,6 +75,11 @@ class FilenameFormat:
         for key in self._keys:
             if key not in self._defaults:
                 self._missing.append(key)
+
+    def key_dict(self):
+        """@returns (dict) with all the keys and default values"""
+        ret_dict = {key:self._defaults.get(key, None) for key in self._keys}
+        return ret_dict
 
     def check(self, **kwargs):
         """C'tor
@@ -191,80 +195,9 @@ RAFT_BASE_FORMATTER = FILENAME_FORMATS.add_format('raft_basename', RAFT_FORMAT_S
 SUM_BASE_FORMATTER = FILENAME_FORMATS.add_format('summary_basename', SUMMARY_FORMAT_STRING)
 MASK_FORMATTER = FILENAME_FORMATS.add_format('mask', SLOT_FORMAT_STRING,
                                              fileType='masks', testType='', suffix='_mask.fits')
-
-
-def get_slot_file_basename(caller, **kwargs):
-    """Return the filename for an output file from a slot-level analysis
-
-    The format is {outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}{suffix}
-
-    @param caller ('Task')  Object calling this function
-    @param kwargs           Passed to the SLOT_FORMAT_STRING.format statement
-
-    @returns (str) The path for the file.
-    """
-    try:
-        return str(SLOT_FORMAT_STRING.format(**kwargs))
-    except KeyError as msg:
-        sys.stderr.write("get_slot_file_basename failed for %s." % caller)
-        raise KeyError(msg)
-
-
-def get_raft_file_basename(caller, **kwargs):
-    """Return the filename for an output file from a raft-level analysis
-
-    The format is {outdir}/{fileType}/{raft}/{testType}/{raft}-{run}{suffix}
-
-    @param caller ('Task')  Object calling this function
-    @param kwargs       Passed to the RAFT_FORMAT_STRING.format statement
-
-    @returns (str) The path for the file.
-    """
-    try:
-        return str(RAFT_FORMAT_STRING.format(**kwargs))
-    except KeyError as msg:
-        sys.stderr.write("get_raft_file_basename failed for %s." % caller)
-        raise KeyError(msg)
-
-
-def get_summary_file_basename(caller, **kwargs):
-    """Return the filename for a raft-level file
-
-    The format is {outdir}/{fileType}/summary/{testType}/{dataset}{suffix}
-
-    @param caller ('Task')  Object calling this function
-    @param kwargs:     These are passed to the string format statement
-
-    @returns (str) The path for the file.
-    """
-    try:
-        return str(SUMMARY_FORMAT_STRING.format(**kwargs))
-    except KeyError as msg:
-        sys.stderr.write("get_summary_file_basename failed for %s." % caller)
-        raise KeyError(msg)
-
-
-def mask_filename(caller, outdir, raft, run, slot, **kwargs):
-    """Return the filename for a mask file
-
-    @param caller ('Task')  Object calling this function
-
-    The following parameters are passed to the SLOT_FORMAT_STRING.format stateme
-    @param outdir (str)
-    @param raft (str)
-    @param run (str)
-    @param slot (str)
-    @param kwargs:
-        suffix (str)
-
-    @returns (str) The path for the file.
-    """
-    return get_slot_file_basename(caller,
-                                  outdir=outdir, fileType='masks',
-                                  raft=raft, testType='', run=run,
-                                  slot=slot, suffix=kwargs.get('suffix', '_mask.fits'))
-
-
+SUPERBIAS_FORMATTER = FILENAME_FORMATS.add_format('superbias',
+                                                  SUPERBIAS_FORMAT_STRING,
+                                                  bias_type=None, suffix='')
 
 def get_files_for_run(run_id, **kwargs):
     """Get a set of data files of a particular type for a particular run
@@ -349,23 +282,6 @@ def get_mask_files_run(run_id, **kwargs):
                              testtypes=mask_types,
                              outkey='MASK',
                              matchstr='_mask')
-
-
-def get_mask_files(caller, **kwargs):
-    """Get the name of the merged mask file
-
-    @param kwargs   These are passed to mask_filename execpt for:
-       mask (bool)  Flag to actually get the mask files
-
-    @return (list) List of files containing only the one mask file name
-    """
-    if kwargs.get('mask', False):
-        kwcopy = kwargs.copy()
-        kwcopy['suffix'] = '_mask.fits'
-        mask_files = [mask_filename(caller, **kwcopy)]
-    else:
-        mask_files = []
-    return mask_files
 
 
 def read_runlist(filepath):

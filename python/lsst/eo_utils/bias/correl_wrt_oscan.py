@@ -8,8 +8,6 @@ from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.file_utils import get_mask_files
-
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
@@ -17,7 +15,7 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_dims_from_ccd, get_ccd_from_id,\
     get_raw_image, get_geom_regions, get_amp_list, get_image_frames_2d
 
-from lsst.eo_utils.base.analysis import EO_TASK_FACTORY
+from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from .file_utils import RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
 
@@ -46,7 +44,7 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
     def __init__(self, **kwargs):
         """C'tor"""
         BiasAnalysisTask.__init__(self, **kwargs)
-
+        self.clip_value = 50.
 
     def extract(self, butler, data, **kwargs):
         """Extract the correlations between the imaging section
@@ -63,7 +61,8 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
         slot = self.config.slot
 
         bias_files = data['BIAS']
-        mask_files = get_mask_files(self, **kwargs)
+
+        mask_files = self.get_mask_files()
 
         sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
         sys.stdout.flush()
@@ -132,8 +131,7 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
             figs.get_obj('oscorr-col', 'axs').flat[i].hist(p_correl, bins=100, range=(-1., 1.))
 
 
-    @staticmethod
-    def get_ccd_data(butler, ccd, ref_frames, **kwargs):
+    def get_ccd_data(self, butler, ccd, ref_frames, **kwargs):
         """Get the bias values and update the data dictionary
 
         @param butler (`Butler`)   The data butler
@@ -163,8 +161,8 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
 
             dd_s = del_s_array.mean(1)[0:nrow_i]-del_i_array.mean(1)
             dd_p = del_p_array.mean(0)[0:ncol_i]-del_i_array.mean(0)
-            mask_s = np.fabs(dd_s) < 50.
-            mask_p = np.fabs(dd_p) < 50.
+            mask_s = np.fabs(dd_s) < self.clip_value
+            mask_p = np.fabs(dd_p) < self.clip_value
 
             s_correl[i, ifile-1] = np.corrcoef(del_s_array.mean(1)[0:nrow_i][mask_s],
                                                dd_s[mask_s])[0, 1]
@@ -174,6 +172,7 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
 
 class CorrelWRTOscanStatsConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
+    insuffix = EOUtilOptions.clone_param('insuffix', default='biasoscorr')
     suffix = EOUtilOptions.clone_param('suffix', default='biasoscorr_stats')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
@@ -294,6 +293,7 @@ class CorrelWRTOscanStatsTask(BiasAnalysisTask):
 
 class CorrelWRTOscanSummaryConfig(BiasSummaryAnalysisConfig):
     """Configuration for CorrelWRTOscanSummaryTask"""
+    insuffix = EOUtilOptions.clone_param('insuffix', default='biasoscorr_stats')
     suffix = EOUtilOptions.clone_param('suffix', default='biasoscorr_sum')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
@@ -328,7 +328,7 @@ class CorrelWRTOscanSummaryTask(BiasSummaryAnalysisTask):
         for key, val in data.items():
             data[key] = val.replace('biasoscorr_sum.fits', 'biasoscorr_stats.fits')
 
-        if not kwargs.get('skip', False):
+        if not self.config.skip:
             outtable = vstack_tables(data, tablename='biasoscorr_stats')
 
         dtables = TableDict()

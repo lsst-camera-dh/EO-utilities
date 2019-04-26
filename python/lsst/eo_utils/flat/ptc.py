@@ -19,8 +19,6 @@ from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.file_utils import get_mask_files
-
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
@@ -28,9 +26,7 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_amp_list,\
     get_geom_regions, get_raw_image, unbias_amp
 
-from lsst.eo_utils.base.analysis import EO_TASK_FACTORY
-
-from lsst.eo_utils.bias.file_utils import get_superbias_frame
+from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from lsst.eo_utils.flat.file_utils import RAFT_FLAT_TABLE_FORMATTER,\
     RAFT_FLAT_PLOT_FORMATTER
@@ -82,18 +78,16 @@ class PTCTask(FlatAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        slot = kwargs['slot']
-
         flat_files = data['FLAT']
-        mask_files = get_mask_files(self, **kwargs)
-        superbias_frame = get_superbias_frame(self, mask_files=mask_files, **kwargs)
+        mask_files = self.get_mask_files()
+        superbias_frame = self.get_superbias_frame(mask_files)
 
         ptc_data = dict()
         for i in range(1, 17):
             ptc_data['AMP%02i_MEAN' % i] = []
             ptc_data['AMP%02i_VAR' % i] = []
 
-        sys.stdout.write("Working on %s, %i files: \n" % (slot, len(flat_files)))
+        sys.stdout.write("Working on %s, %i files: \n" % (self.config.slot, len(flat_files)))
         for id_1, id_2 in zip(flat_files[::2], flat_files[1::2]):
             flat_1 = get_ccd_from_id(butler, id_1, [])
             flat_2 = get_ccd_from_id(butler, id_2, [])
@@ -157,6 +151,7 @@ class PTCTask(FlatAnalysisTask):
 
 class PTCStatsConfig(FlatAnalysisConfig):
     """Configuration for BiasVRowTask"""
+    insuffix = EOUtilOptions.clone_param('insuffix', default='ptc')
     suffix = EOUtilOptions.clone_param('suffix', default='ptc_stats')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
@@ -302,6 +297,7 @@ class PTCStatsTask(FlatAnalysisTask):
 
 class PTCSummaryConfig(FlatSummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
+    insuffix = EOUtilOptions.clone_param('insuffix', default='ptc_stats')
     suffix = EOUtilOptions.clone_param('suffix', default='ptc_sum')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
@@ -337,7 +333,7 @@ class PTCSummaryTask(FlatSummaryAnalysisTask):
 
         remove_cols = ['ptc_mean', 'ptc_var']
 
-        if not kwargs.get('skip', False):
+        if not self.config.skip:
             outtable = vstack_tables(data, tablename='ptc_stats',
                                      remove_cols=remove_cols)
 

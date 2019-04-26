@@ -5,14 +5,11 @@
 """This module contains functions to find files of a particular type in the SLAC directory tree"""
 
 from lsst.eo_utils.base.defaults import DATACAT_TS8_TEST_TYPES, DATACAT_BOT_TEST_TYPES,\
-     DEFAULT_SUPERBIAS_TYPE, SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
+     SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
 
 from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_for_run,\
     FILENAME_FORMATS
-from lsst.eo_utils.base.image_utils import get_ccd_from_id
 
-SUPERBIAS_FORMAT_STRING =\
-    '{outdir}/superbias/{raft}/{raft}-{run}-{slot}_superbias_b-{bias_type}{suffix}.fits'
 SUPERBIAS_STAT_FORMAT_STRING =\
     '{outdir}/superbias/{raft}/{raft}-{run}-{slot}_{stat_type}_b-{bias_type}{suffix}.fits'
 SLOT_BIAS_FORMAT_STRING =\
@@ -26,9 +23,6 @@ BIAS_DEFAULT_FIELDS = dict(testType='bias', bias=None, superbias=None, suffix=''
 SUPERBIAS_DEFAULT_FIELDS = dict(testType='superbias', bias=None, superbias=None, suffix='')
 
 
-SUPERBIAS_FORMATTER = FILENAME_FORMATS.add_format('superbias',
-                                                  SUPERBIAS_FORMAT_STRING,
-                                                  bias_type=None, suffix='')
 SUPERBIAS_STAT_FORMATTER = FILENAME_FORMATS.add_format('superbias_stat',
                                                        SUPERBIAS_STAT_FORMAT_STRING,
                                                        bias_type=None, suffix='')
@@ -176,29 +170,3 @@ def get_bias_files_run(run_id, **kwargs):
                              testtypes=acq_types,
                              outkey='BIAS',
                              **kwargs)
-
-
-def get_superbias_frame(caller, **kwargs):
-    """Get the superbias frame
-
-    @param kwargs
-       superbias_type (str)
-       run_id (str)           The number number we are reading
-
-    @returns (dict) Dictionary mapping slot to file names
-    """
-    kwcopy = kwargs.copy()
-    superbias_type = kwcopy.pop('superbias', DEFAULT_SUPERBIAS_TYPE)
-    stat_type = kwcopy.pop('stat', None)
-    mask_files = kwcopy.pop('mask_files', [])
-
-    if stat_type is None:
-        if superbias_type is None:
-            return None
-        superbias_file = SUPERBIAS_FORMATTER(caller, bias_type=superbias_type, **kwcopy)
-    else:
-        superbias_file = SUPERBIAS_STAT_FORMATTER(caller,
-                                                  bias_type=superbias_type,
-                                                  stat_type=stat_type,
-                                                  **kwargs)
-    return get_ccd_from_id(None, superbias_file, mask_files)

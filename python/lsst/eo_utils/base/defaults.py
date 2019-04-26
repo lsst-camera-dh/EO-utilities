@@ -42,6 +42,8 @@ DATACAT_BOT_TEST_TYPES = ['DARK', 'FLAT', 'FE55', 'PPUMP', 'SFLAT', 'LAMBDA', 'T
 SLOT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}{suffix}'
 RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-RFT{suffix}'
 SUMMARY_FORMAT_STRING = '{outdir}/{fileType}/summary/{testType}/{dataset}{suffix}'
+SUPERBIAS_FORMAT_STRING =\
+    '{outdir}/superbias/{raft}/{raft}-{run}-{slot}_superbias_b-{bias_type}{suffix}.fits'
 
 
 # These readout times, in seconds

@@ -8,8 +8,6 @@ from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.file_utils import get_mask_files
-
 from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
@@ -17,10 +15,9 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_raw_image,\
     get_geom_regions, get_amp_list, unbias_amp
 
-from lsst.eo_utils.base.analysis import EO_TASK_FACTORY
+from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from .file_utils import get_superbias_frame,\
-    RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
+from .file_utils import RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
 
 from .analysis import BiasAnalysisTask, BiasAnalysisConfig, BiasAnalysisByRaft
 
@@ -49,7 +46,7 @@ class OscanCorrelTask(BiasAnalysisTask):
     def __init__(self, **kwargs):
         """C'tor"""
         BiasAnalysisTask.__init__(self, **kwargs)
-
+        self.boundry = 10
 
     def extract(self, butler, data, **kwargs):
         """Extract the correlations between the serial overscan for each amp on a raft
@@ -66,19 +63,15 @@ class OscanCorrelTask(BiasAnalysisTask):
 
         slots = ALL_SLOTS
         overscans = []
-        boundry = 10
 
-        kwcopy = kwargs.copy()
         for slot in slots:
             bias_files = data[slot]['BIAS']
 
-            kwcopy['slot'] = slot
-            mask_files = get_mask_files(self, **kwcopy)
-            superbias_frame = get_superbias_frame(self, mask_files=mask_files, **kwcopy)
+            mask_files = self.get_mask_files(slot=slot)
+            superbias_frame = self.get_superbias_frame(mask_files, slot=slot)
 
             ccd = get_ccd_from_id(butler, bias_files[0], [])
-            overscans += self.get_ccd_data(butler, ccd, boundry=boundry,
-                                           superbias_frame=superbias_frame)
+            overscans += self.get_ccd_data(butler, ccd, superbias_frame=superbias_frame)
 
         namps = len(overscans)
         if self.config.covar:
@@ -107,8 +100,7 @@ class OscanCorrelTask(BiasAnalysisTask):
         figs.plot_raft_correl_matrix("oscorr", data, title="Overscan Correlations", slots=ALL_SLOTS)
 
 
-    @staticmethod
-    def get_ccd_data(butler, ccd, **kwargs):
+    def get_ccd_data(self, butler, ccd, **kwargs):
         """Get the serial overscan data
 
         @param butler (Butler)   The data butler
@@ -120,7 +112,6 @@ class OscanCorrelTask(BiasAnalysisTask):
 
         @returns (list) the overscan data
         """
-        boundry = kwargs.get('boundry', 10)
         amps = get_amp_list(butler, ccd)
         superbias_frame = kwargs.get('superbias_frame', None)
         overscans = []
@@ -137,7 +128,7 @@ class OscanCorrelTask(BiasAnalysisTask):
             serial_oscan = regions['serial_overscan']
             img = get_raw_image(butler, ccd, amp)
             image = unbias_amp(img, serial_oscan, bias_type=None, superbias_im=superbias_im)
-            serial_oscan.grow(-boundry)
+            serial_oscan.grow(-self.boundry)
             oscan_data = image[serial_oscan]
             step_x = regions['step_x']
             step_y = regions['step_y']

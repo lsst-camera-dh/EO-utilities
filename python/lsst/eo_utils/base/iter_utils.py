@@ -75,7 +75,7 @@ class AnalysisHandler(Configurable):
         handler_group = parser.add_argument_group("handler", "Arguments for job handler")
         add_pex_arguments(handler_group, self.ConfigClass)
         task_group = parser.add_argument_group("task", "Arguments for analysis task")
-        add_pex_arguments(task_group, self._task.ConfigClass, self.exclude_pars)        
+        add_pex_arguments(task_group, self._task.ConfigClass, self.exclude_pars)
 
 
     def run_analysis(self, **kwargs):

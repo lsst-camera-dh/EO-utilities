@@ -6,12 +6,14 @@ from lsst.eotest.sensor import add_mask_files
 
 from .iter_utils import AnalysisBySlot
 
-from .analysis import BaseAnalysisConfig, BaseAnalysisTask, EO_TASK_FACTORY
+from .analysis import BaseAnalysisConfig, BaseAnalysisTask
+
+from .factory import EO_TASK_FACTORY
 
 from .config_utils import EOUtilOptions
 
 from .file_utils import makedir_safe, get_mask_files_run,\
-    mask_filename, MASKFILENAME_DEFAULTS
+    MASK_FORMATTER
 
 
 def get_mask_data(caller, butler, run_num, **kwargs):
@@ -87,9 +89,7 @@ class MaskAddTask(BaseAnalysisTask):
         if butler is not None:
             print("Ignoring Butler to get mask files")
 
-        mask_kwargs = self.extract_config_vals(MASKFILENAME_DEFAULTS)
-
-        outfile = mask_filename(self, **mask_kwargs)
+        outfile = self.get_filename_from_format(MASK_FORMATTER, "")
         makedir_safe(outfile)
 
         add_mask_files(mask_files, outfile)

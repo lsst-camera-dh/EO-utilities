@@ -14,7 +14,7 @@ from lsst.eo_utils.base.iter_utils import AnalysisIterator,\
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
 from lsst.eo_utils.flat.file_utils import SUM_FLAT_TABLE_FORMATTER,\
-    SUM_FLAT_PLOT_FORMATTER, SLOT_FLAT_TABLE_FORMATTER, RAFT_FLAT_PLOT_FORMATTER
+    SUM_FLAT_PLOT_FORMATTER, SLOT_FLAT_TABLE_FORMATTER, RAFT_FLAT_TABLE_FORMATTER
 
 
 def get_tablenames_by_raft(caller, butler, run_num, **kwargs):

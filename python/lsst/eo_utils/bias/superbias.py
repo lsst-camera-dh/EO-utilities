@@ -7,10 +7,10 @@ import lsst.afw.math as afwMath
 import lsst.eotest.image_utils as imutil
 
 from lsst.eo_utils.base.file_utils import makedir_safe,\
-    get_mask_files
+    SUPERBIAS_FORMATTER
 
 from lsst.eo_utils.base.defaults import SBIAS_TEMPLATE,\
-    DEFAULT_STAT_TYPE, DEFAULT_BITPIX
+    DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
@@ -19,10 +19,12 @@ from lsst.eo_utils.base.plot_utils import FigureDict
 from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
     flip_data_in_place, make_superbias
 
-from lsst.eo_utils.base.analysis import EO_TASK_FACTORY,\
-    BaseAnalysisConfig, BaseAnalysisTask
+from lsst.eo_utils.base.analysis import BaseAnalysisConfig,\
+    BaseAnalysisTask
 
-from .file_utils import SUPERBIAS_FORMATTER, SUPERBIAS_STAT_FORMATTER
+from lsst.eo_utils.base.factory import EO_TASK_FACTORY
+
+from .file_utils import SUPERBIAS_STAT_FORMATTER
 
 from .analysis import BiasAnalysisBySlot
 
@@ -38,6 +40,7 @@ class SuperbiasConfig(BaseAnalysisConfig):
     stat = EOUtilOptions.clone_param('stat')
     bias = EOUtilOptions.clone_param('bias')
     nfiles = EOUtilOptions.clone_param('nfiles')
+    bitpix = EOUtilOptions.clone_param('bitpix')
 
 
 class SuperbiasTask(BaseAnalysisTask):
@@ -61,17 +64,7 @@ class SuperbiasTask(BaseAnalysisTask):
 
         @param butler (`Butler`)   The data butler
         @param data (dict)         Dictionary pointing to the bias and mask files
-        @param kwargs
-            raft (str)           Raft in question, i.e., 'RTM-004-Dev'
-            run_num (str)        Run number, i.e,. '6106D'
-            slot (str)           Slot in question, i.e., 'S00'
-            bias (str)           Method to use for unbiasing
-            stat (str)           Statistic to use to stack data
-            outdir (str)         Output directory
-            bitpix (int)         Output data format BITPIX field
-            skip (bool)          Flag to skip making superbias, only produce plots
-            plot (bool)          Plot superbias images
-            stats_hist (bool)    Plot superbias summary histograms
+        @param kwargs              Uped to override config
         """
         self.safe_update(**kwargs)
         slot = self.config.slot
@@ -101,21 +94,22 @@ class SuperbiasTask(BaseAnalysisTask):
 
         @return (dict)
         """
+        self.safe_update(**kwargs)
 
-        mask_files = get_mask_files(self, **kwargs)
-        if kwargs.get('stat', DEFAULT_STAT_TYPE) == DEFAULT_STAT_TYPE:
-            output_file = SUPERBIAS_FORMATTER(bias_type=kwargs.get('bias'), **kwargs)
+        mask_files = self.get_mask_files()
+        if self.config.stat == DEFAULT_STAT_TYPE:
+            formatter = SUPERBIAS_FORMATTER
+            suffix = ""
         else:
-            output_file = SUPERBIAS_STAT_FORMATTER(bias_type=kwargs.get('bias'),
-                                                   stat_type=kwargs.get('stat'),
-                                                   **kwargs)
+            formatter = SUPERBIAS_STAT_FORMATTER
+            suffix = ""
 
+        output_file = self.get_filename_from_format(formatter, suffix)
         makedir_safe(output_file)
 
-        if not kwargs.get('skip', False):
-            out_data = self.extract(butler, slot_data, **kwargs)
-            imutil.writeFits(out_data, output_file, SBIAS_TEMPLATE,
-                             kwargs.get('bitpix', DEFAULT_BITPIX))
+        if not self.config.skip:
+            out_data = self.extract(butler, slot_data)
+            imutil.writeFits(out_data, output_file, SBIAS_TEMPLATE, self.config.bitpix)
             if butler is not None:
                 flip_data_in_place(output_file)
 
@@ -132,29 +126,44 @@ class SuperbiasTask(BaseAnalysisTask):
             plot (bool)              Plot images of the superbias
             stats_hist (bool)        Plot statistics
         """
+        self.safe_update(**kwargs)
+
         subtract_mean = self.config.stat == DEFAULT_STAT_TYPE
 
         if self.config.plot:
             figs.plot_sensor("img", None, sbias)
 
+        default_array_kw = {}
         if self.config.stats_hist:
-            kwcopy = kwargs.copy()
-            kwcopy.pop('bias', None)
-            kwcopy.pop('superbias', None)
+            kwcopy = self.config.extract_config_vals(default_array_kw)
             figs.histogram_array("hist", None, sbias,
                                  title="Historam of RMS of bias-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
                                  subtract_mean=subtract_mean, **kwcopy)
 
-    def make_plots(self, sbias):
+    def make_plots(self, sbias, **kwargs):
         """Tie together the functions to make the data tables
         @param sbias (`MaskedCCD`)   The superbias frame
 
         @return (`FigureDict`) the figues we produced
         """
+        self.safe_update(**kwargs)
+
         figs = FigureDict()
         self.plot(sbias, figs)
-        return figs
+        if self.config.plot == 'display':
+            figs.save_all(None)
+            return figs
+
+        if self.config.stat == DEFAULT_STAT_TYPE:
+            formatter = SUPERBIAS_FORMATTER
+        else:
+            formatter = SUPERBIAS_STAT_FORMATTER
+        plotbase = self.get_filename_from_format(formatter, "")
+
+        makedir_safe(plotbase)
+        figs.save_all(plotbase, self.config.plot)
+        return None
 
 
     def __call__(self, butler, slot_data, **kwargs):
@@ -163,22 +172,10 @@ class SuperbiasTask(BaseAnalysisTask):
         @param slot_data (dict)    Dictionary pointing to the bias and mask files
         @param kwargs              Passed to the functions that do the actual work
         """
-        sbias = self.make_superbias(butler, slot_data, **kwargs)
-        if kwargs.get('plot', False):
-            figs = self.make_plots(sbias)
-            if kwargs.get('interactive', False):
-                figs.save_all(None)
-            else:
-                if kwargs.get('stat', DEFAULT_STAT_TYPE) == DEFAULT_STAT_TYPE:
-                    plotbase = SUPERBIAS_FORMATTER(bias_type=kwargs.get('bias'),
-                                                   **kwargs).replace('.fits', '')
-                else:
-                    plotbase = SUPERBIAS_STAT_FORMATTER(bias_type=kwargs.get('bias'),
-                                                        stat_type=kwargs.get('stat'),
-                                                        **kwargs).replace('.fits', '')
-
-                makedir_safe(plotbase)
-                figs.save_all(plotbase)
+        self.safe_update(**kwargs)
+        sbias = self.make_superbias(butler, slot_data)
+        if self.config.plot is not None:
+            self.make_plots(sbias)
 
 
 EO_TASK_FACTORY.add_task_class('Superbias', SuperbiasTask)

@@ -3,13 +3,12 @@
 This module contains base classes for various types of analyses.
 """
 
-from collections import OrderedDict
-
 import lsst.pex.config as pexConfig
 
-from .file_utils import makedir_safe, SLOT_BASE_FORMATTER
+from .file_utils import makedir_safe, SLOT_BASE_FORMATTER,\
+    MASK_FORMATTER, SUPERBIAS_FORMATTER
 
-from .config_utils import EOUtilOptions, Configurable, setup_parser
+from .config_utils import EOUtilOptions, Configurable
 
 from .data_utils import TableDict
 
@@ -17,7 +16,7 @@ from .plot_utils import FigureDict
 
 from .iter_utils import SimpleAnalysisHandler
 
-
+from .image_utils import get_ccd_from_id
 
 class BaseAnalysisConfig(pexConfig.Config):
     """Configuration for EO analysis tasks"""
@@ -51,10 +50,32 @@ class BaseAnalysisTask(Configurable):
         """@returns (`AnalysisHandler`) an analysis iterator that using this task"""
         return self.iteratorClass(self)
 
+    def get_filename_from_format(self, formatter, suffix, **kwargs):
+        """Use a formatter to get a filename
+
+        @param kwargs:    Used to override configruation
+        """
+        self.safe_update(**kwargs)
+        format_key_dict = formatter.key_dict()
+        format_vals = self.config.extract_config_vals(format_key_dict)
+        format_vals['suffix'] = suffix
+        return formatter(**format_vals)
+
+    def get_mask_files(self, **kwargs):
+        """Get the list of mask files
+
+        @param kwargs:    Used to override configruation
+        @returns (list)
+        """
+        self.safe_update(**kwargs)
+        if self.config.mask:
+            return [self.get_filename_from_format(MASK_FORMATTER, "")]
+        return []
+
     @classmethod
     def add_parser_arguments(cls, parser):
         """Add parser arguments for this class
-        
+
         @param parser (`ArgumentParser`)   The parser
         """
         functor = cls()
@@ -80,7 +101,7 @@ class AnalysisConfig(BaseAnalysisConfig):
     """Configuration for EO analysis tasks"""
     skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
-    suffix = EOUtilOptions.clone_param('suffix')
+    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class AnalysisTask(BaseAnalysisTask):
@@ -101,20 +122,56 @@ class AnalysisTask(BaseAnalysisTask):
         """
         BaseAnalysisTask.__init__(self, **kwargs)
 
-    def tablefile_name(self, **kwargs):
-        """ Name of the file with the output tables
+    def get_suffix(self, **kwargs):
+        """Get the suffix to add to table and plotfiles
 
         @param kwargs:    Used to override configruation
+        @returns (str)
         """
-        return self.tablename_format(**kwargs)
+        self.safe_update(**kwargs)
+        return self.config.outsuffix
 
+    def tablefile_name(self, **kwargs):
+        """Get the name of the file with the output tables
+
+        @param kwargs:    Used to override configruation
+        @returns (str)
+        """
+        self.safe_update(**kwargs)
+        return self.get_filename_from_format(self.tablename_format,
+                                             self.get_suffix())
 
     def plotfile_name(self, **kwargs):
-        """ Name of the file for plots
+        """Get the basename of the plot files
 
         @param kwargs:    Used to override configruation
+        @returns (str)
         """
-        return self.plotname_format(**kwargs)
+        self.safe_update(**kwargs)
+        return self.get_filename_from_format(self.plotname_format,
+                                             self.get_suffix())
+
+    def get_superbias_file(self, **kwargs):
+        """Get the superbias file
+
+        @param kwargs:    Used to override configruation
+        @returns (list)
+        """
+        self.safe_update(**kwargs)
+        if self.config.superbias is None:
+            return None
+        return self.get_filename_from_format(SUPERBIAS_FORMATTER, "")
+
+    def get_superbias_frame(self, mask_files, **kwargs):
+        """Get the superbias frame
+
+        @returns (`MaskedCCD`)      The frame
+        """
+        self.safe_update(**kwargs)
+        superbias_file = self.get_superbias_file()
+        if superbias_file is None:
+            return None
+        return get_ccd_from_id(None, superbias_file, mask_files)
 
     def make_datatables(self, butler, data, **kwargs):
         """Tie together the functions to make the data tables
@@ -125,14 +182,16 @@ class AnalysisTask(BaseAnalysisTask):
 
         @return (TableDict)
         """
-        tablebase = self.tablefile_name(**kwargs)
+        self.safe_update(**kwargs)
+
+        tablebase = self.tablefile_name()
         makedir_safe(tablebase)
         output_data = tablebase + ".fits"
 
         if self.config.skip:
             dtables = TableDict(output_data)
         else:
-            dtables = self.extract(butler, data, **kwargs)
+            dtables = self.extract(butler, data)
             dtables.save_datatables(output_data)
             print("Writing %s" % output_data)
         return dtables
@@ -143,13 +202,15 @@ class AnalysisTask(BaseAnalysisTask):
 
         @return (`FigureDict`) the figues we produced
         """
+        self.safe_update(**kwargs)
+
         figs = FigureDict()
-        self.plot(dtables, figs, **kwargs)
+        self.plot(dtables, figs)
         if self.config.plot == 'display':
             figs.save_all(None)
             return figs
 
-        plotbase = self.plotfile_name(**kwargs)
+        plotbase = self.plotfile_name()
         makedir_safe(plotbase)
         figs.save_all(plotbase, self.config.plot)
         return None
@@ -161,9 +222,11 @@ class AnalysisTask(BaseAnalysisTask):
         @param kwargs              Passed to the functions that do the actual work
         """
         self.safe_update(**kwargs)
-        dtables = self.make_datatables(butler, data, **kwargs)
+        dtables = self.make_datatables(butler, data)
         if self.config.plot is not None:
-            self.make_plots(dtables, **kwargs)
+            self.make_plots(dtables)
+
+
 
     def extract(self, butler, data, **kwargs):
         """This needs to be implemented by the sub-class"""
@@ -172,100 +235,3 @@ class AnalysisTask(BaseAnalysisTask):
     def plot(self, dtables, figs, **kwargs):
         """This needs to be implemented by the sub-class"""
         raise NotImplementedError("AnalysisFunc.plot is not overridden.")
-
-
-
-class EOTaskFactory:
-    """Small class to keep track of analysis tasks"""
-
-    def __init__(self):
-        """C'tor"""
-        self._tasks = OrderedDict()
-
-    def keys(self):
-        """@returns (list) the types of file names"""
-        return self._tasks.keys()
-
-    def values(self):
-        """@returns (list) the `FilenameFormat` objects """
-        return self._tasks.values()
-
-    def items(self):
-        """@returns (list) the key-value pairs"""
-        return self._tasks.items()
-
-    def __getitem__(self, key):
-        """Get a single item
-
-        @param key (str)               The key
-        @returns (`BaseAnalysisTask`)  The corresponding task
-        """
-        return self._tasks[key]
-
-    def add_task_class(self, key, task_class):
-        """Add an item to the dict
-
-        @param task_class (class)   The class
-
-        @returns (`FilenameFormat`) The newly create object
-        """
-        if key in self._tasks:
-            raise KeyError("Key %s is already in EOTaskFactory" % key)
-        self._tasks[key] = task_class
-
-
-    def __call__(self, key, **kwargs):
-        """Construnct an object of the selected class
-
-        @param key (str)            The key
-        @param kwargs               Passed to the object c'tor
-
-        @returns (`BaseAnalysisTask`)
-        """
-        return self._tasks[key](**kwargs)
-
-    def run_task(self, key, **kwargs):
-        """Run the selected task
-
-        @param key (str)            The key
-        @param kwargs               Passed to the `FilenameFormat` object
-
-        @returns (str) The corresponding filename
-        """
-        task_class = self._tasks[key]
-        task_class.run(**kwargs)
-
-        
-    def build_parser(self, task_names=None, **kwargs):
-        """Build and argument parser for a set of defined tasks
-
-        @param task_names (list)    The tasks to include
-        
-        @returns (`ArgumentParser`) The parser
-        """
-        if task_names is None:
-            task_names = self._tasks.keys()
-
-        parser = setup_parser(**kwargs)
-        supparsers = parser.add_subparsers(dest='task', help='sub-command help')
-
-        for task_name in task_names:
-            task_class = self._tasks[task_name]
-            subparser = supparsers.add_parser(task_name, help=task_class.__doc__)
-            task_class.add_parser_arguments(subparser)
-        
-        return parser
-
-    def parse_and_run(self, **kwargs):
-        """Run a task using the command line arguments"""
-        parser = self.build_parser(usage="eo_task.py")
-        args = parser.parse_args()
-
-        arg_dict = args.__dict__.copy()
-        arg_dict = args.__dict__.copy()
-        arg_dict.update(**kwargs)
-
-        self.run_task(args.task, **arg_dict)
-
-
-EO_TASK_FACTORY = EOTaskFactory()

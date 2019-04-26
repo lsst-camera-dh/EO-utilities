@@ -4,8 +4,6 @@ import sys
 
 import numpy as np
 
-from lsst.eo_utils.base.file_utils import get_mask_files
-
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
@@ -16,12 +14,11 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import get_raw_image, get_amp_list
 
-from lsst.eo_utils.base.analysis import EO_TASK_FACTORY
+from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisByRaft
 
-from .file_utils import get_superbias_frame,\
-    RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER,\
+from .file_utils import RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER,\
     SUM_SBIAS_TABLE_FORMATTER, SUM_SBIAS_PLOT_FORMATTER
 
 from .meta_analysis import SuperbiasSummaryByRaft, BiasSummaryAnalysisConfig,\
@@ -30,6 +27,7 @@ from .meta_analysis import SuperbiasSummaryByRaft, BiasSummaryAnalysisConfig,\
 
 class SuperbiasStatsConfig(BiasAnalysisConfig):
     """Configuration for SuperbiasStatsTask"""
+    insuffix = EOUtilOptions.clone_param('insuffix', default='')
     suffix = EOUtilOptions.clone_param('suffix', default='stats')
     bias = EOUtilOptions.clone_param('bias')
     mask = EOUtilOptions.clone_param('mask')
@@ -63,7 +61,6 @@ class SuperbiasStatsTask(BiasAnalysisTask):
         self.safe_update(**kwargs)
         slots = ALL_SLOTS
 
-        kwcopy = kwargs.copy()
         if butler is not None:
             sys.stdout.write("Ignoring butler in superbias_stats.extract\n")
         if data is not None:
@@ -79,11 +76,9 @@ class SuperbiasStatsTask(BiasAnalysisTask):
             sys.stdout.write(" %s" % slot)
             sys.stdout.flush()
 
-            kwcopy['slot'] = slot
-            mask_files = get_mask_files(self, **kwcopy)
-            superbias = get_superbias_frame(self, mask_files=mask_files, **kwcopy)
-            self.get_superbias_stats(None, superbias, stats_data,
-                                     islot=islot, slot=slot)
+            mask_files = self.get_mask_files(slot=slot)
+            superbias = self.get_superbias_frame(mask_files, slot=slot)
+            self.get_superbias_stats(None, superbias, stats_data, islot)
 
         sys.stdout.write(".\n")
         sys.stdout.flush()
@@ -108,7 +103,7 @@ class SuperbiasStatsTask(BiasAnalysisTask):
 
 
     @staticmethod
-    def get_superbias_stats(butler, superbias, stats_data, **kwargs):
+    def get_superbias_stats(butler, superbias, stats_data, islot):
         """Get the serial overscan data
 
         @param butler (`Butler)         The data butler
@@ -118,7 +113,6 @@ class SuperbiasStatsTask(BiasAnalysisTask):
         islot (int)              Index of the slot in question
         """
         amps = get_amp_list(butler, superbias)
-        islot = kwargs.get('islot')
 
         if 'mean' not in stats_data:
             stats_data['mean'] = np.ndarray((9, 16))
@@ -138,6 +132,7 @@ class SuperbiasStatsTask(BiasAnalysisTask):
 
 class SuperbiasSummaryConfig(BiasSummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
+    insuffix = EOUtilOptions.clone_param('insuffix', default='stats')
     suffix = EOUtilOptions.clone_param('suffix', default='sum')
     dataset = EOUtilOptions.clone_param('dataset')
     bias = EOUtilOptions.clone_param('bias')
@@ -172,7 +167,7 @@ class SuperbiasSummaryTask(BiasSummaryAnalysisTask):
         self.safe_update(**kwargs)
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in superbias_stats_summary.extract %s\n" % kwargs)
+            sys.stdout.write("Ignoring butler in superbias_stats_summary.extract\n")
 
         for key, val in data.items():
             data[key] = val.replace('_sum.fits', '_stats.fits')

@@ -11,7 +11,8 @@ from collections import OrderedDict
 import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
 
-from .defaults import DEFAULT_OUTDIR, DEFAULT_LOGFILE, DEFAULT_NBINS, DEFAULT_BATCH_ARGS
+from .defaults import DEFAULT_OUTDIR, DEFAULT_LOGFILE,\
+    DEFAULT_NBINS, DEFAULT_BATCH_ARGS, DEFAULT_BITPIX
 
 
 # Some standard set of argument names
@@ -46,6 +47,7 @@ class EOUtilOptions(pexConfig.Config):
     raft = pexConfig.Field("Raft Slot", str, default=None)
     rafts = pexConfig.ListField("Raft Slot(s)", str, default=None)
     nfiles = pexConfig.Field("Number of files to use", int, default=None)
+    insuffix = pexConfig.Field("Suffix for input files", str, default="")
 
     # Options for input data processing
     bias = pexConfig.Field("Method to use for unbiasing", str, default=None)
@@ -56,8 +58,8 @@ class EOUtilOptions(pexConfig.Config):
     # Options for where to put output data and what to include
     outdir = pexConfig.Field("Output file path root", str,
                              default=DEFAULT_OUTDIR)
-    suffix = pexConfig.Field("Suffix for output files", str,
-                             default="")
+    outsuffix = pexConfig.Field("Suffix for output files", str,
+                                default="")
     plot = pexConfig.Field("Make plots", str,
                            default=None)
     skip = pexConfig.Field("Skip the main analysis and only make plots", bool,
@@ -84,6 +86,9 @@ class EOUtilOptions(pexConfig.Config):
                             default=DEFAULT_NBINS)
     subtract_mean = pexConfig.Field("Subtract the mean from all images frames", bool,
                                     default=False)
+
+    # Other output options
+    bitpix = pexConfig.Field("FITS bitpix value", int, default=DEFAULT_BITPIX)
 
     # Options for Fe55 Tasks
     use_all = pexConfig.Field("Use all fe55 clusters", bool, default=False)
@@ -200,7 +205,7 @@ def setup_parser(**kwargs):
 def copy_dict(in_dict, def_dict):
     """Copy a set of key-value pairs to an new dict
 
-    @param in_dict (dict)   The dictionary mapping name to (type, default, helpstring) tuple
+    @param in_dict (dict)   The dictionary with the input values
     @param def_dict (dict)  The dictionary with the default values
 
     @returns (dict) Dictionary with only the arguments we have selected
@@ -269,7 +274,7 @@ class Configurable(pipeBase.Task):
         """ C'tor
         Extract a set of configuration values to a dict
 
-        @param data (dict)         Dictionary pointing to the bias and mask files
+        @param def_dict (dict)     Dictionary with the default values
 
         @returns (dict)            Dictionary with the output values
         """
