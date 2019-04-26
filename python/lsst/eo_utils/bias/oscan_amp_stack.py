@@ -6,7 +6,7 @@ import numpy as np
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.config_utils import EOUtilConfig
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.file_utils import get_mask_files
 
@@ -17,9 +17,10 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import  REGION_KEYS,\
     get_ccd_from_id, get_dimension_arrays_from_ccd
 
+from lsst.eo_utils.base.analysis import EO_TASK_FACTORY
+
 from .file_utils import get_superbias_frame,\
-    raft_bias_tablename, raft_bias_plotname,\
-    bias_summary_tablename, bias_summary_plotname
+    RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
 
 from .data_utils import stack_by_amps, convert_stack_arrays_to_dict
 
@@ -32,10 +33,10 @@ from .meta_analysis import BiasSummaryByRaft, BiasTableAnalysisByRaft,\
 
 class OscanAmpStackConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasosstack')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
-    mask = EOUtilConfig.clone_param('mask')
+    suffix = EOUtilOptions.clone_param('suffix', default='biasosstack')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
+    mask = EOUtilOptions.clone_param('mask')
 
 
 class OscanAmpStackTask(BiasAnalysisTask):
@@ -132,9 +133,9 @@ class OscanAmpStackTask(BiasAnalysisTask):
 
 class OscanAmpStackStatsConfig(BiasAnalysisConfig):
     """Configuration for OscanAmpStackStatsTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasosstack_stats')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
+    suffix = EOUtilOptions.clone_param('suffix', default='biasosstack_stats')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
 
 
 class OscanAmpStackStatsTask(BiasAnalysisTask):
@@ -143,8 +144,9 @@ class OscanAmpStackStatsTask(BiasAnalysisTask):
     ConfigClass = OscanAmpStackStatsConfig
     _DefaultName = "OscanAmpStackStatsTask"
     iteratorClass = BiasTableAnalysisByRaft
-    tablefile_name = raft_bias_tablename
-    plotfile_name = raft_bias_plotname
+
+    tablename_format = RAFT_BIAS_TABLE_FORMATTER
+    plotname_format = RAFT_BIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """C'tor """
@@ -263,9 +265,9 @@ class OscanAmpStackStatsTask(BiasAnalysisTask):
 
 class OscanAmpStackSummaryConfig(BiasSummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasosstack_sum')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
+    suffix = EOUtilOptions.clone_param('suffix', default='biasosstack_sum')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
 
 
 class OscanAmpStackSummaryTask(BiasSummaryAnalysisTask):
@@ -274,8 +276,6 @@ class OscanAmpStackSummaryTask(BiasSummaryAnalysisTask):
     ConfigClass = OscanAmpStackSummaryConfig
     _DefaultName = "OscanAmpStackSummaryTask"
     iteratorClass = BiasSummaryByRaft
-    tablefile_name = bias_summary_tablename
-    plotfile_name = bias_summary_plotname
 
     def __init__(self, **kwargs):
         """C'tor"""
@@ -338,3 +338,8 @@ class OscanAmpStackSummaryTask(BiasSummaryAnalysisTask):
                             yerrs=yvals_s_err, ylabel="Amplitude of Row-wise amp stack [ADU]")
         figs.plot_run_chart("p_col_diff", runs, yvals_p_diff,
                             yerrs=yvals_p_err, ylabel="Amplitude of Col-wise amp stack [ADU]")
+
+
+EO_TASK_FACTORY.add_task_class('OscanAmpStack', OscanAmpStackTask)
+EO_TASK_FACTORY.add_task_class('OscanAmpStackStats', OscanAmpStackStatsTask)
+EO_TASK_FACTORY.add_task_class('OscanAmpStackSummary', OscanAmpStackSummaryTask)

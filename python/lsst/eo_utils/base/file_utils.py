@@ -7,6 +7,8 @@ import os
 import sys
 import glob
 
+from collections import OrderedDict
+
 import yaml
 
 try:
@@ -55,6 +57,140 @@ def get_hardware_type_and_id(run):
     htype = tokens[0]
     hid = tokens[1].replace('-Dev', '')
     return (htype, hid)
+
+
+
+class FilenameFormat:
+    """Small class to define the format of a particular file"""
+
+    def __init__(self, fmt, **kwargs):
+        """C'tor
+
+        @param fmt (str)         String that defines the file format
+        @param kwargs               Used to set default values
+        """
+        self._format = fmt
+        self._keys = FilenameFormat._get_format_keys(self._format)
+        self._defaults = kwargs.copy()
+        self._missing = []
+        for key in self._keys:
+            if key not in self._defaults:
+                self._missing.append(key)
+
+    def check(self, **kwargs):
+        """C'tor
+
+        @param kwargs               Used to set default values
+        """
+        missed = []
+        for miss in self._missing:
+            if miss not in kwargs and miss not in missed:
+                missed.append(miss)
+        return missed
+
+    def __call__(self, caller=None, **kwargs):
+        """C'tor
+
+        @param kwargs               Used to format string
+        @returns (str)              Formatted filename
+        """
+        use_vals = self._defaults.copy()
+        use_vals.update(kwargs)
+        try:
+            return self._format.format(**use_vals)
+        except KeyError:
+            missed = self.check(**kwargs)
+            raise KeyError("FilenameFormat missing parameters for %s : %s" % (caller, missed))
+
+
+
+
+    @staticmethod
+    def _findall(string, sep):
+        """Find all the values of sep in string"""
+        outlist = []
+        for idx, char in enumerate(string):
+            if char == sep:
+                outlist.append(idx)
+        return outlist
+
+    @staticmethod
+    def _get_format_keys(string):
+        """Get the set of keys requird to format this file
+
+        @returns (list)
+        """
+        left_vals = FilenameFormat._findall(string, '{')
+        right_vals = FilenameFormat._findall(string, '}')
+        outlist = []
+        for left, right in zip(left_vals, right_vals):
+            field = string[left+1:right]
+            if field not in outlist:
+                outlist.append(field)
+        return outlist
+
+
+
+class FilenameFormatDict:
+    """Small class to keep track of filename formats"""
+
+    def __init__(self):
+        """C'tor"""
+        self._formats = OrderedDict()
+
+    def keys(self):
+        """@returns (list) the types of file names"""
+        return self._formats.keys()
+
+    def values(self):
+        """@returns (list) the `FilenameFormat` objects """
+        return self._formats.values()
+
+    def items(self):
+        """@returns (list) the key-value pairs"""
+        return self._formats.items()
+
+    def __getitem__(self, key):
+        """Get a single item
+
+        @param key (str)            The key
+        @returns (`FilenameFormat`) The corresponding object
+        """
+        return self._formats[key]
+
+    def __call__(self, key, **kwargs):
+        """Get the formatted filename
+
+        @param key (str)            The key
+        @param kwargs               Passed to the `FilenameFormat` object
+
+        @returns (str) The corresponding filename
+        """
+        return self._formats[key](**kwargs)
+
+    def add_format(self, key, fmt, **kwargs):
+        """Add an item to the dict
+
+        @param key (str)            The key
+        @param format (str)         String that defines the file format
+        @param kwargs               Used to set default values
+
+        @returns (`FilenameFormat`) The newly create object
+        """
+        if key in self._formats:
+            raise KeyError("Key %s is already in FilenameFormatDict" % key)
+        new_format = FilenameFormat(fmt, **kwargs)
+        self._formats[key] = new_format
+        return new_format
+
+
+FILENAME_FORMATS = FilenameFormatDict()
+
+SLOT_BASE_FORMATTER = FILENAME_FORMATS.add_format('slot_basename', SLOT_FORMAT_STRING)
+RAFT_BASE_FORMATTER = FILENAME_FORMATS.add_format('raft_basename', RAFT_FORMAT_STRING)
+SUM_BASE_FORMATTER = FILENAME_FORMATS.add_format('summary_basename', SUMMARY_FORMAT_STRING)
+MASK_FORMATTER = FILENAME_FORMATS.add_format('mask', SLOT_FORMAT_STRING,
+                                             fileType='masks', testType='', suffix='_mask.fits')
 
 
 def get_slot_file_basename(caller, **kwargs):

@@ -6,9 +6,9 @@ from lsst.eotest.sensor import add_mask_files
 
 from .iter_utils import AnalysisBySlot
 
-from .analysis import BaseAnalysisConfig, BaseAnalysisTask
+from .analysis import BaseAnalysisConfig, BaseAnalysisTask, EO_TASK_FACTORY
 
-from .config_utils import EOUtilConfig
+from .config_utils import EOUtilOptions
 
 from .file_utils import makedir_safe, get_mask_files_run,\
     mask_filename, MASKFILENAME_DEFAULTS
@@ -51,11 +51,11 @@ class MaskAnalysisBySlot(AnalysisBySlot):
 
 class MaskAddConfig(BaseAnalysisConfig):
     """Configuration for EO analysis tasks"""
-    outdir = EOUtilConfig.clone_param('outdir')
-    run = EOUtilConfig.clone_param('run')
-    raft = EOUtilConfig.clone_param('raft')
-    slot = EOUtilConfig.clone_param('slot')
-    suffix = EOUtilConfig.clone_param('suffix')
+    outdir = EOUtilOptions.clone_param('outdir')
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
+    slot = EOUtilOptions.clone_param('slot')
+    suffix = EOUtilOptions.clone_param('suffix')
 
 
 class MaskAddTask(BaseAnalysisTask):
@@ -93,3 +93,6 @@ class MaskAddTask(BaseAnalysisTask):
         makedir_safe(outfile)
 
         add_mask_files(mask_files, outfile)
+
+
+EO_TASK_FACTORY.add_task_class('MaskAdd', MaskAddTask)

@@ -12,31 +12,32 @@ from lsst.eo_utils.base.file_utils import makedir_safe,\
 from lsst.eo_utils.base.defaults import SBIAS_TEMPLATE,\
     DEFAULT_STAT_TYPE, DEFAULT_BITPIX
 
-from lsst.eo_utils.base.config_utils import EOUtilConfig
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.plot_utils import FigureDict
 
 from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
     flip_data_in_place, make_superbias
 
-from lsst.eo_utils.base.analysis import BaseAnalysisConfig, BaseAnalysisTask
+from lsst.eo_utils.base.analysis import EO_TASK_FACTORY,\
+    BaseAnalysisConfig, BaseAnalysisTask
 
-from .file_utils import superbias_filename, superbias_stat_filename
+from .file_utils import SUPERBIAS_FORMATTER, SUPERBIAS_STAT_FORMATTER
 
 from .analysis import BiasAnalysisBySlot
 
 
 class SuperbiasConfig(BaseAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    outdir = EOUtilConfig.clone_param('outdir')
-    run = EOUtilConfig.clone_param('run')
-    raft = EOUtilConfig.clone_param('raft')
-    slot = EOUtilConfig.clone_param('slot')
-    suffix = EOUtilConfig.clone_param('suffix')
-    mask = EOUtilConfig.clone_param('mask')
-    stat = EOUtilConfig.clone_param('stat')
-    bias = EOUtilConfig.clone_param('bias')
-    nfiles = EOUtilConfig.clone_param('nfiles')
+    outdir = EOUtilOptions.clone_param('outdir')
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
+    slot = EOUtilOptions.clone_param('slot')
+    suffix = EOUtilOptions.clone_param('suffix')
+    mask = EOUtilOptions.clone_param('mask')
+    stat = EOUtilOptions.clone_param('stat')
+    bias = EOUtilOptions.clone_param('bias')
+    nfiles = EOUtilOptions.clone_param('nfiles')
 
 
 class SuperbiasTask(BaseAnalysisTask):
@@ -103,13 +104,11 @@ class SuperbiasTask(BaseAnalysisTask):
 
         mask_files = get_mask_files(self, **kwargs)
         if kwargs.get('stat', DEFAULT_STAT_TYPE) == DEFAULT_STAT_TYPE:
-            output_file = superbias_filename(self,
-                                             bias_type=kwargs.get('bias'), **kwargs)
+            output_file = SUPERBIAS_FORMATTER(bias_type=kwargs.get('bias'), **kwargs)
         else:
-            output_file = superbias_stat_filename(self,
-                                                  bias_type=kwargs.get('bias'),
-                                                  stat_type=kwargs.get('stat'),
-                                                  **kwargs)
+            output_file = SUPERBIAS_STAT_FORMATTER(bias_type=kwargs.get('bias'),
+                                                   stat_type=kwargs.get('stat'),
+                                                   **kwargs)
 
         makedir_safe(output_file)
 
@@ -171,12 +170,15 @@ class SuperbiasTask(BaseAnalysisTask):
                 figs.save_all(None)
             else:
                 if kwargs.get('stat', DEFAULT_STAT_TYPE) == DEFAULT_STAT_TYPE:
-                    plotbase = superbias_filename(bias_type=kwargs.get('bias'),
-                                                  **kwargs).replace('.fits', '')
+                    plotbase = SUPERBIAS_FORMATTER(bias_type=kwargs.get('bias'),
+                                                   **kwargs).replace('.fits', '')
                 else:
-                    plotbase = superbias_stat_filename(bias_type=kwargs.get('bias'),
-                                                       stat_type=kwargs.get('stat'),
-                                                       **kwargs).replace('.fits', '')
+                    plotbase = SUPERBIAS_STAT_FORMATTER(bias_type=kwargs.get('bias'),
+                                                        stat_type=kwargs.get('stat'),
+                                                        **kwargs).replace('.fits', '')
 
                 makedir_safe(plotbase)
                 figs.save_all(plotbase)
+
+
+EO_TASK_FACTORY.add_task_class('Superbias', SuperbiasTask)

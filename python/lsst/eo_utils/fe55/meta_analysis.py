@@ -4,7 +4,7 @@ import sys
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.config_utils import EOUtilConfig
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.file_utils import read_runlist
 
@@ -13,8 +13,8 @@ from lsst.eo_utils.base.iter_utils import AnalysisIterator,\
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
-from lsst.eo_utils.fe55.file_utils import slot_fe55_tablename,\
-    slot_fe55_plotname, raft_fe55_tablename
+from lsst.eo_utils.fe55.file_utils import SLOT_FE55_TABLE_FORMATTER,\
+    RAFT_FE55_TABLE_FORMATTER, SUM_FE55_TABLE_FORMATTER, SUM_FE55_PLOT_FORMATTER
 
 
 
@@ -36,7 +36,7 @@ def get_tablenames_by_raft(caller, butler, run_num, **kwargs):
         slot_dict = {}
         for slot in ALL_SLOTS:
             kwcopy['slot'] = slot
-            basename = slot_fe55_tablename(caller, **kwcopy)
+            basename = SLOT_FE55_TABLE_FORMATTER(caller, **kwcopy)
             datapath = basename + '.fits'
             slot_dict[slot] = datapath
         out_dict[raft] = slot_dict
@@ -67,7 +67,7 @@ def get_raft_fe55_tablefiles(caller, butler, dataset, **kwargs):
         run_key = "%s_%s" % (raft, run)
         kwcopy['run'] = run
         kwcopy['raft'] = raft
-        filedict[run_key] = raft_fe55_tablename(caller, **kwcopy) + '.fits'
+        filedict[run_key] = RAFT_FE55_TABLE_FORMATTER(caller, **kwcopy) + '.fits'
 
     return filedict
 
@@ -101,9 +101,9 @@ class Fe55SummaryByRaft(SummaryAnalysisIterator):
 
 class Fe55SummaryAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
-    outdir = EOUtilConfig.clone_param('outdir')
-    dataset = EOUtilConfig.clone_param('dataset')
-    suffix = EOUtilConfig.clone_param('suffix')
+    outdir = EOUtilOptions.clone_param('outdir')
+    dataset = EOUtilOptions.clone_param('dataset')
+    suffix = EOUtilOptions.clone_param('suffix')
 
 
 class Fe55SummaryAnalysisTask(AnalysisTask):
@@ -115,8 +115,9 @@ class Fe55SummaryAnalysisTask(AnalysisTask):
     _DefaultName = "Fe55SummaryAnalysisTask"
     iteratorClass = Fe55SummaryByRaft
     argnames = ['dataset', 'butler_repo']
-    tablename_func = slot_fe55_tablename
-    plotname_func = slot_fe55_plotname
+
+    tablename_format = SUM_FE55_TABLE_FORMATTER
+    plotname_format = SUM_FE55_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """ C'tor

@@ -4,14 +4,14 @@ import sys
 
 from lsst.eo_utils.base import mpl_utils
 
-from lsst.eo_utils.base.config_utils import EOUtilConfig
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot, AnalysisByRaft
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
 from lsst.eo_utils.fe55.file_utils import get_fe55_files_run,\
-    slot_fe55_tablename, slot_fe55_plotname
+    SLOT_FE55_TABLE_FORMATTER, SLOT_FE55_PLOT_FORMATTER
 
 from lsst.eo_utils.fe55.butler_utils import get_fe55_files_butler
 
@@ -68,12 +68,12 @@ class Fe55AnalysisByRaft(AnalysisByRaft):
 
 class Fe55AnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
-    outdir = EOUtilConfig.clone_param('outdir')
-    run = EOUtilConfig.clone_param('run')
-    raft = EOUtilConfig.clone_param('raft')
-    slot = EOUtilConfig.clone_param('slot')
-    suffix = EOUtilConfig.clone_param('suffix')
-    nfiles = EOUtilConfig.clone_param('nfiles')
+    outdir = EOUtilOptions.clone_param('outdir')
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
+    slot = EOUtilOptions.clone_param('slot')
+    suffix = EOUtilOptions.clone_param('suffix')
+    nfiles = EOUtilOptions.clone_param('nfiles')
 
 
 class Fe55AnalysisTask(AnalysisTask):
@@ -85,8 +85,8 @@ class Fe55AnalysisTask(AnalysisTask):
     _DefaultName = "Fe55AnalysisTask"
     iteratorClass = Fe55AnalysisBySlot
 
-    tablefile_name = slot_fe55_tablename
-    plotfile_name = slot_fe55_plotname
+    tablename_format = SLOT_FE55_TABLE_FORMATTER
+    plotname_format = SLOT_FE55_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """ C'tor

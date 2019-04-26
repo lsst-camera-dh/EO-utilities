@@ -8,12 +8,14 @@ from lsst.eotest.sensor import Fe55GainFitter
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.config_utils import EOUtilConfig
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
-from lsst.eo_utils.fe55.file_utils import fe55_summary_tablename, fe55_summary_plotname,\
-    raft_fe55_tablename, raft_fe55_plotname
+from lsst.eo_utils.base.analysis import EO_TASK_FACTORY
+
+from lsst.eo_utils.fe55.file_utils import RAFT_FE55_TABLE_FORMATTER,\
+    RAFT_FE55_PLOT_FORMATTER
 
 from lsst.eo_utils.fe55.analysis import Fe55AnalysisConfig, Fe55AnalysisTask
 
@@ -23,10 +25,11 @@ from lsst.eo_utils.fe55.meta_analysis import Fe55SummaryByRaft, Fe55TableAnalysi
 
 class Fe55GainStatsConfig(Fe55AnalysisConfig):
     """Configuration for BiasVRowTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='fe55_gain_stats')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
-    use_all = EOUtilConfig.clone_param('use_all')
+    suffix = EOUtilOptions.clone_param('suffix', default='fe55_gain_stats')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
+    use_all = EOUtilOptions.clone_param('use_all')
+
 
 class Fe55GainStatsTask(Fe55AnalysisTask):
     """Class to analyze the overscan fe55 as a function of row number"""
@@ -34,8 +37,9 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
     ConfigClass = Fe55GainStatsConfig
     _DefaultName = "Fe55GainStatsTask"
     iteratorClass = Fe55TableAnalysisByRaft
-    tablefile_name = raft_fe55_tablename
-    plotfile_name = raft_fe55_plotname
+
+    tablename_format = RAFT_FE55_TABLE_FORMATTER
+    plotname_format = RAFT_FE55_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """C'tor """
@@ -55,7 +59,7 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
         if butler is not None:
             sys.stdout.write("Ignoring butler in fe55_gain_stats.extract\n")
 
-        use_all = kwargs.get('use_all', False)
+        use_all = self.config.use_all
 
         data_dict = dict(kalpha_peak=[],
                          kalpha_sigma=[],
@@ -146,10 +150,10 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
 
 class Fe55GainSummaryConfig(Fe55SummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='fe55_gain_sum')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
-    use_all = EOUtilConfig.clone_param('use_all')
+    suffix = EOUtilOptions.clone_param('suffix', default='fe55_gain_sum')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
+    use_all = EOUtilOptions.clone_param('use_all')
 
 
 class Fe55GainSummaryTask(Fe55SummaryAnalysisTask):
@@ -158,8 +162,6 @@ class Fe55GainSummaryTask(Fe55SummaryAnalysisTask):
     ConfigClass = Fe55GainSummaryConfig
     _DefaultName = ""
     iteratorClass = Fe55SummaryByRaft
-    tablefile_name = fe55_summary_tablename
-    plotfile_name = fe55_summary_plotname
 
     def __init__(self, **kwargs):
         """C'tor"""
@@ -215,3 +217,7 @@ class Fe55GainSummaryTask(Fe55SummaryAnalysisTask):
 
         yvals = sumtable['ngood']/sumtable['ncluster']
         figs.plot_run_chart("fe55_fgood", runs, yvals, ylabel="Fraction of good clusters")
+
+
+EO_TASK_FACTORY.add_task_class('Fe55GainStats', Fe55GainStatsTask)
+EO_TASK_FACTORY.add_task_class('Fe55GainSummary', Fe55GainSummaryTask)

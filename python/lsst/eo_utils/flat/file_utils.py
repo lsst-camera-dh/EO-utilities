@@ -4,217 +4,87 @@
 
 """This module contains functions to find files of a particular type in the SLAC directory tree"""
 
-from lsst.eo_utils.base.config_utils import copy_dict
+from lsst.eo_utils.base.defaults import SLOT_FORMAT_STRING,\
+    RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
 
 from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_for_run,\
-    get_slot_file_basename, get_raft_file_basename, get_summary_file_basename
+    FILENAME_FORMATS
+
+
+SUPERFLAT_FORMAT_STRING =\
+    '{outdir}/superflat/{raft}/{raft}-{run}-{slot}_superflat_b-{bias_type}{suffix}.fits'
+SUPERFLAT_STAT_FORMAT_STRING =\
+    '{outdir}/superflat/{raft}/{raft}-{run}-{slot}_{stat_type}_b-{bias_type}{suffix}.fits'
+
+SLOT_FLAT_FORMAT_STRING =\
+    SLOT_FORMAT_STRING.replace('{suffix}', '_b-{bias}_s-{superbias}_{suffix}')
+RAFT_FLAT_FORMAT_STRING =\
+    RAFT_FORMAT_STRING.replace('{suffix}', '_b-{bias}_s-{superbias}_{suffix}')
+SUMMARY_FLAT_FORMAT_STRING =\
+    SUMMARY_FORMAT_STRING.replace('{suffix}', '_b-{bias}_s-{superbias}_{suffix}')
+
+FLAT_DEFAULT_FIELDS = dict(testType='flat', bias=None, superbias=None, suffix='')
+SUPERFLAT_DEFAULT_FIELDS = dict(testType='superflat', bias=None, superbias=None, suffix='')
+
+
+SUPERFLAT_FORMATTER = FILENAME_FORMATS.add_format('superflat',
+                                                  SUPERFLAT_FORMAT_STRING,
+                                                  bias_type=None, suffix='')
+SUPERFLAT_STAT_FORMATTER = FILENAME_FORMATS.add_format('superflat_stat',
+                                                       SUPERFLAT_STAT_FORMAT_STRING,
+                                                       bias_type=None, suffix='')
+
+RAFT_FLAT_TABLE_FORMATTER = FILENAME_FORMATS.add_format('raft_flat_table',
+                                                        RAFT_FLAT_FORMAT_STRING,
+                                                        fileType='tables',
+                                                        **FLAT_DEFAULT_FIELDS)
+RAFT_FLAT_PLOT_FORMATTER = FILENAME_FORMATS.add_format('raft_flat_plot',
+                                                       RAFT_FLAT_FORMAT_STRING,
+                                                       fileType='plots',
+                                                       **FLAT_DEFAULT_FIELDS)
+SLOT_FLAT_TABLE_FORMATTER = FILENAME_FORMATS.add_format('slot_flat_table',
+                                                        SLOT_FLAT_FORMAT_STRING,
+                                                        fileType='tables',
+                                                        **FLAT_DEFAULT_FIELDS)
+SLOT_FLAT_PLOT_FORMATTER = FILENAME_FORMATS.add_format('slot_flat_plot',
+                                                       SLOT_FLAT_FORMAT_STRING,
+                                                       fileType='plots',
+                                                       **FLAT_DEFAULT_FIELDS)
+
+RAFT_SFLAT_TABLE_FORMATTER = FILENAME_FORMATS.add_format('raft_sflat_table',
+                                                         RAFT_FLAT_FORMAT_STRING,
+                                                         fileType='tables',
+                                                         **SUPERFLAT_DEFAULT_FIELDS)
+RAFT_SFLAT_PLOT_FORMATTER = FILENAME_FORMATS.add_format('raft_sflat_plot',
+                                                        RAFT_FLAT_FORMAT_STRING,
+                                                        fileType='plots',
+                                                        **SUPERFLAT_DEFAULT_FIELDS)
+SLOT_SFLAT_TABLE_FORMATTER = FILENAME_FORMATS.add_format('slot_sflat_table',
+                                                         SLOT_FLAT_FORMAT_STRING,
+                                                         fileType='tables',
+                                                         **SUPERFLAT_DEFAULT_FIELDS)
+SLOT_SFLAT_PLOT_FORMATTER = FILENAME_FORMATS.add_format('slot_sflat_plot',
+                                                        SLOT_FLAT_FORMAT_STRING,
+                                                        fileType='plots',
+                                                        **SUPERFLAT_DEFAULT_FIELDS)
+
+SUM_FLAT_TABLE_FORMATTER = FILENAME_FORMATS.add_format('sum_flat_table',
+                                                       SUMMARY_FLAT_FORMAT_STRING,
+                                                       fileType='tables',
+                                                       **FLAT_DEFAULT_FIELDS)
+SUM_FLAT_PLOT_FORMATTER = FILENAME_FORMATS.add_format('sum_flat_plot',
+                                                      SUMMARY_FLAT_FORMAT_STRING,
+                                                      fileType='plots',
+                                                      **FLAT_DEFAULT_FIELDS)
+SUM_SFLAT_TABLE_FORMATTER = FILENAME_FORMATS.add_format('sum_sflat_table',
+                                                        SUMMARY_FLAT_FORMAT_STRING,
+                                                        fileType='tables',
+                                                        **SUPERFLAT_DEFAULT_FIELDS)
+SUM_SFLAT_PLOT_FORMATTER = FILENAME_FORMATS.add_format('sum_sflat_plot',
+                                                       SUMMARY_FLAT_FORMAT_STRING,
+                                                       fileType='plots',
+                                                       **SUPERFLAT_DEFAULT_FIELDS)
 
-from lsst.eo_utils.bias.file_utils import get_bias_suffix
-
-
-RAFT_FLAT_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
-                                    testType='flat', run=None, suffix='')
-RAFT_FLAT_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
-                                   testType='flat', run=None, suffix='')
-SLOT_FLAT_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
-                                    testType='flat', run=None, slot=None, suffix='')
-SLOT_FLAT_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
-                                   testType='flat', run=None, slot=None, suffix='')
-
-RAFT_SFLAT_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
-                                     testType='superflat', run=None, suffix='')
-RAFT_SFLAT_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
-                                    testType='superflat', run=None, suffix='')
-SLOT_SFLAT_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
-                                     testType='superflat', run=None, slot=None, suffix='')
-SLOT_SFLAT_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
-                                    testType='superflat', run=None, slot=None, suffix='')
-
-FLAT_SUMMARY_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables',
-                                       testType='flat', dataset=None, suffix='')
-FLAT_SUMMARY_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots',
-                                      testType='flat', dataset=None, suffix='')
-SFLAT_SUMMARY_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables',
-                                        testType='superflat', dataset=None, suffix='')
-SFLAT_SUMMARY_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots',
-                                       testType='superflat', dataset=None, suffix='')
-
-
-def raft_flat_tablename(caller, **kwargs):
-    """Return the filename for a raft level plot
-
-    The format is {outdir}/tables/{raft}/flat/{raft}-{run}-RFT_b-{bias}_s-{superbias}{suffix}
-
-    @param caller ('Task')  Object calling this function
-    @param kwargs:          Passed to get_flat_suffix and get_raft_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, RAFT_FLAT_TABLENAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-    return get_raft_file_basename(caller, **kwcopy)
-
-
-def raft_flat_plotname(caller, **kwargs):
-    """Return the filename for a raft level plot
-
-    The format is {outdir}/plots/{raft}/flat/{raft}-{run}-{slot}_b-{bias}_s-{superbias}{suffix}
-
-    @param caller ('Task')  Object calling this function
-    @param kwargs:          Passed to get_flat_suffix and get_raft_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, RAFT_FLAT_PLOTNAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-    return get_raft_file_basename(caller, **kwcopy)
-
-
-def slot_flat_tablename(caller, **kwargs):
-    """Return the filename for a plot made from a flat file
-
-    The format is {outdir}/tables/{raft}/flat/{raft}-{run}-{slot}_b-{bias}_s-{superbias}
-
-    @param caller ('Task')  Object calling this function
-    @param kwargs           Passed to get_flat_suffix and get_slot_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, SLOT_FLAT_TABLENAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-    return get_slot_file_basename(caller, **kwcopy)
-
-
-def slot_flat_plotname(caller, **kwargs):
-    """Return the filename for a plot made from a flat file
-
-    The format is {outdir}/plots/{raft}/flat/{raft}-{run}-{slot}_b-{bias}_s-{superbias}
-
-    @param caller ('Task')  Object calling this function
-    @param kwargs           Passed to get_flat_suffix and get_slot_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, SLOT_FLAT_PLOTNAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-    return get_slot_file_basename(caller, **kwcopy)
-
-
-def slot_superflat_tablename(caller, **kwargs):
-    """Return the filename for a plot made from a superflat file
-
-    The format is {outdir}/tables/{raft}/superflat/{raft}-{run}-{slot}_b-{bias}
-
-    @param caller ('Task')  Object calling this function
-    @param kwargs           Passed to get_superflat_suffix and get_slot_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, SLOT_SFLAT_TABLENAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-    return get_slot_file_basename(caller, **kwcopy)
-
-
-def slot_superflat_plotname(caller, **kwargs):
-    """Return the filename for a plot made from a superflat file
-
-    @param caller ('Task')  Object calling this function
-    @param kwargs           Passed to get_superflat_suffix and get_slot_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, SLOT_SFLAT_PLOTNAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-    return get_slot_file_basename(caller, **kwcopy)
-
-
-def raft_superflat_tablename(caller, **kwargs):
-    """Return the filename for a plot made from a superflat file
-
-    The format is {outdir}/tables/{raft}/superflat/{raft}-{run}-{slot}_b-{bias}
-
-    @param caller ('Task')  Object calling this function
-    @param kwargs           Passed to get_superflat_suffix and get_raft_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, RAFT_SFLAT_TABLENAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-    return get_raft_file_basename(caller, **kwcopy)
-
-
-def raft_superflat_plotname(caller, **kwargs):
-    """Return the filename for a plot made from a superflat file
-
-    The format is {outdir}/plots/{raft}/superflat/{raft}-{run}-{slot}_b-{bias}
-
-    @param caller ('Task')  Object calling this function
-    @param kwargs           Passed to get_superflat_suffix and get_raft_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, RAFT_SFLAT_PLOTNAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-    return get_raft_file_basename(caller, **kwcopy)
-
-
-def flat_summary_tablename(caller, **kwargs):
-    """Return the filename for a summary table file
-
-    The format is {outdir}/tables/summary/flat/{dataset}{suffix}
-
-    @param kwargs           Passed to get_summary_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, FLAT_SUMMARY_TABLENAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-    return get_summary_file_basename(caller, **kwcopy)
-
-
-def flat_summary_plotname(caller, **kwargs):
-    """Return the filename for a summary plot file
-
-    The format is {outdir}/plots/summary/flat/{dataset}{suffix}
-
-    @param caller ('Task')  Object calling this function
-    @param kwargs           Passed to get_summary_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, FLAT_SUMMARY_PLOTNAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-    return get_summary_file_basename(caller, **kwcopy)
-
-
-def superflat_summary_tablename(caller, **kwargs):
-    """Return the filename for a summary table file
-
-    The format is {outdir}/tables/summary/flat/{dataset}{suffix}
-
-    @param caller ('Task')  Object calling this function
-    @param kwargs           Passed to get_summary_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, SFLAT_SUMMARY_TABLENAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-    return get_summary_file_basename(caller, **kwcopy)
-
-
-def superflat_summary_plotname(caller, **kwargs):
-    """Return the filename for a summary plot file
-
-    The format is {outdir}/plots/summary/flat/{dataset}{suffix}
-
-    @param caller ('Task')  Object calling this function
-    @param kwargs           Passed to get_summary_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, SFLAT_SUMMARY_PLOTNAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-    return get_summary_file_basename(caller, **kwcopy)
 
 
 def get_flat_files_run(run_id, **kwargs):

@@ -6,7 +6,7 @@ import numpy as np
 
 import lsst.eotest.image_utils as imutil
 
-from lsst.eo_utils.base.config_utils import EOUtilConfig
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict
 
@@ -15,13 +15,15 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_dims_from_ccd,\
     get_ccd_from_id, get_raw_image, get_geom_regions, get_amp_list
 
+from lsst.eo_utils.base.analysis import EO_TASK_FACTORY
+
 from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisBySlot
 
 
 class BiasVRowConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasval')
-    bias = EOUtilConfig.clone_param('bias')
+    suffix = EOUtilOptions.clone_param('suffix', default='biasval')
+    bias = EOUtilOptions.clone_param('bias')
 
 
 class BiasVRowTask(BiasAnalysisTask):
@@ -120,3 +122,6 @@ class BiasVRowTask(BiasAnalysisTask):
             if key_str not in data:
                 data[key_str] = np.ndarray((len(bimg_row_mean), nfiles))
             data[key_str][:, ifile] = bimg_row_mean
+
+
+EO_TASK_FACTORY.add_task_class('BiasVRow', BiasVRowTask)

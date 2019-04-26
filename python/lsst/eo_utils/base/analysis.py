@@ -3,11 +3,13 @@
 This module contains base classes for various types of analyses.
 """
 
+from collections import OrderedDict
+
 import lsst.pex.config as pexConfig
 
-from .file_utils import makedir_safe
+from .file_utils import makedir_safe, SLOT_BASE_FORMATTER
 
-from .config_utils import EOUtilConfig, Configurable
+from .config_utils import EOUtilOptions, Configurable, setup_parser
 
 from .data_utils import TableDict
 
@@ -24,11 +26,11 @@ class BaseAnalysisConfig(pexConfig.Config):
 class BaseAnalysisTask(Configurable):
     """Simple functor class to tie together standard data analysis
     """
+    # These can overridden by the sub-class
     ConfigClass = BaseAnalysisConfig
     _DefaultName = "BaseAnalysisTask"
-
-    # These can overridden by the sub-class
     iteratorClass = SimpleAnalysisHandler
+
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -50,28 +52,47 @@ class BaseAnalysisTask(Configurable):
         return self.iteratorClass(self)
 
     @classmethod
+    def add_parser_arguments(cls, parser):
+        """Add parser arguments for this class
+        
+        @param parser (`ArgumentParser`)   The parser
+        """
+        functor = cls()
+        handler = cls.iteratorClass(functor)
+        handler.add_parser_arguemnts(parser)
+
+    @classmethod
     def parse_and_run(cls):
-        """Run the analysis"""
+        """Run the analysis using the command line arguments"""
         functor = cls()
         handler = cls.iteratorClass(functor)
         handler.run_analysis()
 
+    @classmethod
+    def run(cls, **kwargs):
+        """Run the analysis using the keyword arguments"""
+        functor = cls()
+        handler = cls.iteratorClass(functor)
+        handler.run_with_args(**kwargs)
+
 
 class AnalysisConfig(BaseAnalysisConfig):
     """Configuration for EO analysis tasks"""
-    skip = EOUtilConfig.clone_param('skip')
-    plot = EOUtilConfig.clone_param('plot')
-    suffix = EOUtilConfig.clone_param('suffix')
+    skip = EOUtilOptions.clone_param('skip')
+    plot = EOUtilOptions.clone_param('plot')
+    suffix = EOUtilOptions.clone_param('suffix')
 
 
 class AnalysisTask(BaseAnalysisTask):
     """Simple functor class to tie together standard data analysis
     """
+    # These can overridden by the sub-class
     ConfigClass = AnalysisConfig
     _DefaultName = "AnalysisTask"
-
-    # These can overridden by the sub-class
     iteratorClass = SimpleAnalysisHandler
+
+    tablename_format = SLOT_BASE_FORMATTER
+    plotname_format = SLOT_BASE_FORMATTER
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -85,14 +106,15 @@ class AnalysisTask(BaseAnalysisTask):
 
         @param kwargs:    Used to override configruation
         """
-        raise NotImplementedError("AnalysisTask.tablefile_name")
+        return self.tablename_format(**kwargs)
+
 
     def plotfile_name(self, **kwargs):
         """ Name of the file for plots
 
         @param kwargs:    Used to override configruation
         """
-        raise NotImplementedError("AnalysisTask.plotfile_name")
+        return self.plotname_format(**kwargs)
 
     def make_datatables(self, butler, data, **kwargs):
         """Tie together the functions to make the data tables
@@ -112,6 +134,7 @@ class AnalysisTask(BaseAnalysisTask):
         else:
             dtables = self.extract(butler, data, **kwargs)
             dtables.save_datatables(output_data)
+            print("Writing %s" % output_data)
         return dtables
 
     def make_plots(self, dtables, **kwargs):
@@ -149,3 +172,100 @@ class AnalysisTask(BaseAnalysisTask):
     def plot(self, dtables, figs, **kwargs):
         """This needs to be implemented by the sub-class"""
         raise NotImplementedError("AnalysisFunc.plot is not overridden.")
+
+
+
+class EOTaskFactory:
+    """Small class to keep track of analysis tasks"""
+
+    def __init__(self):
+        """C'tor"""
+        self._tasks = OrderedDict()
+
+    def keys(self):
+        """@returns (list) the types of file names"""
+        return self._tasks.keys()
+
+    def values(self):
+        """@returns (list) the `FilenameFormat` objects """
+        return self._tasks.values()
+
+    def items(self):
+        """@returns (list) the key-value pairs"""
+        return self._tasks.items()
+
+    def __getitem__(self, key):
+        """Get a single item
+
+        @param key (str)               The key
+        @returns (`BaseAnalysisTask`)  The corresponding task
+        """
+        return self._tasks[key]
+
+    def add_task_class(self, key, task_class):
+        """Add an item to the dict
+
+        @param task_class (class)   The class
+
+        @returns (`FilenameFormat`) The newly create object
+        """
+        if key in self._tasks:
+            raise KeyError("Key %s is already in EOTaskFactory" % key)
+        self._tasks[key] = task_class
+
+
+    def __call__(self, key, **kwargs):
+        """Construnct an object of the selected class
+
+        @param key (str)            The key
+        @param kwargs               Passed to the object c'tor
+
+        @returns (`BaseAnalysisTask`)
+        """
+        return self._tasks[key](**kwargs)
+
+    def run_task(self, key, **kwargs):
+        """Run the selected task
+
+        @param key (str)            The key
+        @param kwargs               Passed to the `FilenameFormat` object
+
+        @returns (str) The corresponding filename
+        """
+        task_class = self._tasks[key]
+        task_class.run(**kwargs)
+
+        
+    def build_parser(self, task_names=None, **kwargs):
+        """Build and argument parser for a set of defined tasks
+
+        @param task_names (list)    The tasks to include
+        
+        @returns (`ArgumentParser`) The parser
+        """
+        if task_names is None:
+            task_names = self._tasks.keys()
+
+        parser = setup_parser(**kwargs)
+        supparsers = parser.add_subparsers(dest='task', help='sub-command help')
+
+        for task_name in task_names:
+            task_class = self._tasks[task_name]
+            subparser = supparsers.add_parser(task_name, help=task_class.__doc__)
+            task_class.add_parser_arguments(subparser)
+        
+        return parser
+
+    def parse_and_run(self, **kwargs):
+        """Run a task using the command line arguments"""
+        parser = self.build_parser(usage="eo_task.py")
+        args = parser.parse_args()
+
+        arg_dict = args.__dict__.copy()
+        arg_dict = args.__dict__.copy()
+        arg_dict.update(**kwargs)
+
+        self.run_task(args.task, **arg_dict)
+
+
+EO_TASK_FACTORY = EOTaskFactory()

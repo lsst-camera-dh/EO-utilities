@@ -4,14 +4,14 @@ import sys
 
 from lsst.eo_utils.base import mpl_utils
 
-from lsst.eo_utils.base.config_utils import EOUtilConfig
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot, AnalysisByRaft
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
 from .file_utils import get_bias_files_run,\
-    slot_bias_tablename, slot_bias_plotname
+    SLOT_BIAS_TABLE_FORMATTER, SLOT_BIAS_PLOT_FORMATTER
 
 from .butler_utils import get_bias_files_butler
 
@@ -70,12 +70,12 @@ class BiasAnalysisByRaft(AnalysisByRaft):
 
 class BiasAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
-    outdir = EOUtilConfig.clone_param('outdir')
-    run = EOUtilConfig.clone_param('run')
-    raft = EOUtilConfig.clone_param('raft')
-    slot = EOUtilConfig.clone_param('slot')
-    suffix = EOUtilConfig.clone_param('suffix')
-    nfiles = EOUtilConfig.clone_param('nfiles')
+    outdir = EOUtilOptions.clone_param('outdir')
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
+    slot = EOUtilOptions.clone_param('slot')
+    suffix = EOUtilOptions.clone_param('suffix')
+    nfiles = EOUtilOptions.clone_param('nfiles')
 
 
 class BiasAnalysisTask(AnalysisTask):
@@ -86,8 +86,8 @@ class BiasAnalysisTask(AnalysisTask):
     _DefaultName = "BiasAnalysis"
     iteratorClass = BiasAnalysisBySlot
 
-    tablefile_name = slot_bias_tablename
-    plotfile_name = slot_bias_plotname
+    tablename_format = SLOT_BIAS_TABLE_FORMATTER
+    plotname_format = SLOT_BIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """ C'tor

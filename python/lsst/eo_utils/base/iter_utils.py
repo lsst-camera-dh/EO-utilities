@@ -7,7 +7,7 @@ import lsst.pex.config as pexConfig
 
 from .defaults import ALL_SLOTS
 
-from .config_utils import EOUtilConfig, Configurable,\
+from .config_utils import EOUtilOptions, Configurable,\
     setup_parser, add_pex_arguments,\
     make_argstring
 
@@ -24,11 +24,11 @@ class AnalysisHandlerConfig(pexConfig.Config):
     These control the job execution options, such as
     sending the job to the batch farm.
     """
-    batch = EOUtilConfig.clone_param('batch')
-    dry_run = EOUtilConfig.clone_param('dry_run')
-    logfile = EOUtilConfig.clone_param('logfile')
-    batch_args = EOUtilConfig.clone_param('batch_args')
-    butler_repo = EOUtilConfig.clone_param('butler_repo')
+    batch = EOUtilOptions.clone_param('batch')
+    dry_run = EOUtilOptions.clone_param('dry_run')
+    logfile = EOUtilOptions.clone_param('logfile')
+    batch_args = EOUtilOptions.clone_param('batch_args')
+    butler_repo = EOUtilOptions.clone_param('butler_repo')
 
 
 class AnalysisHandler(Configurable):
@@ -66,6 +66,18 @@ class AnalysisHandler(Configurable):
             self._butler = get_butler_by_repo(self.config.butler_repo)
         return self._butler
 
+
+    def add_parser_arguemnts(self, parser):
+        """Add the arguments for this hander and the associated task to a parser
+
+        @param parser (`ArgumentParser`)   The parser
+        """
+        handler_group = parser.add_argument_group("handler", "Arguments for job handler")
+        add_pex_arguments(handler_group, self.ConfigClass)
+        task_group = parser.add_argument_group("task", "Arguments for analysis task")
+        add_pex_arguments(task_group, self._task.ConfigClass, self.exclude_pars)        
+
+
     def run_analysis(self, **kwargs):
         """Run the analysis over all of the requested objects.
 
@@ -81,10 +93,7 @@ class AnalysisHandler(Configurable):
         self.safe_update(**kwargs)
 
         parser = setup_parser()
-        handler_group = parser.add_argument_group("handler", "Arguments for job handler")
-        add_pex_arguments(handler_group, self.ConfigClass)
-        task_group = parser.add_argument_group("task", "Arguments for analysis task")
-        add_pex_arguments(task_group, self._task.ConfigClass, self.exclude_pars)
+        self.add_parser_arguemnts(parser)
         args = parser.parse_args()
         arg_dict = args.__dict__.copy()
         arg_dict.update(**kwargs)
@@ -155,8 +164,8 @@ class AnalysisIteratorConfig(AnalysisHandlerConfig):
     These control the job iteration options, basically
     the list of runs to loop over.
     """
-    dataset = EOUtilConfig.clone_param('dataset')
-    runs = EOUtilConfig.clone_param('runs')
+    dataset = EOUtilOptions.clone_param('dataset')
+    runs = EOUtilOptions.clone_param('runs')
 
 
 class AnalysisIterator(AnalysisHandler):
@@ -328,7 +337,7 @@ def iterate_over_rafts(analysis_task, butler, data_files, **kwargs):
 class AnalysisBySlotConfig(AnalysisIteratorConfig):
     """Additional configuration for EO analysis iterator for slot-based analysis
     """
-    slots = EOUtilConfig.clone_param('slots')
+    slots = EOUtilOptions.clone_param('slots')
 
 
 class AnalysisBySlot(AnalysisIterator):
@@ -379,7 +388,7 @@ class AnalysisBySlot(AnalysisIterator):
 class AnalysisByRaftConfig(AnalysisIteratorConfig):
     """Additional configuration for EO analysis iterator for raft-based analysis
     """
-    slots = EOUtilConfig.clone_param('rafts')
+    slots = EOUtilOptions.clone_param('rafts')
 
 
 class AnalysisByRaft(AnalysisIterator):

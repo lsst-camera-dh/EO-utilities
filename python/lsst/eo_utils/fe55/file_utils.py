@@ -4,135 +4,59 @@
 
 """This module contains functions to find files of a particular type in the SLAC directory tree"""
 
-from lsst.eo_utils.base.defaults import DATACAT_TS8_TEST_TYPES, DATACAT_BOT_TEST_TYPES
-
-from lsst.eo_utils.base.config_utils import copy_dict
+from lsst.eo_utils.base.defaults import DATACAT_TS8_TEST_TYPES, DATACAT_BOT_TEST_TYPES,\
+    SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
 
 from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_for_run,\
-    get_slot_file_basename, get_raft_file_basename, get_summary_file_basename
+    FILENAME_FORMATS
 
 from lsst.eo_utils.bias.file_utils import get_bias_suffix
 
+SLOT_FE55_FORMAT_STRING =\
+    SLOT_FORMAT_STRING.replace('{suffix}', '_b-{bias}_s-{superbias}_{suffix}')
+RAFT_FE55_FORMAT_STRING =\
+    RAFT_FORMAT_STRING.replace('{suffix}', '_b-{bias}_s-{superbias}_{suffix}')
+SUMMARY_FE55_FORMAT_STRING =\
+    SUMMARY_FORMAT_STRING.replace('{suffix}', '_b-{bias}_s-{superbias}_{suffix}')
 
-RAFT_FE55_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
-                                    testType='fe55', run=None, suffix='')
-RAFT_FE55_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
-                                   testType='fe55', run=None, suffix='')
-SLOT_FE55_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables', raft=None,
-                                    testType='fe55', run=None, slot=None, suffix='')
-SLOT_FE55_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots', raft=None,
-                                   testType='fe55', run=None, slot=None, suffix='')
-
-
-FE55_SUMMARY_TABLENAME_DEFAULTS = dict(outdir='analysis', fileType='tables',
-                                       testType='fe55', dataset=None, suffix='')
-FE55_SUMMARY_PLOTNAME_DEFAULTS = dict(outdir='analysis', fileType='plots',
-                                      testType='fe55', dataset=None, suffix='')
+FE55_DEFAULT_FIELDS = dict(testType='fe55', bias=None, superbias=None, suffix='')
 
 
-def raft_fe55_tablename(caller, **kwargs):
-    """Return the filename for a raft level plot
+RAFT_FE55_TABLE_FORMATTER = FILENAME_FORMATS.add_format('raft_fe55_table',
+                                                        RAFT_FE55_FORMAT_STRING,
+                                                        fileType='tables', **FE55_DEFAULT_FIELDS)
+RAFT_FE55_PLOT_FORMATTER = FILENAME_FORMATS.add_format('raft_fe55_plot',
+                                                       RAFT_FE55_FORMAT_STRING,
+                                                       fileType='plots', **FE55_DEFAULT_FIELDS)
+SLOT_FE55_TABLE_FORMATTER = FILENAME_FORMATS.add_format('slot_fe55_table',
+                                                        SLOT_FE55_FORMAT_STRING,
+                                                        fileType='tables', **FE55_DEFAULT_FIELDS)
+SLOT_FE55_PLOT_FORMATTER = FILENAME_FORMATS.add_format('slot_fe55_plot',
+                                                       SLOT_FE55_FORMAT_STRING,
+                                                       fileType='plots', **FE55_DEFAULT_FIELDS)
+SUM_FE55_TABLE_FORMATTER = FILENAME_FORMATS.add_format('sum_fe55_table',
+                                                       SUMMARY_FE55_FORMAT_STRING,
+                                                       fileType='tables', **FE55_DEFAULT_FIELDS)
+SUM_FE55_PLOT_FORMATTER = FILENAME_FORMATS.add_format('sum_fe55_plot',
+                                                      SUMMARY_FE55_FORMAT_STRING,
+                                                      fileType='plots', **FE55_DEFAULT_FIELDS)
 
-    The format is {outdir}/tables/{raft}/fe55/{raft}-{run}-RFT{suffix}
 
-    @param caller ('Task')  Object calling this function
-    @param kwargs:          Passed to get_raft_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, RAFT_FE55_TABLENAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-    if kwargs.get('use_all', False):
-        kwcopy['suffix'] = '_all%s' % kwcopy['suffix']
-    else:
-        kwcopy['suffix'] = '_good%s' % kwcopy['suffix']
-    return get_raft_file_basename(caller, **kwcopy)
-
-
-def raft_fe55_plotname(caller, **kwargs):
-    """Return the filename for a raft level plot
-
-    The format is {outdir}/plots/{raft}/fe55/{raft}-{run}-{slot}{suffix}
+def fe55_suffix(**kwargs):
+    """Return the suffix for a fe55 analysis file
 
     @param caller ('Task')  Object calling this function
     @param kwargs:          Passed to get_raft_file_basename
 
-    @returns (str) The path for the file.
+    @returns (str)          The suffix.
     """
-    kwcopy = copy_dict(kwargs, RAFT_FE55_PLOTNAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
+    suffix = get_bias_suffix(**kwargs)
     if kwargs.get('use_all', False):
-        kwcopy['suffix'] = '_all%s' % kwcopy['suffix']
+        suffix = '_all%s' % suffix
     else:
-        kwcopy['suffix'] = '_good%s' % kwcopy['suffix']
-    return get_raft_file_basename(caller, **kwcopy)
+        suffix = '_good%s' % suffix
+    return suffix
 
-
-def slot_fe55_tablename(caller, **kwargs):
-    """Return the filename for a plot made from a fe55 file
-
-    The format is {outdir}/tables/{raft}/fe55/{raft}-{run}-{slot}{suffix}
-
-    @param caller ('Task')  Object calling this function
-    @param kwargs           Passed to get_fe55_suffix and get_slot_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, SLOT_FE55_TABLENAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-    return get_slot_file_basename(caller, **kwcopy)
-
-
-def slot_fe55_plotname(caller, **kwargs):
-    """Return the filename for a plot made from a fe55 file
-
-    The format is {outdir}/plots/{raft}/fe55/{raft}-{run}-{slot}{suffix}
-
-    @param kwargs           Passed to get_fe55_suffix and get_slot_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, SLOT_FE55_PLOTNAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-    return get_slot_file_basename(caller, **kwcopy)
-
-
-def fe55_summary_tablename(caller, **kwargs):
-    """Return the filename for a summary table file
-
-    The format is {outdir}/tables/summary/fe55/{dataset}{suffix}
-
-    @param caller ('Task')  Object calling this function
-    @param kwargs           Passed to get_summary_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, FE55_SUMMARY_TABLENAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-    if kwargs.get('use_all', False):
-        kwcopy['suffix'] = '_all%s' % kwcopy['suffix']
-    else:
-        kwcopy['suffix'] = '_good%s' % kwcopy['suffix']
-    return get_summary_file_basename(caller, **kwcopy)
-
-
-def fe55_summary_plotname(caller, **kwargs):
-    """Return the filename for a summary plot file
-
-    The format is {outdir}/plots/summary/fe55/{dataset}{suffix}
-
-    @param caller ('Task')  Object calling this function
-    @param kwargs           Passed to get_summary_file_basename
-
-    @returns (str) The path for the file.
-    """
-    kwcopy = copy_dict(kwargs, FE55_SUMMARY_PLOTNAME_DEFAULTS)
-    kwcopy['suffix'] = get_bias_suffix(**kwargs)
-    if kwargs.get('use_all', False):
-        kwcopy['suffix'] = '_all%s' % kwcopy['suffix']
-    else:
-        kwcopy['suffix'] = '_good%s' % kwcopy['suffix']
-    return get_summary_file_basename(caller, **kwcopy)
 
 def get_fe55_files_run(run_id, **kwargs):
     """Get a set of fe55 and mask files out of a folder

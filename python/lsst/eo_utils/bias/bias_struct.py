@@ -4,7 +4,7 @@ import sys
 
 import numpy as np
 
-from lsst.eo_utils.base.config_utils import EOUtilConfig
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.file_utils import get_mask_files
 
@@ -16,21 +16,20 @@ from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES, REGION_LAB
     get_dimension_arrays_from_ccd, get_ccd_from_id, get_raw_image,\
     get_geom_regions, get_amp_list, get_image_frames_2d, array_struct, unbias_amp
 
+from lsst.eo_utils.base.analysis import EO_TASK_FACTORY
+
 from .file_utils import get_superbias_frame,\
-    slot_superbias_tablename, slot_superbias_plotname
+    SLOT_SBIAS_TABLE_FORMATTER, SLOT_SBIAS_PLOT_FORMATTER
 
 from .analysis import BiasAnalysisTask, BiasAnalysisConfig, BiasAnalysisBySlot
 
 
-
-
-
 class BiasStructConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasst')
-    bias = EOUtilConfig.clone_param('bias')
-    mask = EOUtilConfig.clone_param('mask')
-    std = EOUtilConfig.clone_param('std')
+    suffix = EOUtilOptions.clone_param('suffix', default='biasst')
+    bias = EOUtilOptions.clone_param('bias')
+    mask = EOUtilOptions.clone_param('mask')
+    std = EOUtilOptions.clone_param('std')
 
 
 class BiasStructTask(BiasAnalysisTask):
@@ -157,11 +156,11 @@ class BiasStructTask(BiasAnalysisTask):
 
 class SuperbiasStructConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='sbiasst')
-    superbias = EOUtilConfig.clone_param('superbias')
-    mask = EOUtilConfig.clone_param('mask')
-    std = EOUtilConfig.clone_param('std')
-    stat = EOUtilConfig.clone_param('stat')
+    suffix = EOUtilOptions.clone_param('suffix', default='sbiasst')
+    superbias = EOUtilOptions.clone_param('superbias')
+    mask = EOUtilOptions.clone_param('mask')
+    std = EOUtilOptions.clone_param('std')
+    stat = EOUtilOptions.clone_param('stat')
 
 
 class SuperbiasStructTask(BiasStructTask):
@@ -171,8 +170,8 @@ class SuperbiasStructTask(BiasStructTask):
     _DefaultName = "SuperbiasStructTask"
     iteratorClass = BiasAnalysisBySlot
 
-    tablefile_name = slot_superbias_tablename
-    plotfile_name = slot_superbias_plotname
+    tablename_format = SLOT_SBIAS_TABLE_FORMATTER
+    plotname_format = SLOT_SBIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """C'tor"""
@@ -221,3 +220,7 @@ class SuperbiasStructTask(BiasStructTask):
         for key, val in biasstruct_data.items():
             dtables.make_datatable('biasst-%s' % key, val)
         return dtables
+
+
+EO_TASK_FACTORY.add_task_class('BiasStruct', BiasStructTask)
+EO_TASK_FACTORY.add_task_class('SuperbiasStruct', SuperbiasStructTask)

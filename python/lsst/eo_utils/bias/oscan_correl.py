@@ -6,7 +6,7 @@ import numpy as np
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.config_utils import EOUtilConfig
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.file_utils import get_mask_files
 
@@ -17,7 +17,10 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_raw_image,\
     get_geom_regions, get_amp_list, unbias_amp
 
-from .file_utils import get_superbias_frame, raft_bias_tablename, raft_bias_plotname
+from lsst.eo_utils.base.analysis import EO_TASK_FACTORY
+
+from .file_utils import get_superbias_frame,\
+    RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
 
 from .analysis import BiasAnalysisTask, BiasAnalysisConfig, BiasAnalysisByRaft
 
@@ -25,12 +28,12 @@ from .analysis import BiasAnalysisTask, BiasAnalysisConfig, BiasAnalysisByRaft
 
 class OscanCorrelConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='oscorr')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
-    mask = EOUtilConfig.clone_param('mask')
-    std = EOUtilConfig.clone_param('std')
-    covar = EOUtilConfig.clone_param('covar')
+    suffix = EOUtilOptions.clone_param('suffix', default='oscorr')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
+    mask = EOUtilOptions.clone_param('mask')
+    std = EOUtilOptions.clone_param('std')
+    covar = EOUtilOptions.clone_param('covar')
 
 
 class OscanCorrelTask(BiasAnalysisTask):
@@ -40,8 +43,8 @@ class OscanCorrelTask(BiasAnalysisTask):
     _DefaultName = "OscanCorrelTask"
     iteratorClass = BiasAnalysisByRaft
 
-    tablefile_name = raft_bias_tablename
-    plotfile_name = raft_bias_plotname
+    tablename_format = RAFT_BIAS_TABLE_FORMATTER
+    plotname_format = RAFT_BIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """C'tor"""
@@ -140,3 +143,5 @@ class OscanCorrelTask(BiasAnalysisTask):
             step_y = regions['step_y']
             overscans.append(oscan_data.getArray()[::step_x, ::step_y])
         return overscans
+
+EO_TASK_FACTORY.add_task_class('OscanCorrel', OscanCorrelTask)

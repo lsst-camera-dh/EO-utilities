@@ -17,7 +17,7 @@ from lsst.eotest.sensor.ptcTask import ptc_func, residuals
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.config_utils import EOUtilConfig
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.file_utils import get_mask_files
 
@@ -28,10 +28,12 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_amp_list,\
     get_geom_regions, get_raw_image, unbias_amp
 
+from lsst.eo_utils.base.analysis import EO_TASK_FACTORY
+
 from lsst.eo_utils.bias.file_utils import get_superbias_frame
 
-from lsst.eo_utils.flat.file_utils import flat_summary_tablename, flat_summary_plotname,\
-    raft_flat_tablename, raft_flat_plotname
+from lsst.eo_utils.flat.file_utils import RAFT_FLAT_TABLE_FORMATTER,\
+    RAFT_FLAT_PLOT_FORMATTER
 
 from lsst.eo_utils.flat.analysis import FlatAnalysisBySlot, FlatAnalysisConfig,\
     FlatAnalysisTask
@@ -42,10 +44,10 @@ from lsst.eo_utils.flat.meta_analysis import FlatSummaryByRaft, FlatTableAnalysi
 
 class PTCConfig(FlatAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='ptc')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
-    mask = EOUtilConfig.clone_param('mask')
+    suffix = EOUtilOptions.clone_param('suffix', default='ptc')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
+    mask = EOUtilOptions.clone_param('mask')
 
 
 class PTCTask(FlatAnalysisTask):
@@ -155,9 +157,9 @@ class PTCTask(FlatAnalysisTask):
 
 class PTCStatsConfig(FlatAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='ptc_stats')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
+    suffix = EOUtilOptions.clone_param('suffix', default='ptc_stats')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
 
 
 class PTCStatsTask(FlatAnalysisTask):
@@ -166,8 +168,9 @@ class PTCStatsTask(FlatAnalysisTask):
     ConfigClass = PTCStatsConfig
     _DefaultName = "PTCStatsTask"
     iteratorClass = FlatTableAnalysisByRaft
-    tablefile_name = raft_flat_tablename
-    plotfile_name = raft_flat_plotname
+
+    tablename_format = RAFT_FLAT_TABLE_FORMATTER
+    plotname_format = RAFT_FLAT_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """C'tor """
@@ -299,9 +302,9 @@ class PTCStatsTask(FlatAnalysisTask):
 
 class PTCSummaryConfig(FlatSummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='ptc_sum')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
+    suffix = EOUtilOptions.clone_param('suffix', default='ptc_sum')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
 
 
 class PTCSummaryTask(FlatSummaryAnalysisTask):
@@ -310,8 +313,6 @@ class PTCSummaryTask(FlatSummaryAnalysisTask):
     ConfigClass = PTCSummaryConfig
     _DefaultName = "PTCSummaryTask"
     iteratorClass = FlatSummaryByRaft
-    tablefile_name = flat_summary_tablename
-    plotfile_name = flat_summary_plotname
 
     def __init__(self, **kwargs):
         """C'tor"""
@@ -361,3 +362,8 @@ class PTCSummaryTask(FlatSummaryAnalysisTask):
         runs = runtable['runs']
 
         figs.plot_run_chart("ptc_gain", runs, yvals, yerrs=yerrs, ylabel="Gain")
+
+
+EO_TASK_FACTORY.add_task_class('PTC', PTCTask)
+EO_TASK_FACTORY.add_task_class('PTCStats', PTCStatsTask)
+EO_TASK_FACTORY.add_task_class('PTCSummary', PTCSummaryTask)

@@ -6,7 +6,7 @@ import numpy as np
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.config_utils import EOUtilConfig
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.file_utils import get_mask_files
 
@@ -17,8 +17,9 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_dims_from_ccd, get_ccd_from_id,\
     get_raw_image, get_geom_regions, get_amp_list, get_image_frames_2d
 
-from .file_utils import raft_bias_tablename, raft_bias_plotname,\
-    bias_summary_tablename, bias_summary_plotname
+from lsst.eo_utils.base.analysis import EO_TASK_FACTORY
+
+from .file_utils import RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
 
 from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisBySlot
 
@@ -27,19 +28,19 @@ from .meta_analysis import BiasSummaryByRaft, BiasTableAnalysisByRaft,\
 
 
 
-class CorrelWRTOScanConfig(BiasAnalysisConfig):
+class CorrelWRTOscanConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasoscorr')
-    bias = EOUtilConfig.clone_param('bias')
-    mask = EOUtilConfig.clone_param('mask')
+    suffix = EOUtilOptions.clone_param('suffix', default='biasoscorr')
+    bias = EOUtilOptions.clone_param('bias')
+    mask = EOUtilOptions.clone_param('mask')
 
 
-class CorrelWRTOScanTask(BiasAnalysisTask):
+class CorrelWRTOscanTask(BiasAnalysisTask):
     """Class to analyze correlations between the imaging section
     and the overscan regions in a series of bias frames"""
 
-    ConfigClass = CorrelWRTOScanConfig
-    _DefaultName = "CorrelWRTOScanTask"
+    ConfigClass = CorrelWRTOscanConfig
+    _DefaultName = "CorrelWRTOscanTask"
     iteratorClass = BiasAnalysisBySlot
 
     def __init__(self, **kwargs):
@@ -171,21 +172,22 @@ class CorrelWRTOScanTask(BiasAnalysisTask):
                                                dd_p[mask_p])[0, 1]
 
 
-class CorrelWRTOScanStatsConfig(BiasAnalysisConfig):
+class CorrelWRTOscanStatsConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasoscorr_stats')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
+    suffix = EOUtilOptions.clone_param('suffix', default='biasoscorr_stats')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
 
 
-class CorrelWRTOScanStatsTask(BiasAnalysisTask):
+class CorrelWRTOscanStatsTask(BiasAnalysisTask):
     """Class to analyze the overscan correlation with imaging region"""
 
-    ConfigClass = CorrelWRTOScanStatsConfig
-    _DefaultName = "CorrelWRTOScanStatsTask"
+    ConfigClass = CorrelWRTOscanStatsConfig
+    _DefaultName = "CorrelWRTOscanStatsTask"
     iteratorClass = BiasTableAnalysisByRaft
-    tablefile_name = raft_bias_tablename
-    plotfile_name = raft_bias_plotname
+
+    tablename_format = RAFT_BIAS_TABLE_FORMATTER
+    plotname_format = RAFT_BIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """C'tor """
@@ -290,21 +292,19 @@ class CorrelWRTOScanStatsTask(BiasAnalysisTask):
 
 
 
-class CorrelWRTOScanSummaryConfig(BiasSummaryAnalysisConfig):
-    """Configuration for CorrelWRTOScanSummaryTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasoscorr_sum')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
+class CorrelWRTOscanSummaryConfig(BiasSummaryAnalysisConfig):
+    """Configuration for CorrelWRTOscanSummaryTask"""
+    suffix = EOUtilOptions.clone_param('suffix', default='biasoscorr_sum')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
 
 
-class CorrelWRTOScanSummaryTask(BiasSummaryAnalysisTask):
+class CorrelWRTOscanSummaryTask(BiasSummaryAnalysisTask):
     """Class to analyze the overscan bias as a function of row number"""
 
-    ConfigClass = CorrelWRTOScanSummaryConfig
-    _DefaultName = "CorrelWRTOScanSummaryTask"
+    ConfigClass = CorrelWRTOscanSummaryConfig
+    _DefaultName = "CorrelWRTOscanSummaryTask"
     iteratorClass = BiasSummaryByRaft
-    tablefile_name = bias_summary_tablename
-    plotfile_name = bias_summary_plotname
 
     def __init__(self, **kwargs):
         """C'tor"""
@@ -356,3 +356,8 @@ class CorrelWRTOScanSummaryTask(BiasSummaryAnalysisTask):
                             ylabel="Correlation between serial overscan and imaging")
         figs.plot_run_chart("p_correl_mean", runs, yvals_p,
                             ylabel="Correlation between parallel overscan and imaging")
+
+
+EO_TASK_FACTORY.add_task_class('CorrelWRTOscan', CorrelWRTOscanTask)
+EO_TASK_FACTORY.add_task_class('CorrelWRTOscanStats', CorrelWRTOscanStatsTask)
+EO_TASK_FACTORY.add_task_class('CorrelWRTOscanSummary', CorrelWRTOscanSummaryTask)

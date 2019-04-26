@@ -21,7 +21,7 @@ STANDARD_RAFT_ARGS = ['run', 'butler_repo', 'outdir',
                       'plot', 'skip', 'nfiles']
 
 
-class EOUtilConfig(pexConfig.Config):
+class EOUtilOptions(pexConfig.Config):
     """A simple class to manage configuration parameters for EO analysis tasks"""
 
     # Options for job control

@@ -8,7 +8,7 @@ from scipy import fftpack
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS, DEFAULT_BIAS_TYPE
 
-from lsst.eo_utils.base.config_utils import EOUtilConfig
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.file_utils import get_mask_files
 
@@ -20,10 +20,11 @@ from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES,\
     get_readout_freqs_from_ccd, get_ccd_from_id, get_raw_image,\
     get_geom_regions, get_amp_list, get_image_frames_2d, array_struct, unbias_amp
 
+from lsst.eo_utils.base.analysis import EO_TASK_FACTORY
+
 from .file_utils import get_superbias_frame,\
-    slot_superbias_tablename, slot_superbias_plotname,\
-    bias_summary_tablename, bias_summary_plotname,\
-    raft_bias_tablename, raft_bias_plotname
+    SLOT_SBIAS_TABLE_FORMATTER, SLOT_SBIAS_PLOT_FORMATTER,\
+    RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
 
 from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisBySlot
 
@@ -33,11 +34,11 @@ from .meta_analysis import BiasSummaryByRaft, BiasTableAnalysisByRaft,\
 
 class BiasFFTConfig(BiasAnalysisConfig):
     """Configuration for BiasFFTTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasfft')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
-    mask = EOUtilConfig.clone_param('mask')
-    std = EOUtilConfig.clone_param('std')
+    suffix = EOUtilOptions.clone_param('suffix', default='biasfft')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
+    mask = EOUtilOptions.clone_param('mask')
+    std = EOUtilOptions.clone_param('std')
 
 
 class BiasFFTTask(BiasAnalysisTask):
@@ -172,9 +173,9 @@ class BiasFFTTask(BiasAnalysisTask):
 
 class SuperbiasFFTConfig(BiasAnalysisConfig):
     """Configuration for BiasFFTTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='sbiasfft')
-    superbias = EOUtilConfig.clone_param('superbias')
-    mask = EOUtilConfig.clone_param('mask')
+    suffix = EOUtilOptions.clone_param('suffix', default='sbiasfft')
+    superbias = EOUtilOptions.clone_param('superbias')
+    mask = EOUtilOptions.clone_param('mask')
 
 
 class SuperbiasFFTTask(BiasFFTTask):
@@ -184,8 +185,8 @@ class SuperbiasFFTTask(BiasFFTTask):
     _DefaultName = "SuperbiasFFTTask"
     iteratorClass = BiasAnalysisBySlot
 
-    tablefile_name = slot_superbias_tablename
-    plotfile_name = slot_superbias_plotname
+    tablename_format = SLOT_SBIAS_TABLE_FORMATTER
+    plotname_format = SLOT_SBIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         BiasFFTTask.__init__(self, **kwargs)
@@ -239,9 +240,9 @@ class SuperbiasFFTTask(BiasFFTTask):
 
 class BiasFFTStatsConfig(BiasAnalysisConfig):
     """Configuration for OscanAmpStackStatsTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasfft_stats')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
+    suffix = EOUtilOptions.clone_param('suffix', default='biasfft_stats')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
 
 
 
@@ -251,8 +252,9 @@ class BiasFFTStatsTask(BiasAnalysisTask):
     ConfigClass = BiasFFTStatsConfig
     _DefaultName = "BiasAnalysisTask"
     iteratorClass = BiasTableAnalysisByRaft
-    tablefile_name = raft_bias_tablename
-    plotfile_name = raft_bias_plotname
+
+    tablename_format = RAFT_BIAS_TABLE_FORMATTER
+    plotname_format = RAFT_BIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """C'tor """
@@ -339,9 +341,9 @@ class BiasFFTStatsTask(BiasAnalysisTask):
 
 class BiasFFTSummaryConfig(BiasSummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasfft_sum')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
+    suffix = EOUtilOptions.clone_param('suffix', default='biasfft_sum')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
 
 
 class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
@@ -350,8 +352,6 @@ class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
     ConfigClass = BiasFFTSummaryConfig
     _DefaultName = "BiasFFTSummaryTask"
     iteratorClass = BiasSummaryByRaft
-    tablefile_name = bias_summary_tablename
-    plotfile_name = bias_summary_plotname
 
     def __init__(self, **kwargs):
         """C'tor"""
@@ -400,3 +400,9 @@ class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
         runs = runtable['runs']
 
         figs.plot_run_chart("fftpow_maxval", runs, yvals, ylabel="Maximum FFT Power [ADU]")
+
+
+EO_TASK_FACTORY.add_task_class('BiasFFT', BiasFFTTask)
+EO_TASK_FACTORY.add_task_class('SuperbiasFFT', SuperbiasFFTTask)
+EO_TASK_FACTORY.add_task_class('BiasFFTStats', BiasFFTStatsTask)
+EO_TASK_FACTORY.add_task_class('BiasFFTSummary', BiasFFTSummaryTask)

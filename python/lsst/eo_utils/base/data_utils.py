@@ -160,3 +160,54 @@ def vstack_tables(filedict, **kwargs):
 
     outtable = vstack_table(tables)
     return outtable
+
+
+
+def get_data_column(fname, tname, cname):
+    """Get a column from a particular table
+
+    @param fname (str)     File with the tables
+    @param tname (str)     Table name
+    @param cname (str)     Column name
+
+    @returns (`np.array`)
+    """
+    dtables = TableDict(fname, [tname])
+    return dtables[tname][cname]
+
+
+def get_data_columns(fname, tname, clist):
+    """Get a column from a particular table
+
+    @param fname (str)     File with the tables
+    @param tname (str)     Table name
+    @param clist (list)    Column names
+
+    @returns (`np.array`)
+    """
+    dtables = TableDict(fname, [tname])
+    dtab = dtables[tname]
+    return {key:dtab[key] for key in clist}
+
+
+def get_data_table_names(fname):
+    """Get a column from a particular table
+
+    @param fname (str)     File with the tables
+    @returns (list)
+    """
+    dtables = TableDict(fname)
+    return dtables.keys()
+
+
+def get_data_column_names(fname, tname):
+    """Get a column from a particular table
+
+    @param fname (str)     File with the tables
+    @param tname (str)     Table name
+
+    @returns (list)
+    """
+    dtables = TableDict(fname, [tname])
+    dtab = dtables[tname]
+    return dtab.columns

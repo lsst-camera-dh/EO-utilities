@@ -4,7 +4,7 @@ import sys
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.config_utils import EOUtilConfig
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.file_utils import read_runlist
 
@@ -13,8 +13,8 @@ from lsst.eo_utils.base.iter_utils import AnalysisIterator,\
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
-from lsst.eo_utils.flat.file_utils import slot_flat_tablename,\
-    slot_flat_plotname, raft_flat_tablename
+from lsst.eo_utils.flat.file_utils import SUM_FLAT_TABLE_FORMATTER,\
+    SUM_FLAT_PLOT_FORMATTER, SLOT_FLAT_TABLE_FORMATTER, RAFT_FLAT_PLOT_FORMATTER
 
 
 def get_tablenames_by_raft(caller, butler, run_num, **kwargs):
@@ -35,7 +35,7 @@ def get_tablenames_by_raft(caller, butler, run_num, **kwargs):
         slot_dict = {}
         for slot in ALL_SLOTS:
             kwcopy['slot'] = slot
-            basename = slot_flat_tablename(caller, **kwcopy)
+            basename = SLOT_FLAT_TABLE_FORMATTER(caller, **kwcopy)
             datapath = basename + '.fits'
             slot_dict[slot] = datapath
         out_dict[raft] = slot_dict
@@ -66,7 +66,7 @@ def get_raft_flat_tablefiles(caller, butler, dataset, **kwargs):
         run_key = "%s_%s" % (raft, run)
         kwcopy['run'] = run
         kwcopy['raft'] = raft
-        filedict[run_key] = raft_flat_tablename(caller, **kwcopy) + '.fits'
+        filedict[run_key] = RAFT_FLAT_TABLE_FORMATTER(caller, **kwcopy) + '.fits'
 
     return filedict
 
@@ -100,9 +100,9 @@ class FlatSummaryByRaft(SummaryAnalysisIterator):
 
 class FlatSummaryAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
-    outdir = EOUtilConfig.clone_param('outdir')
-    dataset = EOUtilConfig.clone_param('dataset')
-    suffix = EOUtilConfig.clone_param('suffix')
+    outdir = EOUtilOptions.clone_param('outdir')
+    dataset = EOUtilOptions.clone_param('dataset')
+    suffix = EOUtilOptions.clone_param('suffix')
 
 
 class FlatSummaryAnalysisTask(AnalysisTask):
@@ -113,8 +113,9 @@ class FlatSummaryAnalysisTask(AnalysisTask):
     ConfigClass = FlatSummaryAnalysisConfig
     _DefaultName = "FlatSummaryAnalysisTask"
     iteratorClass = FlatSummaryByRaft
-    tablefile_name = slot_flat_tablename
-    plotfile_name = slot_flat_plotname
+
+    tablename_format = SUM_FLAT_TABLE_FORMATTER
+    plotname_format = SUM_FLAT_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """ C'tor
