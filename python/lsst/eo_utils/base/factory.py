@@ -1,6 +1,6 @@
 """Utilities for offline data analysis of LSST Electrical-Optical testing
 
-This module contains base classes for various types of analyses.
+This module contains a factory to build objects that run analyses
 """
 
 from collections import OrderedDict
@@ -15,7 +15,7 @@ class EOTaskFactory:
         self._tasks = OrderedDict()
 
     def keys(self):
-        """@returns (list) the types of file names"""
+        """@returns (list) the name of the tasks"""
         return self._tasks.keys()
 
     def values(self):
@@ -27,9 +27,9 @@ class EOTaskFactory:
         return self._tasks.items()
 
     def __getitem__(self, key):
-        """Get a single item
+        """Get a single `BaseAnalysisTask` object by namne
 
-        @param key (str)               The key
+        @param key (str)               The names
         @returns (`BaseAnalysisTask`)  The corresponding task
         """
         return self._tasks[key]
@@ -37,33 +37,34 @@ class EOTaskFactory:
     def add_task_class(self, key, task_class):
         """Add an item to the dict
 
-        @param key (str)            The key
-        @param task_class (class)   The class
+        Tnis used the default construct of the task class to build
+        an instance of the class.
 
-        @returns (`FilenameFormat`) The newly create object
+        @param key (str)               The task name
+        @param task_class (class)      The class
         """
         task = task_class()
         if key in self._tasks:
             raise KeyError("Key %s is already in EOTaskFactory" % key)
         self._tasks[key] = task
 
-
     def run_task(self, key, **kwargs):
         """Run the selected task
 
-        @param key (str)            The key
-        @param kwargs               Passed to the `FilenameFormat` object
+        @param key (str)               The task name
+        @param kwargs                  Passed to the task's handler
 
         @returns (str) The corresponding filename
         """
-        task_class = self._tasks[key]
-        task_class.run(**kwargs)
-
+        task = self._tasks[key]
+        handler = task.iteratorClass(task)
+        handler.run_with_args(**kwargs)
 
     def build_parser(self, task_names=None, **kwargs):
         """Build and argument parser for a set of defined tasks
 
         @param task_names (list)    The tasks to include
+        @param kwargs               Used to add more parameters to the argument parser
 
         @returns (`ArgumentParser`) The parser
         """
@@ -81,11 +82,13 @@ class EOTaskFactory:
         return parser
 
     def parse_and_run(self, **kwargs):
-        """Run a task using the command line arguments"""
+        """Run a task using the command line arguments
+
+        @param kwargs               Used to override command line arguments
+        """
         parser = self.build_parser(usage="eo_task.py")
         args = parser.parse_args()
 
-        arg_dict = args.__dict__.copy()
         arg_dict = args.__dict__.copy()
         arg_dict.update(**kwargs)
 

@@ -8,7 +8,7 @@ from .defaults import BUTLER_REPO_DICT
 def get_butler_by_repo(repo, **kwargs):
     """Construct and return a Bulter for the requested repository
 
-    @param: repo (str)     Name of the repo, 'TS8' | 'BOT'
+    @param: repo (str)     Name of the repo, e.g., 'TS8' | 'BOT'
     @param: kwargs (dict)  Passed to the Bulter constructor
 
     @returns (Bulter) the requested Bulter
@@ -43,15 +43,15 @@ def get_hardware_info(butler, run_num):
     return (htype, hid)
 
 
-def get_raft_names_butler(butler, run_num):
+def get_raft_names_butler(butler, run):
     """Return the list of rafts from a given run
 
     @param: butler (Bulter)  The data Butler
-    @param run_num(str)      The number number we are reading
+    @param run (str)      The number number we are reading
 
     @returns (list) the raft names for that run
     """
-    rafts = butler.queryMetadata('raw', 'raftname', dict(run=run_num))
+    rafts = butler.queryMetadata('raw', 'raftname', dict(run=run))
     return rafts
 
 

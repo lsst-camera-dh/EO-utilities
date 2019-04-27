@@ -1,4 +1,4 @@
-"""Class to analyze the overscan bias as a function of row number"""
+"""Class to analyze the FFT of the bias frames"""
 
 import sys
 
@@ -39,7 +39,7 @@ class BiasFFTConfig(BiasAnalysisConfig):
 
 
 class BiasFFTTask(BiasAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Analyze the FFT of the bias frames"""
 
     ConfigClass = BiasFFTConfig
     _DefaultName = "BiasFFTTask"
@@ -121,7 +121,6 @@ class BiasFFTTask(BiasAnalysisTask):
 
 
     def get_ccd_data(self, butler, ccd, data, **kwargs):
-
         """Get the fft of the overscan values and update the data dictionary
 
         @param butler (`Butler`)   The data butler
@@ -172,14 +171,14 @@ class BiasFFTTask(BiasAnalysisTask):
 
 
 class SuperbiasFFTConfig(BiasAnalysisConfig):
-    """Configuration for BiasFFTTask"""
+    """Configuration for SuperbiasFFTTask"""
     suffix = EOUtilOptions.clone_param('suffix', default='sbiasfft')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
 
 
 class SuperbiasFFTTask(BiasFFTTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Analyze the FFT of the superbias frames"""
 
     ConfigClass = SuperbiasFFTConfig
     _DefaultName = "SuperbiasFFTTask"
@@ -239,7 +238,7 @@ class SuperbiasFFTTask(BiasFFTTask):
 
 
 class BiasFFTStatsConfig(BiasAnalysisConfig):
-    """Configuration for OscanAmpStackStatsTask"""
+    """Configuration for BiasFFTStatsTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='biasfft')
     suffix = EOUtilOptions.clone_param('suffix', default='biasfft_stats')
     bias = EOUtilOptions.clone_param('bias')
@@ -248,7 +247,7 @@ class BiasFFTStatsConfig(BiasAnalysisConfig):
 
 
 class BiasFFTStatsTask(BiasAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Extract statistics about the FFT of the bias frames"""
 
     ConfigClass = BiasFFTStatsConfig
     _DefaultName = "BiasAnalysisTask"
@@ -341,7 +340,7 @@ class BiasFFTStatsTask(BiasAnalysisTask):
 
 
 class BiasFFTSummaryConfig(BiasSummaryAnalysisConfig):
-    """Configuration for CorrelWRTOScanSummaryTask"""
+    """Configuration for BiasFFTSummaryTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='biasfft_stats')
     suffix = EOUtilOptions.clone_param('suffix', default='biasfft_sum')
     bias = EOUtilOptions.clone_param('bias')
@@ -349,7 +348,7 @@ class BiasFFTSummaryConfig(BiasSummaryAnalysisConfig):
 
 
 class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Summarize the results for the analysis of the FFT of the bias frames"""
 
     ConfigClass = BiasFFTSummaryConfig
     _DefaultName = "BiasFFTSummaryTask"

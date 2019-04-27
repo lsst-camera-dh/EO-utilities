@@ -1,4 +1,4 @@
-"""Class to construct and plot superbias frames"""
+"""Class to construct superbias frames"""
 
 import sys
 
@@ -44,7 +44,7 @@ class SuperbiasConfig(BaseAnalysisConfig):
 
 
 class SuperbiasTask(BaseAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Construct superbias frames"""
 
     ConfigClass = SuperbiasConfig
     _DefaultName = "SuperbiasTask"

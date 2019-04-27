@@ -27,7 +27,7 @@ class BiasVRowConfig(BiasAnalysisConfig):
 
 
 class BiasVRowTask(BiasAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Analyze the overscan bias as a function of row number"""
     ConfigClass = BiasVRowConfig
     _DefaultName = "BiasVRowTask"
     iteratorClass = BiasAnalysisBySlot

@@ -39,7 +39,7 @@ from lsst.eo_utils.flat.meta_analysis import FlatSummaryByRaft, FlatTableAnalysi
 
 
 class PTCConfig(FlatAnalysisConfig):
-    """Configuration for BiasVRowTask"""
+    """Configuration for PTCTask"""
     suffix = EOUtilOptions.clone_param('suffix', default='ptc')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
@@ -47,7 +47,7 @@ class PTCConfig(FlatAnalysisConfig):
 
 
 class PTCTask(FlatAnalysisTask):
-    """Class to extract the photon transfer curve"""
+    """Extract the photon transfer curve"""
 
     ConfigClass = PTCConfig
     _DefaultName = "PTCTask"
@@ -150,7 +150,7 @@ class PTCTask(FlatAnalysisTask):
 
 
 class PTCStatsConfig(FlatAnalysisConfig):
-    """Configuration for BiasVRowTask"""
+    """Configuration for PTCStatsTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='ptc')
     suffix = EOUtilOptions.clone_param('suffix', default='ptc_stats')
     bias = EOUtilOptions.clone_param('bias')
@@ -158,7 +158,7 @@ class PTCStatsConfig(FlatAnalysisConfig):
 
 
 class PTCStatsTask(FlatAnalysisTask):
-    """Class to analyze the overscan flat as a function of row number"""
+    """Extract statistics about the photon transfer curves"""
 
     ConfigClass = PTCStatsConfig
     _DefaultName = "PTCStatsTask"
@@ -296,7 +296,7 @@ class PTCStatsTask(FlatAnalysisTask):
 
 
 class PTCSummaryConfig(FlatSummaryAnalysisConfig):
-    """Configuration for CorrelWRTOScanSummaryTask"""
+    """Configuration for PTCSummaryTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='ptc_stats')
     suffix = EOUtilOptions.clone_param('suffix', default='ptc_sum')
     bias = EOUtilOptions.clone_param('bias')
@@ -304,7 +304,8 @@ class PTCSummaryConfig(FlatSummaryAnalysisConfig):
 
 
 class PTCSummaryTask(FlatSummaryAnalysisTask):
-    """Class to analyze the overscan flat as a function of row number"""
+    """Summarize the results for the analysis of variations of the
+    photon transfer curves frames"""
 
     ConfigClass = PTCSummaryConfig
     _DefaultName = "PTCSummaryTask"

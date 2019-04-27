@@ -34,24 +34,28 @@ class FigureDict:
     def get_figure(self, key):
         """Return a figure
 
-        @param key (str)                       Key for the figure.
-        @returns (`matplotlib.figure.Figure`)  requested Figure
+        @param key (str)                       Name of the figure.
+        @returns (`matplotlib.figure.Figure`)  Requested Figure
         """
         return self._fig_dict[key]['fig']
 
     def keys(self):
-        """Return the figure keys"""
+        """Return the names of the figures"""
         return self._fig_dict.keys()
 
+    def values(self):
+        """Returns the sub-dictionary of `matplotlib` objects"""
+        return self._fig_dict.values()
+
     def items(self):
-        """Return the figure keys and values"""
+        """Return the name : sub-dictionary pairs"""
         return self._fig_dict.items()
 
     def __getitem__(self, key):
         """Return a particular sub-dictionary
 
-        @param key (str)   Key for the sub-dictionary.
-        @returns (dict)    Requested sub-dictionary
+        @param key (str)                       Key for the sub-dictionary.
+        @returns (dict)                        Requested sub-dictionary
         """
         return self._fig_dict[key]
 
@@ -59,21 +63,21 @@ class FigureDict:
     def get_obj(self, key, key2):
         """Return some other object besides a figures
 
-        @param key (str)   Key for the figure.
-        @param key2 (str)  Key for the object
+        @param key (str)                       Key for the figure.
+        @param key2 (str)                      Key for the object
 
-        @returns (object) requested object
+        @returns (object)                      Requested object
         """
         return self._fig_dict[key][key2]
 
 
     def get_amp_axes(self, key, iamp):
-        """Return some the axes object for a particular amp
+        """Return the `matplotlib` axes object for a particular amp
 
-        @param key (str)   Key for the figure.
-        @param iamp (int)  Amplifier index
+        @param key (str)                       Key for the figure.
+        @param iamp (int)                      Amplifier index
 
-        @returns (axes) requested object
+        @returns (axes)                        Requested `matplotlib` axes object
         """
         return self._fig_dict[key]['axs'].flat[iamp]
 
@@ -124,7 +128,7 @@ class FigureDict:
 
         @returns (dict)
             fig (matplotlib.figure.Figure)
-            axs (array if matplotlib.Axes._subplots.AxesSubplot)
+            axs (array of matplotlib.Axes._subplots.AxesSubplot)
         """
         title = kwargs.get('title', None)
         xlabel = kwargs.get('xlabel', None)
@@ -173,7 +177,7 @@ class FigureDict:
 
         @returns (dict)
             fig (matplotlib.figure.Figure)
-            axs (array if matplotlib.Axes._subplots.AxesSubplot)
+            axs (array of matplotlib.Axes._subplots.AxesSubplot)
         """
         title = kwargs.get('title', None)
         xlabel = kwargs.get('xlabel', None)
@@ -213,7 +217,7 @@ class FigureDict:
 
         @returns (tuple)
             fig (matplotlib.figure.Figure)
-            axs (array if matplotlib.Axes._subplots.AxesSubplot)
+            axs (array of matplotlib.Axes._subplots.AxesSubplot)
         """
         title = kwargs.get('title', None)
         xlabel = kwargs.get('xlabel', None)

@@ -1,4 +1,4 @@
-"""Class to analyze the overscan bias as a function of row number"""
+"""Class to analyze the correlations between the overscans for all amplifiers on a raft"""
 
 import itertools
 
@@ -24,7 +24,7 @@ from .analysis import BiasAnalysisTask, BiasAnalysisConfig, BiasAnalysisByRaft
 
 
 class OscanCorrelConfig(BiasAnalysisConfig):
-    """Configuration for BiasVRowTask"""
+    """Configuration for OscanCorrelTask"""
     suffix = EOUtilOptions.clone_param('suffix', default='oscorr')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
@@ -34,7 +34,7 @@ class OscanCorrelConfig(BiasAnalysisConfig):
 
 
 class OscanCorrelTask(BiasAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Analyze the correlations between the overscans for all amplifiers on a raft"""
 
     ConfigClass = OscanCorrelConfig
     _DefaultName = "OscanCorrelTask"

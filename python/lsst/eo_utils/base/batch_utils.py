@@ -1,4 +1,12 @@
-"""This module contains functions to help use the SLAC batch system"""
+"""This module contains functions dispatch analysis jobs.
+
+Eventually it should be able to handle jobs by:
+
+1) Running them on the same cpu as the parent job
+2) Running them on a multiprocees pool
+3) Running them on a batch farm
+
+"""
 
 from __future__ import with_statement
 
@@ -10,23 +18,22 @@ import sys
 #from lsst.ctrl.pool import Batch, exportEnv, UMASK
 
 def dispatch_job(jobname, logfile, **kwargs):
-    """Dispatch a single job to the batch farm
+    """Dispatch a single job
 
-    @param jobname (str)    The command to send to the batch
-    @param run_num (str)    The run number, i.e,. '6106D'
+    @param jobname (str)    The command to run the job
     @param logfile (str)    The path to the logfile
     @param kwargs
             run (str)          The run number
+            batch (str)        Where to send the jobs
             batch_args (str)   Arguments to pass to batch command
-            optstring (str)    Additional arguments to pass to command
-            dry_run (bool)     Print batch command but do not run it
-            use_batch (bool)   Send command to batch farm
+            optstring (str)    Additional arguments to pass to the command
+            dry_run (bool)     Print command but do not run it
     """
+    run = kwargs.get('run', None)
+    batch = kwargs.get('batch', 'native')
     batch_args = kwargs.get('batch_args', None)
     optstring = kwargs.get('optstring', None)
     dry_run = kwargs.get('dry_run', False)
-    run_num = kwargs.get('run', None)
-    batch = kwargs.get('batch', 'native')
 
     if batch.find('bsub') >= 0:
         sub_com = "bsub -o %s" % logfile
@@ -35,10 +42,10 @@ def dispatch_job(jobname, logfile, **kwargs):
     else:
         sub_com = ""
 
-    if run_num is None:
+    if run is None:
         sub_com += " %s" % jobname
     else:
-        sub_com += " %s --run %s" % (jobname, run_num)
+        sub_com += " %s --run %s" % (jobname, run)
 
     if optstring is not None:
         sub_com += " %s" % optstring

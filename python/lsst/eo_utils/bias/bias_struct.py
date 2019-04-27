@@ -31,7 +31,7 @@ class BiasStructConfig(BiasAnalysisConfig):
 
 
 class BiasStructTask(BiasAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Analyze the structure of the bias frames"""
 
     ConfigClass = BiasStructConfig
     _DefaultName = "BiasStructTask"
@@ -155,7 +155,7 @@ class BiasStructTask(BiasAnalysisTask):
 
 
 class SuperbiasStructConfig(BiasAnalysisConfig):
-    """Configuration for BiasVRowTask"""
+    """Configuration for SuperbiasStructTask"""
     suffix = EOUtilOptions.clone_param('suffix', default='sbiasst')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
@@ -164,7 +164,7 @@ class SuperbiasStructConfig(BiasAnalysisConfig):
 
 
 class SuperbiasStructTask(BiasStructTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Analyze the superbias stucture"""
 
     ConfigClass = SuperbiasStructConfig
     _DefaultName = "SuperbiasStructTask"

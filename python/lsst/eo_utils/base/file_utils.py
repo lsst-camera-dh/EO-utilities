@@ -60,13 +60,24 @@ def get_hardware_type_and_id(run):
 
 
 class FilenameFormat:
-    """Small class to define the format of a particular file"""
+    """Small class to define the format of a particular file
+
+    New `FilenameFormat` objects should be created at the
+    module level using the
+    FILENAME_FORMATS.add_format() function as that will
+    ensure that they are stored in the mapping of formats,
+    making it easier to find a file of a particular type, e.g.:
+
+    from lsst.eo_utils.base.file_utils import FILENAME_FORMATS
+
+    FMT_FORMAT = FILENAME_FORMATS.add_format("fmt", "{prefix}_name_{suffix}", suffix="")
+    """
 
     def __init__(self, fmt, **kwargs):
         """C'tor
 
-        @param fmt (str)         String that defines the file format
-        @param kwargs               Used to set default values
+        @param fmt (str)           String that defines the file format
+        @param kwargs              Used to set default values
         """
         self._format = fmt
         self._keys = FilenameFormat._get_format_keys(self._format)
@@ -82,9 +93,9 @@ class FilenameFormat:
         return ret_dict
 
     def check(self, **kwargs):
-        """C'tor
+        """Checks which required keys are still missing
 
-        @param kwargs               Used to set default values
+        @param kwargs               Format keys
         """
         missed = []
         for miss in self._missing:
@@ -95,6 +106,7 @@ class FilenameFormat:
     def __call__(self, caller=None, **kwargs):
         """C'tor
 
+        @param caller (object)      Object calling this function
         @param kwargs               Used to format string
         @returns (str)              Formatted filename
         """
@@ -107,11 +119,12 @@ class FilenameFormat:
             raise KeyError("FilenameFormat missing parameters for %s : %s" % (caller, missed))
 
 
-
-
     @staticmethod
     def _findall(string, sep):
-        """Find all the values of sep in string"""
+        """Find all the values of sep in string
+
+        @returns (list)
+        """
         outlist = []
         for idx, char in enumerate(string):
             if char == sep:
@@ -168,7 +181,7 @@ class FilenameFormatDict:
         @param key (str)            The key
         @param kwargs               Passed to the `FilenameFormat` object
 
-        @returns (str) The corresponding filename
+        @returns (str)              The corresponding filename
         """
         return self._formats[key](**kwargs)
 
@@ -176,10 +189,10 @@ class FilenameFormatDict:
         """Add an item to the dict
 
         @param key (str)            The key
-        @param format (str)         String that defines the file format
+        @param fmt (str)            String that defines the file format
         @param kwargs               Used to set default values
 
-        @returns (`FilenameFormat`) The newly create object
+        @returns (`FilenameFormat`) The newly created object
         """
         if key in self._formats:
             raise KeyError("Key %s is already in FilenameFormatDict" % key)
@@ -342,7 +355,6 @@ def find_eo_results(glob_format, paths, **kwargs):
 
     @returns (dict) the mapping
     """
-
     for path in paths:
         globstring = glob_format.format(path=path, **kwargs)
         globfiles = glob.glob(globstring)

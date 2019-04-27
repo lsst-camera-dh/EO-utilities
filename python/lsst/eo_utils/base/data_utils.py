@@ -1,4 +1,4 @@
-"""Functions to convert objects objects to and from astropy data tables  """
+"""Functions to store analysis results as astropy data tables  """
 
 import os
 
@@ -22,62 +22,78 @@ class TableDict:
     and to read and write files, either as FITS or HDF5 files.
     """
     def __init__(self, filepath=None, tablelist=None):
-        """C'tor"""
+        """C'tor
+
+        if filepath is not set, an empty `TableDict` will be constructed.
+        if tablelist is not set, all the tables in the fill we be read.
+
+        @param filepath (str)     The name of the file to read data from
+        @param tablelist (list)   The name of the tables to read
+        """
         self._table_dict = {}
         if filepath is not None:
             self.load_datatables(filepath, tablelist=tablelist)
 
     def keys(self):
-        """Return the set of keys"""
+        """Return the names of the tables"""
         return self._table_dict.keys()
 
+    def values(self):
+        """Return the tables"""
+        return self._table_dict.values()
+
     def items(self):
-        """Return the set of keys"""
+        """Return the table-name : table pairs"""
         return self._table_dict.items()
 
     def __getitem__(self, key):
-        """Return a particular Table
+        """Return a `Table` by name
 
-        @param key (str)   Key for the table.
-        @returns (`Table`) requested Table
+        @param key (str)           Name of the table
+        @returns (`Table`)         Requested Table
         """
         return self._table_dict[key]
 
     def get_table(self, key):
-        """Return a Table"
+        """Return a `Table` by name
 
-        @param key (str)   Key for the table.
-        @returns (`Table`) requested Table
+        This version will not raise an exception if the
+        table does not exist
+
+        @param key (str)           Name of the table
+        @returns (`Table`)         Requested Table
         """
-        return self._table_dict[key]
+        return self._table_dict.get(key, None)
 
     def make_datatable(self, key, data):
-        """Make a Table
+        """Make a `Table` and add it to this objedts
 
-        @param key (str)        Key for this Table
-        @param data (dict)      Data for this Table
+        @param key (str)           Name of the table
+        @param data (dict)         Data for `Table`
 
-        @returns (`Table`) newly created table
+        @returns (`Table`)         Newly created table
         """
         tab = Table(data)
         self._table_dict[key] = tab
         return tab
 
     def add_datatable(self, key, tab):
-        """Add a Table
+        """Add a `Table` to this object
 
-        @param key (str)        Key for this Table
-        @param df (dict)        Table we are adding
+        @param key (str)           Name of the table
+        @param tab (`Table`)       The `Table` to add
         """
         self._table_dict[key] = tab
 
-
     def make_datatables(self, data):
-        """Make a set of Table
+        """Make a set of `Table` objects
 
-        @param data (dict)      Data for these `Table` objects
+        The input data should be a dictionary of dictionaries:
+        the keys will be used as the `Table` names,
+        the values will be used as to construct the `Table` objects
 
-        @returns (dict)         Dictionary of `Table` objects
+        @param data (dict)         Data for these `Table` objects
+        @returns (dict)            Dictionary of `Table` objects
         """
         o_dict = {self.make_datatable(key, val) for key, val in data.items()}
         return o_dict
@@ -128,17 +144,18 @@ class TableDict:
             raise ValueError("Can only write pickle and hdf5 files for now, not %s" % extype)
 
 
-
 def vstack_tables(filedict, **kwargs):
-    """Stack a bunch of tables
+    """Stack a bunch of tables 'vertically'
+
+    This will result in a table with the same columns, but more rows.
 
     @param filedict (dict)    Dictionary pointing to the files with the tables
     @param kwargs
-        tablename (str)
-        keep_cols (list)
-        remove_cols (list)
+        tablename (str)       Names of table to stack
+        keep_cols (list)      Columns to retain, if None, retain all columns
+        remove_cols (list)    Columns to remove
 
-    @returns (Table)
+    @returns (`Table`)        The stacked `Table`
     """
 
     kwcopy = kwargs.copy()
@@ -170,7 +187,7 @@ def get_data_column(fname, tname, cname):
     @param tname (str)     Table name
     @param cname (str)     Column name
 
-    @returns (`np.array`)
+    @returns (`numpy.array`)
     """
     dtables = TableDict(fname, [tname])
     return dtables[tname][cname]
@@ -183,7 +200,7 @@ def get_data_columns(fname, tname, clist):
     @param tname (str)     Table name
     @param clist (list)    Column names
 
-    @returns (`np.array`)
+    @returns (dict)        Dictionary mapping column name to `numpy.array`
     """
     dtables = TableDict(fname, [tname])
     dtab = dtables[tname]
@@ -191,22 +208,21 @@ def get_data_columns(fname, tname, clist):
 
 
 def get_data_table_names(fname):
-    """Get a column from a particular table
+    """Get the names of the `Table` objects in a particular file
 
     @param fname (str)     File with the tables
-    @returns (list)
+    @returns (list)        Names of the `Table` objects
     """
     dtables = TableDict(fname)
     return dtables.keys()
 
 
 def get_data_column_names(fname, tname):
-    """Get a column from a particular table
+    """Get the names of the columns in a particular table
 
     @param fname (str)     File with the tables
     @param tname (str)     Table name
-
-    @returns (list)
+    @returns (list)        Names of the columns
     """
     dtables = TableDict(fname, [tname])
     dtab = dtables[tname]

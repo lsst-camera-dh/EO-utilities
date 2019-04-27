@@ -1,4 +1,4 @@
-"""Class to analyze the overscan bias as a function of row number"""
+"""Task to look for coherent noise by stacking the overscan from all the amplifiers"""
 
 import sys
 
@@ -30,7 +30,7 @@ from .meta_analysis import BiasSummaryByRaft, BiasTableAnalysisByRaft,\
 
 
 class OscanAmpStackConfig(BiasAnalysisConfig):
-    """Configuration for BiasVRowTask"""
+    """Configuration for OscanAmpStackTask"""
     suffix = EOUtilOptions.clone_param('suffix', default='biasosstack')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
@@ -38,8 +38,7 @@ class OscanAmpStackConfig(BiasAnalysisConfig):
 
 
 class OscanAmpStackTask(BiasAnalysisTask):
-    """Class to analyze correlations between the imaging section
-    and the overscan regions in a series of bias frames"""
+    """Look for coherent noise by stacking the overscan from all the amplifiers"""
 
     ConfigClass = OscanAmpStackConfig
     _DefaultName = "OscanAmpStackTask"
@@ -139,7 +138,7 @@ class OscanAmpStackStatsConfig(BiasAnalysisConfig):
 
 
 class OscanAmpStackStatsTask(BiasAnalysisTask):
-    """Class to analyze the overscan correlation with imaging region"""
+    """Extract statistics from overscan amplifier stacking analysis"""
 
     ConfigClass = OscanAmpStackStatsConfig
     _DefaultName = "OscanAmpStackStatsTask"
@@ -272,7 +271,7 @@ class OscanAmpStackSummaryConfig(BiasSummaryAnalysisConfig):
 
 
 class OscanAmpStackSummaryTask(BiasSummaryAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Summarize the results for the analysis of the overscan amplifeir stacking"""
 
     ConfigClass = OscanAmpStackSummaryConfig
     _DefaultName = "OscanAmpStackSummaryTask"

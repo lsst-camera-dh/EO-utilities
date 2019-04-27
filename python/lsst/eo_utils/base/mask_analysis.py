@@ -1,8 +1,8 @@
-"""Utilities for offline data analysis of LSST Electrical-Optical testing"""
+"""Class to merge together masks for a single run, raft, slot"""
 
+import sys
 
 from lsst.eotest.sensor import add_mask_files
-
 
 from .iter_utils import AnalysisBySlot
 
@@ -16,20 +16,20 @@ from .file_utils import makedir_safe, get_mask_files_run,\
     MASK_FORMATTER
 
 
-def get_mask_data(caller, butler, run_num, **kwargs):
+def get_mask_data(caller, butler, run, **kwargs):
     """Get a set of mask files out of a folder
 
     @param caller (`Task')     Task we are getting the data for
-    @param butler (Bulter)     The data Butler
-    @param run_num (str)       The number number we are reading
+    @param butler (`Bulter`)   The data Butler
+    @param run (str)           The run number we are reading
     @param kwargs:
-        mask_types (list)       The types of acquistions we want to include
+        mask_types (list)      The types of acquistions we want to include
 
     @returns (dict) Dictionary mapping slot to file names
     """
-    kwargs.pop('run_num', None)
+    kwargs.pop('run', None)
     if butler is None:
-        retval = get_mask_files_run(run_num, **kwargs)
+        retval = get_mask_files_run(run, **kwargs)
     else:
         raise NotImplementedError("Can't get mask files from Butler for %s" % caller)
 
@@ -38,7 +38,9 @@ def get_mask_data(caller, butler, run_num, **kwargs):
 
 
 class MaskAnalysisBySlot(AnalysisBySlot):
-    """Small class to iterate an analysis task over all the slots in a raft"""
+    """Class to iterate an analysis task over all the slots in a raft
+    and get the mask data for each run, raft, slot.
+    """
 
     # Function to get the data
     get_data = get_mask_data
@@ -52,7 +54,7 @@ class MaskAnalysisBySlot(AnalysisBySlot):
 
 
 class MaskAddConfig(BaseAnalysisConfig):
-    """Configuration for EO analysis tasks"""
+    """Configuration for MaskAddTask"""
     outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
@@ -61,7 +63,7 @@ class MaskAddConfig(BaseAnalysisConfig):
 
 
 class MaskAddTask(BaseAnalysisTask):
-    """Simple functor class to tie together standard data analysis
+    """Merge together masks for a single run, raft, slot
     """
     ConfigClass = MaskAddConfig
     _DefaultName = "MaskAdd"
@@ -70,7 +72,7 @@ class MaskAddTask(BaseAnalysisTask):
     def __init__(self, **kwargs):
         """ C'tor
 
-        @param kwargs:    Used to override configruation
+        @param kwargs            Used to override configruation
         """
         BaseAnalysisTask.__init__(self, **kwargs)
 
@@ -80,14 +82,14 @@ class MaskAddTask(BaseAnalysisTask):
 
         @param: butler (Bulter)  The data Butler
         @param slot_data (dict)  Dictionary pointing to the mask files
-        @param kwargs:           Passed to the `mask_filename` function to get the
-                                 output filename
+
+        @param kwargs            Used to override configruation
         """
         self.safe_update(**kwargs)
 
         mask_files = slot_data['MASK']
         if butler is not None:
-            print("Ignoring Butler to get mask files")
+            sys.stdout.write("Ignoring Butler to get mask files\n")
 
         outfile = self.get_filename_from_format(MASK_FORMATTER, "")
         makedir_safe(outfile)

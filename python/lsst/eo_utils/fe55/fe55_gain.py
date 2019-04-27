@@ -24,7 +24,7 @@ from lsst.eo_utils.fe55.meta_analysis import Fe55SummaryByRaft, Fe55TableAnalysi
 
 
 class Fe55GainStatsConfig(Fe55AnalysisConfig):
-    """Configuration for BiasVRowTask"""
+    """Configuration for Fe55GainStatsTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='fe55_clusters')
     suffix = EOUtilOptions.clone_param('suffix', default='fe55_gain_stats')
     bias = EOUtilOptions.clone_param('bias')
@@ -33,7 +33,7 @@ class Fe55GainStatsConfig(Fe55AnalysisConfig):
 
 
 class Fe55GainStatsTask(Fe55AnalysisTask):
-    """Class to analyze the overscan fe55 as a function of row number"""
+    """Analyze the gains using the fe55 cluster fit results"""
 
     ConfigClass = Fe55GainStatsConfig
     _DefaultName = "Fe55GainStatsTask"
@@ -150,7 +150,7 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
 
 
 class Fe55GainSummaryConfig(Fe55SummaryAnalysisConfig):
-    """Configuration for CorrelWRTOScanSummaryTask"""
+    """Configuration for Fe55GainSummaryTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='fe55_gain_stats')
     suffix = EOUtilOptions.clone_param('suffix', default='fe55_gain_sum')
     bias = EOUtilOptions.clone_param('bias')
@@ -159,7 +159,7 @@ class Fe55GainSummaryConfig(Fe55SummaryAnalysisConfig):
 
 
 class Fe55GainSummaryTask(Fe55SummaryAnalysisTask):
-    """Class to analyze the overscan fe55 as a function of row number"""
+    """Sumarize the results of the Fe55 gain analyses"""
 
     ConfigClass = Fe55GainSummaryConfig
     _DefaultName = ""

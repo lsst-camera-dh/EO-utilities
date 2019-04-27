@@ -23,7 +23,14 @@ STANDARD_RAFT_ARGS = ['run', 'butler_repo', 'outdir',
 
 
 class EOUtilOptions(pexConfig.Config):
-    """A simple class to manage configuration parameters for EO analysis tasks"""
+    """Library of configurate parameters used by eo_utils tasks
+
+    The are all here to ensure that different task with the same parameters
+    actually used exactly the same parameters.
+
+    Various task configuration classes should use the clone_param() method to
+    copy any of the parameters they need from this library class.
+    """
 
     # Options for job control
     logfile = pexConfig.Field("Log file", str,
@@ -99,7 +106,7 @@ class EOUtilOptions(pexConfig.Config):
         """
         @param par_name       Parameter to clone
         @param kwargs:
-            default          Set the default value for the cloned version
+            default           Set the default value for the cloned version
 
         @returns (`pexConfig.Field`) cloned version of parameter
         """
@@ -196,7 +203,7 @@ def setup_parser(**kwargs):
     if usage is None:
         usage = "%s [options]" % os.path.basename(sys.argv[0])
 
-    parser = argparse.ArgumentParser(usage=usage, *kwargs)
+    parser = argparse.ArgumentParser(usage=usage, **kwargs)
 
     return parser
 
@@ -240,7 +247,13 @@ def copy_pex_fields(field_names, target_class, library_class):
 
 class Configurable(pipeBase.Task):
     """A small interface on top of `pipeBase.Task` to make
-    it easier to handle configuration from various sources
+    it easier to handle configuration from various sources.
+
+    The safe_update(**kwargs) method should be called at the start of any function
+    that allows uses to override defualt parameter values.
+
+    The extract_config_vals() method allows uses to get some of the configuration
+    values easily.
     """
     _DefaultName = "Configurable"
 

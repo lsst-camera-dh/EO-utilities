@@ -1,4 +1,4 @@
-"""Class to analyze the overscan bias as a function of row number"""
+"""Tasks to analyze the correlation between the overscan and the imaging region"""
 
 import sys
 
@@ -27,14 +27,14 @@ from .meta_analysis import BiasSummaryByRaft, BiasTableAnalysisByRaft,\
 
 
 class CorrelWRTOscanConfig(BiasAnalysisConfig):
-    """Configuration for BiasVRowTask"""
+    """Configuration for CorrelWRTOscanTask"""
     suffix = EOUtilOptions.clone_param('suffix', default='biasoscorr')
     bias = EOUtilOptions.clone_param('bias')
     mask = EOUtilOptions.clone_param('mask')
 
 
 class CorrelWRTOscanTask(BiasAnalysisTask):
-    """Class to analyze correlations between the imaging section
+    """Analyze correlations between the imaging section
     and the overscan regions in a series of bias frames"""
 
     ConfigClass = CorrelWRTOscanConfig
@@ -171,7 +171,7 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
 
 
 class CorrelWRTOscanStatsConfig(BiasAnalysisConfig):
-    """Configuration for BiasVRowTask"""
+    """Configuration for CorrelWRTOscanStatsTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='biasoscorr')
     suffix = EOUtilOptions.clone_param('suffix', default='biasoscorr_stats')
     bias = EOUtilOptions.clone_param('bias')
@@ -179,7 +179,8 @@ class CorrelWRTOscanStatsConfig(BiasAnalysisConfig):
 
 
 class CorrelWRTOscanStatsTask(BiasAnalysisTask):
-    """Class to analyze the overscan correlation with imaging region"""
+    """Extract statistics about the correlation between
+    the overscan and imaging regions in bias frames"""
 
     ConfigClass = CorrelWRTOscanStatsConfig
     _DefaultName = "CorrelWRTOscanStatsTask"
@@ -300,7 +301,8 @@ class CorrelWRTOscanSummaryConfig(BiasSummaryAnalysisConfig):
 
 
 class CorrelWRTOscanSummaryTask(BiasSummaryAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Summarize the results for the analysis correlation between imaging
+    and overscan regions"""
 
     ConfigClass = CorrelWRTOscanSummaryConfig
     _DefaultName = "CorrelWRTOscanSummaryTask"

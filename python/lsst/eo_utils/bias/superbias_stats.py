@@ -1,4 +1,4 @@
-"""Class to analyze the overscan bias as a function of row number"""
+"""Class to analyze the variation in the bias images"""
 
 import sys
 
@@ -35,7 +35,7 @@ class SuperbiasStatsConfig(BiasAnalysisConfig):
 
 
 class SuperbiasStatsTask(BiasAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Analyze the variation in the bias images"""
 
     ConfigClass = SuperbiasStatsConfig
     _DefaultName = "SuperbiasStatsTask"
@@ -141,7 +141,7 @@ class SuperbiasSummaryConfig(BiasSummaryAnalysisConfig):
 
 
 class SuperbiasSummaryTask(BiasSummaryAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Summarize the results for the analysis of variations of the bias frames"""
 
     ConfigClass = SuperbiasSummaryConfig
     _DefaultName = "SuperbiasSummaryTask"
