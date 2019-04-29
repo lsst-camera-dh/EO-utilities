@@ -15,14 +15,16 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_dims_from_ccd, get_ccd_from_id,\
     get_raw_image, get_geom_regions, get_amp_list, get_image_frames_2d
 
+from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft, AnalysisBySlot
+
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from .file_utils import RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
+from .file_utils import SLOT_BIAS_TABLE_FORMATTER,\
+    RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
 
-from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisBySlot
+from .analysis import BiasAnalysisConfig, BiasAnalysisTask
 
-from .meta_analysis import BiasSummaryByRaft, BiasTableAnalysisByRaft,\
-    BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask
+from .meta_analysis import BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask
 
 
 
@@ -39,7 +41,7 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
 
     ConfigClass = CorrelWRTOscanConfig
     _DefaultName = "CorrelWRTOscanTask"
-    iteratorClass = BiasAnalysisBySlot
+    iteratorClass = AnalysisBySlot
 
     def __init__(self, **kwargs):
         """C'tor"""
@@ -184,8 +186,9 @@ class CorrelWRTOscanStatsTask(BiasAnalysisTask):
 
     ConfigClass = CorrelWRTOscanStatsConfig
     _DefaultName = "CorrelWRTOscanStatsTask"
-    iteratorClass = BiasTableAnalysisByRaft
+    iteratorClass = TableAnalysisByRaft
 
+    intablename_format = SLOT_BIAS_TABLE_FORMATTER
     tablename_format = RAFT_BIAS_TABLE_FORMATTER
     plotname_format = RAFT_BIAS_PLOT_FORMATTER
 
@@ -306,7 +309,6 @@ class CorrelWRTOscanSummaryTask(BiasSummaryAnalysisTask):
 
     ConfigClass = CorrelWRTOscanSummaryConfig
     _DefaultName = "CorrelWRTOscanSummaryTask"
-    iteratorClass = BiasSummaryByRaft
 
     def __init__(self, **kwargs):
         """C'tor"""

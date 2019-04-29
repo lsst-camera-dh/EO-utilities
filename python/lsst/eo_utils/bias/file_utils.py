@@ -10,22 +10,22 @@ from lsst.eo_utils.base.defaults import DATACAT_TS8_TEST_TYPES, DATACAT_BOT_TEST
 from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_for_run,\
     FILENAME_FORMATS
 
-SUPERBIAS_STAT_FORMAT_STRING =\
-    '{outdir}/superbias/{raft}/{raft}-{run}-{slot}_{stat_type}_b-{bias_type}{suffix}.fits'
 SLOT_BIAS_FORMAT_STRING =\
     SLOT_FORMAT_STRING.replace('{suffix}', '_b-{bias}_s-{superbias}_{suffix}')
 RAFT_BIAS_FORMAT_STRING =\
     RAFT_FORMAT_STRING.replace('{suffix}', '_b-{bias}_s-{superbias}_{suffix}')
 SUMMARY_BIAS_FORMAT_STRING =\
     SUMMARY_FORMAT_STRING.replace('{suffix}', '_b-{bias}_s-{superbias}_{suffix}')
+SLOT_SBIAS_FORMAT_STRING =\
+    SLOT_FORMAT_STRING.replace('{suffix}', '_{stat}_s-{superbias}_{suffix}')
+RAFT_SBIAS_FORMAT_STRING =\
+    RAFT_FORMAT_STRING.replace('{suffix}', '_{stat}_s-{superbias}_{suffix}')
+SUMMARY_SBIAS_FORMAT_STRING =\
+    SUMMARY_FORMAT_STRING.replace('{suffix}', '_{stat}_s-{superbias}_{suffix}')
 
 BIAS_DEFAULT_FIELDS = dict(testType='bias', bias=None, superbias=None, suffix='')
-SUPERBIAS_DEFAULT_FIELDS = dict(testType='superbias', bias=None, superbias=None, suffix='')
+SUPERBIAS_DEFAULT_FIELDS = dict(testType='superbias', superbias=None, suffix='')
 
-
-SUPERBIAS_STAT_FORMATTER = FILENAME_FORMATS.add_format('superbias_stat',
-                                                       SUPERBIAS_STAT_FORMAT_STRING,
-                                                       bias_type=None, suffix='')
 
 RAFT_BIAS_TABLE_FORMATTER = FILENAME_FORMATS.add_format('raft_bias_table',
                                                         RAFT_BIAS_FORMAT_STRING,
@@ -41,19 +41,19 @@ SLOT_BIAS_PLOT_FORMATTER = FILENAME_FORMATS.add_format('slot_bias_plot',
                                                        fileType='plots', **BIAS_DEFAULT_FIELDS)
 
 RAFT_SBIAS_TABLE_FORMATTER = FILENAME_FORMATS.add_format('raft_sbias_table',
-                                                         RAFT_BIAS_FORMAT_STRING,
+                                                         RAFT_SBIAS_FORMAT_STRING,
                                                          fileType='tables',
                                                          **SUPERBIAS_DEFAULT_FIELDS)
 RAFT_SBIAS_PLOT_FORMATTER = FILENAME_FORMATS.add_format('raft_sbias_plot',
-                                                        RAFT_BIAS_FORMAT_STRING,
+                                                        RAFT_SBIAS_FORMAT_STRING,
                                                         fileType='plots',
                                                         **SUPERBIAS_DEFAULT_FIELDS)
 SLOT_SBIAS_TABLE_FORMATTER = FILENAME_FORMATS.add_format('slot_sbias_table',
-                                                         SLOT_BIAS_FORMAT_STRING,
+                                                         SLOT_SBIAS_FORMAT_STRING,
                                                          fileType='tables',
                                                          **SUPERBIAS_DEFAULT_FIELDS)
 SLOT_SBIAS_PLOT_FORMATTER = FILENAME_FORMATS.add_format('slot_sbias_plot',
-                                                        SLOT_BIAS_FORMAT_STRING,
+                                                        SLOT_SBIAS_FORMAT_STRING,
                                                         fileType='plots',
                                                         **SUPERBIAS_DEFAULT_FIELDS)
 
@@ -64,11 +64,11 @@ SUM_BIAS_PLOT_FORMATTER = FILENAME_FORMATS.add_format('sum_bias_plot',
                                                       SUMMARY_BIAS_FORMAT_STRING,
                                                       fileType='plots', **BIAS_DEFAULT_FIELDS)
 SUM_SBIAS_TABLE_FORMATTER = FILENAME_FORMATS.add_format('sum_sbias_table',
-                                                        SUMMARY_BIAS_FORMAT_STRING,
+                                                        SUMMARY_SBIAS_FORMAT_STRING,
                                                         fileType='tables',
                                                         **SUPERBIAS_DEFAULT_FIELDS)
 SUM_SBIAS_PLOT_FORMATTER = FILENAME_FORMATS.add_format('sum_sbias_plot',
-                                                       SUMMARY_BIAS_FORMAT_STRING,
+                                                       SUMMARY_SBIAS_FORMAT_STRING,
                                                        fileType='plots',
                                                        **SUPERBIAS_DEFAULT_FIELDS)
 

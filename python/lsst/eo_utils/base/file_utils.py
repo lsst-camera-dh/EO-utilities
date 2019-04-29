@@ -20,7 +20,7 @@ except ImportError:
 
 from .defaults import DATACAT_TS8_MASK_TEST_TYPES, DATACAT_BOT_MASK_TEST_TYPES,\
     SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING,\
-    SUPERBIAS_FORMAT_STRING, ALL_RAFTS
+    SUPERBIAS_FORMAT_STRING, SUPERBIAS_STAT_FORMAT_STRING, ALL_RAFTS
 
 
 
@@ -210,7 +210,10 @@ MASK_FORMATTER = FILENAME_FORMATS.add_format('mask', SLOT_FORMAT_STRING,
                                              fileType='masks', testType='', suffix='_mask.fits')
 SUPERBIAS_FORMATTER = FILENAME_FORMATS.add_format('superbias',
                                                   SUPERBIAS_FORMAT_STRING,
-                                                  bias_type=None, suffix='')
+                                                  superbias=None, suffix='')
+SUPERBIAS_STAT_FORMATTER = FILENAME_FORMATS.add_format('superbias_stat',
+                                                       SUPERBIAS_STAT_FORMAT_STRING,
+                                                       bias=None, suffix='')
 
 def get_files_for_run(run_id, **kwargs):
     """Get a set of data files of a particular type for a particular run

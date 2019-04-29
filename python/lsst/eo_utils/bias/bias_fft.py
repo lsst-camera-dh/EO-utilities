@@ -18,15 +18,17 @@ from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES,\
     get_readout_freqs_from_ccd, get_ccd_from_id, get_raw_image,\
     get_geom_regions, get_amp_list, get_image_frames_2d, array_struct, unbias_amp
 
+from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft, AnalysisBySlot
+
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from .file_utils import SLOT_SBIAS_TABLE_FORMATTER, SLOT_SBIAS_PLOT_FORMATTER,\
+from .file_utils import SLOT_BIAS_TABLE_FORMATTER,\
+    SLOT_SBIAS_TABLE_FORMATTER, SLOT_SBIAS_PLOT_FORMATTER,\
     RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
 
-from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisBySlot
+from .analysis import BiasAnalysisConfig, BiasAnalysisTask
 
-from .meta_analysis import BiasSummaryByRaft, BiasTableAnalysisByRaft,\
-    BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask
+from .meta_analysis import BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask
 
 
 class BiasFFTConfig(BiasAnalysisConfig):
@@ -43,7 +45,7 @@ class BiasFFTTask(BiasAnalysisTask):
 
     ConfigClass = BiasFFTConfig
     _DefaultName = "BiasFFTTask"
-    iteratorClass = BiasAnalysisBySlot
+    iteratorClass = AnalysisBySlot
 
     def __init__(self, **kwargs):
         """C'tor """
@@ -138,7 +140,7 @@ class BiasFFTTask(BiasAnalysisTask):
 
         slot = kwargs['slot']
         ifile = kwargs.get('ifile', 0)
-        nfiles_used = kwargs.get('nfiles_used', 0)
+        nfiles_used = kwargs.get('nfiles_used', 1)
         superbias_frame = kwargs.get('superbias_frame', None)
 
         amps = get_amp_list(butler, ccd)
@@ -154,7 +156,7 @@ class BiasFFTTask(BiasAnalysisTask):
             else:
                 superbias_im = None
             image = unbias_amp(img, serial_oscan,
-                               bias_type=self.config.bias,
+                               bias_type=self.get_config_param('bias', None),
                                superbias_im=superbias_im)
             frames = get_image_frames_2d(image, regions)
             key_str = "fftpow_%s_a%02i" % (slot, i)
@@ -175,6 +177,7 @@ class SuperbiasFFTConfig(BiasAnalysisConfig):
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='sbiasfft')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
+    std = EOUtilOptions.clone_param('std')
 
 
 class SuperbiasFFTTask(BiasFFTTask):
@@ -182,7 +185,7 @@ class SuperbiasFFTTask(BiasFFTTask):
 
     ConfigClass = SuperbiasFFTConfig
     _DefaultName = "SuperbiasFFTTask"
-    iteratorClass = BiasAnalysisBySlot
+    iteratorClass = AnalysisBySlot
 
     tablename_format = SLOT_SBIAS_TABLE_FORMATTER
     plotname_format = SLOT_SBIAS_PLOT_FORMATTER
@@ -208,9 +211,9 @@ class SuperbiasFFTTask(BiasFFTTask):
         slot = self.config.slot
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in extract_superbias_fft_slot")
+            sys.stdout.write("Ignoring butler in extract_superbias_fft_slot\n")
         if data is not None:
-            sys.stdout.write("Ignoring raft_data in extract_superbias_fft_raft")
+            sys.stdout.write("Ignoring raft_data in extract_superbias_fft_raft\n")
 
         mask_files = self.get_mask_files()
         superbias = self.get_superbias_frame(mask_files=mask_files)
@@ -224,8 +227,7 @@ class SuperbiasFFTTask(BiasFFTTask):
             fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
 
         self.get_ccd_data(None, superbias, fft_data,
-                          slot=slot, bias_type=None,
-                          std=False, superbias_frame=None)
+                          slot=slot, superbias_frame=None)
 
         sys.stdout.write("!\n")
         sys.stdout.flush()
@@ -251,8 +253,9 @@ class BiasFFTStatsTask(BiasAnalysisTask):
 
     ConfigClass = BiasFFTStatsConfig
     _DefaultName = "BiasAnalysisTask"
-    iteratorClass = BiasTableAnalysisByRaft
+    iteratorClass = TableAnalysisByRaft
 
+    intablename_format = SLOT_BIAS_TABLE_FORMATTER
     tablename_format = RAFT_BIAS_TABLE_FORMATTER
     plotname_format = RAFT_BIAS_PLOT_FORMATTER
 
@@ -352,7 +355,6 @@ class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
 
     ConfigClass = BiasFFTSummaryConfig
     _DefaultName = "BiasFFTSummaryTask"
-    iteratorClass = BiasSummaryByRaft
 
     def __init__(self, **kwargs):
         """C'tor"""

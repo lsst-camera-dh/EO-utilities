@@ -43,7 +43,9 @@ SLOT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}{
 RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-RFT{suffix}'
 SUMMARY_FORMAT_STRING = '{outdir}/{fileType}/summary/{testType}/{dataset}{suffix}'
 SUPERBIAS_FORMAT_STRING =\
-    '{outdir}/superbias/{raft}/{raft}-{run}-{slot}_superbias_b-{bias_type}{suffix}.fits'
+    '{outdir}/superbias/{raft}/{raft}-{run}-{slot}_superbias_b-{bias}{suffix}'
+SUPERBIAS_STAT_FORMAT_STRING =\
+    '{outdir}/superbias/{raft}/{raft}-{run}-{slot}_{stat}_b-{bias}{suffix}'
 
 
 # These readout times, in seconds

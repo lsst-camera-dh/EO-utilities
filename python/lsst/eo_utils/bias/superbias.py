@@ -6,8 +6,7 @@ import lsst.afw.math as afwMath
 
 import lsst.eotest.image_utils as imutil
 
-from lsst.eo_utils.base.file_utils import makedir_safe,\
-    SUPERBIAS_FORMATTER
+from lsst.eo_utils.base.file_utils import makedir_safe
 
 from lsst.eo_utils.base.defaults import SBIAS_TEMPLATE,\
     DEFAULT_STAT_TYPE
@@ -22,11 +21,9 @@ from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
 from lsst.eo_utils.base.analysis import BaseAnalysisConfig,\
     BaseAnalysisTask
 
+from lsst.eo_utils.base.iter_utils import AnalysisBySlot
+
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
-
-from .file_utils import SUPERBIAS_STAT_FORMATTER
-
-from .analysis import BiasAnalysisBySlot
 
 
 class SuperbiasConfig(BaseAnalysisConfig):
@@ -41,6 +38,9 @@ class SuperbiasConfig(BaseAnalysisConfig):
     bias = EOUtilOptions.clone_param('bias')
     nfiles = EOUtilOptions.clone_param('nfiles')
     bitpix = EOUtilOptions.clone_param('bitpix')
+    skip = EOUtilOptions.clone_param('skip')
+    plot = EOUtilOptions.clone_param('plot')
+    stats_hist = EOUtilOptions.clone_param('stats_hist')
 
 
 class SuperbiasTask(BaseAnalysisTask):
@@ -48,7 +48,7 @@ class SuperbiasTask(BaseAnalysisTask):
 
     ConfigClass = SuperbiasConfig
     _DefaultName = "SuperbiasTask"
-    iteratorClass = BiasAnalysisBySlot
+    iteratorClass = AnalysisBySlot
 
 
     def __init__(self, **kwargs):
@@ -85,7 +85,6 @@ class SuperbiasTask(BaseAnalysisTask):
         sbias = make_superbias(butler, bias_files, statistic=statistic, bias_type=bias_type)
         return sbias
 
-
     def make_superbias(self, butler, slot_data, **kwargs):
         """Tie together the functions to make the data tables
         @param butler (`Butler`)   The data butler
@@ -97,14 +96,7 @@ class SuperbiasTask(BaseAnalysisTask):
         self.safe_update(**kwargs)
 
         mask_files = self.get_mask_files()
-        if self.config.stat == DEFAULT_STAT_TYPE:
-            formatter = SUPERBIAS_FORMATTER
-            suffix = ""
-        else:
-            formatter = SUPERBIAS_STAT_FORMATTER
-            suffix = ""
-
-        output_file = self.get_filename_from_format(formatter, suffix)
+        output_file = self.get_superbias_file('.fits', superbias=self.config.bias)
         makedir_safe(output_file)
 
         if not self.config.skip:
@@ -135,7 +127,7 @@ class SuperbiasTask(BaseAnalysisTask):
 
         default_array_kw = {}
         if self.config.stats_hist:
-            kwcopy = self.config.extract_config_vals(default_array_kw)
+            kwcopy = self.extract_config_vals(default_array_kw)
             figs.histogram_array("hist", None, sbias,
                                  title="Historam of RMS of bias-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
@@ -155,11 +147,7 @@ class SuperbiasTask(BaseAnalysisTask):
             figs.save_all(None)
             return figs
 
-        if self.config.stat == DEFAULT_STAT_TYPE:
-            formatter = SUPERBIAS_FORMATTER
-        else:
-            formatter = SUPERBIAS_STAT_FORMATTER
-        plotbase = self.get_filename_from_format(formatter, "")
+        plotbase = self.get_superbias_file('', superbias=self.config.bias)
 
         makedir_safe(plotbase)
         figs.save_all(plotbase, self.config.plot)

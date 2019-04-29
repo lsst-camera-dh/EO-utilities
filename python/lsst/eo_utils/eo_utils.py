@@ -74,7 +74,7 @@ class EOUtils(Configurable):
         task = self.get_task(key)
         task_defs = self.get_task_defaults(key)
         task_defs.update(**kwargs)
-        return task.tablename_format(**task_defs)
+        return task.tablefile_name(**task_defs)
 
     def get_task_plotfile(self, key, **kwargs):
         """Get the filenames associated to the plots producted by a particular task
@@ -87,7 +87,7 @@ class EOUtils(Configurable):
         task = self.get_task(key)
         task_defs = self.get_task_defaults(key)
         task_defs.update(**kwargs)
-        return task.plotname_format(**task_defs)
+        return task.plotfile_name(**task_defs)
 
 
     def display_plots(self, key, **kwargs):

@@ -15,17 +15,19 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_raw_image,\
     get_geom_regions, get_amp_list, unbias_amp
 
+from lsst.eo_utils.base.iter_utils import AnalysisByRaft
+
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from .file_utils import RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
 
-from .analysis import BiasAnalysisTask, BiasAnalysisConfig, BiasAnalysisByRaft
+from .analysis import BiasAnalysisTask, BiasAnalysisConfig
 
 
 
 class OscanCorrelConfig(BiasAnalysisConfig):
     """Configuration for OscanCorrelTask"""
-    suffix = EOUtilOptions.clone_param('suffix', default='oscorr')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='oscorr')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
@@ -38,7 +40,7 @@ class OscanCorrelTask(BiasAnalysisTask):
 
     ConfigClass = OscanCorrelConfig
     _DefaultName = "OscanCorrelTask"
-    iteratorClass = BiasAnalysisByRaft
+    iteratorClass = AnalysisByRaft
 
     tablename_format = RAFT_BIAS_TABLE_FORMATTER
     plotname_format = RAFT_BIAS_PLOT_FORMATTER

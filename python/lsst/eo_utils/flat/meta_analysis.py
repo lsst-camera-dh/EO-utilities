@@ -1,101 +1,13 @@
 """Functions to analyse summary data from bias and superbias frames"""
 
-import sys
-
-from lsst.eo_utils.base.defaults import ALL_SLOTS
-
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.file_utils import read_runlist
-
-from lsst.eo_utils.base.iter_utils import AnalysisIterator,\
-    SummaryAnalysisIterator, AnalysisByRaft
+from lsst.eo_utils.base.iter_utils import SummaryAnalysisIterator
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
 from lsst.eo_utils.flat.file_utils import SUM_FLAT_TABLE_FORMATTER,\
-    SUM_FLAT_PLOT_FORMATTER, SLOT_FLAT_TABLE_FORMATTER, RAFT_FLAT_TABLE_FORMATTER
-
-
-def get_tablenames_by_raft(caller, butler, run_num, **kwargs):
-    """Extract the statistics of the FFT of the bias
-
-    @param butler (`Butler`)    The data butler
-    @param run_num (str)        The run number
-    @param kwargs:
-    """
-    kwcopy = kwargs.copy()
-    kwcopy['run'] = run_num
-
-    out_dict = {}
-    raft_list = AnalysisIterator.get_raft_list(butler, run_num)
-
-    for raft in raft_list:
-        kwcopy['raft'] = raft
-        slot_dict = {}
-        for slot in ALL_SLOTS:
-            kwcopy['slot'] = slot
-            basename = SLOT_FLAT_TABLE_FORMATTER(caller, **kwcopy)
-            datapath = basename + '.fits'
-            slot_dict[slot] = datapath
-        out_dict[raft] = slot_dict
-    return out_dict
-
-
-def get_raft_flat_tablefiles(caller, butler, dataset, **kwargs):
-    """Extract the statistics of the FFT of the flat
-
-    @param butler (`Butler`)    The data butler
-    @param dataset (str)
-    @param kwargs:
-
-    @returns (dict) mapping runkey to filename
-    """
-    if butler is not None:
-        sys.stdout.write("Ignoring butler in get_raft_flat_tablefiles\n")
-
-    infile = '%s_runs.txt' % dataset
-
-    run_list = read_runlist(infile)
-    kwcopy = kwargs.copy()
-
-    filedict = {}
-    for runinfo in run_list:
-        raft = runinfo[0].replace('-Dev', '')
-        run = runinfo[1]
-        run_key = "%s_%s" % (raft, run)
-        kwcopy['run'] = run
-        kwcopy['raft'] = raft
-        filedict[run_key] = RAFT_FLAT_TABLE_FORMATTER(caller, **kwcopy) + '.fits'
-
-    return filedict
-
-
-
-class FlatTableAnalysisByRaft(AnalysisByRaft):
-    """Small class to iterate an analysis function over all the slots in a raft"""
-
-    get_data = get_tablenames_by_raft
-
-    def __init__(self, task):
-        """C'tor
-
-        @param task (AnalysisTask)     Task that this will run
-        """
-        AnalysisByRaft.__init__(self, task)
-
-
-class FlatSummaryByRaft(SummaryAnalysisIterator):
-    """Small class to iterate an analysis function over all the slots in a raft"""
-
-    get_data = get_raft_flat_tablefiles
-
-    def __init__(self, task):
-        """C'tor
-
-        @param task (AnalysisTask)     Task that this will run
-        """
-        SummaryAnalysisIterator.__init__(self, task)
+    SUM_FLAT_PLOT_FORMATTER, RAFT_FLAT_TABLE_FORMATTER
 
 
 class FlatSummaryAnalysisConfig(AnalysisConfig):
@@ -112,8 +24,9 @@ class FlatSummaryAnalysisTask(AnalysisTask):
     # These can overridden by the sub-class
     ConfigClass = FlatSummaryAnalysisConfig
     _DefaultName = "FlatSummaryAnalysisTask"
-    iteratorClass = FlatSummaryByRaft
+    iteratorClass = SummaryAnalysisIterator
 
+    intablename_format = RAFT_FLAT_TABLE_FORMATTER
     tablename_format = SUM_FLAT_TABLE_FORMATTER
     plotname_format = SUM_FLAT_PLOT_FORMATTER
 

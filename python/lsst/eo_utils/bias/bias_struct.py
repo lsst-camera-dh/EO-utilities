@@ -14,18 +14,21 @@ from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES, REGION_LAB
     get_dimension_arrays_from_ccd, get_ccd_from_id, get_raw_image,\
     get_geom_regions, get_amp_list, get_image_frames_2d, array_struct, unbias_amp
 
+from lsst.eo_utils.base.iter_utils import AnalysisBySlot
+
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from .file_utils import SLOT_SBIAS_TABLE_FORMATTER,\
     SLOT_SBIAS_PLOT_FORMATTER
 
-from .analysis import BiasAnalysisTask, BiasAnalysisConfig, BiasAnalysisBySlot
+from .analysis import BiasAnalysisTask, BiasAnalysisConfig
 
 
 class BiasStructConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasst')
     bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
     std = EOUtilOptions.clone_param('std')
 
@@ -35,7 +38,7 @@ class BiasStructTask(BiasAnalysisTask):
 
     ConfigClass = BiasStructConfig
     _DefaultName = "BiasStructTask"
-    iteratorClass = BiasAnalysisBySlot
+    iteratorClass = AnalysisBySlot
 
     def __init__(self, **kwargs):
         """ C'tor """
@@ -121,7 +124,7 @@ class BiasStructTask(BiasAnalysisTask):
         std (bool)                     Used standard deviasion instead of mean
         superbias_frame (`MaskedCCD`)  The superbias
         """
-        nfiles_used = kwargs.get('nfiles_used', 0)
+        nfiles_used = kwargs.get('nfiles_used', 1)
         ifile = kwargs.get('ifile', 0)
         slot = kwargs.get('slot')
         superbias_frame = kwargs.get('superbias_frame', None)
@@ -136,7 +139,8 @@ class BiasStructTask(BiasAnalysisTask):
             else:
                 superbias_im = None
             image = unbias_amp(img, serial_oscan,
-                               bias_type=self.config.bias, superbias_im=superbias_im)
+                               bias_type=self.get_config_param('bias', None),
+                               superbias_im=superbias_im)
             frames = get_image_frames_2d(image, regions)
 
             for key, region in zip(REGION_KEYS, REGION_NAMES):
@@ -168,7 +172,7 @@ class SuperbiasStructTask(BiasStructTask):
 
     ConfigClass = SuperbiasStructConfig
     _DefaultName = "SuperbiasStructTask"
-    iteratorClass = BiasAnalysisBySlot
+    iteratorClass = AnalysisBySlot
 
     tablename_format = SLOT_SBIAS_TABLE_FORMATTER
     plotname_format = SLOT_SBIAS_PLOT_FORMATTER
@@ -195,9 +199,9 @@ class SuperbiasStructTask(BiasStructTask):
         slot = self.config.slot
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in superbias_struct.extract")
+            sys.stdout.write("Ignoring butler in superbias_struct.extract\n")
         if data is not None:
-            sys.stdout.write("Ignoring butler in superbias_struct.extract")
+            sys.stdout.write("Ignoring butler in superbias_struct.extract\n")
 
         mask_files = self.get_mask_files()
         superbias = self.get_superbias_frame(mask_files=mask_files)

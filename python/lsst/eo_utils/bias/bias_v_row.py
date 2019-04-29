@@ -15,9 +15,11 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_dims_from_ccd,\
     get_ccd_from_id, get_raw_image, get_geom_regions, get_amp_list
 
+from lsst.eo_utils.base.iter_utils import AnalysisBySlot
+
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisBySlot
+from .analysis import BiasAnalysisConfig, BiasAnalysisTask
 
 
 class BiasVRowConfig(BiasAnalysisConfig):
@@ -30,7 +32,7 @@ class BiasVRowTask(BiasAnalysisTask):
     """Analyze the overscan bias as a function of row number"""
     ConfigClass = BiasVRowConfig
     _DefaultName = "BiasVRowTask"
-    iteratorClass = BiasAnalysisBySlot
+    iteratorClass = AnalysisBySlot
 
     def __init__(self, **kwargs):
         """C'tor"""

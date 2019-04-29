@@ -16,16 +16,18 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import  REGION_KEYS,\
     get_ccd_from_id, get_dimension_arrays_from_ccd
 
+from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft, AnalysisBySlot
+
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from .file_utils import RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
+from .file_utils import SLOT_BIAS_TABLE_FORMATTER,\
+    RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
 
 from .data_utils import stack_by_amps, convert_stack_arrays_to_dict
 
-from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisBySlot
+from .analysis import BiasAnalysisConfig, BiasAnalysisTask
 
-from .meta_analysis import BiasSummaryByRaft, BiasTableAnalysisByRaft,\
-    BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask
+from .meta_analysis import BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask
 
 
 
@@ -42,7 +44,7 @@ class OscanAmpStackTask(BiasAnalysisTask):
 
     ConfigClass = OscanAmpStackConfig
     _DefaultName = "OscanAmpStackTask"
-    iteratorClass = BiasAnalysisBySlot
+    iteratorClass = AnalysisBySlot
 
     def __init__(self, **kwargs):
         """ C'tor """
@@ -142,8 +144,9 @@ class OscanAmpStackStatsTask(BiasAnalysisTask):
 
     ConfigClass = OscanAmpStackStatsConfig
     _DefaultName = "OscanAmpStackStatsTask"
-    iteratorClass = BiasTableAnalysisByRaft
+    iteratorClass = TableAnalysisByRaft
 
+    intablename_format = SLOT_BIAS_TABLE_FORMATTER
     tablename_format = RAFT_BIAS_TABLE_FORMATTER
     plotname_format = RAFT_BIAS_PLOT_FORMATTER
 
@@ -275,7 +278,6 @@ class OscanAmpStackSummaryTask(BiasSummaryAnalysisTask):
 
     ConfigClass = OscanAmpStackSummaryConfig
     _DefaultName = "OscanAmpStackSummaryTask"
-    iteratorClass = BiasSummaryByRaft
 
     def __init__(self, **kwargs):
         """C'tor"""

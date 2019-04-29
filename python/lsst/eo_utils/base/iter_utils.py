@@ -371,7 +371,7 @@ class AnalysisBySlot(AnalysisIterator):
         @param datakey (str)         The ddata identifier (run number or other string)
         @param kwargs (dict)         Passed to the data function
         """
-        raise NotImplementedError("AnalysisBySlot.get_data")
+        return self._task.get_data(butler, datakey, **kwargs)
 
     def call_analysis_task(self, run, **kwargs):
         """Call the analysis function for one run
@@ -425,7 +425,7 @@ class AnalysisByRaft(AnalysisIterator):
         @param datakey (str)         The ddata identifier (run number or other string)
         @param kwargs (dict)         Passed to the data function
         """
-        raise NotImplementedError("AnalysisByRaft.get_data")
+        return self._task.get_data(butler, datakey, **kwargs)
 
     def call_analysis_task(self, run, **kwargs):
         """Call the analysis function for one run
@@ -445,6 +445,49 @@ class AnalysisByRaft(AnalysisIterator):
                 self._task(self._butler, data_files[hid], **kwargs)
         else:
             raise ValueError("Do not recognize hardware type for run %s: %s" % (run, htype))
+
+
+class TableAnalysisByRaft(AnalysisByRaft):
+    """Small class to iterate an analysis function over all the slots in a raft"""
+
+    def __init__(self, task):
+        """C'tor
+
+        @param task (AnalysisTask)     Task that this will run
+        """
+        AnalysisByRaft.__init__(self, task)
+
+    def get_data(self, butler, datakey, **kwargs):
+        """Extract the statistics of the FFT of the bias
+
+        @param butler (`Butler`)    The data butler
+        @param datakey (str)        The run number
+        @param kwargs:
+            bias (str)
+            superbias (str)
+        """
+        kwcopy = kwargs.copy()
+        kwcopy['run'] = datakey
+
+        out_dict = {}
+        if self.config.rafts is not None:
+            raft_list = self.config.rafts
+        else:
+            raft_list = AnalysisIterator.get_raft_list(butler, datakey)
+
+        formatter = self._task.intablename_format
+        insuffix = self._task.get_config_param('insuffix', '')
+
+        for raft in raft_list:
+            kwcopy['raft'] = raft
+            slot_dict = {}
+            for slot in ALL_SLOTS:
+                kwcopy['slot'] = slot
+                basename = self._task.get_filename_from_format(formatter, insuffix, **kwcopy)
+                datapath = basename + '.fits'
+                slot_dict[slot] = datapath
+            out_dict[raft] = slot_dict
+        return out_dict
 
 
 class SummaryAnalysisIterator(AnalysisHandler):
@@ -471,7 +514,27 @@ class SummaryAnalysisIterator(AnalysisHandler):
         @param datakey (str)         The ddata identifier (run number or other string)
         @param kwargs (dict)         Passed to the data function
         """
-        raise NotImplementedError("SummaryAnalysisIterator.get_data")
+        if butler is not None:
+            sys.stdout.write("Ignoring butler in get_data for %s\n" % self._task.getName())
+
+        infile = '%s_runs.txt' % datakey
+
+        run_list = read_runlist(infile)
+        kwcopy = kwargs.copy()
+
+        formatter = self._task.intablename_format
+
+        filedict = {}
+        for runinfo in run_list:
+            raft = runinfo[0].replace('-Dev', '')
+            run = runinfo[1]
+            run_key = "%s_%s" % (raft, run)
+            kwcopy['run'] = run
+            kwcopy['raft'] = raft
+            filepath = self._task.get_filename_from_format(formatter, '.fits', **kwcopy)
+            filedict[run_key] = filepath
+
+        return filedict
 
     def call_analysis_task(self, **kwargs):
         """Call the analysis function for one run

@@ -14,15 +14,16 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import get_raw_image, get_amp_list
 
+from lsst.eo_utils.base.iter_utils import AnalysisByRaft
+
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisByRaft
+from .analysis import BiasAnalysisConfig, BiasAnalysisTask
 
-from .file_utils import RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER,\
+from .file_utils import RAFT_SBIAS_TABLE_FORMATTER, RAFT_SBIAS_PLOT_FORMATTER,\
     SUM_SBIAS_TABLE_FORMATTER, SUM_SBIAS_PLOT_FORMATTER
 
-from .meta_analysis import SuperbiasSummaryByRaft, BiasSummaryAnalysisConfig,\
-    BiasSummaryAnalysisTask
+from .meta_analysis import SuperbiasSummaryAnalysisConfig, SuperbiasSummaryAnalysisTask
 
 
 class SuperbiasStatsConfig(BiasAnalysisConfig):
@@ -30,6 +31,8 @@ class SuperbiasStatsConfig(BiasAnalysisConfig):
     insuffix = EOUtilOptions.clone_param('insuffix', default='')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='stats')
     bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
+    stat = EOUtilOptions.clone_param('stat')
     mask = EOUtilOptions.clone_param('mask')
     stat = EOUtilOptions.clone_param('stat')
 
@@ -39,10 +42,10 @@ class SuperbiasStatsTask(BiasAnalysisTask):
 
     ConfigClass = SuperbiasStatsConfig
     _DefaultName = "SuperbiasStatsTask"
-    iteratorClass = BiasAnalysisByRaft
+    iteratorClass = AnalysisByRaft
 
-    tablename_format = RAFT_BIAS_TABLE_FORMATTER
-    plotname_format = RAFT_BIAS_PLOT_FORMATTER
+    tablename_format = RAFT_SBIAS_TABLE_FORMATTER
+    plotname_format = RAFT_SBIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """C'tor"""
@@ -77,8 +80,8 @@ class SuperbiasStatsTask(BiasAnalysisTask):
             sys.stdout.flush()
 
             mask_files = self.get_mask_files(slot=slot)
-            superbias = self.get_superbias_frame(mask_files, slot=slot)
-            self.get_superbias_stats(None, superbias, stats_data, islot)
+            superbias_frame = self.get_superbias_frame(mask_files, slot=slot)
+            self.get_superbias_stats(None, superbias_frame, stats_data, islot)
 
         sys.stdout.write(".\n")
         sys.stdout.flush()
@@ -130,7 +133,7 @@ class SuperbiasStatsTask(BiasAnalysisTask):
             stats_data['max'][islot, i] = img.array.max()
 
 
-class SuperbiasSummaryConfig(BiasSummaryAnalysisConfig):
+class SuperbiasSummaryConfig(SuperbiasSummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='stats')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='sum')
@@ -140,19 +143,18 @@ class SuperbiasSummaryConfig(BiasSummaryAnalysisConfig):
     stat = EOUtilOptions.clone_param('stat')
 
 
-class SuperbiasSummaryTask(BiasSummaryAnalysisTask):
+class SuperbiasSummaryTask(SuperbiasSummaryAnalysisTask):
     """Summarize the results for the analysis of variations of the bias frames"""
 
     ConfigClass = SuperbiasSummaryConfig
     _DefaultName = "SuperbiasSummaryTask"
-    iteratorClass = SuperbiasSummaryByRaft
 
     tablename_format = SUM_SBIAS_TABLE_FORMATTER
     plotname_format = SUM_SBIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """C'tor"""
-        BiasSummaryAnalysisTask.__init__(self, **kwargs)
+        SuperbiasSummaryAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
         """Make a summry table of the bias FFT data

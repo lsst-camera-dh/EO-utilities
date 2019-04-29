@@ -26,16 +26,17 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_amp_list,\
     get_geom_regions, get_raw_image, unbias_amp
 
+from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft, AnalysisBySlot
+
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.flat.file_utils import RAFT_FLAT_TABLE_FORMATTER,\
-    RAFT_FLAT_PLOT_FORMATTER
+from lsst.eo_utils.flat.file_utils import SLOT_FLAT_TABLE_FORMATTER,\
+    RAFT_FLAT_TABLE_FORMATTER, RAFT_FLAT_PLOT_FORMATTER
 
-from lsst.eo_utils.flat.analysis import FlatAnalysisBySlot, FlatAnalysisConfig,\
+from lsst.eo_utils.flat.analysis import FlatAnalysisConfig,\
     FlatAnalysisTask
 
-from lsst.eo_utils.flat.meta_analysis import FlatSummaryByRaft, FlatTableAnalysisByRaft,\
-    FlatSummaryAnalysisConfig, FlatSummaryAnalysisTask
+from lsst.eo_utils.flat.meta_analysis import FlatSummaryAnalysisConfig, FlatSummaryAnalysisTask
 
 
 class PTCConfig(FlatAnalysisConfig):
@@ -51,7 +52,7 @@ class PTCTask(FlatAnalysisTask):
 
     ConfigClass = PTCConfig
     _DefaultName = "PTCTask"
-    iteratorClass = FlatAnalysisBySlot
+    iteratorClass = AnalysisBySlot
 
     def __init__(self, **kwargs):
         """C'tor"""
@@ -66,6 +67,18 @@ class PTCTask(FlatAnalysisTask):
         """Return the variance of an image"""
         return afwMath.makeStatistics(img, afwMath.STDEVCLIP, self.stat_ctrl).getValue()**2
 
+    def get_pair_stats(self, image_1, image_2):
+        """Get the mean and varience from a pair of flats"""
+        fratio_im = afwImage.ImageF(image_1, True)
+        operator.itruediv(fratio_im, image_2)
+        fratio = self.mean(fratio_im)
+        image_2 *= fratio
+        fmean = (self.mean(image_1) + self.mean(image_2))/2.
+
+        fdiff = afwImage.ImageF(image_1, True)
+        fdiff -= image_2
+        fvar = self.var(fdiff)/2.
+        return (fratio, fmean, fvar)
 
     def extract(self, butler, data, **kwargs):
         """Extract the flat as function of row
@@ -115,18 +128,10 @@ class PTCTask(FlatAnalysisTask):
                 image_2 = unbias_amp(im_2, serial_oscan, bias_type=self.config.bias,
                                      superbias_im=superbias_im, region=imaging)
 
-                fratio_im = afwImage.ImageF(image_1, True)
-                operator.itruediv(fratio_im, image_2)
-                fratio = self.mean(fratio_im)
-                image_2 *= fratio
-                fmean = (self.mean(image_1) + self.mean(image_2))/2.
+                fstats = self.get_pair_stats(image_1, image_2)
 
-                fdiff = afwImage.ImageF(image_1, True)
-                fdiff -= image_2
-                fvar = self.var(fdiff)/2.
-
-                ptc_data['AMP%02i_MEAN' % (i+1)].append(fmean)
-                ptc_data['AMP%02i_VAR' % (i+1)].append(fvar)
+                ptc_data['AMP%02i_MEAN' % (i+1)].append(fstats[1])
+                ptc_data['AMP%02i_VAR' % (i+1)].append(fstats[2])
 
         sys.stdout.write("!\n")
         sys.stdout.flush()
@@ -162,8 +167,9 @@ class PTCStatsTask(FlatAnalysisTask):
 
     ConfigClass = PTCStatsConfig
     _DefaultName = "PTCStatsTask"
-    iteratorClass = FlatTableAnalysisByRaft
+    iteratorClass = TableAnalysisByRaft
 
+    intablename_format = SLOT_FLAT_TABLE_FORMATTER
     tablename_format = RAFT_FLAT_TABLE_FORMATTER
     plotname_format = RAFT_FLAT_PLOT_FORMATTER
 
@@ -215,9 +221,8 @@ class PTCStatsTask(FlatAnalysisTask):
                 med_gain = np.median(mean/var)
                 frac_resids = np.abs((var - mean/med_gain)/var)
                 index = np.where(frac_resids < 0.2)
-                init_pars = 0, med_gain
                 try:
-                    results = scipy.optimize.leastsq(residuals, init_pars, full_output=1,
+                    results = scipy.optimize.leastsq(residuals, (0, med_gain), full_output=1,
                                                      args=(mean[index], var[index]))
                     pars, cov = results[:2]
                     ptc_alpha = pars[0]
@@ -309,7 +314,6 @@ class PTCSummaryTask(FlatSummaryAnalysisTask):
 
     ConfigClass = PTCSummaryConfig
     _DefaultName = "PTCSummaryTask"
-    iteratorClass = FlatSummaryByRaft
 
     def __init__(self, **kwargs):
         """C'tor"""

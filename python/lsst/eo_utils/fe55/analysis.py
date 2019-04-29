@@ -6,7 +6,7 @@ from lsst.eo_utils.base import mpl_utils
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.iter_utils import AnalysisBySlot, AnalysisByRaft
+from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
@@ -16,54 +16,6 @@ from lsst.eo_utils.fe55.file_utils import get_fe55_files_run,\
 from lsst.eo_utils.fe55.butler_utils import get_fe55_files_butler
 
 mpl_utils.set_plt_ioff()
-
-
-def get_fe55_data(caller, butler, run_num, **kwargs):
-    """Get a set of fe55 and mask files out of a folder
-
-    @param caller (`Task')     Task we are getting the data for
-    @param butler (`Bulter`)    The data Butler
-    @param run_num (str)        The run number we are reading
-    @param kwargs:
-       acq_types (list)  The types of acquistions we want to include
-
-    @returns (dict) Dictionary mapping slot to file names
-    """
-    kwargs.pop('run_num', None)
-    if butler is None:
-        retval = get_fe55_files_run(run_num, **kwargs)
-    else:
-        retval = get_fe55_files_butler(butler, run_num, **kwargs)
-    if not retval:
-        sys.stdout.write("Warning, call to get_fe55_data for %s returned no data" % caller)
-
-    return retval
-
-
-class Fe55AnalysisBySlot(AnalysisBySlot):
-    """Small class to iterate an analysis function over all the ccd slots"""
-
-    get_data = get_fe55_data
-
-    def __init__(self, task):
-        """C'tor
-
-        @param task (AnalysisTask)     Task that this will run
-        """
-        AnalysisBySlot.__init__(self, task)
-
-
-class Fe55AnalysisByRaft(AnalysisByRaft):
-    """Small class to iterate an analysis task over the rafts """
-
-    get_data = get_fe55_data
-
-    def __init__(self, task):
-        """C'tor
-
-        @param task (AnalysisTask)     Task that this will run
-        """
-        AnalysisByRaft.__init__(self, task)
 
 
 class Fe55AnalysisConfig(AnalysisConfig):
@@ -83,7 +35,7 @@ class Fe55AnalysisTask(AnalysisTask):
     # These can overridden by the sub-class
     ConfigClass = Fe55AnalysisConfig
     _DefaultName = "Fe55AnalysisTask"
-    iteratorClass = Fe55AnalysisBySlot
+    iteratorClass = AnalysisBySlot
 
     tablename_format = SLOT_FE55_TABLE_FORMATTER
     plotname_format = SLOT_FE55_PLOT_FORMATTER
@@ -94,6 +46,26 @@ class Fe55AnalysisTask(AnalysisTask):
         @param kwargs:    Used to override configruation
         """
         AnalysisTask.__init__(self, **kwargs)
+
+    def get_data(self, butler, run_num, **kwargs):
+        """Get a set of fe55 and mask files out of a folder
+
+        @param butler (`Bulter`)    The data Butler
+        @param run_num (str)        The run number we are reading
+        @param kwargs:
+           acq_types (list)  The types of acquistions we want to include
+
+        @returns (dict) Dictionary mapping slot to file names
+        """
+        kwargs.pop('run_num', None)
+        if butler is None:
+            retval = get_fe55_files_run(run_num, **kwargs)
+        else:
+            retval = get_fe55_files_butler(butler, run_num, **kwargs)
+        if not retval:
+            sys.stdout.write("Warning, call to get_data for %s returned no data" % self.getName())
+
+        return retval
 
     def extract(self, butler, data, **kwargs):
         """This needs to be implemented by the sub-class"""

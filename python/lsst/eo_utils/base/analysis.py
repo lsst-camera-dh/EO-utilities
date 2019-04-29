@@ -5,8 +5,10 @@ This module contains base classes for analysis tasks.
 
 import lsst.pex.config as pexConfig
 
+from .defaults import DEFAULT_STAT_TYPE
+
 from .file_utils import makedir_safe, SLOT_BASE_FORMATTER,\
-    MASK_FORMATTER, SUPERBIAS_FORMATTER
+    MASK_FORMATTER, SUPERBIAS_FORMATTER, SUPERBIAS_STAT_FORMATTER
 
 from .config_utils import EOUtilOptions, Configurable
 
@@ -70,6 +72,22 @@ class BaseAnalysisTask(Configurable):
         the input data structure and invoke this for a particular run, raft, ccd..."""
         return self.iteratorClass(self)
 
+    def get_config_param(self, key, default):
+        """Keys the value of a parameter for the configuration
+        and returns a default if the configuration does
+        not contain that key.
+
+        This useful when task with different parameters call the same function.
+
+        @param key (str)           The configuration parameter name
+        @param default             The value to return if the parameter does not exists
+
+        @returns the parameter value
+        """
+        if key in self.config.keys():
+            return getattr(self.config, key)
+        return default
+
     def get_filename_from_format(self, formatter, suffix, **kwargs):
         """Use a `FilenameFormat` object to construct a filename for a
         specific set of input parameters.
@@ -80,11 +98,29 @@ class BaseAnalysisTask(Configurable):
 
         @returns (str)             The resulting filename
         """
-        self.safe_update(**kwargs)
         format_key_dict = formatter.key_dict()
         format_vals = self.extract_config_vals(format_key_dict)
-        format_vals['suffix'] = suffix
+        format_vals.update(**kwargs)
+        if suffix is not None:
+            format_vals['suffix'] = suffix
+        if self.get_config_param('stat', None) in [DEFAULT_STAT_TYPE, None]:
+            format_vals['stat'] = 'superbias'
         return formatter(**format_vals)
+
+
+    def get_superbias_file(self, suffix, **kwargs):
+        """Get the name of the superbias file for a particular run, raft, ccd...
+
+        @param kwargs              Used to override default configuration
+        @returns (str)             The filename
+        """
+        if self.get_config_param('stat', None) in [DEFAULT_STAT_TYPE, None]:
+            formatter = SUPERBIAS_FORMATTER
+        else:
+            formatter = SUPERBIAS_STAT_FORMATTER
+
+        return self.get_filename_from_format(formatter, suffix, **kwargs)
+
 
     def get_mask_files(self, **kwargs):
         """Get the list of mask files for a specific set of input parameters.
@@ -94,7 +130,7 @@ class BaseAnalysisTask(Configurable):
         """
         self.safe_update(**kwargs)
         if self.config.mask:
-            return [self.get_filename_from_format(MASK_FORMATTER, "")]
+            return [self.get_filename_from_format(MASK_FORMATTER, "_mask.fits")]
         return []
 
     @classmethod
@@ -187,9 +223,9 @@ class AnalysisTask(BaseAnalysisTask):
         @param kwargs              Used to override default configuration
         @returns (str)             The filename
         """
-        self.safe_update(**kwargs)
         return self.get_filename_from_format(self.tablename_format,
-                                             self.get_suffix())
+                                             self.get_suffix(),
+                                             **kwargs)
 
     def plotfile_name(self, **kwargs):
         """Get the basename for the plot files for a particular run, raft, ccd...
@@ -197,20 +233,9 @@ class AnalysisTask(BaseAnalysisTask):
         @param kwargs              Used to override default configuration
         @returns (str)             The filename
         """
-        self.safe_update(**kwargs)
         return self.get_filename_from_format(self.plotname_format,
-                                             self.get_suffix())
-
-    def get_superbias_file(self, **kwargs):
-        """Get the name of the superbias file for a particular run, raft, ccd...
-
-        @param kwargs              Used to override default configuration
-        @returns (str)             The filename
-        """
-        self.safe_update(**kwargs)
-        if self.config.superbias is None:
-            return None
-        return self.get_filename_from_format(SUPERBIAS_FORMATTER, "")
+                                             self.get_suffix(),
+                                             **kwargs)
 
     def get_superbias_frame(self, mask_files, **kwargs):
         """Get the superbias frame for a particular run, raft, ccd...
@@ -218,9 +243,9 @@ class AnalysisTask(BaseAnalysisTask):
         @returns (`MaskedCCD`)      The superbias frame
         """
         self.safe_update(**kwargs)
-        superbias_file = self.get_superbias_file()
-        if superbias_file is None:
+        if self.config.superbias is None:
             return None
+        superbias_file = self.get_superbias_file('.fits')
         return get_ccd_from_id(None, superbias_file, mask_files)
 
     def make_datatables(self, butler, data, **kwargs):

@@ -4,10 +4,7 @@
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.bias import bias_fft, bias_v_row, bias_struct,\
-    oscan_amp_stack, correl_wrt_oscan, superbias, superbias_stats
-from lsst.eo_utils.flat import ptc
-from lsst.eo_utils.fe55 import fe55_gain
+from lsst.eo_utils import base, bias, flat, fe55
 
 
 def main():

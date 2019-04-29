@@ -12,15 +12,16 @@ from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
+from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft
+
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.fe55.file_utils import RAFT_FE55_TABLE_FORMATTER,\
-    RAFT_FE55_PLOT_FORMATTER
+from lsst.eo_utils.fe55.file_utils import SLOT_FE55_TABLE_FORMATTER,\
+    RAFT_FE55_TABLE_FORMATTER, RAFT_FE55_PLOT_FORMATTER
 
 from lsst.eo_utils.fe55.analysis import Fe55AnalysisConfig, Fe55AnalysisTask
 
-from lsst.eo_utils.fe55.meta_analysis import Fe55SummaryByRaft, Fe55TableAnalysisByRaft,\
-    Fe55SummaryAnalysisConfig, Fe55SummaryAnalysisTask
+from lsst.eo_utils.fe55.meta_analysis import Fe55SummaryAnalysisConfig, Fe55SummaryAnalysisTask
 
 
 class Fe55GainStatsConfig(Fe55AnalysisConfig):
@@ -37,8 +38,9 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
 
     ConfigClass = Fe55GainStatsConfig
     _DefaultName = "Fe55GainStatsTask"
-    iteratorClass = Fe55TableAnalysisByRaft
+    iteratorClass = TableAnalysisByRaft
 
+    intablename_format = SLOT_FE55_TABLE_FORMATTER
     tablename_format = RAFT_FE55_TABLE_FORMATTER
     plotname_format = RAFT_FE55_PLOT_FORMATTER
 
@@ -163,7 +165,6 @@ class Fe55GainSummaryTask(Fe55SummaryAnalysisTask):
 
     ConfigClass = Fe55GainSummaryConfig
     _DefaultName = ""
-    iteratorClass = Fe55SummaryByRaft
 
     def __init__(self, **kwargs):
         """C'tor"""

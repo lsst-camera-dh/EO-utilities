@@ -579,8 +579,6 @@ class FigureDict:
         nbins = kwargs.get('nbins', 200)
         bias_type = kwargs.get('bias', None)
         superbias_frame = kwargs.get('superbias_frame', None)
-        subtract_mean = kwargs.get('subtract_mean', False)
-        region = kwargs.get('region', 'imaging')
 
         o_dict = self.setup_amp_plots_grid(key, **kwargs)
 
@@ -603,9 +601,9 @@ class FigureDict:
             regions = get_geom_regions(butler, ccd, amp)
             frames = get_image_frames_2d(image, regions)
 
-            darray = frames[region]
+            darray = frames[kwargs.get('region', 'imaging')]
 
-            if subtract_mean:
+            if kwargs.get('subtract_mean', False):
                 darray -= darray.mean()
 
             axes = axs.flat[idx]
