@@ -20,8 +20,7 @@ from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from .analysis import BiasAnalysisConfig, BiasAnalysisTask
 
-from .file_utils import RAFT_SBIAS_TABLE_FORMATTER, RAFT_SBIAS_PLOT_FORMATTER,\
-    SUM_SBIAS_TABLE_FORMATTER, SUM_SBIAS_PLOT_FORMATTER
+from .file_utils import RAFT_SBIAS_TABLE_FORMATTER, RAFT_SBIAS_PLOT_FORMATTER
 
 from .meta_analysis import SuperbiasSummaryAnalysisConfig, SuperbiasSummaryAnalysisTask
 
@@ -148,9 +147,6 @@ class SuperbiasSummaryTask(SuperbiasSummaryAnalysisTask):
 
     ConfigClass = SuperbiasSummaryConfig
     _DefaultName = "SuperbiasSummaryTask"
-
-    tablename_format = SUM_SBIAS_TABLE_FORMATTER
-    plotname_format = SUM_SBIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """C'tor"""
