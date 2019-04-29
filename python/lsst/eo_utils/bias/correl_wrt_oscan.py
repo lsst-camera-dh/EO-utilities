@@ -28,7 +28,7 @@ from .meta_analysis import BiasSummaryByRaft, BiasTableAnalysisByRaft,\
 
 class CorrelWRTOscanConfig(BiasAnalysisConfig):
     """Configuration for CorrelWRTOscanTask"""
-    suffix = EOUtilOptions.clone_param('suffix', default='biasoscorr')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasoscorr')
     bias = EOUtilOptions.clone_param('bias')
     mask = EOUtilOptions.clone_param('mask')
 
@@ -173,7 +173,7 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
 class CorrelWRTOscanStatsConfig(BiasAnalysisConfig):
     """Configuration for CorrelWRTOscanStatsTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='biasoscorr')
-    suffix = EOUtilOptions.clone_param('suffix', default='biasoscorr_stats')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasoscorr_stats')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
 
@@ -295,7 +295,7 @@ class CorrelWRTOscanStatsTask(BiasAnalysisTask):
 class CorrelWRTOscanSummaryConfig(BiasSummaryAnalysisConfig):
     """Configuration for CorrelWRTOscanSummaryTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='biasoscorr_stats')
-    suffix = EOUtilOptions.clone_param('suffix', default='biasoscorr_sum')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasoscorr_sum')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
 

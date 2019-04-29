@@ -40,7 +40,7 @@ from lsst.eo_utils.flat.meta_analysis import FlatSummaryByRaft, FlatTableAnalysi
 
 class PTCConfig(FlatAnalysisConfig):
     """Configuration for PTCTask"""
-    suffix = EOUtilOptions.clone_param('suffix', default='ptc')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='ptc')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
@@ -152,7 +152,7 @@ class PTCTask(FlatAnalysisTask):
 class PTCStatsConfig(FlatAnalysisConfig):
     """Configuration for PTCStatsTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='ptc')
-    suffix = EOUtilOptions.clone_param('suffix', default='ptc_stats')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='ptc_stats')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
 
@@ -298,7 +298,7 @@ class PTCStatsTask(FlatAnalysisTask):
 class PTCSummaryConfig(FlatSummaryAnalysisConfig):
     """Configuration for PTCSummaryTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='ptc_stats')
-    suffix = EOUtilOptions.clone_param('suffix', default='ptc_sum')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='ptc_sum')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
 

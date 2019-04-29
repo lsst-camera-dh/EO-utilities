@@ -31,7 +31,7 @@ from .meta_analysis import BiasSummaryByRaft, BiasTableAnalysisByRaft,\
 
 class BiasFFTConfig(BiasAnalysisConfig):
     """Configuration for BiasFFTTask"""
-    suffix = EOUtilOptions.clone_param('suffix', default='biasfft')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasfft')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
@@ -172,7 +172,7 @@ class BiasFFTTask(BiasAnalysisTask):
 
 class SuperbiasFFTConfig(BiasAnalysisConfig):
     """Configuration for SuperbiasFFTTask"""
-    suffix = EOUtilOptions.clone_param('suffix', default='sbiasfft')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='sbiasfft')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
 
@@ -240,7 +240,7 @@ class SuperbiasFFTTask(BiasFFTTask):
 class BiasFFTStatsConfig(BiasAnalysisConfig):
     """Configuration for BiasFFTStatsTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='biasfft')
-    suffix = EOUtilOptions.clone_param('suffix', default='biasfft_stats')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasfft_stats')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
 
@@ -342,7 +342,7 @@ class BiasFFTStatsTask(BiasAnalysisTask):
 class BiasFFTSummaryConfig(BiasSummaryAnalysisConfig):
     """Configuration for BiasFFTSummaryTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='biasfft_stats')
-    suffix = EOUtilOptions.clone_param('suffix', default='biasfft_sum')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasfft_sum')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
 

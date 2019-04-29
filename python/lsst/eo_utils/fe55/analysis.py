@@ -72,7 +72,7 @@ class Fe55AnalysisConfig(AnalysisConfig):
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
-    suffix = EOUtilOptions.clone_param('suffix')
+    outsuffix = EOUtilOptions.clone_param('outsuffix')
     nfiles = EOUtilOptions.clone_param('nfiles')
 
 

@@ -82,7 +82,7 @@ class BaseAnalysisTask(Configurable):
         """
         self.safe_update(**kwargs)
         format_key_dict = formatter.key_dict()
-        format_vals = self.config.extract_config_vals(format_key_dict)
+        format_vals = self.extract_config_vals(format_key_dict)
         format_vals['suffix'] = suffix
         return formatter(**format_vals)
 

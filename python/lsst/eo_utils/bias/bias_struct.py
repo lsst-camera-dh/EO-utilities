@@ -24,7 +24,7 @@ from .analysis import BiasAnalysisTask, BiasAnalysisConfig, BiasAnalysisBySlot
 
 class BiasStructConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    suffix = EOUtilOptions.clone_param('suffix', default='biasst')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasst')
     bias = EOUtilOptions.clone_param('bias')
     mask = EOUtilOptions.clone_param('mask')
     std = EOUtilOptions.clone_param('std')
@@ -156,7 +156,7 @@ class BiasStructTask(BiasAnalysisTask):
 
 class SuperbiasStructConfig(BiasAnalysisConfig):
     """Configuration for SuperbiasStructTask"""
-    suffix = EOUtilOptions.clone_param('suffix', default='sbiasst')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='sbiasst')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
     std = EOUtilOptions.clone_param('std')

@@ -31,7 +31,7 @@ from .meta_analysis import BiasSummaryByRaft, BiasTableAnalysisByRaft,\
 
 class OscanAmpStackConfig(BiasAnalysisConfig):
     """Configuration for OscanAmpStackTask"""
-    suffix = EOUtilOptions.clone_param('suffix', default='biasosstack')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasosstack')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
@@ -132,7 +132,7 @@ class OscanAmpStackTask(BiasAnalysisTask):
 class OscanAmpStackStatsConfig(BiasAnalysisConfig):
     """Configuration for OscanAmpStackStatsTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='biasosstack')
-    suffix = EOUtilOptions.clone_param('suffix', default='biasosstack_stats')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasosstack_stats')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
 
@@ -265,7 +265,7 @@ class OscanAmpStackStatsTask(BiasAnalysisTask):
 class OscanAmpStackSummaryConfig(BiasSummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='biasosstack_stats')
-    suffix = EOUtilOptions.clone_param('suffix', default='biasosstack_sum')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasosstack_sum')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
 

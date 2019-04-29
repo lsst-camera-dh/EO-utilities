@@ -26,7 +26,7 @@ from lsst.eo_utils.fe55.meta_analysis import Fe55SummaryByRaft, Fe55TableAnalysi
 class Fe55GainStatsConfig(Fe55AnalysisConfig):
     """Configuration for Fe55GainStatsTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='fe55_clusters')
-    suffix = EOUtilOptions.clone_param('suffix', default='fe55_gain_stats')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='fe55_gain_stats')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
     use_all = EOUtilOptions.clone_param('use_all')
@@ -152,7 +152,7 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
 class Fe55GainSummaryConfig(Fe55SummaryAnalysisConfig):
     """Configuration for Fe55GainSummaryTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='fe55_gain_stats')
-    suffix = EOUtilOptions.clone_param('suffix', default='fe55_gain_sum')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='fe55_gain_sum')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
     use_all = EOUtilOptions.clone_param('use_all')

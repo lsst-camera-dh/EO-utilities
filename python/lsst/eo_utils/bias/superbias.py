@@ -35,7 +35,7 @@ class SuperbiasConfig(BaseAnalysisConfig):
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
-    suffix = EOUtilOptions.clone_param('suffix')
+    outsuffix = EOUtilOptions.clone_param('outsuffix')
     mask = EOUtilOptions.clone_param('mask')
     stat = EOUtilOptions.clone_param('stat')
     bias = EOUtilOptions.clone_param('bias')

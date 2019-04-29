@@ -28,7 +28,7 @@ from .meta_analysis import SuperbiasSummaryByRaft, BiasSummaryAnalysisConfig,\
 class SuperbiasStatsConfig(BiasAnalysisConfig):
     """Configuration for SuperbiasStatsTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='')
-    suffix = EOUtilOptions.clone_param('suffix', default='stats')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='stats')
     bias = EOUtilOptions.clone_param('bias')
     mask = EOUtilOptions.clone_param('mask')
     stat = EOUtilOptions.clone_param('stat')
@@ -133,7 +133,7 @@ class SuperbiasStatsTask(BiasAnalysisTask):
 class SuperbiasSummaryConfig(BiasSummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='stats')
-    suffix = EOUtilOptions.clone_param('suffix', default='sum')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='sum')
     dataset = EOUtilOptions.clone_param('dataset')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')

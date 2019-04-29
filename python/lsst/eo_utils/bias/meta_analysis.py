@@ -151,7 +151,7 @@ class BiasSummaryAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
     outdir = EOUtilOptions.clone_param('outdir')
     dataset = EOUtilOptions.clone_param('dataset')
-    suffix = EOUtilOptions.clone_param('suffix')
+    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class BiasSummaryAnalysisTask(AnalysisTask):

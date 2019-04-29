@@ -22,7 +22,7 @@ from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisBySlot
 
 class BiasVRowConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    suffix = EOUtilOptions.clone_param('suffix', default='biasval')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasval')
     bias = EOUtilOptions.clone_param('bias')
 
 
