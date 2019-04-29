@@ -5,7 +5,7 @@ import os
 
 import lsst.pex.config as pexConfig
 
-from .defaults import ALL_SLOTS
+from .defaults import ALL_SLOTS, DEFAULT_STAT_TYPE
 
 from .config_utils import EOUtilOptions, Configurable,\
     setup_parser, add_pex_arguments,\
@@ -507,20 +507,20 @@ class SummaryAnalysisIterator(AnalysisHandler):
         """
         AnalysisHandler.__init__(self, task)
 
-    def get_data(self, butler, datakey, **kwargs):
+    def get_data(self, butler, **kwargs):
         """Function to get the data
 
         @param bulter (`Butler`)     The data Butler
-        @param datakey (str)         The ddata identifier (run number or other string)
         @param kwargs (dict)         Passed to the data function
         """
         if butler is not None:
             sys.stdout.write("Ignoring butler in get_data for %s\n" % self._task.getName())
 
-        infile = '%s_runs.txt' % datakey
+        kwcopy = self._task.safe_update(**kwargs)
+
+        infile = '%s_runs.txt' % self._task.config.dataset
 
         run_list = read_runlist(infile)
-        kwcopy = kwargs.copy()
 
         formatter = self._task.intablename_format
 
@@ -530,8 +530,10 @@ class SummaryAnalysisIterator(AnalysisHandler):
             run = runinfo[1]
             run_key = "%s_%s" % (raft, run)
             kwcopy['run'] = run
-            kwcopy['raft'] = raft
-            filepath = self._task.get_filename_from_format(formatter, '.fits', **kwcopy)
+            kwcopy['raft'] = raft    
+            filepath = self._task.get_filename_from_format(formatter, 
+                                                           "%s.fits" % self._task.config.insuffix,
+                                                           **kwcopy)
             filedict[run_key] = filepath
 
         return filedict
@@ -539,7 +541,7 @@ class SummaryAnalysisIterator(AnalysisHandler):
     def call_analysis_task(self, **kwargs):
         """Call the analysis function for one run
 
-        @param run (str)  The run identifier
+        @param dataset (str)  The data identifier
         @param kwargs         Passed to the analysis functions
         """
         data_files = self.get_data(None, **kwargs)
