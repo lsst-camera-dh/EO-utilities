@@ -44,9 +44,8 @@ class EOTaskFactory:
         @param task_class (class)      The class
         """
         task = task_class()
-        if key in self._tasks:
-            raise KeyError("Key %s is already in EOTaskFactory" % key)
-        self._tasks[key] = task
+        if key not in self._tasks:
+            self._tasks[key] = task
 
     def run_task(self, key, **kwargs):
         """Run the selected task
