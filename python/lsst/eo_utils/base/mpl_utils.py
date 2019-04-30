@@ -17,6 +17,12 @@ def init_matplotlib_backend(backend=None):
     import matplotlib
 
     try:
+        os.environ['MPLBACKEND']
+        return
+    except KeyError:
+        pass
+
+    try:
         os.environ['DISPLAY']
     except KeyError:
         matplotlib.use('Agg')

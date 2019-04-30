@@ -6,7 +6,7 @@ This module contains base classes and other general utilities.
 # from .defaults import *
 # from .config_utils import EOUtilOptions, Configurable
 
-from . import mpl_utils
+# from . import mpl_utils
 
 # from .batch_utils import dispatch_job
 # from . import butler_utils
