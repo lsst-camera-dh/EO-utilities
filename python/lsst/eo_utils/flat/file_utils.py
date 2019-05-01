@@ -7,8 +7,8 @@
 from lsst.eo_utils.base.defaults import SLOT_FORMAT_STRING,\
     RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
 
-from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_for_run,\
-    FILENAME_FORMATS
+from lsst.eo_utils.base.file_utils import get_hardware_type_and_id,\
+    get_files_for_run, merge_file_dicts, FILENAME_FORMATS
 
 
 
@@ -69,8 +69,14 @@ def get_flat_files_run(run_id, **kwargs):
         else:
             acq_types = ['FLAT']
 
-    return get_files_for_run(run_id,
-                             imagetype="FLAT",
-                             testtypes=acq_types,
-                             outkey='FLAT',
-                             **kwargs)
+    flat1_dict = get_files_for_run(run_id,
+                                   imagetype="FLAT1",
+                                   testtypes=acq_types,
+                                   outkey='FLAT1',
+                                   **kwargs)
+    flat2_dict = get_files_for_run(run_id,
+                                   imagetype="FLAT2",
+                                   testtypes=acq_types,
+                                   outkey='FLAT2',
+                                   **kwargs)
+    return merge_file_dicts(flat1_dict, flat2_dict)
