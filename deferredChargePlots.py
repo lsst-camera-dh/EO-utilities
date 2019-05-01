@@ -32,7 +32,7 @@ def eper_plot(sensor_id, results_file, xmax=512, output_dir='./'):
             
             if flux > target_flux_levels[target_flux_index]:
                 
-                meanrow = data['MEANROW_DATA'][row, :]
+                meanrow = data['MEANROW'][row, :]
                 offset = np.mean(meanrow[-20:])
                 overscan = meanrow[xmax:] - offset
                 columns = np.arange(xmax, meanrow.shape[0])
@@ -78,8 +78,8 @@ def overscan1_plot(sensor_id, results_file, xmax=512, maxflux=150000.,
         data = hdulist[i+1].data        
         sorted_indices = np.argsort(data['FLUX'])
         
-        offset = np.mean(data['MEANROW_DATA'][sorted_indices, -20:], axis=1)        
-        overscan1 = data['MEANROW_DATA'][sorted_indices, xmax] - offset
+        offset = np.mean(data['MEANROW'][sorted_indices, -20:], axis=1)        
+        overscan1 = data['MEANROW'][sorted_indices, xmax] - offset
         flux = data['FLUX'][sorted_indices] - offset
         
         ax.plot(flux[flux <= maxflux], overscan1[flux <= maxflux], 
@@ -119,8 +119,8 @@ def overscan2_plot(sensor_id, results_file, xmax=512, maxflux=150000., output_di
         data = hdulist[i+1].data        
         sorted_indices = np.argsort(data['FLUX'])
         
-        offset = np.mean(data['MEANROW_DATA'][sorted_indices, -20:], axis=1)        
-        overscan2 = data['MEANROW_DATA'][sorted_indices, xmax+1] - offset
+        offset = np.mean(data['MEANROW'][sorted_indices, -20:], axis=1)        
+        overscan2 = data['MEANROW'][sorted_indices, xmax+1] - offset
         flux = data['FLUX'][sorted_indices] - offset
         
         ax.plot(flux[flux <= maxflux], overscan2[flux <= maxflux], 
@@ -161,8 +161,8 @@ def summedoverscan_plot(sensor_id, results_file, xmax=512, maxflux=150000.,
         data = hdulist[i+1].data        
         sorted_indices = np.argsort(data['FLUX'])
         
-        offset = np.mean(data['MEANROW_DATA'][sorted_indices, -20:], axis=1)        
-        summedoverscan = np.sum(data['MEANROW_DATA'][sorted_indices, xmax+8:xmax+18], axis=1) - offset
+        offset = np.mean(data['MEANROW'][sorted_indices, -20:], axis=1)        
+        summedoverscan = np.sum(data['MEANROW'][sorted_indices, xmax+8:xmax+18], axis=1) - offset
         flux = data['FLUX'][sorted_indices] - offset
         
         ax.plot(flux[flux <= maxflux], summedoverscan[flux <= maxflux], 
@@ -202,10 +202,10 @@ def cti_plot(sensor_id, results_file, xmax=512, maxflux=150000., output_dir='./'
         data = hdulist[i+1].data        
         sorted_indices = np.argsort(data['FLUX'])
         
-        offset = np.mean(data['MEANROW_DATA'][sorted_indices, -20:], axis=1)        
-        overscan1 = data['MEANROW_DATA'][sorted_indices, xmax] - offset
-        overscan2 = data['MEANROW_DATA'][sorted_indices, xmax+1] - offset
-        lastpixel = data['MEANROW_DATA'][sorted_indices, xmax-1] - offset
+        offset = np.mean(data['MEANROW'][sorted_indices, -20:], axis=1)        
+        overscan1 = data['MEANROW'][sorted_indices, xmax] - offset
+        overscan2 = data['MEANROW'][sorted_indices, xmax+1] - offset
+        lastpixel = data['MEANROW'][sorted_indices, xmax-1] - offset
         cti = (overscan1+overscan2)/(xmax*lastpixel)
         flux = data['FLUX'][sorted_indices] - offset
         
@@ -269,13 +269,18 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('results_dir', type=str)
-    parser.add_argument('-x', '--xmax', type=int, default=512)
+    parser.add_argument('ccd', type=str)
     parser.add_argument('-f', '--maxflux', type=float, default=150000.0)
     args = parser.parse_args()
 
     results_dir = args.results_dir
-    xmax = args.xmax
+    ccd = args.ccd
     maxflux = args.maxflux
+
+    if ccd == 'e2v':
+        xmax = 522
+    elif ccd == 'itl':
+        xmax = 512
 
     sensor_ids = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
 

@@ -9,11 +9,12 @@ from os.path import join
 import numpy as np
 import errno
 
-from lsst.eotest.sensor import OverscanTask
+import lsst.eotest.sensor as sensorTest
 from lsst.eotest.sensor import parse_geom_kwd, makeAmplifierGeometry
 import lsst.eotest.image_utils as imutils
+import siteUtils
 
-def main(directory, output_dir, no_gains=False):
+def main(directory, output_dir, no_gains=False, plot=False):
 
     ccd_names = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
 
@@ -52,31 +53,33 @@ def main(directory, output_dir, no_gains=False):
             datasec = parse_geom_kwd(hdulist[1].header['DATASEC'])
             xmin = datasec['xmin']
             xmax = datasec['xmax']
+            print(xmax)
 
         ## Get amplifier gains
+
+        results = glob.glob(join(directory, 'collect_raft_results', 
+                            'v0', '*', 
+                            '{0}_eotest_results.fits'.format(lsst_num)))[0]
         if no_gains:
             gains = dict((i+1, 1.0) for i in range(16))
         else:   
-            results = glob.glob(join(directory, 'collect_raft_results', 
-                                'v0', '*', 
-                                '{0}_eotest_results.fits'.format(lsst_num)))[0]
             with fits.open(results) as hdulist:
                 gains_array = hdulist[1].data['GAIN']
                 gains = dict((i+1, gains_array[i]) for i in range(16))
 
         ## Run overscan task
-        overscantask = OverscanTask()
+        overscantask = sensorTest.OverscanTask()
         overscantask.config.output_dir = ccd_output_dir
         overscantask.run(sensor_id, flat1_files, gains, bias_frame=bias_frame)
 
-#        ## Make plots
-#        if plot:
-#            eper_plot(sensor_id, output_file, xmax=xmax, 
-#                      output_dir=ccd_output_dir)
-#            overscan_plot(sensor_id, output_file, xmax=xmax, 
-#                                output_dir=ccd_output_dir)
-#            cti_plot(sensor_id, output_file, xmax=xmax, 
-#                     output_dir=ccd_output_dir)
+        ## Make plots
+        if plot:
+            overscan_file = join(ccd_output_dir, '{0}_overscan_results.fits'.format(sensor_id))
+            plots = sensorTest.EOTestPlots(sensor_id, results_file=results)
+            siteUtils.make_png_file(plots.cti_curves,
+                                    join(ccd_output_dir, '{0}_cti.png'.format(sensor_id)),
+                                    overscan_file=overscan_file)
+
 
 if __name__ == '__main__':
 
@@ -86,11 +89,13 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output_dir', default='./', type=str,
                         help = "Output directory for FITs results.")
     parser.add_argument('--no_gains', action='store_true')
+    parser.add_argument('--plot', action='store_true')
     args = parser.parse_args()
 
     directory = args.eotest_dir
     output_dir = args.output_dir
     no_gains = args.no_gains
+    plot = args.plot
     
-    main(directory, output_dir, no_gains)
+    main(directory, output_dir, no_gains, plot)
 
