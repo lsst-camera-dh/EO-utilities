@@ -21,7 +21,7 @@ class TableDict:
     and a few helper functions add new tables to the dictionary
     and to read and write files, either as FITS or HDF5 files.
     """
-    def __init__(self, filepath=None, tablelist=None):
+    def __init__(self, filepath=None, tablelist=None, primary=None):
         """C'tor
 
         if filepath is not set, an empty `TableDict` will be constructed.
@@ -30,6 +30,7 @@ class TableDict:
         @param filepath (str)     The name of the file to read data from
         @param tablelist (list)   The name of the tables to read
         """
+        self._primary = primary
         self._table_dict = {}
         if filepath is not None:
             self.load_datatables(filepath, tablelist=tablelist)
@@ -110,7 +111,10 @@ class TableDict:
             for key, val in self._table_dict.items():
                 val.write(filepath, path=key, **kwargs)
         elif extype in FITS_SUFFIXS:
-            hlist = [fits.PrimaryHDU()]
+            if self._primary is None:
+                hlist = [fits.PrimaryHDU()]
+            else:
+                hlist = [self._primary]
             for key, val in self._table_dict.items():
                 hdu = fits.table_to_hdu(val)
                 hdu.name = key

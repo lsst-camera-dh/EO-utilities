@@ -227,7 +227,7 @@ def get_ts8_files_glob(**kwargs):
     outdict = {}
     for slot in ALL_SLOTS:
         glob_string = TS8_FORMATTER(slot=slot, **kwargs)
-        outdict[slot] = glob.glob(glob_string)
+        outdict[slot] = sorted(glob.glob(glob_string))
     return outdict
 
 
@@ -238,9 +238,26 @@ def get_bot_files_glob(**kwargs):
         raftdict = {}
         for slot in ALL_SLOTS:
             glob_string = BOT_FORMATTER(raft=raft, slot=slot, **kwargs)
-            raftdict[slot] = glob.glob(glob_string)
+            raftdict[slot] = sorted(glob.glob(glob_string))
         outdict[raft] = raftdict
     return outdict
+
+
+def merge_file_dicts(dict_1, dict_2):
+    """Combine a pair of file_dictionaries
+
+    @param dict_1 (dict)
+    @param dict_2 (dict)
+
+    @returns (dict)
+    """
+    out_dict = dict_1.copy()
+    for key, val in dict_2.items():
+        if isinstance(val, dict):
+            out_dict[key] = merge_file_dicts(out_dict[key], val)
+        else:
+            out_dict[key] = val
+    return out_dict
 
 
 def get_files_for_run(run_id, **kwargs):

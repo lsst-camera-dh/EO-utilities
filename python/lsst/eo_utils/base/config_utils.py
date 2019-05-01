@@ -100,6 +100,13 @@ class EOUtilOptions(pexConfig.Config):
     # Options for Fe55 Tasks
     use_all = pexConfig.Field("Use all fe55 clusters", bool, default=False)
 
+    # Options for Flat Tasks
+    smoothing = pexConfig.Field("Smoothing for spline overscan correction", int, default=11000)
+    minflux = pexConfig.Field("Minimum flux for overscan fitting.", float, default=10000.0)
+    maxflux = pexConfig.Field("Maximum flux for overscan fitting.", float, default=140000.0)
+    num_oscan_pixels = pexConfig.Field("Number of overscan pixels used for model fit.", int, default=10)
+
+
 
     @classmethod
     def clone_param(cls, par_name, **kwargs):

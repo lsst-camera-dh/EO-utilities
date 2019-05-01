@@ -240,12 +240,14 @@ def get_raw_image(butler, ccd, amp):
     return img
 
 
-def get_ccd_from_id(butler, data_id, mask_files):
+def get_ccd_from_id(butler, data_id, mask_files, bias_frame=None):
     """Get the Geometry for a particular dataId or file
 
     @param butler (`Butler`)     Data Butler (or none)
     @param data_id (dict or str) Data identifier
     @param mask_files (list)     List of mask files
+    @param kwargs
+        bias_frame:              Frame to subtract off
 
     @returns (`MaskedCCD` or `ExposureF`) CCD image
     """
