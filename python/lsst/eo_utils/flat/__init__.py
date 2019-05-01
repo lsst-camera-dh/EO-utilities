@@ -14,3 +14,6 @@ from .meta_analysis import FlatSummaryAnalysisConfig, FlatSummaryAnalysisTask
 from .ptc import PTCConfig, PTCTask,\
     PTCStatsConfig, PTCStatsTask,\
     PTCSummaryConfig, PTCSummaryTask
+
+from .flat_oscan import FlatOverscanConfig, FlatOverscanTask,\
+    FlatOverscanStatsConfig, FlatOverscanStatsConfig
