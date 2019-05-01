@@ -91,7 +91,8 @@ class PTCTask(FlatAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        flat_files = data['FLAT']
+        flat1_files = data['FLAT1']
+        flat2_files = data['FLAT2']
         mask_files = self.get_mask_files()
         superbias_frame = self.get_superbias_frame(mask_files)
 
@@ -100,8 +101,8 @@ class PTCTask(FlatAnalysisTask):
             ptc_data['AMP%02i_MEAN' % i] = []
             ptc_data['AMP%02i_VAR' % i] = []
 
-        sys.stdout.write("Working on %s, %i files: \n" % (self.config.slot, len(flat_files)))
-        for id_1, id_2 in zip(flat_files[::2], flat_files[1::2]):
+        sys.stdout.write("Working on %s, %i files: \n" % (self.config.slot, len(flat1_files)))
+        for id_1, id_2 in zip(flat1_files, flat2_files):
             flat_1 = get_ccd_from_id(butler, id_1, [])
             flat_2 = get_ccd_from_id(butler, id_2, [])
 
