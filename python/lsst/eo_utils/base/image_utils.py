@@ -368,39 +368,52 @@ def unbias_amp(img, serial_oscan, bias_type=None, superbias_im=None, region=None
     return image
 
 
-def make_superbias(butler, bias_files, statistic=afwMath.MEDIAN, **kwargs):
+def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
     """Make a set of superbias images
 
     @param butler (`Butler`)     Data Butler (or none)
-    @param bias_files (dict)     Data used to make superbias
+    @param in_files (dict)       Data to stack
     @param statistic (int)       Statisitic used to make superbias image
     @param kwargs
-    bias_type (str)    Unbiasing method to use
+        bias_type (str)               Unbiasing method to use
+        superbias_frame (MaskedCCD)   Superbias image
 
     @returns (dict) mapping amplifier index to suberbias image
     """
 
     bias_type = kwargs.get('bias_type', 'spline')
+    superbias_frame = kwargs.get('superbias_frame', None)
 
     amp_stack_dict = {}
-    sbias_dict = {}
+    out_dict = {}
+    
 
-    for ifile, bias_file in enumerate(bias_files):
+    for ifile, in_file in enumerate(in_files):
         if ifile % 10 == 0:
             sys.stdout.write('.')
             sys.stdout.flush()
 
-        ccd = get_ccd_from_id(butler, bias_file, mask_files=[])
+        ccd = get_ccd_from_id(butler, in_file, mask_files=[])
         amps = get_amp_list(butler, ccd)
 
         for amp in amps:
             regions = get_geom_regions(butler, ccd, amp)
             serial_oscan = regions['serial_overscan']
             img = get_raw_image(butler, ccd, amp)
-            if ifile == 0:
-                amp_stack_dict[amp] = [unbias_amp(img, serial_oscan, bias_type=bias_type)]
+            if superbias_frame is not None:
+                if butler is not None:
+                    superbias_im = get_raw_image(None, superbias_frame, amp+1)
+                else:
+                    superbias_im = get_raw_image(None, superbias_frame, amp)
             else:
-                amp_stack_dict[amp].append(unbias_amp(img, serial_oscan, bias_type=bias_type))
+                superbias_im = None
+
+            if ifile == 0:
+                amp_stack_dict[amp] = [unbias_amp(img, serial_oscan,
+                                                  bias_type=bias_type, superbias_im=superbias_im)]
+            else:
+                amp_stack_dict[amp].append(unbias_amp(img, serial_oscan,
+                                                      bias_type=bias_type, superbias_im=superbias_im))
 
 
     for key, val in amp_stack_dict.items():
@@ -409,9 +422,9 @@ def make_superbias(butler, bias_files, statistic=afwMath.MEDIAN, **kwargs):
         else:
             outkey = key + 1
         stackimage = imutil.stack(val, statistic)
-        sbias_dict[outkey] = stackimage
+        out_dict[outkey] = stackimage
 
-    return sbias_dict
+    return out_dict
 
 
 def read_masks(maskfile):
@@ -443,3 +456,27 @@ def apply_masks(butler, ccd, maskfiles):
         for amp, mask in enumerate(mask_list):
             (step_x, step_y) = get_geom_steps_from_amp(ccd, amp)
             ccd.mask[geom[amp].getRawBBox()].array = mask.array[::step_x, ::step_y]
+
+
+
+def sort_sflats(butler, sflat_files):
+    """Make a set of superbias images
+
+    @param butler (`Butler`)     Data Butler (or none)
+    @param bias_files (dict)     Data used to make superbias
+
+    @returns (list, list)        List of low and high superflats
+    """
+    sflats_l = []
+    sflats_h = []
+
+    for sflat in sflat_files:
+        if butler is None:
+            if sflat.find('flat_L') >= 0:
+                sflats_l.append(sflat)
+            elif sflat.find('flat_H') >= 0:
+                sflats_h.append(sflat)
+
+    return (sflats_l, sflats_h)
+        
+

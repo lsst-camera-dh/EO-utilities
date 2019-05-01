@@ -20,7 +20,8 @@ except ImportError:
 
 from .defaults import DATACAT_TS8_MASK_TEST_TYPES, DATACAT_BOT_MASK_TEST_TYPES,\
     SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING,\
-    SUPERBIAS_FORMAT_STRING, SUPERBIAS_STAT_FORMAT_STRING, ALL_RAFTS
+    SUPERBIAS_FORMAT_STRING, SUPERBIAS_STAT_FORMAT_STRING, ALL_RAFTS, ALL_SLOTS,\
+    ARCHIVE_SLAC, TS8_GLOB_STRING, BOT_GLOB_STRING
 
 
 
@@ -214,6 +215,33 @@ SUPERBIAS_FORMATTER = FILENAME_FORMATS.add_format('superbias',
 SUPERBIAS_STAT_FORMATTER = FILENAME_FORMATS.add_format('superbias_stat',
                                                        SUPERBIAS_STAT_FORMAT_STRING,
                                                        bias=None, suffix='')
+TS8_FORMATTER = FILENAME_FORMATS.add_format('ts8_images',
+                                            TS8_GLOB_STRING,
+                                            archive=ARCHIVE_SLAC)
+BOT_FORMATTER = FILENAME_FORMATS.add_format('bot_images',
+                                            BOT_GLOB_STRING,
+                                            archive=ARCHIVE_SLAC)
+
+def get_ts8_files_glob(**kwargs):
+    """Get the file names using the format string for TS8 data """        
+    outdict = {}
+    for slot in ALL_SLOTS:
+        glob_string = TS8_FORMATTER(slot=slot, **kwargs)
+        outdict[slot] = glob.glob(glob_string)
+    return outdict
+
+
+def get_bot_files_glob(**kwargs):
+    """Get the file names using the format string for BOT data """        
+    outdict = {}
+    for raft in ALL_RAFTS:
+        raftdict = {}
+        for slot in ALL_SLOTS:
+            glob_string = BOT_FORMATTER(raft=raft, slot=slot, **kwargs)
+            raftdict[slot] = glob.glob(glob_string)
+        outdict[raft] = raftdict
+    return outdict
+
 
 def get_files_for_run(run_id, **kwargs):
     """Get a set of data files of a particular type for a particular run
@@ -236,16 +264,26 @@ def get_files_for_run(run_id, **kwargs):
 
     outdict = {}
 
-    if run_id.find('D') >= 0:
-        db_ = 'Dev'
-    else:
-        db_ = 'Prod'
-    handler = get_EO_analysis_files(db=db_)
     hinfo = get_hardware_type_and_id(run_id)
 
+    if kwargs.get('datacat', False):
+        if run_id.find('D') >= 0:
+            db_ = 'Dev'
+        else:
+            db_ = 'Prod'
+        handler = get_EO_analysis_files(db=db_)
+    else:
+        handler = None
+
     for test_type in testtypes:
-        r_dict = handler.get_files(testName=test_type, run=run_id,
-                                   imgtype=imagetype, matchstr=matchstr)
+        if handler is not None:
+            r_dict = handler.get_files(testName=test_type, run=run_id,
+                                       imgtype=imagetype, matchstr=matchstr)
+        else:
+            if hinfo[0] == 'LCA-11021':
+                r_dict = get_ts8_files_glob(run=run_id, testName=test_type, imgtype=imagetype.lower(), raft=hinfo[1])
+            else:
+                r_dict = get_bot_files_glob(run=run_id, testName=test_type, imgtype=imagetype.lower())
         for key, val in r_dict.items():
             if hinfo[0] == 'LCA-11021':
                 # Raft level data

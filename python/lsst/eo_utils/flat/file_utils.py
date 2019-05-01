@@ -11,10 +11,6 @@ from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_fo
     FILENAME_FORMATS
 
 
-SUPERFLAT_FORMAT_STRING =\
-    '{outdir}/superflat/{raft}/{raft}-{run}-{slot}_superflat_b-{bias_type}{suffix}.fits'
-SUPERFLAT_STAT_FORMAT_STRING =\
-    '{outdir}/superflat/{raft}/{raft}-{run}-{slot}_{stat_type}_b-{bias_type}{suffix}.fits'
 
 SLOT_FLAT_FORMAT_STRING =\
     SLOT_FORMAT_STRING.replace('{suffix}', '_b-{bias}_s-{superbias}_{suffix}')
@@ -24,15 +20,8 @@ SUMMARY_FLAT_FORMAT_STRING =\
     SUMMARY_FORMAT_STRING.replace('{suffix}', '_b-{bias}_s-{superbias}_{suffix}')
 
 FLAT_DEFAULT_FIELDS = dict(testType='flat', bias=None, superbias=None, suffix='')
-SUPERFLAT_DEFAULT_FIELDS = dict(testType='superflat', bias=None, superbias=None, suffix='')
 
 
-SUPERFLAT_FORMATTER = FILENAME_FORMATS.add_format('superflat',
-                                                  SUPERFLAT_FORMAT_STRING,
-                                                  bias_type=None, suffix='')
-SUPERFLAT_STAT_FORMATTER = FILENAME_FORMATS.add_format('superflat_stat',
-                                                       SUPERFLAT_STAT_FORMAT_STRING,
-                                                       bias_type=None, suffix='')
 
 RAFT_FLAT_TABLE_FORMATTER = FILENAME_FORMATS.add_format('raft_flat_table',
                                                         RAFT_FLAT_FORMAT_STRING,
@@ -51,22 +40,6 @@ SLOT_FLAT_PLOT_FORMATTER = FILENAME_FORMATS.add_format('slot_flat_plot',
                                                        fileType='plots',
                                                        **FLAT_DEFAULT_FIELDS)
 
-RAFT_SFLAT_TABLE_FORMATTER = FILENAME_FORMATS.add_format('raft_sflat_table',
-                                                         RAFT_FLAT_FORMAT_STRING,
-                                                         fileType='tables',
-                                                         **SUPERFLAT_DEFAULT_FIELDS)
-RAFT_SFLAT_PLOT_FORMATTER = FILENAME_FORMATS.add_format('raft_sflat_plot',
-                                                        RAFT_FLAT_FORMAT_STRING,
-                                                        fileType='plots',
-                                                        **SUPERFLAT_DEFAULT_FIELDS)
-SLOT_SFLAT_TABLE_FORMATTER = FILENAME_FORMATS.add_format('slot_sflat_table',
-                                                         SLOT_FLAT_FORMAT_STRING,
-                                                         fileType='tables',
-                                                         **SUPERFLAT_DEFAULT_FIELDS)
-SLOT_SFLAT_PLOT_FORMATTER = FILENAME_FORMATS.add_format('slot_sflat_plot',
-                                                        SLOT_FLAT_FORMAT_STRING,
-                                                        fileType='plots',
-                                                        **SUPERFLAT_DEFAULT_FIELDS)
 
 SUM_FLAT_TABLE_FORMATTER = FILENAME_FORMATS.add_format('sum_flat_table',
                                                        SUMMARY_FLAT_FORMAT_STRING,
@@ -76,15 +49,6 @@ SUM_FLAT_PLOT_FORMATTER = FILENAME_FORMATS.add_format('sum_flat_plot',
                                                       SUMMARY_FLAT_FORMAT_STRING,
                                                       fileType='plots',
                                                       **FLAT_DEFAULT_FIELDS)
-SUM_SFLAT_TABLE_FORMATTER = FILENAME_FORMATS.add_format('sum_sflat_table',
-                                                        SUMMARY_FLAT_FORMAT_STRING,
-                                                        fileType='tables',
-                                                        **SUPERFLAT_DEFAULT_FIELDS)
-SUM_SFLAT_PLOT_FORMATTER = FILENAME_FORMATS.add_format('sum_sflat_plot',
-                                                       SUMMARY_FLAT_FORMAT_STRING,
-                                                       fileType='plots',
-                                                       **SUPERFLAT_DEFAULT_FIELDS)
-
 
 
 def get_flat_files_run(run_id, **kwargs):

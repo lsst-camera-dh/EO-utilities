@@ -16,34 +16,28 @@ from lsst.eo_utils.base.config_utils import EOUtilOptions
 from lsst.eo_utils.base.plot_utils import FigureDict
 
 from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
-    flip_data_in_place, make_superbias
+    flip_data_in_place, stack_images
 
-from lsst.eo_utils.base.analysis import BaseAnalysisConfig,\
-    BaseAnalysisTask
+from lsst.eo_utils.bias.analysis import BiasAnalysisConfig,\
+    BiasAnalysisTask
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 
-class SuperbiasConfig(BaseAnalysisConfig):
+class SuperbiasConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    outdir = EOUtilOptions.clone_param('outdir')
-    run = EOUtilOptions.clone_param('run')
-    raft = EOUtilOptions.clone_param('raft')
-    slot = EOUtilOptions.clone_param('slot')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
     mask = EOUtilOptions.clone_param('mask')
     stat = EOUtilOptions.clone_param('stat')
     bias = EOUtilOptions.clone_param('bias')
-    nfiles = EOUtilOptions.clone_param('nfiles')
     bitpix = EOUtilOptions.clone_param('bitpix')
     skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
     stats_hist = EOUtilOptions.clone_param('stats_hist')
 
 
-class SuperbiasTask(BaseAnalysisTask):
+class SuperbiasTask(BiasAnalysisTask):
     """Construct superbias frames"""
 
     ConfigClass = SuperbiasConfig
@@ -56,7 +50,7 @@ class SuperbiasTask(BaseAnalysisTask):
 
         @param kwargs:    Used to override configruation
         """
-        BaseAnalysisTask.__init__(self, **kwargs)
+        BiasAnalysisTask.__init__(self, **kwargs)
 
 
     def extract(self, butler, data, **kwargs):
@@ -82,7 +76,7 @@ class SuperbiasTask(BaseAnalysisTask):
         else:
             raise ValueError("Can not convert %s to a valid statistic" % stat_type)
 
-        sbias = make_superbias(butler, bias_files, statistic=statistic, bias_type=bias_type)
+        sbias = stack_images(butler, bias_files, statistic=statistic, bias_type=bias_type)
         return sbias
 
     def make_superbias(self, butler, slot_data, **kwargs):
