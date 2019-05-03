@@ -16,4 +16,4 @@ from .ptc import PTCConfig, PTCTask,\
     PTCSummaryConfig, PTCSummaryTask
 
 from .flat_oscan import FlatOverscanConfig, FlatOverscanTask,\
-    FlatOverscanStatsConfig, FlatOverscanStatsConfig
+    FlatOverscanStatsConfig, FlatOverscanStatsTask

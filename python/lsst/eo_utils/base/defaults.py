@@ -75,6 +75,7 @@ TESTCOLORMAP = dict(DARK="black",
 # Template to make superbias files
 SBIAS_TEMPLATE = 'analysis/superbias/templates/sbias_template.fits'
 SFLAT_TEMPLATE = 'analysis/superflat/templates/sflat_template.fits'
+SDARK_TEMPLATE = 'analysis/superdark/templates/sdark_template.fits'
 
 
 # Some default values

@@ -5,7 +5,7 @@ import os
 
 import lsst.pex.config as pexConfig
 
-from .defaults import ALL_SLOTS, DEFAULT_STAT_TYPE
+from .defaults import ALL_SLOTS
 
 from .config_utils import EOUtilOptions, Configurable,\
     setup_parser, add_pex_arguments,\
@@ -77,7 +77,6 @@ class AnalysisHandler(Configurable):
         task_group = parser.add_argument_group("task", "Arguments for analysis task")
         add_pex_arguments(task_group, self._task.ConfigClass, self.exclude_pars)
 
-
     def run_analysis(self, **kwargs):
         """Run the analysis over all of the requested objects.
 
@@ -128,13 +127,14 @@ class SimpleAnalysisHandler(AnalysisHandler):
 
         @param kwargs:                Passed make_argstring()
         """
-        ret_dict = dict(optstring=make_argstring(**kwargs),
+        kwcopy = kwargs.copy()
+        kwcopy.pop('task', None)
+        ret_dict = dict(optstring=make_argstring(**kwcopy),
                         batch_args=self.config.batch_args,
                         batch=self.config.batch,
                         dataset=self.config.dataset,
                         dry_run=self.config.dry_run)
         return ret_dict
-
 
     def run_with_args(self, **kwargs):
         """Run the analysis over all of the requested objects.
@@ -237,10 +237,12 @@ class AnalysisIterator(AnalysisHandler):
         @param run (str)              The run number
         @param kwargs:                Passed to job
         """
+        kwcopy = kwargs.copy()
+        kwcopy.pop('task', None)
         if self.config.butler_repo is None:
-            optstring = make_argstring(**kwargs)
+            optstring = make_argstring(**kwcopy)
         else:
-            optstring = make_argstring(butler_repo=self.config.butler_repo, **kwargs)
+            optstring = make_argstring(butler_repo=self.config.butler_repo, **kwcopy)
         ret_dict = dict(optstring=optstring,
                         batch_args=self.config.batch_args,
                         batch=self.config.batch,
@@ -264,14 +266,16 @@ class AnalysisIterator(AnalysisHandler):
             if slots is None:
                 slots = ALL_SLOTS
             for slot in slots:
-                logfile_slot = self.config.logfile.replace('.log', '_%s.log' % slot)
+                logfile_slot = self.config.logfile.replace('.log', '%s_%s.log' % (run, slot))
                 kwargs['slots'] = slot
                 kw_remain = self.get_dispatch_args(run, **kwargs)
                 dispatch_job(jobname, logfile_slot, **kw_remain)
         else:
             jobname = "eo_task.py %s" % self._task.getName()
             kw_remain = self.get_dispatch_args(run, **kwargs)
-            dispatch_job(jobname, self.config.logfile, **kw_remain)
+            dispatch_job(jobname,
+                         self.config.logfile.replace('.log', '_%s.log' % (run)),
+                         **kw_remain)
 
 
     def run_with_args(self, **kwargs):
@@ -530,8 +534,8 @@ class SummaryAnalysisIterator(AnalysisHandler):
             run = runinfo[1]
             run_key = "%s_%s" % (raft, run)
             kwcopy['run'] = run
-            kwcopy['raft'] = raft    
-            filepath = self._task.get_filename_from_format(formatter, 
+            kwcopy['raft'] = raft
+            filepath = self._task.get_filename_from_format(formatter,
                                                            "%s.fits" % self._task.config.insuffix,
                                                            **kwcopy)
             filedict[run_key] = filepath
@@ -552,7 +556,9 @@ class SummaryAnalysisIterator(AnalysisHandler):
 
         @param kwargs:                Passed make_argstring()
         """
-        ret_dict = dict(optstring=make_argstring(**kwargs),
+        kwcopy = kwargs.copy()
+        kwcopy.pop('task', None)
+        ret_dict = dict(optstring=make_argstring(**kwcopy),
                         batch_args=self.config.batch_args,
                         batch=self.config.batch,
                         dry_run=self.config.dry_run)

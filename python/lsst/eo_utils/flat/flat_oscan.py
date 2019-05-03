@@ -84,7 +84,7 @@ class FlatOverscanTask(FlatAnalysisTask):
         # by the analysis
 
         for ifile, flat_id in enumerate(flat_files):
-            
+
             if ifile % 10 == 0:
                 sys.stdout.write('.')
                 sys.stdout.flush()
@@ -97,7 +97,7 @@ class FlatOverscanTask(FlatAnalysisTask):
         sys.stdout.flush()
 
         data_dict = fitter.build_output_dict()
-        
+
         primary = fitter.output[0]
         primary.header['NAMPS'] = 16
 
@@ -136,7 +136,7 @@ class FlatOverscanTask(FlatAnalysisTask):
                                   ymin=-2, ymax=300.)
 
         target_flux_levels = [100, 1000, 10000, 25000, 50000, 75000, 100000]
-        
+
         for i, amp in enumerate(range(1, 17)):
 
             target_flux_index = 0
@@ -149,30 +149,31 @@ class FlatOverscanTask(FlatAnalysisTask):
             for row in sorted_indices:
 
                 flux = data['FLUX'][row]
-            
+
                 if flux <= target_flux_levels[target_flux_index]:
                     continue
-                
+
                 meanrow = data['MEANROW'][row, :]
                 offset = np.mean(meanrow[-20:])
                 overscan = meanrow[self.xmax:] - offset
                 columns = np.arange(self.xmax, meanrow.shape[0])
-        
+
                 axs.plot(columns, overscan, label='{0:d} e-'.format(int(round(flux, -2))))
                 axs.set_yscale('symlog', linthreshy=1.0)
                 axs.set_yticklabels([r'$-1$', '0', '1', r'$10^{1}$', r'$10^{2}$'])
                 axs.grid(True, which='major', axis='both')
                 axs.tick_params(axis='both', which='minor')
 
-                h, l = axs.get_legend_handles_labels()
-                    
+                leg_h, leg_l = axs.get_legend_handles_labels()
+
                 target_flux_index += 1
-                if target_flux_index == len(target_flux_levels): break
+                if target_flux_index == len(target_flux_levels):
+                    break
 
         fig = figs.get_figure('eper')
-    
+
         fig.subplots_adjust(bottom=0.13)
-        fig.legend(h, l, loc='lower center', ncol=len(target_flux_levels))
+        fig.legend(leg_h, leg_l, loc='lower center', ncol=len(target_flux_levels))
 
 
     def overscan1_plot(self, dtables, figs):
@@ -184,24 +185,25 @@ class FlatOverscanTask(FlatAnalysisTask):
         f_dict = figs.setup_figure('overscan1',
                                    xlabel='Flux [e-]',
                                    ylabel='First Overscan [e-]')
-                                   
-        fig = f_dict['fig']
+
         axs = f_dict['axes']
 
         for i, amp in enumerate(range(1, 17)):
-        
-            if i >= 10: marker = 's'
-            else: marker = '^'
-            
+
+            if i >= 10:
+                marker = 's'
+            else:
+                marker = '^'
+
             data = dtables['amp{0:02d}'.format(amp)]
 
             sorted_indices = np.argsort(data['FLUX'])
-        
-            offset = np.mean(data['MEANROW'][sorted_indices, -20:], axis=1)        
+
+            offset = np.mean(data['MEANROW'][sorted_indices, -20:], axis=1)
             overscan1 = data['MEANROW'][sorted_indices, self.xmax] - offset
             flux = data['FLUX'][sorted_indices] - offset
-        
-            axs.plot(flux[flux <= self.maxflux], overscan1[flux <= self.maxflux], 
+
+            axs.plot(flux[flux <= self.maxflux], overscan1[flux <= self.maxflux],
                      label="Amp {0}".format(i+1), marker=marker)
 
         axs.set_ylim(bottom=-1.0)
@@ -210,8 +212,8 @@ class FlatOverscanTask(FlatAnalysisTask):
         axs.set_xscale('log')
         axs.grid(True, which='major', axis='both')
 
-        h, l = axs.get_legend_handles_labels()
-        axs.legend(h, l, loc = 'upper left', ncol=4, fontsize=12)
+        leg_h, leg_l = axs.get_legend_handles_labels()
+        axs.legend(leg_h, leg_l, loc='upper left', ncol=4, fontsize=12)
 
 
     def overscan2_plot(self, dtables, figs):
@@ -223,34 +225,35 @@ class FlatOverscanTask(FlatAnalysisTask):
         f_dict = figs.setup_figure('overscan2',
                                    xlabel='Flux [e-]',
                                    ylabel='Second Overscan [e-]')
-                                   
-        fig = f_dict['fig']
+
         axs = f_dict['axes']
         axs.grid(True, which='major', axis='both')
 
         for i, amp in enumerate(range(1, 17)):
-        
-            if i >= 10: marker = 's'
-            else: marker = '^'
-            
+
+            if i >= 10:
+                marker = 's'
+            else:
+                marker = '^'
+
             data = dtables['amp{0:02d}'.format(amp)]
 
             sorted_indices = np.argsort(data['FLUX'])
-        
-            offset = np.mean(data['MEANROW'][sorted_indices, -20:], axis=1)        
+
+            offset = np.mean(data['MEANROW'][sorted_indices, -20:], axis=1)
             overscan2 = data['MEANROW'][sorted_indices, self.xmax+1] - offset
             flux = data['FLUX'][sorted_indices] - offset
-        
-            axs.plot(flux[flux <= self.maxflux], overscan2[flux <= self.maxflux], 
+
+            axs.plot(flux[flux <= self.maxflux], overscan2[flux <= self.maxflux],
                      label="Amp {0}".format(i+1), marker=marker)
-        
+
         axs.set_yscale('symlog', threshold=1.0)
         axs.set_xscale('log')
         axs.set_ylim(bottom=-1.0)
         axs.set_xlim(left=50)
 
-        h, l = axs.get_legend_handles_labels()
-        axs.legend(h, l, loc = 'upper left', ncol=4, fontsize=12)
+        leg_h, leg_l = axs.get_legend_handles_labels()
+        axs.legend(leg_h, leg_l, loc='upper left', ncol=4, fontsize=12)
 
 
     def summedoverscan_plot(self, dtables, figs):
@@ -263,34 +266,35 @@ class FlatOverscanTask(FlatAnalysisTask):
                                    title='Summed Overscan [8:18]',
                                    xlabel='Flux [e-]',
                                    ylabel='Summed Overscan [e-]')
-                                   
-        fig = f_dict['fig']
+
         axs = f_dict['axes']
 
         for i, amp in enumerate(range(1, 17)):
-        
-            if i >= 10: marker = 's'
-            else: marker = '^'
-            
+
+            if i >= 10:
+                marker = 's'
+            else:
+                marker = '^'
+
             data = dtables['amp{0:02d}'.format(amp)]
 
             sorted_indices = np.argsort(data['FLUX'])
-        
-            offset = np.mean(data['MEANROW'][sorted_indices, -20:], axis=1)        
+
+            offset = np.mean(data['MEANROW'][sorted_indices, -20:], axis=1)
             summedoverscan = np.sum(data['MEANROW'][sorted_indices, self.xmax+8:self.xmax+18],
                                     axis=1) - offset
             flux = data['FLUX'][sorted_indices] - offset
-        
-            axs.plot(flux[flux <= self.maxflux], summedoverscan[flux <= self.maxflux], 
+
+            axs.plot(flux[flux <= self.maxflux], summedoverscan[flux <= self.maxflux],
                      label="Amp {0}".format(i+1), marker=marker)
-        
+
         axs.set_yscale('symlog', threshold=1.0)
         axs.set_xscale('log')
         axs.set_ylim(bottom=-1.0)
         axs.set_xlim(left=50)
         axs.grid(True, which='major', axis='both')
-        h, l = axs.get_legend_handles_labels()
-        axs.legend(h, l, loc = 'upper left', ncol=4, fontsize=12)
+        leg_h, leg_l = axs.get_legend_handles_labels()
+        axs.legend(leg_h, leg_l, loc='upper left', ncol=4, fontsize=12)
 
 
     def cti_plot(self, dtables, figs):
@@ -299,40 +303,40 @@ class FlatOverscanTask(FlatAnalysisTask):
         @param dtables (`TableDict`)  The data
         @param figs (`FigureDict`)    Object to store the figues
         """
-        f_dict = figs.setup_figure('cti', 
+        f_dict = figs.setup_figure('cti',
                                    title='CTI from EPER',
                                    xlabel='Flux [e-]',
                                    ylabel='Summed Overscan [e-]')
-                                   
-        fig = f_dict['fig']
+
         axs = f_dict['axes']
 
-
         for i, amp in enumerate(range(1, 17)):
-        
-            if i >= 10: marker = 's'
-            else: marker = '^'
-            
+
+            if i >= 10:
+                marker = 's'
+            else:
+                marker = '^'
+
             data = dtables['amp{0:02d}'.format(amp)]
             sorted_indices = np.argsort(data['FLUX'])
 
-            offset = np.mean(data['MEANROW'][sorted_indices, -20:], axis=1)        
+            offset = np.mean(data['MEANROW'][sorted_indices, -20:], axis=1)
             overscan1 = data['MEANROW'][sorted_indices, self.xmax] - offset
             overscan2 = data['MEANROW'][sorted_indices, self.xmax + 1] - offset
             lastpixel = data['MEANROW'][sorted_indices, self.xmax - 1] - offset
             cti = (overscan1 + overscan2)/(self.xmax * lastpixel)
             flux = data['FLUX'][sorted_indices] - offset
-        
+
             axs.loglog(lastpixel[flux <= self.maxflux], cti[flux <= self.maxflux],
                        label="Amp {0}".format(i+1), marker=marker)
 
-        axs.axhline(y = 0.000005, color='black', linestyle='--')
+        axs.axhline(y=0.000005, color='black', linestyle='--')
         axs.set_ylim(bottom=5E-8, top=2E-4)
         axs.set_xlim(left=50.0)
         axs.grid(True, which='major', axis='both')
 
-        h, l = axs.get_legend_handles_labels()
-        axs.legend(h, l, loc = 'upper left', ncol=4, fontsize=12)
+        leg_h, leg_l = axs.get_legend_handles_labels()
+        axs.legend(leg_h, leg_l, loc='upper left', ncol=4, fontsize=12)
 
 
     def noise_plot(self, dtables, figs):
@@ -345,30 +349,31 @@ class FlatOverscanTask(FlatAnalysisTask):
                                    title='Overscan Noise vs. Flux',
                                    xlabel='Flux [e-]',
                                    ylabel='Overscan Noise [e-]')
-        fig = f_dict['fig']
         axs = f_dict['axes']
 
         for i, amp in enumerate(range(1, 17)):
-        
-            if i >= 10: marker = 's'
-            else: marker = '^'
-            
+
+            if i >= 10:
+                marker = 's'
+            else:
+                marker = '^'
+
             data = dtables['amp{0:02d}'.format(amp)]
             sorted_indices = np.argsort(data['FLUX'])
 
             noise = data['NOISE'][sorted_indices]
             flux = data['FLUX'][sorted_indices]
-            
-            axs.semilogx(flux[flux <= self.maxflux], noise[flux <= self.maxflux], 
+
+            axs.semilogx(flux[flux <= self.maxflux], noise[flux <= self.maxflux],
                          label="Amp {0}".format(i+1), marker=marker)
-        
+
         axs.set_ylim(0.0, 10.0)
         axs.grid(True, which='major', axis='both')
 
-        h, l = axs.get_legend_handles_labels()
-        axs.legend(h, l, loc = 'lower right', ncol=4, fontsize=12)
+        leg_h, leg_l = axs.get_legend_handles_labels()
+        axs.legend(leg_h, leg_l, loc='lower right', ncol=4, fontsize=12)
 
-                  
+
 class FlatOverscanStatsConfig(FlatAnalysisConfig):
     """Configuration for FlatSlotTempalteStatsTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='flat_oscan')

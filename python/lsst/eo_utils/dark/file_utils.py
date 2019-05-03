@@ -10,6 +10,11 @@ from lsst.eo_utils.base.defaults import SLOT_FORMAT_STRING,\
 from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_for_run,\
     FILENAME_FORMATS
 
+SUPERDARK_FORMAT_STRING =\
+    '{outdir}/superdark/{raft}/{raft}-{run}-{slot}_superdark_b-{bias_type}{suffix}.fits'
+SUPERDARK_STAT_FORMAT_STRING =\
+    '{outdir}/superdark/{raft}/{raft}-{run}-{slot}_{stat_type}_b-{bias_type}{suffix}.fits'
+
 SLOT_DARK_FORMAT_STRING =\
     SLOT_FORMAT_STRING.replace('{suffix}', '_b-{bias}_s-{superbias}_{suffix}')
 RAFT_DARK_FORMAT_STRING =\
@@ -19,6 +24,13 @@ SUMMARY_DARK_FORMAT_STRING =\
 
 DARK_DEFAULT_FIELDS = dict(testType='dark', bias=None, superbias=None, suffix='')
 
+
+SUPERDARK_FORMATTER = FILENAME_FORMATS.add_format('superdark',
+                                                  SUPERDARK_FORMAT_STRING,
+                                                  bias_type=None, suffix='')
+SUPERDARK_STAT_FORMATTER = FILENAME_FORMATS.add_format('superdark_stat',
+                                                       SUPERDARK_STAT_FORMAT_STRING,
+                                                       bias_type=None, suffix='')
 
 RAFT_DARK_TABLE_FORMATTER = FILENAME_FORMATS.add_format('raft_dark_table',
                                                         RAFT_DARK_FORMAT_STRING,
@@ -67,7 +79,7 @@ def get_dark_files_run(run_id, **kwargs):
             acq_types = ['DARK']
 
     return get_files_for_run(run_id,
-                             imagetype="DARK",
+                             imagetype="DARK_DARK",
                              testtypes=acq_types,
                              outkey='DARK',
                              **kwargs)

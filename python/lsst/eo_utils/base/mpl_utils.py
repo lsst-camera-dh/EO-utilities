@@ -16,11 +16,8 @@ def init_matplotlib_backend(backend=None):
 
     import matplotlib
 
-    try:
-        os.environ['MPLBACKEND']
+    if 'MPLBACKEND' in os.environ:
         return
-    except KeyError:
-        pass
 
     try:
         os.environ['DISPLAY']

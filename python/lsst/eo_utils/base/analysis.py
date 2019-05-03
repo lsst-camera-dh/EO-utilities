@@ -273,8 +273,9 @@ class AnalysisTask(BaseAnalysisTask):
             dtables = TableDict(output_data)
         else:
             dtables = self.extract(butler, data)
-            dtables.save_datatables(output_data)
-            print("Writing %s" % output_data)
+            if dtables is not None:
+                dtables.save_datatables(output_data)
+                print("Writing %s" % output_data)
         return dtables
 
     def make_plots(self, dtables, **kwargs):

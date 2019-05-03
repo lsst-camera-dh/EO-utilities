@@ -138,7 +138,7 @@ class PTCTask(FlatAnalysisTask):
         sys.stdout.flush()
 
         dtables = TableDict()
-        dtables.make_datatable('files', make_file_dict(butler, flat_files))
+        dtables.make_datatable('files', make_file_dict(butler, flat1_files + flat2_files))
         dtables.make_datatable('ptc', ptc_data)
 
         return dtables

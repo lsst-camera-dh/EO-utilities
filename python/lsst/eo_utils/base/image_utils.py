@@ -17,7 +17,7 @@ import lsst.afw.image as afwImage
 import lsst.eotest.image_utils as imutil
 from lsst.eotest.sensor import MaskedCCD
 
-from .defaults import T_SERIAL, T_PARALLEL
+from .defaults import T_SERIAL, T_PARALLEL, ALL_SLOTS
 
 # These are the names and labels for the parts of the data array
 REGION_KEYS = ['i', 's', 'p']
@@ -252,7 +252,9 @@ def get_ccd_from_id(butler, data_id, mask_files, bias_frame=None):
     @returns (`MaskedCCD` or `ExposureF`) CCD image
     """
     if butler is None:
-        exposure = MaskedCCD(str(data_id), mask_files=mask_files)
+        exposure = MaskedCCD(str(data_id),
+                             mask_files=mask_files,
+                             bias_frame=bias_frame)
     else:
         exposure = butler.get('raw', data_id)
         apply_masks(butler, exposure, mask_files)
@@ -370,6 +372,83 @@ def unbias_amp(img, serial_oscan, bias_type=None, superbias_im=None, region=None
     return image
 
 
+def extract_ccd_array_dict(butler, data_id, **kwargs):
+    """Get the Geometry for a particular dataId or file
+
+    @param butler (`Butler`)     Data Butler (or none)
+    @param data_id (dict or str) Data identifier
+    @param mask_files (list)     List of mask files
+    @param kwargs
+        bias (str)               Method for bias subtraction
+        mask_files (list)        Mask files to apply
+        superbias_frame (ccd)    Frame to subtract off
+
+    @returns (dict)              Arrays keyed by image
+    """
+    kwcopy = kwargs.copy()
+    mask_files = kwcopy.pop('mask_files', [])
+    bias_type = kwcopy.pop('bias', None)
+    superbias_frame = kwcopy.pop('superbias_frame', None)
+
+    ccd = get_ccd_from_id(None, data_id, mask_files)
+    amps = get_amp_list(butler, ccd)
+
+    o_dict = {}
+    for idx, amp in enumerate(amps):
+        regions = get_geom_regions(butler, ccd, amp)
+        serial_oscan = regions['serial_overscan']
+        img = get_raw_image(butler, ccd, amp)
+        if superbias_frame is not None:
+            if butler is not None:
+                superbias_im = get_raw_image(None, superbias_frame, amp+1)
+            else:
+                superbias_im = get_raw_image(None, superbias_frame, amp)
+        else:
+            superbias_im = None
+
+        image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+        regions = get_geom_regions(butler, ccd, amp)
+        frames = get_image_frames_2d(image, regions)
+        o_dict[idx] = frames[kwcopy.pop('region', 'imaging')]
+
+    return o_dict
+
+
+def extract_raft_array_dict(butler, data_id_dict, **kwargs):
+    """Get the Geometry for a particular dataId or file
+
+    @param butler (`Butler`)     Data Butler (or none)
+    @param data_id_dict (dict or str) Data identifiers keyed by slot
+    @param mask_files (list)     List of mask files
+    @param kwargs
+        bias (str)               Method for bias subtraction
+        mask_dict (dict)         Mask files to apply
+        superbias_dict (dict)    Frame to subtract off
+
+    @returns (dict)              Arrays keyed by image
+    """
+    kwcopy = kwargs.copy()
+    o_dict = {}
+    mask_dict = kwcopy.pop('mask_dict', None)
+    superbias_dict = kwcopy.pop('superbias_dict', None)
+
+    for slot, data_id in data_id_dict.items():
+        if mask_dict is None:
+            mask_files = []
+        else:
+            mask_files = mask_dict[slot]
+        if superbias_dict is None:
+            superbias_frame = None
+        else:
+            superbias_frame = superbias_dict[slot]
+
+        o_dict[slot] = extract_ccd_array_dict(butler, data_id,
+                                              mask_files=mask_files,
+                                              superbias_frame=superbias_frame,
+                                              **kwcopy)
+    return o_dict
+
+
 def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
     """Make a set of superbias images
 
@@ -388,7 +467,7 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
 
     amp_stack_dict = {}
     out_dict = {}
-    
+
 
     for ifile, in_file in enumerate(in_files):
         if ifile % 10 == 0:
@@ -412,10 +491,12 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
 
             if ifile == 0:
                 amp_stack_dict[amp] = [unbias_amp(img, serial_oscan,
-                                                  bias_type=bias_type, superbias_im=superbias_im)]
+                                                  bias_type=bias_type,
+                                                  superbias_im=superbias_im)]
             else:
                 amp_stack_dict[amp].append(unbias_amp(img, serial_oscan,
-                                                      bias_type=bias_type, superbias_im=superbias_im))
+                                                      bias_type=bias_type,
+                                                      superbias_im=superbias_im))
 
 
     for key, val in amp_stack_dict.items():
@@ -425,6 +506,8 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
             outkey = key + 1
         stackimage = imutil.stack(val, statistic)
         out_dict[outkey] = stackimage
+
+    sys.stdout.write('!\n')
 
     return out_dict
 
@@ -480,5 +563,52 @@ def sort_sflats(butler, sflat_files):
                 sflats_h.append(sflat)
 
     return (sflats_l, sflats_h)
-        
 
+
+def outlier_stats(data_array, mean_val, max_offset):
+    """Get some stats on the number of outliers in an array
+
+    @param data_array (`np.array`) 2D data array
+    @param mean_val (float)        Expected value
+    @param max_offset (float)      Maximum offset from mean
+
+    @returns (dict)
+    """
+    mask_array = np.fabs(data_array - mean_val) > max_offset
+    cols = mask_array.sum(0)
+    rows = mask_array.sum(1)
+    o_dict = dict(row_data=rows,
+                  col_data=cols,
+                  nbad_total=mask_array.sum()/data_array.size,
+                  nbad_rows=(rows >= 10).sum()/rows.size,
+                  nbad_cols=(cols >= 10).sum()/cols.size)
+    return o_dict
+
+
+def outlier_raft_dict(raft_data, mean_val, max_offset):
+    """Get some stats on the number of outliers for a raft
+
+    @param raft_data (dict)
+    @param mean_val (float)        Expected value
+    @param max_offset (float)      Maximum offset from mean
+
+    @returns (dict)
+    """
+    out_data = dict(nbad_total=[],
+                    nbad_rows=[],
+                    nbad_cols=[],
+                    row_data=[],
+                    col_data=[],
+                    slot=[],
+                    amp=[])
+
+    for islot, slot in enumerate(ALL_SLOTS):
+        slot_arrays = raft_data[slot]
+        for iamp in range(16):
+            ccd_data = slot_arrays[iamp]
+            outlier_data = outlier_stats(ccd_data, mean_val, max_offset)
+            out_data['slot'].append(islot)
+            out_data['amp'].append(iamp)
+            for key, val in outlier_data.items():
+                out_data[key].append(val)
+    return out_data

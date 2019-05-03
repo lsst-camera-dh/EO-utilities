@@ -4,14 +4,19 @@ import sys
 
 from lsst.eo_utils.base import mpl_utils
 
+from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
+
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
+from lsst.eo_utils.base.image_utils import get_ccd_from_id
+
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
 from lsst.eo_utils.dark.file_utils import get_dark_files_run,\
-    SLOT_DARK_TABLE_FORMATTER, SLOT_DARK_PLOT_FORMATTER
+    SLOT_DARK_TABLE_FORMATTER, SLOT_DARK_PLOT_FORMATTER,\
+    SUPERDARK_FORMATTER, SUPERDARK_STAT_FORMATTER
 
 from lsst.eo_utils.dark.butler_utils import get_dark_files_butler
 
@@ -47,6 +52,28 @@ class DarkAnalysisTask(AnalysisTask):
         @param kwargs:    Used to override configruation
         """
         AnalysisTask.__init__(self, **kwargs)
+
+    def get_superdark_file(self, suffix, **kwargs):
+        """Get the name of the superdark file for a particular run, raft, ccd...
+
+        @param kwargs              Used to override default configuration
+        @returns (str)             The filename
+        """
+        if self.get_config_param('stat', None) in [DEFAULT_STAT_TYPE, None]:
+            formatter = SUPERDARK_FORMATTER
+        else:
+            formatter = SUPERDARK_STAT_FORMATTER
+
+        return self.get_filename_from_format(formatter, suffix, **kwargs)
+
+    def get_superdark_frame(self, mask_files, **kwargs):
+        """Get the superbias frame for a particular run, raft, ccd...
+
+        @returns (`dict`)           The superbias frame
+        """
+        self.safe_update(**kwargs)
+        superdark_file = self.get_superdark_file('')
+        return get_ccd_from_id(None, superdark_file, mask_files)
 
     def get_data(self, butler, run_num, **kwargs):
         """Get a set of dark and mask files out of a folder

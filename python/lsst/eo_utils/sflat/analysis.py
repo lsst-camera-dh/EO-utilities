@@ -70,7 +70,7 @@ class SflatAnalysisTask(AnalysisTask):
         """Get the superbias frame for a particular run, raft, ccd...
 
         @param types (list)         Types of frames ['l', 'h', 'ratio']
-        
+
         @returns (`dict`)           The superbias frame
         """
         self.safe_update(**kwargs)
@@ -79,7 +79,8 @@ class SflatAnalysisTask(AnalysisTask):
             types = ['l', 'h', 'ratio']
         superflat_file = self.get_superflat_file('').replace('.fits', '')
 
-        o_dict = {key:get_ccd_from_id(None, superflat_file + '_%s.fits' % key, mask_files) for key in types}
+        o_dict = {key:get_ccd_from_id(None, superflat_file + '_%s.fits' % key, mask_files)
+                  for key in types}
         return o_dict
 
     def get_data(self, butler, run_num, **kwargs):

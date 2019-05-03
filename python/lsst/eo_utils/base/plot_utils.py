@@ -1,9 +1,15 @@
 """Functions to help make plots and collect figures"""
 
+import sys
+
 import numpy as np
 
 import astropy.visualization as viz
 from astropy.visualization.mpl_normalize import ImageNormalize
+
+from lsst.eotest.raft import RaftMosaic
+
+from .config_utils import pop_values
 
 from .image_utils import get_raw_image,\
     get_amp_list, unbias_amp, get_geom_regions,\
@@ -13,8 +19,9 @@ from .defaults import TESTCOLORMAP
 
 from . import mpl_utils
 
-from matplotlib import ticker
+from matplotlib import ticker, colors
 import matplotlib.pyplot as plt
+
 
 mpl_utils.set_plt_ioff()
 
@@ -30,6 +37,14 @@ class FigureDict:
     def __init__(self):
         """C'tor"""
         self._fig_dict = {}
+
+    def add_figure(self, key, fig):
+        """Added a figure
+
+        @param key (str)                         Name of the figure.
+        @param fig (`matplotlib.figure.Figure`)  The figure.
+        """
+        self._fig_dict[key] = dict(fig=fig)
 
     def get_figure(self, key):
         """Return a figure
@@ -323,6 +338,32 @@ class FigureDict:
         """
         self._fig_dict[key]['axes'].plot(xdata, ydata)
 
+
+    def plot_two_image_hist2d(self, key, iamp, img_x, img_y, **kwargs):
+        """Plot pixel-py-pixel values for two
+
+        @param key (str)               Key for the figure.
+        @param iamp (int)              Amplifier index
+        @param img_x (numpy.ndarray)   Data to histogram
+        @param img_y (numpy.ndarray)   Data to histogram
+        @param kwargs
+           nbins
+           ranges
+        """
+        histrange = kwargs.get('range', None)
+
+        img_x_flat = img_x.flatten()
+        img_y_flat = img_y.flatten()
+
+        axs = self.get_amp_axes(key, iamp)
+
+        if histrange is not None:
+            img_x_flat = img_x_flat.clip(histrange[0][0], histrange[0][1])
+            img_y_flat = img_y_flat.clip(histrange[1][0], histrange[1][1])
+
+        axs.hist2d(img_x_flat, img_y_flat, norm=colors.LogNorm(), **kwargs)
+
+
     def plot_xy_axs_from_tabledict(self, dtables, key, idx, plotkey, **kwargs):
         """Plot x versus y data for each sub-figure using data in a table
 
@@ -482,19 +523,72 @@ class FigureDict:
            im
            cbar
         """
-        title = kwargs.get('title', None)
+        kwcopy = kwargs.copy()
+        title = kwcopy.pop('title', None)
         clabel = kwargs.pop('clabel', None)
         figsize = kwargs.pop('figsize', (14, 8))
         fig, axes = plt.subplots(nrows=1, ncols=1, figsize=figsize)
         axes.set_xlabel(kwargs.pop('xlabel', "Amp. Index"))
         axes.set_ylabel(kwargs.pop('ylabel', "Slot Index"))
-        img = axes.imshow(data, interpolation='nearest', **kwargs)
+        img = axes.imshow(data, interpolation='nearest', **kwcopy)
         if title is not None:
             axes.set_title(title)
         cbar = fig.colorbar(img, ax=axes)
         if clabel is not None:
             cbar.ax.set_ylabel(clabel, rotation=-90, va='bottom')
         o_dict = dict(fig=fig, axes=axes, img=img, cbar=cbar)
+        self._fig_dict[key] = o_dict
+        return o_dict
+
+
+    def plot_raft_vals_from_table(self, dtable, plotkey, **kwargs):
+        """Plot x versus y data for each sub-figure using data in a table
+
+        @param dtable (Table)          Data
+        @param idx (int)               Axis index
+        @param plotkey (str)           Key for the plot
+        @param kwargs:
+           y_name (str) Start of the name for the y-axis data
+           ymin (float) Y-axis min
+           ymax (float) Y-axis max
+        """
+        kwcopy = kwargs.copy()
+
+        kwsetup = pop_values(kwcopy, ['title', 'xlabel', 'ylabel', 'figsize', 'ymin', 'ymax'])
+
+        o_dict = self.setup_raft_plots_grid(plotkey, **kwsetup)
+        axs = o_dict['axs']
+
+        slots = dtable['slot']
+        amps = dtable['amp']
+        val_array = dtable[kwcopy.pop('y_name')]
+        nxvals = val_array.shape[1]
+        xvals = np.linspace(0, nxvals-1, nxvals)
+        for slot, amp, vals in zip(slots, amps, val_array):
+            axes = axs.flat[slot]
+            axes.plot(xvals, vals, label="amp%02i" % (amp+1), **kwcopy)
+        return o_dict
+
+    def plot_amp_arrays(self, key, array_dict, **kwargs):
+        """Plot the data from all 16 amps on a sensor in a single figure
+
+        @param key (str)          Key for the figure.
+        @param array_dict         The data
+        @param kwargs
+            vmin (float)          minimum value for color axes
+            vmax (float)          maximum value for color axes
+            subtract_mean (bool)  Flag to subtract mean value from each image
+        """
+        fig, axs = plt.subplots(2, 8, figsize=(15, 10))
+        axs = axs.ravel()
+
+        for idx in range(16):
+            darray = array_dict[idx]
+            axs[idx].imshow(darray, origin='low', interpolation='none', **kwargs)
+            axs[idx].set_title('Amp {}'.format(idx + 1))
+
+        plt.tight_layout()
+        o_dict = dict(fig=fig, axs=axs)
         self._fig_dict[key] = o_dict
         return o_dict
 
@@ -574,13 +668,14 @@ class FigureDict:
             axs (Array of `matplotlib.Axes._subplots.AxesSubplot)
 
         """
-        vmin = kwargs.get('vmin', -10.)
-        vmax = kwargs.get('vmax', 10.)
-        nbins = kwargs.get('nbins', 200)
-        bias_type = kwargs.get('bias', None)
-        superbias_frame = kwargs.get('superbias_frame', None)
+        kwcopy = kwargs.copy()
+        bias_type = kwcopy.pop('bias', None)
+        #mask_files = kwcopy.pop('mask_files', [])
+        superbias_frame = kwcopy.pop('superbias_frame', None)
 
-        o_dict = self.setup_amp_plots_grid(key, **kwargs)
+        kwsetup = pop_values(kwcopy, ['title', 'xlabel', 'ylabel', 'figsize'])
+
+        o_dict = self.setup_amp_plots_grid(key, **kwsetup)
 
         axs = o_dict['axs']
         amps = get_amp_list(butler, ccd)
@@ -601,13 +696,54 @@ class FigureDict:
             regions = get_geom_regions(butler, ccd, amp)
             frames = get_image_frames_2d(image, regions)
 
-            darray = frames[kwargs.get('region', 'imaging')]
+            darray = frames[kwcopy.pop('region', 'imaging')]
 
-            if kwargs.get('subtract_mean', False):
+            if kwcopy.pop('subtract_mean', False):
                 darray -= darray.mean()
 
             axes = axs.flat[idx]
-            axes.hist(darray.flat, bins=nbins, range=(vmin, vmax))
+            axes.hist(darray.flat, **kwcopy)
+
+        plt.tight_layout()
+
+        self._fig_dict[key] = o_dict
+        return o_dict
+
+
+    def histogram_raft_array(self, key, array_dict, **kwargs):
+        """Plot the data from all the slots of raft
+
+        @param key (str)          Key for the figure.
+        @param array_dict (`dict`) Dictionary keyed by slot of the files for the raft
+        @param kwargs             Passed to matplotlib
+
+        @returns (dict)
+            fig (matplotlib.figure.Figure)
+            axs (Array of `matplotlib.Axes._subplots.AxesSubplot)
+
+        """
+        kwcopy = kwargs.copy()
+
+        kwsetup = pop_values(kwcopy, ['title', 'xlabel', 'ylabel', 'figsize'])
+
+        o_dict = self.setup_raft_plots_grid(key, **kwsetup)
+
+        axs = o_dict['axs']
+        for islot, (slot, slot_data) in enumerate(array_dict.items()):
+
+            axes = axs.flat[islot]
+
+            for idx in range(16):
+
+                darray = slot_data[idx]
+
+                if kwargs.pop('subtract_mean', False):
+                    darray -= darray.mean()
+
+                try:
+                    axes.hist(darray.flat, label="amp%02i" % (idx+1), **kwcopy)
+                except ValueError:
+                    sys.stdout.write("Plotting failed for %s %i\n" % (slot, idx))
 
         plt.tight_layout()
 
@@ -660,6 +796,52 @@ class FigureDict:
         self._fig_dict[key] = o_dict
         return o_dict
 
+
+    def plot_raft_mosaic(self, key, file_dict, **kwargs):
+        """Make a mosaic of all the CCDs in a raft
+
+        @param key (str)          Key for the figure.
+        @param file_dict (dict)   Output files, keyed by slot
+        """
+        kwcopy = kwargs.copy()
+        kwctor = pop_values(kwcopy, ['gains',
+                                     'bias_subtract',
+                                     'segment_processor'])
+
+        raft_mosaic = RaftMosaic(file_dict, **kwctor)
+        fig = raft_mosaic.plot(**kwcopy)
+        o_dict = dict(fig=fig)
+        self._fig_dict[key] = o_dict
+        return o_dict
+
+
+    def make_raft_outlier_plots(self, dtable, prefix=""):
+        """Make plots of the number of outlier pixels
+
+        @param dtable (`Table`)
+        @param prefix (str)
+        """
+        self.plot_raft_vals_from_table(dtable, prefix + 'out_row',
+                                       title='Outliers by row',
+                                       y_name='row_data',
+                                       xlabel='Row',
+                                       ylabel='N bad pixels',
+                                       ymin=0, ymax=50)
+        self.plot_raft_vals_from_table(dtable, prefix + 'out_col',
+                                       title='Outliers by col',
+                                       y_name='col_data',
+                                       xlabel='Row',
+                                       ylabel='N bad pixels',
+                                       ymin=0, ymax=50)
+        self.plot_stat_color(prefix + 'nbad',
+                             dtable['nbad_total'].reshape(9, 16).clip(0, 0.05),
+                             title="Fraction of pixels")
+        self.plot_stat_color(prefix + 'nbad_row',
+                             dtable['nbad_rows'].reshape(9, 16).clip(0, 0.05),
+                             title="Fraction of row with >= 10 outliers")
+        self.plot_stat_color(prefix + 'nbad_col',
+                             dtable['nbad_cols'].reshape(9, 16).clip(0, 0.05),
+                             title="Fraction of cols with >= 10 outliers")
 
     def savefig(self, key, filename):
         """Save a single figure

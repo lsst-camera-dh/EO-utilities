@@ -10,3 +10,6 @@ from . import file_utils as dark_file_utils
 from .analysis import DarkAnalysisConfig, DarkAnalysisTask
 
 from .meta_analysis import DarkSummaryAnalysisConfig, DarkSummaryAnalysisTask
+
+from .superdark import SuperdarkConfig, SuperdarkTask,\
+    SuperdarkRaftConfig, SuperdarkRaftTask

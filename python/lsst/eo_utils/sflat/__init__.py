@@ -11,8 +11,8 @@ from .analysis import SflatAnalysisConfig, SflatAnalysisTask
 
 from .meta_analysis import SflatSummaryAnalysisConfig, SflatSummaryAnalysisTask
 
-from .superflat import SuperflatConfig, SuperflatTask
+from .superflat import SuperflatConfig, SuperflatTask,\
+    SuperflatRaftConfig, SuperflatRaftTask
 
 from .sflat_ratio import SflatRatioConfig, SflatRatioTask,\
     SflatRatioStatsConfig, SflatRatioStatsTask
-

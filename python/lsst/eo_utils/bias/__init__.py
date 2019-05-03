@@ -34,7 +34,8 @@ from .oscan_amp_stack import OscanAmpStackConfig, OscanAmpStackTask,\
 
 from .oscan_correl import OscanCorrelConfig, OscanCorrelTask
 
-from .superbias import SuperbiasConfig, SuperbiasTask
+from .superbias import SuperbiasConfig, SuperbiasTask,\
+    SuperbiasRaftConfig, SuperbiasRaftTask
 
 from .superbias_stats import SuperbiasStatsConfig, SuperbiasStatsTask,\
     SuperbiasSummaryConfig, SuperbiasSummaryTask

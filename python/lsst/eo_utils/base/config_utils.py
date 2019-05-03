@@ -93,6 +93,8 @@ class EOUtilOptions(pexConfig.Config):
                             default=DEFAULT_NBINS)
     subtract_mean = pexConfig.Field("Subtract the mean from all images frames", bool,
                                     default=False)
+    mosaic = pexConfig.Field("Plot a raft-level mosaic", bool,
+                             default=False)
 
     # Other output options
     bitpix = pexConfig.Field("FITS bitpix value", int, default=DEFAULT_BITPIX)
@@ -104,7 +106,8 @@ class EOUtilOptions(pexConfig.Config):
     smoothing = pexConfig.Field("Smoothing for spline overscan correction", int, default=11000)
     minflux = pexConfig.Field("Minimum flux for overscan fitting.", float, default=10000.0)
     maxflux = pexConfig.Field("Maximum flux for overscan fitting.", float, default=140000.0)
-    num_oscan_pixels = pexConfig.Field("Number of overscan pixels used for model fit.", int, default=10)
+    num_oscan_pixels = pexConfig.Field("Number of overscan pixels used for model fit.",
+                                       int, default=10)
 
 
 
@@ -226,6 +229,22 @@ def copy_dict(in_dict, def_dict):
     """
     outdict = {key:in_dict.get(key, val) for key, val in def_dict.items()}
     return outdict
+
+
+def pop_values(in_dict, keylist):
+    """Pop a set of key-value pairs to an new dict
+
+    @param in_dict (dict)   The dictionary with the input values
+    @param keylist (list)     The values to pop
+
+    @returns (dict) Dictionary with only the arguments we have selected
+    """
+    outdict = {}
+    for key in keylist:
+        if key in in_dict:
+            outdict[key] = in_dict.pop(key)
+    return outdict
+
 
 
 def copy_pex_fields(field_names, target_class, library_class):

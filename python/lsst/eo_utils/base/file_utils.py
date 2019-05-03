@@ -223,7 +223,7 @@ BOT_FORMATTER = FILENAME_FORMATS.add_format('bot_images',
                                             archive=ARCHIVE_SLAC)
 
 def get_ts8_files_glob(**kwargs):
-    """Get the file names using the format string for TS8 data """        
+    """Get the file names using the format string for TS8 data """
     outdict = {}
     for slot in ALL_SLOTS:
         glob_string = TS8_FORMATTER(slot=slot, **kwargs)
@@ -232,7 +232,7 @@ def get_ts8_files_glob(**kwargs):
 
 
 def get_bot_files_glob(**kwargs):
-    """Get the file names using the format string for BOT data """        
+    """Get the file names using the format string for BOT data """
     outdict = {}
     for raft in ALL_RAFTS:
         raftdict = {}
@@ -297,10 +297,19 @@ def get_files_for_run(run_id, **kwargs):
             r_dict = handler.get_files(testName=test_type, run=run_id,
                                        imgtype=imagetype, matchstr=matchstr)
         else:
-            if hinfo[0] == 'LCA-11021':
-                r_dict = get_ts8_files_glob(run=run_id, testName=test_type, imgtype=imagetype.lower(), raft=hinfo[1])
+            if imagetype is None:
+                imgtype = None
             else:
-                r_dict = get_bot_files_glob(run=run_id, testName=test_type, imgtype=imagetype.lower())
+                imgtype = imagetype.lower()
+            if hinfo[0] == 'LCA-11021':
+                r_dict = get_ts8_files_glob(run=run_id,
+                                            testName=test_type,
+                                            imgtype=imgtype,
+                                            raft=hinfo[1])
+            else:
+                r_dict = get_bot_files_glob(run=run_id,
+                                            testName=test_type,
+                                            imgtype=imgtype)
         for key, val in r_dict.items():
             if hinfo[0] == 'LCA-11021':
                 # Raft level data
@@ -351,6 +360,7 @@ def get_mask_files_run(run_id, **kwargs):
 
     return get_files_for_run(run_id,
                              testtypes=mask_types,
+                             imagetype='mask',
                              outkey='MASK',
                              matchstr='_mask')
 
