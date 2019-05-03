@@ -261,7 +261,7 @@ class AnalysisIterator(AnalysisHandler):
         if self.config.batch is None:
             self.call_analysis_task(run, **kwargs)
         elif 'slot' in self.config.batch:
-            jobname = "eo_task.py %s" % self._task.getName()
+            jobname = "eo_task.py %s" % self._task.getName().replace('Task', '')
             slots = kwargs.pop('slots')
             if slots is None:
                 slots = ALL_SLOTS
@@ -271,7 +271,7 @@ class AnalysisIterator(AnalysisHandler):
                 kw_remain = self.get_dispatch_args(run, **kwargs)
                 dispatch_job(jobname, logfile_slot, **kw_remain)
         else:
-            jobname = "eo_task.py %s" % self._task.getName()
+            jobname = "eo_task.py %s" % self._task.getName().replace('Task', '')
             kw_remain = self.get_dispatch_args(run, **kwargs)
             dispatch_job(jobname,
                          self.config.logfile.replace('.log', '_%s.log' % (run)),

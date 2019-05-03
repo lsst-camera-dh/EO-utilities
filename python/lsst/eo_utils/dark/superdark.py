@@ -62,6 +62,7 @@ class SuperdarkTask(DarkAnalysisTask):
         @param kwargs:    Used to override configruation
         """
         DarkAnalysisTask.__init__(self, **kwargs)
+        self._superdark_frame = None
 
 
     def extract(self, butler, data, **kwargs):
@@ -114,28 +115,32 @@ class SuperdarkTask(DarkAnalysisTask):
             if butler is not None:
                 flip_data_in_place(output_file + '.fits')
 
-        sdark = get_ccd_from_id(None, output_file + '.fits', mask_files)
-        return sdark
+        self._superdark_frame = get_ccd_from_id(None, output_file + '.fits', mask_files)
+        dtables = TableDict()
+        return dtables
 
 
-    def plot(self, sdark, figs, **kwargs):
+    def plot(self, dtables, figs, **kwargs):
         """Make plots of the superflat frame
 
-        @param sdark (str)          The superflat frame
-        @param figs (`FigureDict`)  Place to collect figures
+        @param dtables (`TableDict`) Data for pltos
+        @param figs (`FigureDict`)   Place to collect figures
         @param kwargs:
             plot (bool)              Plot images of the superflat
             stats_hist (bool)        Plot statistics
         """
         self.safe_update(**kwargs)
 
+        if dtables.keys():
+            raise ValueError("dtables should not be set")
+
         if self.config.plot:
-            figs.plot_sensor("img", None, sdark)
+            figs.plot_sensor("img", None, self._superdark_frame)
 
         default_array_kw = {}
         if self.config.stats_hist:
             kwcopy = self.extract_config_vals(default_array_kw)
-            figs.histogram_array("hist", None, sdark,
+            figs.histogram_array("hist", None, self._superdark_frame,
                                  title="Historam of RMS of dark-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
                                  subtract_mean=False, bins=100, range=(0., 2000,),
@@ -143,7 +148,7 @@ class SuperdarkTask(DarkAnalysisTask):
 
 
 
-    def make_plots(self, sdark, **kwargs):
+    def make_plots(self, dtables, **kwargs):
         """Tie together the functions to make the data tables
         @param sdark (`MaskedCCD`)   The superflat frame
 
@@ -152,7 +157,7 @@ class SuperdarkTask(DarkAnalysisTask):
         self.safe_update(**kwargs)
 
         figs = FigureDict()
-        self.plot(sdark, figs)
+        self.plot(dtables, figs)
         if self.config.plot == 'display':
             figs.save_all(None)
             return figs
@@ -171,9 +176,9 @@ class SuperdarkTask(DarkAnalysisTask):
         @param kwargs              Passed to the functions that do the actual work
         """
         self.safe_update(**kwargs)
-        sdark = self.make_superdark(butler, slot_data)
+        dtables = self.make_superdark(butler, slot_data)
         if self.config.plot is not None:
-            self.make_plots(sdark)
+            self.make_plots(dtables)
 
 
 class SuperdarkRaftConfig(DarkAnalysisConfig):

@@ -60,7 +60,7 @@ class SuperbiasTask(BiasAnalysisTask):
         @param kwargs:    Used to override configruation
         """
         BiasAnalysisTask.__init__(self, **kwargs)
-
+        self._superbias_frame = None
 
     def extract(self, butler, data, **kwargs):
         """Make superbias frame for one slot
@@ -108,36 +108,41 @@ class SuperbiasTask(BiasAnalysisTask):
             if butler is not None:
                 flip_data_in_place(output_file)
 
-        sbias = get_ccd_from_id(None, output_file, mask_files)
-        return sbias
+        self._superbias_frame = get_ccd_from_id(None, output_file, mask_files)
+        dtables = TableDict()
+        return dtables
 
 
-    def plot(self, sbias, figs, **kwargs):
+    def plot(self, dtables, figs, **kwargs):
         """Make plots of the superbias frame
 
-        @param sbias (str)          The superbias frame
-        @param figs (`FigureDict`)  Place to collect figures
+        @param dtables (`TableDict') Data for plots
+        @param figs (`FigureDict`)   Place to collect figures
         @param kwargs:
             plot (bool)              Plot images of the superbias
             stats_hist (bool)        Plot statistics
         """
         self.safe_update(**kwargs)
 
+        if dtables.keys():
+            raise ValueError("dtables should not be set")
+
         subtract_mean = self.config.stat == DEFAULT_STAT_TYPE
 
         if self.config.plot:
-            figs.plot_sensor("img", None, sbias)
+            figs.plot_sensor("img", None, self._superbias_frame)
 
         default_array_kw = {}
         if self.config.stats_hist:
             kwcopy = self.extract_config_vals(default_array_kw)
-            figs.histogram_array("hist", None, sbias,
+            figs.histogram_array("hist", None, self._superbias_frame,
                                  title="Historam of RMS of bias-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
                                  subtract_mean=subtract_mean, bins=100, range=(0., 2000,),
                                  **kwcopy)
 
-    def make_plots(self, sbias, **kwargs):
+
+    def make_plots(self, dtables, **kwargs):
         """Tie together the functions to make the data tables
         @param sbias (`MaskedCCD`)   The superbias frame
 
@@ -146,7 +151,7 @@ class SuperbiasTask(BiasAnalysisTask):
         self.safe_update(**kwargs)
 
         figs = FigureDict()
-        self.plot(sbias, figs)
+        self.plot(dtables, figs)
         if self.config.plot == 'display':
             figs.save_all(None)
             return figs
@@ -157,7 +162,6 @@ class SuperbiasTask(BiasAnalysisTask):
         figs.save_all(plotbase, self.config.plot)
         return None
 
-
     def __call__(self, butler, slot_data, **kwargs):
         """Tie together the functions
         @param butler (`Butler`)   The data butler
@@ -165,9 +169,9 @@ class SuperbiasTask(BiasAnalysisTask):
         @param kwargs              Passed to the functions that do the actual work
         """
         self.safe_update(**kwargs)
-        sbias = self.make_superbias(butler, slot_data)
+        dtables = self.make_superbias(butler, slot_data)
         if self.config.plot is not None:
-            self.make_plots(sbias)
+            self.make_plots(dtables)
 
 
 

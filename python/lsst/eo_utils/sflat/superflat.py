@@ -64,6 +64,9 @@ class SuperflatTask(SflatAnalysisTask):
         @param kwargs:    Used to override configruation
         """
         SflatAnalysisTask.__init__(self, **kwargs)
+        self._superflat_frame_l = None
+        self._superflat_frame_h = None
+        self._superflat_frame_r = None
 
 
     def extract(self, butler, data, **kwargs):
@@ -134,13 +137,14 @@ class SuperflatTask(SflatAnalysisTask):
                 flip_data_in_place(output_file + '_h.fits')
                 flip_data_in_place(output_file + '_ratio.fits')
 
-        sflat_l = get_ccd_from_id(None, output_file + '_l.fits', mask_files)
-        sflat_h = get_ccd_from_id(None, output_file + '_h.fits', mask_files)
-        sflat_ratio = get_ccd_from_id(None, output_file + '_ratio.fits', mask_files)
-        return (sflat_l, sflat_h, sflat_ratio)
+        self._superflat_frame_l = get_ccd_from_id(None, output_file + '_l.fits', mask_files)
+        self._superflat_frame_h = get_ccd_from_id(None, output_file + '_h.fits', mask_files)
+        self._superflat_frame_r = get_ccd_from_id(None, output_file + '_ratio.fits', mask_files)
+        dtables = TableDict()
+        return dtables
 
 
-    def plot(self, sflats, figs, **kwargs):
+    def plot(self, dtables, figs, **kwargs):
         """Make plots of the superflat frame
 
         @param sflat (str)          The superflat frame
@@ -151,25 +155,28 @@ class SuperflatTask(SflatAnalysisTask):
         """
         self.safe_update(**kwargs)
 
+        if dtables.keys():
+            raise ValueError("dtables should not be set")
+
         if self.config.plot:
-            figs.plot_sensor("img_l", None, sflats[0])
-            figs.plot_sensor("img_h", None, sflats[1])
-            figs.plot_sensor("ratio", None, sflats[2])
+            figs.plot_sensor("img_l", None, self._superflat_frame_l)
+            figs.plot_sensor("img_h", None, self._superflat_frame_h)
+            figs.plot_sensor("ratio", None, self._superflat_frame_r)
 
         default_array_kw = {}
         if self.config.stats_hist:
             kwcopy = self.extract_config_vals(default_array_kw)
-            figs.histogram_array("hist_l", None, sflats[0],
+            figs.histogram_array("hist_l", None, self._superflat_frame_l,
                                  title="Historam of RMS of flat-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
                                  subtract_mean=False, bins=100, range=(0., 2000,),
                                  **kwcopy)
-            figs.histogram_array("hist_h", None, sflats[1],
+            figs.histogram_array("hist_h", None, self._superflat_frame_h,
                                  title="Historam of RMS of flat-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
                                  subtract_mean=False, bins=100, range=(0., 100000,),
                                  **kwcopy)
-            figs.histogram_array("hist_ratio", None, sflats[2],
+            figs.histogram_array("hist_ratio", None, self._superflat_frame_r,
                                  title="Historam of Ratio flat-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.02",
                                  subtract_mean=False, bins=100, range=(0.015, 0.025),
@@ -177,7 +184,7 @@ class SuperflatTask(SflatAnalysisTask):
 
 
 
-    def make_plots(self, sflat, **kwargs):
+    def make_plots(self, dtables, **kwargs):
         """Tie together the functions to make the data tables
         @param sflat (`MaskedCCD`)   The superflat frame
 
@@ -186,7 +193,7 @@ class SuperflatTask(SflatAnalysisTask):
         self.safe_update(**kwargs)
 
         figs = FigureDict()
-        self.plot(sflat, figs)
+        self.plot(dtables, figs)
         if self.config.plot == 'display':
             figs.save_all(None)
             return figs
@@ -205,9 +212,9 @@ class SuperflatTask(SflatAnalysisTask):
         @param kwargs              Passed to the functions that do the actual work
         """
         self.safe_update(**kwargs)
-        sflats = self.make_superflats(butler, slot_data)
+        dtables = self.make_superflats(butler, slot_data)
         if self.config.plot is not None:
-            self.make_plots(sflats)
+            self.make_plots(dtables)
 
 
 
