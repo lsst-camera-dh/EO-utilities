@@ -2,8 +2,6 @@
 
 import sys
 
-from lsst.eo_utils.base import mpl_utils
-
 from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
@@ -19,9 +17,6 @@ from lsst.eo_utils.dark.file_utils import get_dark_files_run,\
     SUPERDARK_FORMATTER, SUPERDARK_STAT_FORMATTER
 
 from lsst.eo_utils.dark.butler_utils import get_dark_files_butler
-
-mpl_utils.set_plt_ioff()
-
 
 
 class DarkAnalysisConfig(AnalysisConfig):

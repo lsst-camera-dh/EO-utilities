@@ -4,11 +4,8 @@
 
 """This module contains functions to find files of a particular type in the SLAC directory tree"""
 
-from lsst.eo_utils.base.defaults import SLOT_FORMAT_STRING,\
-    RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
-
 from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_for_run,\
-    FILENAME_FORMATS
+    FILENAME_FORMATS, SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
 
 SLOT_PPUMP_FORMAT_STRING =\
     SLOT_FORMAT_STRING.replace('{suffix}', '_b-{bias}_s-{superbias}_{suffix}')

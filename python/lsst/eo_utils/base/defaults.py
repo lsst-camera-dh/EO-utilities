@@ -41,26 +41,6 @@ DATACAT_BOT_TEST_TYPES = ['DARK', 'FLAT', 'FE55', 'PPUMP', 'SFLAT', 'LAMBDA', 'T
 
 
 
-# These are the standard input filenames
-TS8_GLOB_STRING =\
-    '{archive}/LCA-11021_RTM/LCA-11021_{raft}*/{run}/{testName}/v0/*/{slot}/*{imgtype}*.fits'
-BOT_GLOB_STRING =\
-    '{archive}/LCA-10134_Cryostat/LCA-10134_Cryostat-0001/{run}/' +\
-    'BOT_acq/v0/*/{testName}*{imgtype}*/MC_C*{raft}_{slot}.fits'
-
-
-# These strings define the standard output filenames
-SLOT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}{suffix}'
-RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-RFT{suffix}'
-SUMMARY_FORMAT_STRING = '{outdir}/{fileType}/summary/{testType}/{dataset}{suffix}'
-SUPERBIAS_FORMAT_STRING =\
-    '{outdir}/superbias/{raft}/{raft}-{run}-{slot}_superbias_b-{bias}{suffix}'
-SUPERBIAS_STAT_FORMAT_STRING =\
-    '{outdir}/superbias/{raft}/{raft}-{run}-{slot}_{stat}_b-{bias}{suffix}'
-
-
-
-
 # These readout times, in seconds
 T_SERIAL = 2e-06
 T_PARALLEL = 40e-06

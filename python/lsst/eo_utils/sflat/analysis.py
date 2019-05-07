@@ -2,8 +2,6 @@
 
 import sys
 
-from lsst.eo_utils.base import mpl_utils
-
 from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
@@ -19,9 +17,6 @@ from lsst.eo_utils.sflat.file_utils import get_sflat_files_run,\
     SUPERFLAT_FORMATTER, SUPERFLAT_STAT_FORMATTER
 
 from lsst.eo_utils.sflat.butler_utils import get_sflat_files_butler
-
-mpl_utils.set_plt_ioff()
-
 
 
 class SflatAnalysisConfig(AnalysisConfig):

@@ -2,8 +2,6 @@
 
 import sys
 
-from lsst.eo_utils.base import mpl_utils
-
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
@@ -14,8 +12,6 @@ from .file_utils import get_bias_files_run,\
     SLOT_BIAS_TABLE_FORMATTER, SLOT_BIAS_PLOT_FORMATTER
 
 from .butler_utils import get_bias_files_butler
-
-mpl_utils.set_plt_ioff()
 
 
 class BiasAnalysisConfig(AnalysisConfig):

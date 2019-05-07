@@ -2,8 +2,6 @@
 
 import sys
 
-from lsst.eo_utils.base import mpl_utils
-
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
@@ -14,8 +12,6 @@ from lsst.eo_utils.qe.file_utils import get_qe_files_run,\
     SLOT_QE_TABLE_FORMATTER, SLOT_QE_PLOT_FORMATTER
 
 from lsst.eo_utils.qe.butler_utils import get_qe_files_butler
-
-mpl_utils.set_plt_ioff()
 
 
 

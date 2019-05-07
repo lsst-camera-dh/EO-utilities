@@ -2,8 +2,6 @@
 
 import sys
 
-from lsst.eo_utils.base import mpl_utils
-
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
@@ -14,8 +12,6 @@ from lsst.eo_utils.fe55.file_utils import get_fe55_files_run,\
     SLOT_FE55_TABLE_FORMATTER, SLOT_FE55_PLOT_FORMATTER
 
 from lsst.eo_utils.fe55.butler_utils import get_fe55_files_butler
-
-mpl_utils.set_plt_ioff()
 
 
 class Fe55AnalysisConfig(AnalysisConfig):
