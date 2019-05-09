@@ -57,11 +57,13 @@ class SuperflatTask(SflatAnalysisTask):
     _DefaultName = "SuperflatTask"
     iteratorClass = AnalysisBySlot
 
-
     def __init__(self, **kwargs):
         """ C'tor
 
-        @param kwargs:    Used to override configruation
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
         """
         SflatAnalysisTask.__init__(self, **kwargs)
         self._superflat_frame_l = None
@@ -72,9 +74,23 @@ class SuperflatTask(SflatAnalysisTask):
     def extract(self, butler, data, **kwargs):
         """Make superflat frame for one slot
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the flat and mask files
-        @param kwargs              Uped to override config
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        sflat_l : `dict`
+            Dictionary keyed by amp of the low exposure superflats
+        sflat_h : `dict`
+            Dictionary keyed by amp of the high exposure superflats
+        ratio_images : `dict`
+            Dictionary keyed by amp of the low/high ratio images
         """
         self.safe_update(**kwargs)
         slot = self.config.slot
@@ -109,13 +125,24 @@ class SuperflatTask(SflatAnalysisTask):
 
         return (sflat_l, sflat_h, ratio_images)
 
-    def make_superflats(self, butler, slot_data, **kwargs):
-        """Tie together the functions to make the data tables
-        @param butler (`Butler`)   The data butler
-        @param slot_data (dict)    Dictionary pointing to the flat and mask files
-        @param kwargs
+    def make_superflats(self, butler, data, **kwargs):
+        """Stack the input data to make superflat frames
 
-        @return (dict)
+        The superflats are stored as data members of this class
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -127,11 +154,11 @@ class SuperflatTask(SflatAnalysisTask):
         if not self.config.skip:
             sflats = self.extract(butler, slot_data)
             imutil.writeFits(sflats[0], output_file + '_l.fits',
-                             slot_data['SFLAT'][0], self.config.bitpix)
+                             data['SFLAT'][0], self.config.bitpix)
             imutil.writeFits(sflats[1], output_file + '_h.fits',
-                             slot_data['SFLAT'][0], self.config.bitpix)
+                             data['SFLAT'][0], self.config.bitpix)
             imutil.writeFits(sflats[2], output_file + '_ratio.fits',
-                             slot_data['SFLAT'][0], self.config.bitpix)
+                             data['SFLAT'][0], self.config.bitpix)
             if butler is not None:
                 flip_data_in_place(output_file + '_l.fits')
                 flip_data_in_place(output_file + '_h.fits')
@@ -145,13 +172,17 @@ class SuperflatTask(SflatAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Make plots of the superflat frame
+        """Make plots of the pixel-by-pixel distributions
+        of the superflat frames
 
-        @param sflat (str)          The superflat frame
-        @param figs (`FigureDict`)  Place to collect figures
-        @param kwargs:
-            plot (bool)              Plot images of the superflat
-            stats_hist (bool)        Plot statistics
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 
@@ -185,10 +216,17 @@ class SuperflatTask(SflatAnalysisTask):
 
 
     def make_plots(self, dtables, **kwargs):
-        """Tie together the functions to make the data tables
-        @param sflat (`MaskedCCD`)   The superflat frame
+        """Tie together the functions to make the figures
 
-        @return (`FigureDict`) the figues we produced
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+
+        Returns
+        -------
+        figs : `FigureDict`
+            The resulting figures
         """
         self.safe_update(**kwargs)
 
@@ -205,14 +243,20 @@ class SuperflatTask(SflatAnalysisTask):
         return None
 
 
-    def __call__(self, butler, slot_data, **kwargs):
-        """Tie together the functions
-        @param butler (`Butler`)   The data butler
-        @param slot_data (dict)    Dictionary pointing to the flat and mask files
-        @param kwargs              Passed to the functions that do the actual work
+    def __call__(self, butler, data, **kwargs):
+        """Tie together analysis functions
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
-        dtables = self.make_superflats(butler, slot_data)
+        dtables = self.make_superflats(butler, data)
         if self.config.plot is not None:
             self.make_plots(dtables)
 
@@ -239,7 +283,13 @@ class SuperflatRaftTask(SflatAnalysisTask):
     plotname_format = RAFT_SFLAT_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         SflatAnalysisTask.__init__(self, **kwargs)
         self._mask_file_dict = {}
         self._sflat_file_dict_l = {}
@@ -250,13 +300,21 @@ class SuperflatRaftTask(SflatAnalysisTask):
         self._sflat_array_r = None
 
     def extract(self, butler, data, **kwargs):
-        """Extract the correlations between the serial overscan for each amp on a raft
+        """Extract the outliers in the superflat frames for the raft
 
-        @param butler (Butler)   The data butler
-        @param data (dict)       Dictionary pointing to the flat and mask files
-        @param kwargs            Used to override configuration
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict)
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -289,10 +347,17 @@ class SuperflatRaftTask(SflatAnalysisTask):
         return dtables
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the flat fft
+        """Plot the raft-level mosaic and histrograms
+        of the numbers of outliers in the superflat frames
 
-        @param dtables (TableDict)  The data
-        @param figs (FigureDict)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 

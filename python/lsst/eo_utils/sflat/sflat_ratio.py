@@ -1,4 +1,4 @@
-"""Class to analyze the FFT of the bias frames"""
+"""Tasks to analyze superflat low/high exposure ratios"""
 
 import sys
 
@@ -41,7 +41,13 @@ class SflatRatioTask(SflatAnalysisTask):
     iteratorClass = AnalysisBySlot
 
     def __init__(self, **kwargs):
-        """C'tor """
+        """ C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         SflatAnalysisTask.__init__(self, **kwargs)
         self.low_images = {}
         self.high_images = {}
@@ -50,13 +56,21 @@ class SflatRatioTask(SflatAnalysisTask):
         self.quality_masks = {}
 
     def extract(self, butler, data, **kwargs):
-        """Extract the data
+        """Extract data about the low/high superflat exposure ratios
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the sflat and mask files
-        @param kwargs              Used to override defaults
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -141,10 +155,16 @@ class SflatRatioTask(SflatAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the data
+        """Plot data about the low/high superflat ratios
 
-        @param dtables (`TableDict`)  The data
-        @param figs (`FigureDict`)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 
@@ -193,18 +213,33 @@ class SflatRatioStatsTask(SflatAnalysisTask):
     plotname_format = RAFT_SFLAT_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """C'tor """
+        """ C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         SflatAnalysisTask.__init__(self, **kwargs)
 
 
     def extract(self, butler, data, **kwargs):
-        """Extract the data
+        """Extract the high-level statistics about the low/high
+        superflat ratios
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the sflat and mask files
-        @param kwargs              Used to override defaults
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -242,10 +277,16 @@ class SflatRatioStatsTask(SflatAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data from the sflat fft statistics study
+        """Make plots about the low/high superflat ratios
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 

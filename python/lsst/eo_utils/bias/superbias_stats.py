@@ -47,18 +47,31 @@ class SuperbiasStatsTask(BiasAnalysisTask):
     plotname_format = RAFT_SBIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
-        """Extract the correlations between the serial overscan for each amp on a raft
+        """Extract the statistics from the superbias frames
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the bias and mask files
-        @param kwargs:
-        raft (str)                 Raft in question, i.e., 'RTM-004-Dev'
-        run_num (str)              Run number, i.e,. '6106D'
-        outdir (str)               Output directory
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
         slots = ALL_SLOTS
@@ -95,8 +108,14 @@ class SuperbiasStatsTask(BiasAnalysisTask):
     def plot(self, dtables, figs, **kwargs):
         """Plot the stats on the superbias frames
 
-        @param dtables (TableDict)  The data
-        @param figs (FigureDict)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         data = dtables.get_table('stats')
 
@@ -108,11 +127,19 @@ class SuperbiasStatsTask(BiasAnalysisTask):
     def get_superbias_stats(butler, superbias, stats_data, islot):
         """Get the serial overscan data
 
-        @param butler (`Butler)         The data butler
-        @param superbias (`MaskedCCD)   The ccd we are getting data from
-        @param stats_data (dict)       The dictionary we are filling
-        @param kwargs:
-        islot (int)              Index of the slot in question
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        superbias : `MaskedCCD`
+            The ccd we are getting data from
+        stats_data : `dict`
+            The data we are updating
+
+        Keywords
+        --------
+        islot : `int`
+            The slot index
         """
         amps = get_amp_list(butler, superbias)
 
@@ -149,18 +176,31 @@ class SuperbiasSummaryTask(SuperbiasSummaryAnalysisTask):
     _DefaultName = "SuperbiasSummaryTask"
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         SuperbiasSummaryAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
-        """Make a summry table of the bias FFT data
+        """Make a summary table of the superbias statistics
 
-        @param filedict (dict)      The files we are analyzing
-        @param kwargs
-            bias (str)
-            superbias (str)
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict)
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -181,8 +221,14 @@ class SuperbiasSummaryTask(SuperbiasSummaryAnalysisTask):
     def plot(self, dtables, figs, **kwargs):
         """Plot the summary data from the superbias statistics study
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 

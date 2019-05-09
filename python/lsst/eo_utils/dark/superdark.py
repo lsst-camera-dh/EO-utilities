@@ -59,7 +59,10 @@ class SuperdarkTask(DarkAnalysisTask):
     def __init__(self, **kwargs):
         """ C'tor
 
-        @param kwargs:    Used to override configruation
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
         """
         DarkAnalysisTask.__init__(self, **kwargs)
         self._superdark_frame = None
@@ -68,9 +71,19 @@ class SuperdarkTask(DarkAnalysisTask):
     def extract(self, butler, data, **kwargs):
         """Make superflat frame for one slot
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the flat and mask files
-        @param kwargs              Uped to override config
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        sdark : `dict`
+            Dictionary keyed by amp of the superdark
         """
         self.safe_update(**kwargs)
         slot = self.config.slot
@@ -95,12 +108,23 @@ class SuperdarkTask(DarkAnalysisTask):
         return sdark
 
     def make_superdark(self, butler, slot_data, **kwargs):
-        """Tie together the functions to make the data tables
-        @param butler (`Butler`)   The data butler
-        @param slot_data (dict)    Dictionary pointing to the flat and mask files
-        @param kwargs
+        """Stack the input data to make superflat frames
+        
+        The superdarks are stored as data members of this class
 
-        @return (dict)
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -121,13 +145,17 @@ class SuperdarkTask(DarkAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Make plots of the superflat frame
+        """Make plots of the pixel-by-pixel distributions
+        of the superdark frames
 
-        @param dtables (`TableDict`) Data for pltos
-        @param figs (`FigureDict`)   Place to collect figures
-        @param kwargs:
-            plot (bool)              Plot images of the superflat
-            stats_hist (bool)        Plot statistics
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 
@@ -149,10 +177,17 @@ class SuperdarkTask(DarkAnalysisTask):
 
 
     def make_plots(self, dtables, **kwargs):
-        """Tie together the functions to make the data tables
-        @param sdark (`MaskedCCD`)   The superflat frame
+        """Tie together the functions to make the figures
 
-        @return (`FigureDict`) the figues we produced
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+
+        Returns
+        -------
+        figs : `FigureDict`
+            The resulting figures
         """
         self.safe_update(**kwargs)
 
@@ -170,10 +205,16 @@ class SuperdarkTask(DarkAnalysisTask):
 
 
     def __call__(self, butler, slot_data, **kwargs):
-        """Tie together the functions
-        @param butler (`Butler`)   The data butler
-        @param slot_data (dict)    Dictionary pointing to the flat and mask files
-        @param kwargs              Passed to the functions that do the actual work
+        """Tie together analysis functions
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
         dtables = self.make_superdark(butler, slot_data)
@@ -202,20 +243,34 @@ class SuperdarkRaftTask(DarkAnalysisTask):
     plotname_format = RAFT_DARK_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """ C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         DarkAnalysisTask.__init__(self, **kwargs)
         self._mask_file_dict = {}
         self._sdark_file_dict = {}
         self._sdark_arrays = None
 
     def extract(self, butler, data, **kwargs):
-        """Extract the correlations between the serial overscan for each amp on a raft
+        """Extract the utliers in the superdark frames for the raft
 
-        @param butler (Butler)   The data butler
-        @param data (dict)       Dictionary pointing to the dark and mask files
-        @param kwargs            Used to override configuration
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict)
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -238,14 +293,19 @@ class SuperdarkRaftTask(DarkAnalysisTask):
         return dtables
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the dark fft
-
-        @param dtables (TableDict)  The data
-        @param figs (FigureDict)    Object to store the figues
+        """Plot the raft-level mosaic and histrograms
+        of the numbers of outliers in the superdark frames
+        
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
-
-
 
         figs.make_raft_outlier_plots(dtables['outliers'])
 

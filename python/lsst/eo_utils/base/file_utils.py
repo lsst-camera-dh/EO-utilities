@@ -18,8 +18,7 @@ except ImportError:
     print("Warning, no datacat-utilities")
 
 
-from .defaults import TS8_MASK_TEST_TYPES, BOT_MASK_TEST_TYPES,\
-     ALL_RAFTS, ALL_SLOTS, ARCHIVE_SLAC
+from .defaults import ALL_RAFTS, ALL_SLOTS, ARCHIVE_SLAC
 
 
 # These are the standard input filenames
@@ -246,11 +245,19 @@ class FilenameFormatDict:
     def add_format(self, key, fmt, **kwargs):
         """Add an item to the dict
 
-        @param key (str)            The key
-        @param fmt (str)            String that defines the file format
-        @param kwargs               Used to set default values
+        Parameters
+        ----------
+        key : `str`
+            The key to add the item under
+        fmt : `str`
+            String that defines the file format
+        kwargs
+            Used to set default values
 
-        @returns (`FilenameFormat`) The newly created object
+        Returns
+        -------
+        new_format : `FilenameFormat`
+            The newly created object
         """
         if key in self._formats:
             raise KeyError("Key %s is already in FilenameFormatDict" % key)
@@ -267,7 +274,8 @@ SUM_BASE_FORMATTER = FILENAME_FORMATS.add_format('summary_basename', SUMMARY_FOR
 TS8_MASKIN_FORMATTER = FILENAME_FORMATS.add_format('ts8_mask_in', SLOT_FORMAT_STRING,
                                                    fileType='masks_in', testType='', suffix='_mask.fits')
 MASK_FORMATTER = FILENAME_FORMATS.add_format('mask', SLOT_FORMAT_STRING,
-                                             fileType='masks', testType='', suffix='_mask.fits')
+                                             fileType='masks', testType='',
+                                             suffix='_mask.fits')
 SUPERBIAS_FORMATTER = FILENAME_FORMATS.add_format('superbias',
                                                   SUPERBIAS_FORMAT_STRING,
                                                   superbias=None, suffix='')
@@ -456,7 +464,8 @@ def get_mask_files_run(run_id, **kwargs):
         slotdict = {}
         outdict[raft] = slotdict
         for slot in ALL_SLOTS:
-            glob_string = TS8_MASKIN_FORMATTER(slot=slot, run=run_id, suffix='*_mask.fits', **kwcopy)
+            glob_string = TS8_MASKIN_FORMATTER(slot=slot, run=run_id,
+                                               suffix='*_mask.fits', **kwcopy)
             slotdict[slot] = dict(MASK=sorted(glob.glob(glob_string)))
 
     return outdict
@@ -620,4 +629,5 @@ def link_eo_results_runlist(args, glob_format, paths, outformat, **kwargs):
             sys.stderr.write("Could not find eotest_results for %s %s\n" % (run_num, hid))
             continue
 
-        link_eo_results(ccd_map, fdict, outformat, run=run_num, raft=hid, outdir=args['outdir'], **kwargs)
+        link_eo_results(ccd_map, fdict, outformat, run=run_num,
+                        raft=hid, outdir=args['outdir'], **kwargs)

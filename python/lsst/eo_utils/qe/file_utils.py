@@ -48,23 +48,29 @@ SUM_QE_PLOT_FORMATTER = FILENAME_FORMATS.add_format('sum_qe_plot',
 def get_qe_files_run(run_id, **kwargs):
     """Get a set of qe and mask files out of a folder
 
-    @param run_id (str)      The number number we are reading
-    @param kwargs
-       acq_types (list)  The types of acquistions we want to include
+    Parameters
+    ----------
+    run_id : `str`
+        The number number we are reading
+    kwargs
+        Passed along to the underlying get_files_for_run function
 
-    @returns (dict) Dictionary mapping slot to file names
+    Returns
+    -------
+    outdict : `dict`
+        Dictionary mapping slot to file names
     """
-    acq_types = kwargs.get('acq_types', None)
+    testtypes = kwargs.get('testtypes', None)
     hinfo = get_hardware_type_and_id(run_id)
 
-    if acq_types is None:
+    if testtypes is None:
         if hinfo[0] == 'LCA-11021':
-            acq_types = ['qe_raft_acq']
+            testtypes = ['qe_raft_acq']
         else:
-            acq_types = ['QE']
+            testtypes = ['QE']
 
     return get_files_for_run(run_id,
                              imagetype="QE",
-                             testtypes=acq_types,
+                             testtypes=testtypes,
                              outkey='QE',
                              **kwargs)

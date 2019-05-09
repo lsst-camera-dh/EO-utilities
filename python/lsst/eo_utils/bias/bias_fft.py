@@ -48,19 +48,31 @@ class BiasFFTTask(BiasAnalysisTask):
     iteratorClass = AnalysisBySlot
 
     def __init__(self, **kwargs):
-        """C'tor """
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
-        """Extract the bias as function of row
+        """Extract the FFT of the bias as function of row
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the bias and mask files
-        @param kwargs
-            slot (str)           Slot in question, i.e., 'S00'
-            bias (str)           Method to use for unbiasing
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -105,10 +117,16 @@ class BiasFFTTask(BiasAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the bias as function of row
+        """Plot the FFT of the bias as function of row
 
-        @param dtables (`TableDict`)  The data
-        @param figs (`FigureDict`)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 
@@ -125,16 +143,29 @@ class BiasFFTTask(BiasAnalysisTask):
     def get_ccd_data(self, butler, ccd, data, **kwargs):
         """Get the fft of the overscan values and update the data dictionary
 
-        @param butler (`Butler`)   The data butler
-        @param ccd (`MaskedCCD`)   The ccd we are getting data from
-        @param data (dict)         The data we are updatign
-        @param kwargs:
-            slot  (str)                 The slot number
-            ifile (int)                 The file index
-            nfiles_used (int)                Total number of files
-            bias_type (str)             Method to use to construct bias
-            std (str)                   Do standard deviation instead of mean
-            superbias_frame (MaskedCCD) The superbias
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        ccd : `MaskedCCD`
+            The ccd we are getting data from
+        data : `dict`
+            The data we are updating
+
+        Keywords
+        --------
+        slot : `str`
+            The slot name
+        ifile : `int`
+            The file index
+        nfiles_used : `int`
+            Total number of files
+        bias_type : `str`
+            Method to use to construct bias
+        std : `bool`
+            Used standard deviation instead of mean
+        superbias_frame : `MaskedCCD`
+            The superbias frame to subtract away
         """
         self.safe_update(**kwargs)
 
@@ -191,21 +222,32 @@ class SuperbiasFFTTask(BiasFFTTask):
     plotname_format = SLOT_SBIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasFFTTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
         """Extract the FFTs of the row-wise and col-wise struture
         in a superbias frame
 
-        @param butler (Butler)   The data butler
-        @param data (dict)       Dictionary pointing to the bias and mask files
-        @param kwargs
-            raft (str)           Raft in question, i.e., 'RTM-004-Dev'
-            run_num (str)        Run number, i.e,. '6106D'
-            slot (str)           Slot in question, i.e., 'S00'
-            superbias (str)      Method to use for superbias subtraction
-            outdir (str)         Output directory
-            std (bool)           Plot standard deviation instead of median
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
         slot = self.config.slot
@@ -260,18 +302,32 @@ class BiasFFTStatsTask(BiasAnalysisTask):
     plotname_format = RAFT_BIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """C'tor """
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasAnalysisTask.__init__(self, **kwargs)
 
 
     def extract(self, butler, data, **kwargs):
-        """Extract the bias as function of row
+        """Extract the FFT summary statistics
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the bias and mask files
-        @param kwargs
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -332,10 +388,16 @@ class BiasFFTStatsTask(BiasAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data from the bias fft statistics study
+        """Plot the data from the bias fft statistics study
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         sumtable = dtables['biasfft_stats']
         figs.plot_stat_color('max_fft_noise', sumtable['fftpow_maxval'].reshape(9, 16))
@@ -357,18 +419,31 @@ class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
     _DefaultName = "BiasFFTSummaryTask"
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasSummaryAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
         """Make a summry table of the bias FFT data
 
-        @param filedict (dict)      The files we are analyzing
-        @param kwargs
-            bias (str)
-            superbias (str)
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict)
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -391,8 +466,14 @@ class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
     def plot(self, dtables, figs, **kwargs):
         """Plot the summary data from the superbias statistics study
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 

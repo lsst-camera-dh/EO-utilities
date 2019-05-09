@@ -1,4 +1,4 @@
-"""Functions to analyse sflat and superbias frames"""
+"""Tasks to analyse sflat and superbias frames"""
 
 import sys
 
@@ -42,17 +42,29 @@ class SflatAnalysisTask(AnalysisTask):
     plotname_format = SLOT_SFLAT_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """ C'tor
+        """C'tor
 
-        @param kwargs:    Used to override configruation
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
         """
         AnalysisTask.__init__(self, **kwargs)
 
     def get_superflat_file(self, suffix, **kwargs):
         """Get the name of the superbias file for a particular run, raft, ccd...
 
-        @param kwargs              Used to override default configuration
-        @returns (str)             The filename
+        Parameters
+        ----------
+        suffix : `str`
+            The filename suffix
+        kwargs
+            Passed to the file name formatter
+
+        Returns
+        -------
+        retval : `str`
+            The filename
         """
         if self.get_config_param('stat', None) in [DEFAULT_STAT_TYPE, None]:
             formatter = SUPERFLAT_FORMATTER
@@ -64,9 +76,19 @@ class SflatAnalysisTask(AnalysisTask):
     def get_superflat_frames(self, mask_files, types=None, **kwargs):
         """Get the superbias frame for a particular run, raft, ccd...
 
-        @param types (list)         Types of frames ['l', 'h', 'ratio']
+        Parameters
+        ----------
+        mask_files : `list`
+            The files used to build the pixel mask
+        types : `str`
+            Types of frames to build ['l', 'h', 'ratio']
+        kwargs
+            Used to override the configuration
 
-        @returns (`dict`)           The superbias frame
+        Returns
+        -------
+        o_dict : `dict`
+            Dictionary of superflat frames, keyed by type
         """
         self.safe_update(**kwargs)
 
@@ -81,12 +103,19 @@ class SflatAnalysisTask(AnalysisTask):
     def get_data(self, butler, run_num, **kwargs):
         """Get a set of sflat and mask files out of a folder
 
-        @param butler (`Bulter`)    The data Butler
-        @param run_num (str)        The run number we are reading
-        @param kwargs:
-           acq_types (list)  The types of acquistions we want to include
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        datakey : `str`
+            Run number or other id that defines the data to analyze
+        kwargs
+            Used to override default configuration
 
-        @returns (dict) Dictionary mapping slot to file names
+        Returns
+        -------
+        retval : `dict`
+            Dictionary mapping input data by raft, slot and file type
         """
         kwargs.pop('run_num', None)
 
@@ -99,9 +128,40 @@ class SflatAnalysisTask(AnalysisTask):
         return retval
 
     def extract(self, butler, data, **kwargs):
-        """This needs to be implemented by the sub-class"""
+        """This needs to be implemented by the sub-class
+
+        It should analyze the input data and create a set of tables
+        in a `TableDict` object
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
+        """
         raise NotImplementedError("AnalysisFunc.extract is not overridden.")
 
     def plot(self, dtables, figs, **kwargs):
-        """This needs to be implemented by the sub-class"""
+        """This needs to be implemented by the sub-class
+
+        It should use a `TableDict` object to create a set of
+        plots and fill a `FigureDict` object
+
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
+        """
         raise NotImplementedError("AnalysisFunc.plot is not overridden.")

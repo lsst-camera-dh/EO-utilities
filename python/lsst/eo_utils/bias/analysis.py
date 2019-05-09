@@ -38,19 +38,29 @@ class BiasAnalysisTask(AnalysisTask):
     def __init__(self, **kwargs):
         """ C'tor
 
-        @param kwargs:    Used to override configruation
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
         """
         AnalysisTask.__init__(self, **kwargs)
 
     def get_data(self, butler, run_num, **kwargs):
         """Get a set of bias and mask files out of a folder
 
-        @param butler (`Bulter`)    The data Butler
-        @param run_num (str)        The run number we are reading
-        @param kwargs:
-           acq_types (list)  The types of acquistions we want to include
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        datakey : `str`
+            Run number or other id that defines the data to analyze
+        kwargs
+            Used to override default configuration
 
-        @returns (dict) Dictionary mapping slot to file names
+        Returns
+        -------
+        retval : `dict`
+            Dictionary mapping input data by raft, slot and file type
         """
         kwargs.pop('run', None)
 
@@ -64,9 +74,40 @@ class BiasAnalysisTask(AnalysisTask):
 
 
     def extract(self, butler, data, **kwargs):
-        """This needs to be implemented by the sub-class"""
+        """This needs to be implemented by the sub-class
+
+        It should analyze the input data and create a set of tables
+        in a `TableDict` object
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
+        """
         raise NotImplementedError("AnalysisFunc.extract is not overridden.")
 
     def plot(self, dtables, figs, **kwargs):
-        """This needs to be implemented by the sub-class"""
+        """This needs to be implemented by the sub-class
+
+        It should use a `TableDict` object to create a set of
+        plots and fill a `FigureDict` object
+
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
+        """
         raise NotImplementedError("AnalysisFunc.plot is not overridden.")

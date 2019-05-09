@@ -44,10 +44,19 @@ SUM_FE55_PLOT_FORMATTER = FILENAME_FORMATS.add_format('sum_fe55_plot',
 def fe55_suffix(**kwargs):
     """Return the suffix for a fe55 analysis file
 
-    @param caller ('Task')  Object calling this function
-    @param kwargs:          Passed to get_raft_file_basename
+    Keywords
+    --------
+    bias : `str`
+        Type of unbiasing to use
+    superbias : `str`
+        Type of superbias frame to use
+    use_all : `bool`
+        Flag to use all clusters in the analysis
 
-    @returns (str)          The suffix.
+    Returns
+    -------
+    suffix : `str`
+        The suffix.
     """
     suffix = get_bias_suffix(**kwargs)
     if kwargs.get('use_all', False):
@@ -60,23 +69,29 @@ def fe55_suffix(**kwargs):
 def get_fe55_files_run(run_id, **kwargs):
     """Get a set of fe55 and mask files out of a folder
 
-    @param run_id (str)      The number number we are reading
-    @param kwargs
-       acq_types (list)  The types of acquistions we want to include
+    Parameters
+    ----------
+    run_id : `str`
+        The number number we are reading
+    kwargs
+        Passed along to the underlying get_files_for_run function
 
-    @returns (dict) Dictionary mapping slot to file names
+    Returns
+    -------
+    outdict : `dict`
+        Dictionary mapping slot to file names
     """
-    acq_types = kwargs.get('acq_types', None)
+    testtypes = kwargs.get('testtypes', None)
     hinfo = get_hardware_type_and_id(run_id)
 
-    if acq_types is None:
+    if testtypes is None:
         if hinfo[0] == 'LCA-11021':
-            acq_types = DATACAT_TS8_TEST_TYPES
+            testtypes = DATACAT_TS8_TEST_TYPES
         else:
-            acq_types = DATACAT_BOT_TEST_TYPES
+            testtypes = DATACAT_BOT_TEST_TYPES
 
     return get_files_for_run(run_id,
                              imageType="FE55",
-                             testTypes=acq_types,
+                             testTypes=testtypes,
                              outkey='FE55',
                              **kwargs)

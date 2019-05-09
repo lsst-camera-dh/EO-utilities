@@ -52,29 +52,35 @@ SUM_FLAT_PLOT_FORMATTER = FILENAME_FORMATS.add_format('sum_flat_plot',
 def get_flat_files_run(run_id, **kwargs):
     """Get a set of flat and mask files out of a folder
 
-    @param run_id (str)      The number number we are reading
-    @param kwargs
-       acq_types (list)  The types of acquistions we want to include
+    Parameters
+    ----------
+    run_id : `str`
+        The number number we are reading
+    kwargs
+        Passed along to the underlying get_files_for_run function
 
-    @returns (dict) Dictionary mapping slot to file names
+    Returns
+    -------
+    outdict : `dict`
+        Dictionary mapping slot to file names
     """
-    acq_types = kwargs.get('acq_types', None)
+    testtypes = kwargs.get('testtypes', None)
     hinfo = get_hardware_type_and_id(run_id)
 
-    if acq_types is None:
+    if testtypes is None:
         if hinfo[0] == 'LCA-11021':
-            acq_types = ['flat_pair_raft_acq']
+            testtypes = ['flat_pair_raft_acq']
         else:
-            acq_types = ['FLAT']
+            testtypes = ['FLAT']
 
     flat1_dict = get_files_for_run(run_id,
                                    imagetype="FLAT1",
-                                   testtypes=acq_types,
+                                   testtypes=testtypes,
                                    outkey='FLAT1',
                                    **kwargs)
     flat2_dict = get_files_for_run(run_id,
                                    imagetype="FLAT2",
-                                   testtypes=acq_types,
+                                   testtypes=testtypes,
                                    outkey='FLAT2',
                                    **kwargs)
     return merge_file_dicts(flat1_dict, flat2_dict)

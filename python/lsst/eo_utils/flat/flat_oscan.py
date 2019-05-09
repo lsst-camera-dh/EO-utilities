@@ -45,19 +45,34 @@ class FlatOverscanTask(FlatAnalysisTask):
     iteratorClass = AnalysisBySlot
 
     def __init__(self, **kwargs):
-        """C'tor """
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         FlatAnalysisTask.__init__(self, **kwargs)
         self.maxflux = 150000.
         self.xmax = 512
 
     def extract(self, butler, data, **kwargs):
-        """Extract the data
+        """Extract the data from the overscan region
+        to estimate the deffered charge
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the flat and mask files
-        @param kwargs              Used to override defaults
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -110,10 +125,17 @@ class FlatOverscanTask(FlatAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the data
+        """Make plots of the overscan data to study 
+        the deffered charge
 
-        @param dtables (`TableDict`)  The data
-        @param figs (`FigureDict`)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 
@@ -126,10 +148,14 @@ class FlatOverscanTask(FlatAnalysisTask):
 
 
     def epr_plot(self, dtables, figs):
-        """Plot the data
+        """Plot the data showing the signal levels 
 
-        @param dtables (`TableDict`)  The data
-        @param figs (`FigureDict`)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
         """
         figs.setup_amp_plots_grid('eper', title='Mean Overscans',
                                   xlabel="Overscan Pixel Number", ylabel="Signal [e-]",
@@ -177,10 +203,14 @@ class FlatOverscanTask(FlatAnalysisTask):
 
 
     def overscan1_plot(self, dtables, figs):
-        """Plot the data
+        """Plot the data showing the signal in the first overscan pixel
 
-        @param dtables (`TableDict`)  The data
-        @param figs (`FigureDict`)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
         """
         f_dict = figs.setup_figure('overscan1',
                                    xlabel='Flux [e-]',
@@ -217,10 +247,14 @@ class FlatOverscanTask(FlatAnalysisTask):
 
 
     def overscan2_plot(self, dtables, figs):
-        """Plot the data
+        """Plot the data showing the signal in the second overscan pixel
 
-        @param dtables (`TableDict`)  The data
-        @param figs (`FigureDict`)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
         """
         f_dict = figs.setup_figure('overscan2',
                                    xlabel='Flux [e-]',
@@ -257,10 +291,14 @@ class FlatOverscanTask(FlatAnalysisTask):
 
 
     def summedoverscan_plot(self, dtables, figs):
-        """Plot the data
+        """Plot the data showing summed signal in the overscan region
 
-        @param dtables (`TableDict`)  The data
-        @param figs (`FigureDict`)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
         """
         f_dict = figs.setup_figure('summed',
                                    title='Summed Overscan [8:18]',
@@ -298,10 +336,14 @@ class FlatOverscanTask(FlatAnalysisTask):
 
 
     def cti_plot(self, dtables, figs):
-        """Plot the data
+        """Plot the data showing the charge transfer inefficiency
 
-        @param dtables (`TableDict`)  The data
-        @param figs (`FigureDict`)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
         """
         f_dict = figs.setup_figure('cti',
                                    title='CTI from EPER',
@@ -340,10 +382,14 @@ class FlatOverscanTask(FlatAnalysisTask):
 
 
     def noise_plot(self, dtables, figs):
-        """Plot the data
+        """Plot the data showing the overscan noise
 
-        @param dtables (`TableDict`)  The data
-        @param figs (`FigureDict`)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
         """
         f_dict = figs.setup_figure('noise',
                                    title='Overscan Noise vs. Flux',
@@ -395,18 +441,32 @@ class FlatOverscanStatsTask(FlatAnalysisTask):
     plotname_format = RAFT_FLAT_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """C'tor """
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         FlatAnalysisTask.__init__(self, **kwargs)
 
 
     def extract(self, butler, data, **kwargs):
-        """Extract the data
+        """Extract summary statistics about the serial overscan data
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the flat and mask files
-        @param kwargs              Used to override defaults
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -444,10 +504,16 @@ class FlatOverscanStatsTask(FlatAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data from the flat fft statistics study
+        """Make plots from the summer statistics of the serial overscan data
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 

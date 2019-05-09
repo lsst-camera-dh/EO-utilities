@@ -45,17 +45,31 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
     plotname_format = RAFT_FE55_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """C'tor """
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         Fe55AnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
-        """Extract the fe55 as function of row
+        """Extract the gains and widths from the f355 clusters
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the fe55 and mask files
-        @param kwargs
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -140,10 +154,19 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data from the fe55 fft statistics study
+        """Plot the gain results from the fe55 study
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        It should use a `TableDict` object to create a set of
+        plots and fill a `FigureDict` object
+
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
         sumtable = dtables['fe55_gain_stats']
@@ -167,17 +190,32 @@ class Fe55GainSummaryTask(Fe55SummaryAnalysisTask):
     _DefaultName = ""
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         Fe55SummaryAnalysisTask.__init__(self, **kwargs)
 
 
     def extract(self, butler, data, **kwargs):
-        """Make a summry table of the fe55 FFT data
+        """Make a summry table of the fe55 data
 
-        @param filedict (dict)      The files we are analyzing
-        @param kwargs
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict)
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -200,10 +238,16 @@ class Fe55GainSummaryTask(Fe55SummaryAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data from the superfe55 statistics study
+        """Plot the summary data from the fe55 study
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
         sumtable = dtables['fe55_gain_sum']

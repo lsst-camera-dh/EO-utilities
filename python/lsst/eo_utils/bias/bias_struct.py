@@ -41,20 +41,32 @@ class BiasStructTask(BiasAnalysisTask):
     iteratorClass = AnalysisBySlot
 
     def __init__(self, **kwargs):
-        """ C'tor """
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
         """Plot the row-wise and col-wise struture
         in a series of bias frames
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the bias and mask files
-        @param kwargs
-        slot (str)           Slot in question, i.e., 'S00'
-        bias (str)           Method to use for unbiasing
-        superbias (str)      Method to use for superbias subtraction
-        std (bool)           Plot standard deviation instead of median
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -97,8 +109,13 @@ class BiasStructTask(BiasAnalysisTask):
     def plot(self, dtables, figs, **kwargs):
         """Plot the bias structure
 
-        @param dtables (`TableDict`)  The data
-        @param figs (`FigureDict`)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
         """
         for rkey, rlabel in zip(REGION_KEYS, REGION_LABELS):
             for dkey in ['row', 'col']:
@@ -112,17 +129,29 @@ class BiasStructTask(BiasAnalysisTask):
     def get_ccd_data(self, butler, ccd, data, **kwargs):
         """Get the bias values and update the data dictionary
 
-        @param caller (`Task`)     Task that calls this function
-        @param butler (`Butler`)   The data butler
-        @param ccd (`MaskedCCD`)   The ccd we are getting data from
-        @param data (dict)         The data we are updating
-        @param kwargs:
-        slot  (str)                    The slot number
-        ifile (int)                    The file index
-        nfiles (int)                   Total number of files
-        bias_type (str)                Method to use to construct bias
-        std (bool)                     Used standard deviasion instead of mean
-        superbias_frame (`MaskedCCD`)  The superbias
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        ccd : `MaskedCCD`
+            The ccd we are getting data from
+        data : `dict`
+            The data we are updating
+
+        Keywords
+        --------
+        slot : `str`
+            The slot name
+        ifile : `int`
+            The file index
+        nfiles_used : `int`
+            Total number of files
+        bias_type : `str`
+            Method to use to construct bias
+        std : `bool`
+            Used standard deviation instead of mean
+        superbias_frame : `MaskedCCD`
+            The superbias frame to subtract away
         """
         nfiles_used = kwargs.get('nfiles_used', 1)
         ifile = kwargs.get('ifile', 0)
@@ -178,21 +207,31 @@ class SuperbiasStructTask(BiasStructTask):
     plotname_format = SLOT_SBIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasStructTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
         """Extract the row-wise and col-wise struture  in a superbias frame
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the bias and mask files
-        @param kwargs
-            raft (str)           Raft in question, i.e., 'RTM-004-Dev'
-            run_num (str)        Run number, i.e,. '6106D'
-            slot (str)           Slot in question, i.e., 'S00'
-            superbias (str)      Method to use for superbias subtraction
-            outdir (str)         Output directory
-            std (bool)           Plot standard deviation instead of median
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 

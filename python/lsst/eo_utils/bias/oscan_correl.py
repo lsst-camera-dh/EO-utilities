@@ -46,20 +46,32 @@ class OscanCorrelTask(BiasAnalysisTask):
     plotname_format = RAFT_BIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasAnalysisTask.__init__(self, **kwargs)
         self.boundry = 10
 
     def extract(self, butler, data, **kwargs):
         """Extract the correlations between the serial overscan for each amp on a raft
 
-        @param butler (Butler)   The data butler
-        @param data (dict)       Dictionary pointing to the bias and mask files
-        @param kwargs
-            raft (str)           Raft in question, i.e., 'RTM-004-Dev'
-            run_num (str)        Run number, i.e,. '6106D'
-            covar (bool)         Plot covariance instead of correlation
-            outdir (str)         Output directory
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -92,10 +104,16 @@ class OscanCorrelTask(BiasAnalysisTask):
         return dtables
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the bias fft
+        """Plot the correlations between the serial overscan for each amp on a raft
 
-        @param dtables (TableDict)  The data
-        @param figs (FigureDict)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
         data = dtables.get_table('correl')['correl']
@@ -105,14 +123,26 @@ class OscanCorrelTask(BiasAnalysisTask):
     def get_ccd_data(self, butler, ccd, **kwargs):
         """Get the serial overscan data
 
-        @param butler (Butler)   The data butler
-        @param ccd (MaskedCCD)   The ccd we are getting data from
-        @param kwargs:
-          boundry  (int)              Size of buffer around edge of overscan region
-          bias_type (str)             Method to use to construct bias
-          superbias_frame (MaskedCCD) The superbias
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        ccd : `MaskedCCD`
+            The ccd we are getting data from
+        data : `dict`
+            The data we are updating
 
-        @returns (list) the overscan data
+        Keywords
+        --------
+        superbias_frame : `MaskedCCD`
+            The superbias frame to subtract away
+        boundry : `int`
+            Size of buffer around edge of overscan region
+
+        Returns
+        -------
+        overscans : `list`
+            The overscan data
         """
         amps = get_amp_list(butler, ccd)
         superbias_frame = kwargs.get('superbias_frame', None)

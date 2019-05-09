@@ -12,13 +12,23 @@ from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES,\
 def stack_by_amps(stack_arrays, butler, ccd, **kwargs):
     """Stack arrays for all the amps to look for coherent noise
 
-    @param stack_arrays (dict)   Dictionary of arrays with stacked data
-    @param butler (`Butler`)     The data butler
-    @param ccd (`MaskedCCD`)     The ccd we are getting data from
-    @param kwargs:
-      ifile (int)                    File index
-      bias_type (str)                Method to use to construct bias
-      superbias_frame (`MaskedCCD`)  The superbias
+    Parameters
+    ----------
+    stack_arrays : `dict`
+        Dictionary of arrays with stacked data, filled by this function
+    butler : `Butler` or `None`
+        The data butler
+    ccd : `MaskedCCD`
+        The ccd we are getting data from
+
+    Keywords
+    --------
+    ifile : `int`
+        File index
+    bias_type : `str`
+        Method to use to construct bias
+    superbias_frame : `MaskedCCD` or `None`
+        The superbias frame to subtract off
     """
     bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
     ifile = kwargs['ifile']
@@ -52,11 +62,19 @@ def stack_by_amps(stack_arrays, butler, ccd, **kwargs):
 def convert_stack_arrays_to_dict(stack_arrays, dim_array_dict, nfiles):
     """Convert the stack arrays to a dictionary
 
-    @param stack_arrays (dict)   The stacked data
-    @param dim_array_dict (dict) The array shapes
-    @param nfiles (int)          Number of input files
+    Parameters
+    ----------
+    stack_arrays : `dict`
+        The stacked data
+    dim_array_dict : `dict`
+        The array shapes
+    nfiles : `int`
+        Number of input files
 
-    @returns (dict) the re-organized data
+    Returns
+    -------
+    stackdata_dict : `dict`
+        The re-organized data
     """
     stackdata_dict = {}
 

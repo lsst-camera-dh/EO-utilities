@@ -33,22 +33,57 @@ class BiasSummaryAnalysisTask(AnalysisTask):
     plotname_format = SUM_BIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """ C'tor
-        @param kwargs:
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
         """
         AnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
-        """This needs to be implemented by the sub-class"""
-        raise NotImplementedError("AnalysisFunc.extract is not overridden.")
+        """This needs to be implemented by the sub-class
+
+        It should analyze the input data and create a set of tables
+        in a `TableDict` object
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
+        """
+        raise NotImplementedError("BiasSummaryAnalysisTask.extract is not overridden.")
 
     def plot(self, dtables, figs, **kwargs):
-        """This needs to be implemented by the sub-class"""
-        raise NotImplementedError("AnalysisFunc.plot is not overridden.")
+        """This needs to be implemented by the sub-class
+
+        It should use a `TableDict` object to create a set of
+        plots and fill a `FigureDict` object
+
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
+        """
+        raise NotImplementedError("BiasSummaryAnalysisTask.plot is not overridden.")
 
 
 class SuperbiasSummaryAnalysisConfig(AnalysisConfig):
-    """Configurate for bias analyses"""
+    """Configuration for bias analyses"""
     outdir = EOUtilOptions.clone_param('outdir')
     dataset = EOUtilOptions.clone_param('dataset')
     outsuffix = EOUtilOptions.clone_param('outsuffix')
@@ -68,15 +103,50 @@ class SuperbiasSummaryAnalysisTask(AnalysisTask):
     plotname_format = SUM_SBIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """ C'tor
-        @param kwargs:
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
         """
         AnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
-        """This needs to be implemented by the sub-class"""
-        raise NotImplementedError("AnalysisFunc.extract is not overridden.")
+        """This needs to be implemented by the sub-class
+
+        It should analyze the input data and create a set of tables
+        in a `TableDict` object
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
+        """
+        raise NotImplementedError("SuperbiasSummaryAnalysisTask.extract is not overridden.")
 
     def plot(self, dtables, figs, **kwargs):
-        """This needs to be implemented by the sub-class"""
-        raise NotImplementedError("AnalysisFunc.plot is not overridden.")
+        """This needs to be implemented by the sub-class
+
+        It should use a `TableDict` object to create a set of
+        plots and fill a `FigureDict` object
+
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
+        """
+        raise NotImplementedError("SuperbiasSummaryAnalysisTask.plot is not overridden.")

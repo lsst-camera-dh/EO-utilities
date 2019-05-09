@@ -35,19 +35,31 @@ class BiasVRowTask(BiasAnalysisTask):
     iteratorClass = AnalysisBySlot
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
         """Extract the bias as function of row
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the bias and mask files
-        @param kwargs
-            slot (str)           Slot in question, i.e., 'S00'
-            bias (str)           Method to use for unbiasing
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (`TableDict`) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -88,8 +100,17 @@ class BiasVRowTask(BiasAnalysisTask):
     def plot(self, dtables, figs, **kwargs):
         """Plot the bias as function of row
 
-        @param dtables (`TableDict`)  The data
-        @param figs (`FigureDict`)    Object to store the figues
+        It should use a `TableDict` object to create a set of
+        plots and fill a `FigureDict` object
+
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
         figs.setup_amp_plots_grid("biasval", title="Bias by row",
@@ -101,12 +122,23 @@ class BiasVRowTask(BiasAnalysisTask):
     def get_ccd_data(self, butler, ccd, data, **kwargs):
         """Get the bias values and update the data dictionary
 
-        @param butler (`Butler`)   The data butler
-        @param ccd (`MaskedCCD`)   The ccd we are getting data from
-        @param data (dict)         The data we are updating
-        @param kwargs:
-            ifile (int)       The file index
-            nfiles (int)      Total number of files
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        ccd : `MaskedCCD`
+            The ccd we are getting data from
+        data : `dict`
+            The data we are updating
+
+        Keywords
+        --------
+        slot : `str`
+            The slot name
+        ifile : `int`
+            The file index
+        nfiles_used : `int`
+            Total number of files
         """
         slot = self.config.slot
         bias_type = self.config.bias

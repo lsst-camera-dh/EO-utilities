@@ -76,15 +76,17 @@ SUM_SBIAS_PLOT_FORMATTER = FILENAME_FORMATS.add_format('sum_sbias_plot',
 def get_bias_suffix(**kwargs):
     """Return the suffix for bias files
 
-    @param kwargs (dict)
-        bias_type(str)
-        superbias_type(str)
-        stat (str)
-        std (bool)
-        suffix (str)
-
     the format is _b-{bias_type}_s-{superbias_type}{stat}{suffix}
-    @return (str) the suffix
+
+    Parameters
+    ----------
+    kwargs
+        Passed to formatting statement
+
+    Returns
+    -------
+    suffix : `str`
+        The suffix
     """
     bias_type = kwargs.get('bias', None)
     superbias_type = kwargs.get('superbias', None)
@@ -116,14 +118,17 @@ def get_bias_suffix(**kwargs):
 def get_superbias_suffix(**kwargs):
     """Return the suffix for bias files
 
-    @param kwargs (dict)
-        superbias_type(str)
-        std (bool)
-        suffix (str)
-        stat (str)
-
     the format is b-{superbias_type}{stat}{suffix}
-    @return (str) the suffix
+
+    Parameters
+    ----------
+    kwargs
+        Passed to formatting statement
+
+    Returns
+    -------
+    suffix : `str`
+        The suffix
     """
     superbias_type = kwargs.get('superbias', None)
     stat_type = kwargs.get('stat', None)
@@ -149,23 +154,29 @@ def get_superbias_suffix(**kwargs):
 def get_bias_files_run(run_id, **kwargs):
     """Get a set of bias and mask files out of a folder
 
-    @param run_id (str)      The number number we are reading
-    @param kwargs
-       acq_types (list)  The types of acquistions we want to include
+    Parameters
+    ----------
+    run_id : `str`
+        The number number we are reading
+    kwargs
+        Passed along to the underlying get_files_for_run function
 
-    @returns (dict) Dictionary mapping slot to file names
+    Returns
+    -------
+    outdict : `dict`
+        Dictionary mapping slot to file names
     """
-    acq_types = kwargs.get('acq_types', None)
+    testtypes = kwargs.get('testtypes', None)
     hinfo = get_hardware_type_and_id(run_id)
 
-    if acq_types is None:
+    if testtypes is None:
         if hinfo[0] == 'LCA-11021':
-            acq_types = DATACAT_TS8_TEST_TYPES
+            testtypes = DATACAT_TS8_TEST_TYPES
         else:
-            acq_types = DATACAT_BOT_TEST_TYPES
+            testtypes = DATACAT_BOT_TEST_TYPES
 
     return get_files_for_run(run_id,
                              imagetype="BIAS",
-                             testtypes=acq_types,
+                             testtypes=testtypes,
                              outkey='BIAS',
                              **kwargs)

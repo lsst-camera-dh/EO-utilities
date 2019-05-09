@@ -55,7 +55,13 @@ class PTCTask(FlatAnalysisTask):
     iteratorClass = AnalysisBySlot
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         FlatAnalysisTask.__init__(self, **kwargs)
         self.stat_ctrl = afwMath.StatisticsControl()
 
@@ -81,13 +87,21 @@ class PTCTask(FlatAnalysisTask):
         return (fratio, fmean, fvar)
 
     def extract(self, butler, data, **kwargs):
-        """Extract the flat as function of row
+        """Extract the photon transfer curve data
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the flat and mask files
-        @param kwargs
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -144,10 +158,16 @@ class PTCTask(FlatAnalysisTask):
         return dtables
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data from the ptc statistics study
+        """Plot the photon transfer curve data
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 
@@ -175,18 +195,32 @@ class PTCStatsTask(FlatAnalysisTask):
     plotname_format = RAFT_FLAT_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """C'tor """
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         FlatAnalysisTask.__init__(self, **kwargs)
 
 
     def extract(self, butler, data, **kwargs):
-        """Extract the flat as function of row
+        """Extract the PTC summary statistics
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the flat and mask files
-        @param kwargs
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -262,8 +296,12 @@ class PTCStatsTask(FlatAnalysisTask):
     def plot_fits(dtables, figs):
         """Plot the amplifier by amplifier fits from the ptc study
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
         """
         table = dtables['ptc_stats']
         ptc_means = table['ptc_mean']
@@ -291,8 +329,14 @@ class PTCStatsTask(FlatAnalysisTask):
     def plot(self, dtables, figs, **kwargs):
         """Plot the summary data from the ptc statistics study
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
         self.plot_fits(dtables, figs)
@@ -317,17 +361,32 @@ class PTCSummaryTask(FlatSummaryAnalysisTask):
     _DefaultName = "PTCSummaryTask"
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         FlatSummaryAnalysisTask.__init__(self, **kwargs)
 
 
     def extract(self, butler, data, **kwargs):
-        """Make a summry table of the flat FFT data
+        """Extract the summary data from the PTC analyses
 
-        @param filedict (dict)      The files we are analyzing
-        @param kwargs
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict)
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -350,10 +409,16 @@ class PTCSummaryTask(FlatSummaryAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data from the superflat statistics study
+        """Plot the summary data from the PTC analyses
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
         sumtable = dtables['ptc_sum']
