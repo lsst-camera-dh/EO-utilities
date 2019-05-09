@@ -68,7 +68,6 @@ class MaskAddTask(BaseAnalysisTask):
         self.safe_update(**kwargs)
 
         mask_files = slot_data['MASK']
-        print (len(mask_files))
         if butler is not None:
             sys.stdout.write("Ignoring Butler to get mask files\n")
 

@@ -18,7 +18,7 @@ except ImportError:
     print("Warning, no datacat-utilities")
 
 
-from .defaults import DATACAT_TS8_MASK_TEST_TYPES, DATACAT_BOT_MASK_TEST_TYPES,\
+from .defaults import TS8_MASK_TEST_TYPES, BOT_MASK_TEST_TYPES,\
      ALL_RAFTS, ALL_SLOTS, ARCHIVE_SLAC
 
 
@@ -375,7 +375,6 @@ def get_mask_files_run(run_id, **kwargs):
     kwcopy = kwargs.copy()
     outdict = {}
     rafts = kwcopy.pop('rafts')
-    print(kwcopy)
     if rafts is None:
         raft = kwcopy.get('raft', None)
         if raft is None:
@@ -389,7 +388,6 @@ def get_mask_files_run(run_id, **kwargs):
         outdict[raft] = slotdict
         for slot in ALL_SLOTS:
             glob_string = TS8_MASKIN_FORMATTER(slot=slot, run=run_id, suffix='*_mask.fits', **kwcopy)
-            print(glob_string)
             slotdict[slot] = dict(MASK=sorted(glob.glob(glob_string)))
 
     return outdict

@@ -1,4 +1,4 @@
-"""Functions to analyse qe and superbias frames"""
+"""Tasks to analyse qe (Quantum efficiency) runs"""
 
 import sys
 
