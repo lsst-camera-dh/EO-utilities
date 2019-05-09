@@ -18,7 +18,7 @@ except ImportError:
     print("Warning, no datacat-utilities")
 
 
-from .defaults import DATACAT_TS8_MASK_TEST_TYPES, DATACAT_BOT_MASK_TEST_TYPES,\
+from .defaults import TS8_MASK_TEST_TYPES, BOT_MASK_TEST_TYPES,\
     SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING,\
     SUPERBIAS_FORMAT_STRING, SUPERBIAS_STAT_FORMAT_STRING, ALL_RAFTS, ALL_SLOTS,\
     ARCHIVE_SLAC, TS8_GLOB_STRING, BOT_GLOB_STRING
@@ -207,6 +207,8 @@ FILENAME_FORMATS = FilenameFormatDict()
 SLOT_BASE_FORMATTER = FILENAME_FORMATS.add_format('slot_basename', SLOT_FORMAT_STRING)
 RAFT_BASE_FORMATTER = FILENAME_FORMATS.add_format('raft_basename', RAFT_FORMAT_STRING)
 SUM_BASE_FORMATTER = FILENAME_FORMATS.add_format('summary_basename', SUMMARY_FORMAT_STRING)
+TS8_MASKIN_FORMATTER = FILENAME_FORMATS.add_format('ts8_mask_in', SLOT_FORMAT_STRING,
+                                                   fileType='masks_in', testType='', suffix='_mask.fits')
 MASK_FORMATTER = FILENAME_FORMATS.add_format('mask', SLOT_FORMAT_STRING,
                                              fileType='masks', testType='', suffix='_mask.fits')
 SUPERBIAS_FORMATTER = FILENAME_FORMATS.add_format('superbias',
@@ -229,6 +231,7 @@ def get_ts8_files_glob(**kwargs):
         glob_string = TS8_FORMATTER(slot=slot, **kwargs)
         outdict[slot] = sorted(glob.glob(glob_string))
     return outdict
+
 
 
 def get_bot_files_glob(**kwargs):
@@ -350,19 +353,29 @@ def get_mask_files_run(run_id, **kwargs):
 
     @returns (dict) Dictionary mapping slot to file names
     """
-    mask_types = kwargs.get('mask_types', None)
     hinfo = get_hardware_type_and_id(run_id)
-    if mask_types is None:
-        if hinfo[0] == 'LCA-11021':
-            mask_types = DATACAT_TS8_MASK_TEST_TYPES
-        else:
-            mask_types = DATACAT_BOT_MASK_TEST_TYPES
 
-    return get_files_for_run(run_id,
-                             testtypes=mask_types,
-                             imagetype='mask',
-                             outkey='MASK',
-                             matchstr='_mask')
+    kwcopy = kwargs.copy()
+    outdict = {}
+    rafts = kwcopy.pop('rafts')
+    print(kwcopy)
+    if rafts is None:
+        raft = kwcopy.get('raft', None)
+        if raft is None:
+            rafts = [hinfo[1]]
+        else:
+            rafts = [raft]
+
+    for raft in rafts:
+        kwcopy['raft'] = raft
+        slotdict = {}
+        outdict[raft] = slotdict
+        for slot in ALL_SLOTS:
+            glob_string = TS8_MASKIN_FORMATTER(slot=slot, run=run_id, suffix='*_mask.fits', **kwcopy)
+            print(glob_string)
+            slotdict[slot] = dict(MASK=sorted(glob.glob(glob_string)))
+
+    return outdict
 
 
 def read_runlist(filepath):
@@ -459,7 +472,7 @@ def link_eo_results(ccd_map, fdict, outformat, **kwargs):
         os.system("ln -s %s %s" % (fname, outpath))
 
 
-def link_eo_results_runlist(args, glob_format, paths, outformat):
+def link_eo_results_runlist(args, glob_format, paths, outformat, **kwargs):
     """Link eo results to the analysis area
 
     @param args (dict)      Mapping between rafts, slot and CCD id
@@ -475,9 +488,9 @@ def link_eo_results_runlist(args, glob_format, paths, outformat):
         run_num = run[1]
         hid = run[0].replace('-Dev', '')
 
-        fdict = find_eo_results(glob_format, paths, run=run_num, raft=hid)
+        fdict = find_eo_results(glob_format, paths, run=run_num, raft=hid, **kwargs)
         if fdict is None:
             sys.stderr.write("Could not find eotest_results for %s %s\n" % (run_num, hid))
             continue
 
-        link_eo_results(ccd_map, fdict, outformat, run=run_num, raft=hid, outdir=args['outdir'])
+        link_eo_results(ccd_map, fdict, outformat, run=run_num, raft=hid, outdir=args['outdir'], **kwargs)

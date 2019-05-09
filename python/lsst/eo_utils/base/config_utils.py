@@ -44,6 +44,7 @@ class EOUtilOptions(pexConfig.Config):
 
     # Options for the data source
     butler_repo = pexConfig.Field("Butler repository", str, default=None)
+    datacat = pexConfig.Field("Use data catalog", bool, default=False)
 
     # Options for selecing input data
     dataset = pexConfig.Field("dataset", str, default=None)
