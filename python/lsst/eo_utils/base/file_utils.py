@@ -45,7 +45,10 @@ SUPERBIAS_STAT_FORMAT_STRING =\
 def makedir_safe(filepath):
     """Make a directory needed to write a file
 
-    @param filepath (str)    The file we are going to write
+    Parameters
+    ----------
+    filepath : `str`
+        The file we are going to write
     """
     try:
         os.makedirs(os.path.dirname(filepath))
@@ -56,13 +59,17 @@ def makedir_safe(filepath):
 def get_hardware_type_and_id(run):
     """Return the hardware type and hardware id for a given run
 
-    @param run(str)   The number number we are reading
+    Parameters
+    ----------
+    run : `str`
+        The number number we are reading
 
-    @returns (tuple)
-      htype (str) The hardware type, either
-                        'LCA-10134' (aka full camera) or
-                        'LCA-11021' (single raft)
-      hid (str) The hardware id, e.g., RMT-004-Dev
+    Returns
+    -------
+    htype : `str`
+        The hardware type, either 'LCA-10134' (aka full camera) or 'LCA-11021' (single raft)
+    hid : `str`
+        The hardware id, e.g., RMT-004-Dev
     """
     if run.find('D') >= 0:
         db_ = 'Dev'
@@ -94,8 +101,12 @@ class FilenameFormat:
     def __init__(self, fmt, **kwargs):
         """C'tor
 
-        @param fmt (str)           String that defines the file format
-        @param kwargs              Used to set default values
+        Parameters
+        ----------
+        fmt : `str`
+            String that defines the file format
+        kwargs
+            Used to set default values
         """
         self._format = fmt
         self._keys = FilenameFormat._get_format_keys(self._format)
@@ -106,14 +117,22 @@ class FilenameFormat:
                 self._missing.append(key)
 
     def key_dict(self):
-        """@returns (dict) with all the keys and default values"""
+        """Returns `dict` with all the keys and default values"""
         ret_dict = {key:self._defaults.get(key, None) for key in self._keys}
         return ret_dict
 
     def check(self, **kwargs):
         """Checks which required keys are still missing
 
-        @param kwargs               Format keys
+        Parameters
+        ----------
+        kwargs
+            Format key : value pairs
+
+        Returns
+        -------
+        missed : `list`
+            List of formatting keys that are missing
         """
         missed = []
         for miss in self._missing:
@@ -124,9 +143,21 @@ class FilenameFormat:
     def __call__(self, caller=None, **kwargs):
         """C'tor
 
-        @param caller (object)      Object calling this function
-        @param kwargs               Used to format string
-        @returns (str)              Formatted filename
+        Parameters
+        ----------
+        caller : `object` or `None`
+            Object calling this function
+        kwargs
+            Key : value pairs used to format string
+
+        Returns
+        -------
+        retval: `str`
+            Formatted filename
+
+        Raises
+        ------
+        KeyError : If not all required formatting keys are present
         """
         use_vals = self._defaults.copy()
         use_vals.update(kwargs)
@@ -141,7 +172,10 @@ class FilenameFormat:
     def _findall(string, sep):
         """Find all the values of sep in string
 
-        @returns (list)
+        Returns
+        -------
+        outlist : `list`
+            List of the positions where the seperator occurs
         """
         outlist = []
         for idx, char in enumerate(string):
@@ -153,7 +187,10 @@ class FilenameFormat:
     def _get_format_keys(string):
         """Get the set of keys requird to format this file
 
-        @returns (list)
+        Returns
+        -------
+        outlist : `list`
+            List of the required formatting keys
         """
         left_vals = FilenameFormat._findall(string, '{')
         right_vals = FilenameFormat._findall(string, '}')
@@ -174,32 +211,35 @@ class FilenameFormatDict:
         self._formats = OrderedDict()
 
     def keys(self):
-        """@returns (list) the types of file names"""
+        """Returns the `list` of types of file names"""
         return self._formats.keys()
 
     def values(self):
-        """@returns (list) the `FilenameFormat` objects """
+        """Returns the `list` of `FilenameFormat` objects"""
         return self._formats.values()
 
     def items(self):
-        """@returns (list) the key-value pairs"""
+        """Returns `list` of name `FilenameFormat` keys"""
         return self._formats.items()
 
     def __getitem__(self, key):
-        """Get a single item
-
-        @param key (str)            The key
-        @returns (`FilenameFormat`) The corresponding object
-        """
+        """Returns a single `FilenameFormat` object by name"""
         return self._formats[key]
 
     def __call__(self, key, **kwargs):
         """Get the formatted filename
 
-        @param key (str)            The key
-        @param kwargs               Passed to the `FilenameFormat` object
+        Parameters
+        ----------
+        key : `str`
+            The key that identifies a `FilenameFormat`
+        kwargs
+            Passed to the `FilenameFormat` object
 
-        @returns (str)              The corresponding filename
+        Returns
+        -------
+        retval : `str`
+            The corresponding filename
         """
         return self._formats[key](**kwargs)
 
@@ -242,7 +282,7 @@ BOT_FORMATTER = FILENAME_FORMATS.add_format('bot_images',
                                             archive=ARCHIVE_SLAC)
 
 def get_ts8_files_glob(**kwargs):
-    """Get the file names using the format string for TS8 data """
+    """Returns a `list` with the matching file names using the format string for TS8 data """
     outdict = {}
     for slot in ALL_SLOTS:
         glob_string = TS8_FORMATTER(slot=slot, **kwargs)
@@ -252,7 +292,7 @@ def get_ts8_files_glob(**kwargs):
 
 
 def get_bot_files_glob(**kwargs):
-    """Get the file names using the format string for BOT data """
+    """Returns a `list` with the matching file names using the format string for BOT data """
     outdict = {}
     for raft in ALL_RAFTS:
         raftdict = {}
@@ -262,14 +302,20 @@ def get_bot_files_glob(**kwargs):
         outdict[raft] = raftdict
     return outdict
 
-
 def merge_file_dicts(dict_1, dict_2):
-    """Combine a pair of file_dictionaries
+    """Combine a pair of file dictionaries
 
-    @param dict_1 (dict)
-    @param dict_2 (dict)
+    Parameters
+    ----------
+    dict_1 : `dict`
+        A dictionary of data_ids or filenames keyed by raft, slot, filetype
+    dict_2 : `dict`
+        A dictionary of data_ids or filenames keyed by raft, slot, filetype
 
-    @returns (dict)
+    Returns
+    -------
+    out_dict : `dict`
+        A dictionary of data_ids or filenames keyed by raft, slot, filetype
     """
     out_dict = dict_1.copy()
     for key, val in dict_2.items():
@@ -283,15 +329,28 @@ def merge_file_dicts(dict_1, dict_2):
 def get_files_for_run(run_id, **kwargs):
     """Get a set of data files of a particular type for a particular run
 
-    @param run_id (str)      The number number we are reading
-    @param kwargs:
-       testTypes (list)          The types of acquistions we want to include
-       imageType (str)           The image type we want
-       outkey (str)              Where to put the output file
-       matchstr (str)            If set, only inlcude files with this string
-       nfiles (int)              Number of files to include per test
+    Parameters
+    ----------
+    run_id : `str`
+        The number number we are reading
 
-    @returns (dict) Dictionary mapping slot to file names
+    Keywords
+    --------
+    testTypes : `list`
+        The types of acquistions we want to include
+    imageType : `str`
+        The image type we want
+    outkey : `str`
+        Where to put the output file
+    matchstr : `str`
+        If set, only inlcude files with this string
+    nfiles : `int`
+        Number of files to include per test
+
+    Returns
+    -------
+    outdict : `dict`
+        Dictionary mapping slot to file names
     """
     testtypes = kwargs.get('testtypes')
     imagetype = kwargs.get('imagetype')
@@ -364,11 +423,21 @@ def get_files_for_run(run_id, **kwargs):
 def get_mask_files_run(run_id, **kwargs):
     """Get a set of mask for a particular run
 
-    @param run_id (str)      The number number we are reading
-    @param kwargs:
-       mask_types (list)         The types of acquistions we want to include
+    Parameters
+    ----------
+    run_id : `str`
+        The number number we are reading
 
-    @returns (dict) Dictionary mapping slot to file names
+    Keywords
+    --------
+    mask_types : `list`
+        The types of acquistions we want to include
+
+
+    Returns
+    -------
+    retval : `dict`
+        Dictionary mapping slot to file names
     """
     hinfo = get_hardware_type_and_id(run_id)
 
@@ -396,11 +465,16 @@ def get_mask_files_run(run_id, **kwargs):
 def read_runlist(filepath):
     """Read a list of runs from a txt file
 
-    @param filepath (str)    The input file with the list of runs.
-                             Each line should contain raft and run number, e.g.,
-                             RTM-004-Dev 6106D
+    Parameters
+    ----------
+    filepath : `str`
+        The input file with the list of runs.
+        Each line should contain raft and run number, e.g., RTM-004-Dev 6106D
 
-    @returns (list)          A list of tuples with (raft, run)
+    Returns
+    -------
+    outlist : `list`
+        A list of tuples with (raft, run)
     """
     fin = open(filepath)
     lin = fin.readline()
@@ -417,9 +491,19 @@ def read_runlist(filepath):
 def get_raft_names_dc(run):
     """Get the list of rafts used for a particular run
 
-    @param run(str)   The number number we are reading
+    Parameters
+    ----------
+    run : `str`
+        The number number we are reading
 
-    @returns (list) of raft names
+    Returns
+    -------
+    retval : `list`
+        The list of raft names
+
+    Raises
+    ------
+    ValueError : If the hardware type is not recognized
     """
     hinfo = get_hardware_type_and_id(run)
 
@@ -433,11 +517,17 @@ def get_raft_names_dc(run):
 
 
 def read_raft_ccd_map(yamlfile):
-    """Get the mapping from raft and slot to CCD in
+    """Get the mapping from raft and slot to CCD
 
-    @param yamlfile(str)   File with the mapping
+    Parameters
+    ----------
+    yamlfile : `str`
+        File with the mapping
 
-    @returns (dict) the mapping
+    Returns
+    -------
+    retval : `dict`
+        The mapping key raft, slot to CCD serial number
     """
     return yaml.safe_load(open(yamlfile))
 
@@ -445,11 +535,19 @@ def read_raft_ccd_map(yamlfile):
 def find_eo_results(glob_format, paths, **kwargs):
     """Get a particular EO test result
 
-    @param glob_format (str)   Formatting string for search path
-    @param paths (list)        Search paths
-    @param kwargs              Passed to formatting string
+    Parameters
+    ----------
+    glob_format : `str`
+        Formatting string for search path
+    paths : `list`
+        Search paths
+    kwargs
+        Passed to formatting string
 
-    @returns (dict) the mapping
+    Returns
+    -------
+    odict : `dict`
+        The mapping of run, raft to filename
     """
     for path in paths:
         globstring = glob_format.format(path=path, **kwargs)
@@ -467,12 +565,20 @@ def find_eo_results(glob_format, paths, **kwargs):
 def link_eo_results(ccd_map, fdict, outformat, **kwargs):
     """Link eo results to the analysis area
 
-    @param ccd_map (dcit)      Mapping between rafts, slot and CCD id
-    @param fdict (dict)        Mapping between CCD id and filename
-    @param outformat (str)     Formatting string for output path
-    @param kwargs              Passed to formatting string
+    Parameters
+    ----------
+    ccd_map : `dict`
+        Mapping between rafts, slot and CCD id
+    fdict : `dict`
+        Mapping between CCD id and filename
+    outformat : `str`
+        Formatting string for output path
+    kwargs
+        Passed to formatting string
 
-    @returns (dict) the mapping
+    Raises
+    ------
+    KeyError : If missing values in fdict
     """
     raft = kwargs.pop('raft')
     slot_map = ccd_map[raft]
@@ -490,10 +596,16 @@ def link_eo_results(ccd_map, fdict, outformat, **kwargs):
 def link_eo_results_runlist(args, glob_format, paths, outformat, **kwargs):
     """Link eo results to the analysis area
 
-    @param args (dict)      Mapping between rafts, slot and CCD id
-    @param glob_format (str)   Formatting string for search path
-    @param paths (list)        Search paths
-    @param outformat (str)     Formatting string for output path
+    Parameters
+    ----------
+    args : `dict`
+        Mapping between rafts, slot and CCD id
+    glob_format : `str`
+        Formatting string for search path
+    paths : `list`
+        Search paths for input datra
+    outformat : `str`
+        Formatting string for output path
     """
     run_list = read_runlist(args['input'])
     ccd_map = read_raft_ccd_map(args['mapping'])

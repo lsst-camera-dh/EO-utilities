@@ -18,17 +18,23 @@ class TableDict:
     """Object to collect `astropy.table.Table` objects
 
     This class is a dictionary mapping name to `Table`
-    and a few helper functions add new tables to the dictionary
+    and a few helper functions, e.g., to add new tables to the dictionary
     and to read and write files, either as FITS or HDF5 files.
     """
     def __init__(self, filepath=None, tablelist=None, primary=None):
         """C'tor
 
         if filepath is not set, an empty `TableDict` will be constructed.
-        if tablelist is not set, all the tables in the fill we be read.
+        if tablelist is not set, all the tables in the fill will be read.
 
-        @param filepath (str)     The name of the file to read data from
-        @param tablelist (list)   The name of the tables to read
+        Parameters
+        ----------
+        filepath : `str`
+            The name of the file to read data from
+        tablelist : `list`
+            The name of the tables to read
+        primary : `PrimaryHDU`
+            Optional primary HDU to store if the tables are stored as FITS objects
         """
         self._primary = primary
         self._table_dict = {}
@@ -44,33 +50,30 @@ class TableDict:
         return self._table_dict.values()
 
     def items(self):
-        """Return the table-name : table pairs"""
+        """Return the name : `Table` pairs"""
         return self._table_dict.items()
 
     def __getitem__(self, key):
-        """Return a `Table` by name
-
-        @param key (str)           Name of the table
-        @returns (`Table`)         Requested Table
-        """
+        """Return a `Table` by name"""
         return self._table_dict[key]
 
     def get_table(self, key):
         """Return a `Table` by name
 
-        This version will not raise an exception if the
+        This version will return None and not raise an exception if the
         table does not exist
-
-        @param key (str)           Name of the table
-        @returns (`Table`)         Requested Table
         """
         return self._table_dict.get(key, None)
 
     def make_datatable(self, key, data):
         """Make a `Table` and add it to this objedts
 
-        @param key (str)           Name of the table
-        @param data (dict)         Data for `Table`
+        Parameters
+        ----------
+        key : `str`
+            Name of the table
+        data : `dict`
+            Data for `Table`.   This is passed to the `Table` constructor.
 
         @returns (`Table`)         Newly created table
         """
@@ -81,8 +84,12 @@ class TableDict:
     def add_datatable(self, key, tab):
         """Add a `Table` to this object
 
-        @param key (str)           Name of the table
-        @param tab (`Table`)       The `Table` to add
+        Parameters
+        ----------
+        key : `str`
+            Name of the table
+        tab : `Table`
+            The table.
         """
         self._table_dict[key] = tab
 
@@ -93,8 +100,15 @@ class TableDict:
         the keys will be used as the `Table` names,
         the values will be used as to construct the `Table` objects
 
-        @param data (dict)         Data for these `Table` objects
-        @returns (dict)            Dictionary of `Table` objects
+        Parameters
+        ----------
+        data : `dict`
+            Dictionary of dictionaries
+
+        Returns
+        -------
+        o_dict : `dict`
+            Dictionary of `Table` objects
         """
         o_dict = {self.make_datatable(key, val) for key, val in data.items()}
         return o_dict
@@ -103,8 +117,16 @@ class TableDict:
     def save_datatables(self, filepath, **kwargs):
         """Save all of the `Table` objects in this object to a file
 
-        @param filepath (str)     The file to save it to
-        @param kwargs             Passed to write functions
+        Parameters
+        ----------
+        filepath : `str`
+            The file to save it to
+        kwargs
+            Passed to write functions
+
+        Raises
+        ------
+        ValueError : If the output file type is not known.
         """
         extype = os.path.splitext(filepath)[1]
         if extype in HDF5_SUFFIXS:
@@ -120,7 +142,7 @@ class TableDict:
                 hdu.name = key
                 hlist.append(hdu)
             hdulist = fits.HDUList(hlist)
-            hdulist.writeto(filepath, overwrite=True)
+            hdulist.writeto(filepath, overwrite=True, **kwargs)
         else:
             raise ValueError("Can only write pickle and hdf5 files for now, not %s" % extype)
 
@@ -128,8 +150,16 @@ class TableDict:
     def load_datatables(self, filepath, **kwargs):
         """Read a set of `Table` objects from a file into this object
 
-        @param filepath (str)     The file to read the `Table` objects
-        @param kwargs             Passed to read functions
+        Parameters
+        ----------
+        filepath : `str`
+            The file to read
+        kwargs
+            Passed to reade functions
+
+        Raises
+        ------
+        ValueError : If the input file type is not known.
         """
         extype = os.path.splitext(filepath)[1]
         tablelist = kwargs.get('tablelist', None)
@@ -153,13 +183,24 @@ def vstack_tables(filedict, **kwargs):
 
     This will result in a table with the same columns, but more rows.
 
-    @param filedict (dict)    Dictionary pointing to the files with the tables
-    @param kwargs
-        tablename (str)       Names of table to stack
-        keep_cols (list)      Columns to retain, if None, retain all columns
-        remove_cols (list)    Columns to remove
+    Parameters
+    ----------
+    filedict : `dict`
+        Dictionary pointing to the files with the tables
 
-    @returns (`Table`)        The stacked `Table`
+    Keywords
+    --------
+    tablename : `str`
+        Names of table to stack
+    keep_cols : `list`
+        Columns to retain, if None, retain all columns
+    remove_cols : `list`
+        Columns to remove
+
+    Returns
+    -------
+    outtable : `Table`
+        The stacked `Table`
     """
 
     kwcopy = kwargs.copy()

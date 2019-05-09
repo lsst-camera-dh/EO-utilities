@@ -51,7 +51,10 @@ class BaseAnalysisTask(Configurable):
     def __init__(self, **kwargs):
         """ C'tor
 
-        @param kwargs              Used to override default configuration
+        Parameters
+        ----------
+        kwargs
+            Used to override default configuration
         """
         Configurable.__init__(self, **kwargs)
 
@@ -61,28 +64,45 @@ class BaseAnalysisTask(Configurable):
         It is up to the iteratorClass to construct the data object that is
         passed to this function.
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary (or other structure) contain the input data
-        @param kwargs              Used to override default configuration
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
         """
         raise NotImplementedError('BaseAnalysisTask.__call__')
 
     def make_iterator(self):
-        """@returns (`iteratorClass`) an analysis iterator that can construct
-        the input data structure and invoke this for a particular run, raft, ccd..."""
+        """Construct an object to iterate this task.
+
+        Returns
+        -------
+        ret_val : `iteratorClass`
+            An analysis iterator that can construct
+            the input data structure and invoke this for a particular run, raft, ccd...
+        """
         return self.iteratorClass(self)
 
     def get_config_param(self, key, default):
-        """Keys the value of a parameter for the configuration
+        """Gets the value of a parameter for the configuration
         and returns a default if the configuration does
         not contain that key.
 
         This useful when task with different parameters call the same function.
 
-        @param key (str)           The configuration parameter name
-        @param default             The value to return if the parameter does not exists
+        Parameters
+        ----------
+        key : `str`
+            The configuration parameter name
+        default
+            The value to use if the parameter is not in the configuration
 
-        @returns the parameter value
+        Returns
+        -------
+        The parameter value
         """
         if key in self.config.keys():
             return getattr(self.config, key)
@@ -92,11 +112,19 @@ class BaseAnalysisTask(Configurable):
         """Use a `FilenameFormat` object to construct a filename for a
         specific set of input parameters.
 
-        @param formater (`FilenameFormat`) Defines how to construct the filename
-        @param suffix (str)        Appended to the filename
-        @param kwargs              Used to override default configuration
+        Parameters
+        ----------
+        formater : `FilenameFormat`
+            Defines how to construct the filename
+        suffix : `str`
+            Appended to the filename
+        kwargs
+            Used to override default configuration
 
-        @returns (str)             The resulting filename
+        Returns
+        -------
+        ret_val : `str`
+            The resulting filename
         """
         format_key_dict = formatter.key_dict()
         format_vals = self.extract_config_vals(format_key_dict)
@@ -111,8 +139,17 @@ class BaseAnalysisTask(Configurable):
     def get_superbias_file(self, suffix, **kwargs):
         """Get the name of the superbias file for a particular run, raft, ccd...
 
-        @param kwargs              Used to override default configuration
-        @returns (str)             The filename
+        Parameters
+        ----------
+        suffix : `str`
+            Appended to the filename
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        ret_val : `str`
+            The filename
         """
         if self.get_config_param('stat', None) in [DEFAULT_STAT_TYPE, None]:
             formatter = SUPERBIAS_FORMATTER
@@ -125,8 +162,15 @@ class BaseAnalysisTask(Configurable):
     def get_mask_files(self, **kwargs):
         """Get the list of mask files for a specific set of input parameters.
 
-        @param kwargs              Used to override default configuration
-        @returns (list)            The results list of mask files
+        Parameters
+        ----------
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        ret_val : `list`
+            The resulting list of mask files
         """
         self.safe_update(**kwargs)
         if self.config.mask:
@@ -137,7 +181,10 @@ class BaseAnalysisTask(Configurable):
     def add_parser_arguments(cls, parser):
         """Add parser arguments for this class
 
-        @param parser (`ArgumentParser`)   The parser to add arguments to
+        Parameters
+        ----------
+        parser : `ArgumentParser`
+            The parser to add arguments to
         """
         functor = cls()
         handler = cls.iteratorClass(functor)
@@ -154,7 +201,10 @@ class BaseAnalysisTask(Configurable):
     def run(cls, **kwargs):
         """Run the analysis using the keyword arguments
 
-        @param kwargs              Used to override default configuration
+        Parameters
+        ----------
+        kwargs
+            Used to override default configuration
         """
         functor = cls()
         handler = cls.iteratorClass(functor)
@@ -203,15 +253,25 @@ class AnalysisTask(BaseAnalysisTask):
     def __init__(self, **kwargs):
         """ C'tor
 
-        @param kwargs              Used to override default configuration
+        Parameters
+        ----------
+        kwargs
+            Used to override default configuration
         """
         BaseAnalysisTask.__init__(self, **kwargs)
 
     def get_suffix(self, **kwargs):
         """Get the suffix to add to table and plot filenames
 
-        @param kwargs              Used to override default configuration
-        @returns (str)             The suffix
+        Parameters
+        ----------
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        ret_val : `str`
+            The suffix
         """
         self.safe_update(**kwargs)
         return self.config.outsuffix
@@ -220,8 +280,15 @@ class AnalysisTask(BaseAnalysisTask):
         """Get the name of the file for the output tables for a particular
         run, raft, ccd..
 
-        @param kwargs              Used to override default configuration
-        @returns (str)             The filename
+        Parameters
+        ----------
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        ret_val : `str`
+            The name of the file
         """
         return self.get_filename_from_format(self.tablename_format,
                                              self.get_suffix(),
@@ -230,8 +297,15 @@ class AnalysisTask(BaseAnalysisTask):
     def plotfile_name(self, **kwargs):
         """Get the basename for the plot files for a particular run, raft, ccd...
 
-        @param kwargs              Used to override default configuration
-        @returns (str)             The filename
+        Parameters
+        ----------
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        ret_val : `str`
+            The name of the file
         """
         return self.get_filename_from_format(self.plotname_format,
                                              self.get_suffix(),
@@ -240,7 +314,17 @@ class AnalysisTask(BaseAnalysisTask):
     def get_superbias_frame(self, mask_files, **kwargs):
         """Get the superbias frame for a particular run, raft, ccd...
 
-        @returns (`MaskedCCD`)      The superbias frame
+        Parameters
+        ----------
+        mask_files : `list`
+            Files used to construct the pixel mask
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        ret_val : `MaskedCCD`
+            The superbias frame
         """
         self.safe_update(**kwargs)
         if self.config.superbias is None:
@@ -257,11 +341,19 @@ class AnalysisTask(BaseAnalysisTask):
         If the config.skip parameter is set, the `TableDict` object will be
         read back instead of generated
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to input data
-        @param kwargs              Used to override default configuration
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @return (`TableDict`)
+        Returns
+        -------
+        dtables : `TableDict`
+            The object that stores the output data
         """
         self.safe_update(**kwargs)
 
@@ -287,9 +379,15 @@ class AnalysisTask(BaseAnalysisTask):
         If it is set to anything else (such as png, pdf...), that will be
         treated as the file type to write the figures as
 
-        @param dtables (`TableDict`)   The data tables produced by extract()
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The object that stores the output data
 
-        @return (`FigureDict`)         The resulting figues
+        Returns
+        -------
+        figs : `FigureDict`
+            The resulting figures
         """
         self.safe_update(**kwargs)
 
@@ -311,10 +409,15 @@ class AnalysisTask(BaseAnalysisTask):
         It is up to the iteratorClass to construct the data object that is
         passed to this function.
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary (or other structure) contain the input data
-        @param kwargs              Used to override default configuration
-        """
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+         """
         self.safe_update(**kwargs)
         dtables = self.make_datatables(butler, data)
         if self.config.plot is not None:
@@ -326,11 +429,19 @@ class AnalysisTask(BaseAnalysisTask):
         It should analyze the input data and create a set of tables
         in a `TableDict` object
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary (or other structure) contain the input data
-        @param kwargs              Used to override default configuration
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (`TableDict`)     The results of the analysis
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         raise NotImplementedError("AnalysisFunc.extract is not overridden.")
 
@@ -340,8 +451,13 @@ class AnalysisTask(BaseAnalysisTask):
         It should use a `TableDict` object to create a set of
         plots and fill a `FigureDict` object
 
-        @param dtables (`TableDict`)  The analysis data results
-        @param figs (`FigureDict')    Stucture to collect the figured
-        @param kwargs              Used to override default configuration
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         raise NotImplementedError("AnalysisFunc.plot is not overridden.")
