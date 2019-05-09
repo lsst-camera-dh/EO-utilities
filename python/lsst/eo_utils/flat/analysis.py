@@ -2,8 +2,6 @@
 
 import sys
 
-from lsst.eo_utils.base import mpl_utils
-
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
@@ -14,8 +12,6 @@ from lsst.eo_utils.flat.file_utils import get_flat_files_run,\
     SLOT_FLAT_TABLE_FORMATTER, SLOT_FLAT_PLOT_FORMATTER
 
 from lsst.eo_utils.flat.butler_utils import get_flat_files_butler
-
-mpl_utils.set_plt_ioff()
 
 
 

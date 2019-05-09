@@ -18,10 +18,27 @@ except ImportError:
     print("Warning, no datacat-utilities")
 
 
-from .defaults import TS8_MASK_TEST_TYPES, BOT_MASK_TEST_TYPES,\
-    SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING,\
-    SUPERBIAS_FORMAT_STRING, SUPERBIAS_STAT_FORMAT_STRING, ALL_RAFTS, ALL_SLOTS,\
-    ARCHIVE_SLAC, TS8_GLOB_STRING, BOT_GLOB_STRING
+from .defaults import DATACAT_TS8_MASK_TEST_TYPES, DATACAT_BOT_MASK_TEST_TYPES,\
+     ALL_RAFTS, ALL_SLOTS, ARCHIVE_SLAC
+
+
+# These are the standard input filenames
+TS8_GLOB_STRING =\
+    '{archive}/LCA-11021_RTM/LCA-11021_{raft}*/{run}/{testName}/v0/*/{slot}/*{imgtype}*.fits'
+BOT_GLOB_STRING =\
+    '{archive}/LCA-10134_Cryostat/LCA-10134_Cryostat-0001/{run}/' +\
+    'BOT_acq/v0/*/{testName}*{imgtype}*/MC_C*{raft}_{slot}.fits'
+
+
+# These strings define the standard output filenames
+SLOT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}{suffix}'
+RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-RFT{suffix}'
+SUMMARY_FORMAT_STRING = '{outdir}/{fileType}/summary/{testType}/{dataset}{suffix}'
+SUPERBIAS_FORMAT_STRING =\
+    '{outdir}/superbias/{raft}/{raft}-{run}-{slot}_superbias_b-{bias}{suffix}'
+SUPERBIAS_STAT_FORMAT_STRING =\
+    '{outdir}/superbias/{raft}/{raft}-{run}-{slot}_{stat}_b-{bias}{suffix}'
+
 
 
 

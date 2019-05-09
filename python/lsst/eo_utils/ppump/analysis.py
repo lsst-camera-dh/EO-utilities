@@ -2,8 +2,6 @@
 
 import sys
 
-from lsst.eo_utils.base import mpl_utils
-
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
@@ -14,9 +12,6 @@ from lsst.eo_utils.ppump.file_utils import get_ppump_files_run,\
     SLOT_PPUMP_TABLE_FORMATTER, SLOT_PPUMP_PLOT_FORMATTER
 
 from lsst.eo_utils.ppump.butler_utils import get_ppump_files_butler
-
-mpl_utils.set_plt_ioff()
-
 
 
 class PpumpAnalysisConfig(AnalysisConfig):

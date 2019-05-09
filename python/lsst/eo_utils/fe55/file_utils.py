@@ -4,11 +4,10 @@
 
 """This module contains functions to find files of a particular type in the SLAC directory tree"""
 
-from lsst.eo_utils.base.defaults import DATACAT_TS8_TEST_TYPES, DATACAT_BOT_TEST_TYPES,\
-    SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
+from lsst.eo_utils.base.defaults import DATACAT_TS8_TEST_TYPES, DATACAT_BOT_TEST_TYPES
 
 from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_for_run,\
-    FILENAME_FORMATS
+    FILENAME_FORMATS, SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
 
 from lsst.eo_utils.bias.file_utils import get_bias_suffix
 
