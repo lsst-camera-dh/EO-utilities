@@ -19,13 +19,24 @@ from .file_utils import makedir_safe, get_mask_files_run,\
 def get_mask_data(caller, butler, run, **kwargs):
     """Get a set of mask files out of a folder
 
-    @param caller (`Task')     Task we are getting the data for
-    @param butler (`Bulter`)   The data Butler
-    @param run (str)           The run number we are reading
-    @param kwargs:
-        mask_types (list)      The types of acquistions we want to include
+    Parameters
+    ----------
+    caller : `Task'
+        Task we are getting the data for
+    butler : `Bulter`
+        The data `Butler` or `None` if we as just globbing filenames
+    run : `str`
+        The run number we are reading
 
-    @returns (dict) Dictionary mapping slot to file names
+    Keywords
+    --------
+    mask_types : `list`
+        The types of acquistions we want to include
+
+    Returns
+    -------
+    retval : `dict`
+        Dictionary mapping slot to file names
     """
     kwargs.pop('run', None)
     if butler is None:
@@ -48,7 +59,10 @@ class MaskAnalysisBySlot(AnalysisBySlot):
     def __init__(self, task):
         """C'tor
 
-        @param task (AnalysisTask)     Task that this will run
+        Parameters
+        ----------
+        task : `AnalysisTask`
+            Task that iterator will run
         """
         AnalysisBySlot.__init__(self, task)
 
@@ -70,24 +84,31 @@ class MaskAddTask(BaseAnalysisTask):
     iteratorClass = MaskAnalysisBySlot
 
     def __init__(self, **kwargs):
-        """ C'tor
+        """C'tor
 
-        @param kwargs            Used to override configruation
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
         """
         BaseAnalysisTask.__init__(self, **kwargs)
 
 
-    def __call__(self, butler, slot_data, **kwargs):
+    def __call__(self, butler, data, **kwargs):
         """Make a mask file by or-ing together a set of other mask files
 
-        @param: butler (Bulter)  The data Butler
-        @param slot_data (dict)  Dictionary pointing to the mask files
-
-        @param kwargs            Used to override configruation
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 
-        mask_files = slot_data['MASK']
+        mask_files = data['MASK']
         if butler is not None:
             sys.stdout.write("Ignoring Butler to get mask files\n")
 

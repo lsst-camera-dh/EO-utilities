@@ -20,14 +20,25 @@ import sys
 def dispatch_job(jobname, logfile, **kwargs):
     """Dispatch a single job
 
-    @param jobname (str)    The command to run the job
-    @param logfile (str)    The path to the logfile
-    @param kwargs
-            run (str)          The run number
-            batch (str)        Where to send the jobs
-            batch_args (str)   Arguments to pass to batch command
-            optstring (str)    Additional arguments to pass to the command
-            dry_run (bool)     Print command but do not run it
+    Parameters
+    ----------
+    jobname : `str`
+        The command to run the job
+    logfile : `str`
+        The path to the logfile
+
+    Keywords
+    --------
+    run : `str`
+        The run number
+    batch : `str`
+        Where to send the jobs
+    batch_args : `str`
+        Arguments to pass to batch command
+    optstring : `str`
+        Additional arguments to pass to the command
+    dry_run : `bool`
+        Print command but do not run it
     """
     run = kwargs.get('run', None)
     batch = kwargs.get('batch', 'native')

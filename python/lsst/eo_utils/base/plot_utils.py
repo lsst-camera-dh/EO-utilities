@@ -41,17 +41,17 @@ class FigureDict:
     def add_figure(self, key, fig):
         """Added a figure
 
-        @param key (str)                         Name of the figure.
-        @param fig (`matplotlib.figure.Figure`)  The figure.
+        Parameters
+        ----------
+        key : `str`
+            Name of the figure
+        fig : `matplotlib.figure.Figure`
+            The figure we are adding
         """
         self._fig_dict[key] = dict(fig=fig)
 
     def get_figure(self, key):
-        """Return a figure
-
-        @param key (str)                       Name of the figure.
-        @returns (`matplotlib.figure.Figure`)  Requested Figure
-        """
+        """Return a `Figure` by name"""
         return self._fig_dict[key]['fig']
 
     def keys(self):
@@ -67,21 +67,23 @@ class FigureDict:
         return self._fig_dict.items()
 
     def __getitem__(self, key):
-        """Return a particular sub-dictionary
-
-        @param key (str)                       Key for the sub-dictionary.
-        @returns (dict)                        Requested sub-dictionary
-        """
+        """Return a particular sub-dictionary by name"""
         return self._fig_dict[key]
 
-
     def get_obj(self, key, key2):
-        """Return some other object besides a figures
+        """Return some other `matplotlib` object besides a `Figure`
 
-        @param key (str)                       Key for the figure.
-        @param key2 (str)                      Key for the object
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure
+        key2 : `str`
+            Key for the object
 
-        @returns (object)                      Requested object
+        Returns
+        -------
+        retval : `object`
+            Requested object
         """
         return self._fig_dict[key][key2]
 
@@ -89,10 +91,17 @@ class FigureDict:
     def get_amp_axes(self, key, iamp):
         """Return the `matplotlib` axes object for a particular amp
 
-        @param key (str)                       Key for the figure.
-        @param iamp (int)                      Amplifier index
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        iamp : `int`
+            Amplifier index
 
-        @returns (axes)                        Requested `matplotlib` axes object
+        Returns
+        -------
+        retval : `Axes`
+            Requested `matplotlib` axes object
         """
         return self._fig_dict[key]['axs'].flat[iamp]
 
@@ -100,16 +109,28 @@ class FigureDict:
     def setup_figure(self, key, **kwargs):
         """Set up a figure with requested labeling
 
-        @param key (str)   Key for the figure.
-        @param kwargs:
-            title (str)    Figure title
-            xlabel (str)   X-axis label
-            ylabel (str)   Y-axis label
-            figsize (str)  Figure width, height in inches
+        Parameters
+        ----------
+        key : str
+            Key for the figure.
 
-        @returns (dict)
-            fig (matplotlib.figure.Figure)
-            axes (matplotlib.Axes._subplots.AxesSubplot)
+        Keywords
+        --------
+        title : `str`
+            Figure title
+        xlabel : `str`
+            X-axis label
+        ylabel : `str`
+            Y-axis label
+        figsize : `tuple`
+            Figure width, height in inches
+
+        Returns
+        -------
+        fig : `Figure`
+            The newly created `Figure`
+        axes : `AxesSubplot`
+            The axes objects
         """
         title = kwargs.get('title', None)
         xlabel = kwargs.get('xlabel', None)
@@ -132,18 +153,32 @@ class FigureDict:
     def setup_amp_plots_grid(self, key, **kwargs):
         """Set up a 4x4 grid of plots with requested labeling
 
-        @param key (str)   Key for the figure.
-        @param kwargs (dict)
-            title (str)    Figure title
-            xlabel (str)   X-axis label
-            ylabel (str)   Y-axis label
-            ymin (float)   Y-axis min
-            ymax (float)   Y-axis max
-            figsize (str)  Figure width, height in inches
+        Parameters
+        ----------
+        key : str
+            Key for the figure.
 
-        @returns (dict)
-            fig (matplotlib.figure.Figure)
-            axs (array of matplotlib.Axes._subplots.AxesSubplot)
+        Keywords
+        --------
+        title : `str`
+            Figure title
+        xlabel : `str`
+            X-axis label
+        ylabel : `str`
+            Y-axis label
+        figsize : `tuple`
+            Figure width, height in inches
+        ymin : `float` or `None`
+            Y-axis minimum value
+        ymax : `float` or `None`
+            Y-axis maximum value
+
+        Returns
+        -------
+        fig : `Figure`
+            The newly created `Figure`
+        axes : `AxesSubplot`
+            The axes objects
         """
         title = kwargs.get('title', None)
         xlabel = kwargs.get('xlabel', None)
@@ -183,16 +218,32 @@ class FigureDict:
     def setup_region_plots_grid(self, key, **kwargs):
         """Set up a 3x2 grid of plots with requested labeling
 
-        @param key (str)   Key for the figure.
-        @param kwargs (dict)
-            title (str)    Figure title
-            xlabel (str)   X-axis label
-            ylabel (str)   Y-axis label
-            figsize (str)  Figure width, height in inches
+        Parameters
+        ----------
+        key : str
+            Key for the figure.
 
-        @returns (dict)
-            fig (matplotlib.figure.Figure)
-            axs (array of matplotlib.Axes._subplots.AxesSubplot)
+        Keywords
+        --------
+        title : `str`
+            Figure title
+        xlabel : `str`
+            X-axis label
+        ylabel : `str`
+            Y-axis label
+        figsize : `tuple`
+            Figure width, height in inches
+        ymin : `float` or `None`
+            Y-axis minimum value
+        ymax : `float` or `None`
+            Y-axis maximum value
+
+        Returns
+        -------
+        fig : `Figure`
+            The newly created `Figure`
+        axes : `AxesSubplot`
+            The axes objects
         """
         title = kwargs.get('title', None)
         xlabel = kwargs.get('xlabel', None)
@@ -223,16 +274,32 @@ class FigureDict:
 
     def setup_raft_plots_grid(self, key, **kwargs):
         """Set up a 3x3 grid of plots with requested labeling
+        Parameters
+        ----------
+        key : str
+            Key for the figure.
 
-        @param kwargs (dict)
-            title (str)    Figure title
-            xlabel (str)   X-axis label
-            ylabel (str)   Y-axis label
-            figsize (str)  Figure width, height in inches
+        Keywords
+        --------
+        title : `str`
+            Figure title
+        xlabel : `str`
+            X-axis label
+        ylabel : `str`
+            Y-axis label
+        figsize : `tuple`
+            Figure width, height in inches
+        ymin : `float` or `None`
+            Y-axis minimum value
+        ymax : `float` or `None`
+            Y-axis maximum value
 
-        @returns (tuple)
-            fig (matplotlib.figure.Figure)
-            axs (array of matplotlib.Axes._subplots.AxesSubplot)
+        Returns
+        -------
+        fig : `Figure`
+            The newly created `Figure`
+        axes : `AxesSubplot`
+            The axes objects
         """
         title = kwargs.get('title', None)
         xlabel = kwargs.get('xlabel', None)
@@ -264,10 +331,16 @@ class FigureDict:
     def plot_fft(self, key, iamp, freqs, fftpow):
         """Plots the positive frequencies of an FFT
 
-        @param key (str)              Key for the figure.
-        @param iamp (int)             Amp index
-        @param freqs (numpy.ndarray)  The frequencies to be ploted on the x-axis
-        @param fftpow (numpy.ndarray) The power corresponding to the frequencies
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        iamp : `int`
+            Amp index
+        freqs : `numpy.ndarray`
+            The frequencies to be ploted on the x-axis
+        fftpow : `numpy.ndarray`
+            The power corresponding to the frequencies
         """
         n_row = len(fftpow)
         axes = self._fig_dict[key]['axs'].flat[iamp]
@@ -276,13 +349,23 @@ class FigureDict:
     def plot_hist(self, key, iamp, data, **kwargs):
         """Histograms data and plots it
 
-        @param key (str)              Key for the figure.
-        @param iamp (int)             Amp index
-        @param data (numpy.ndarray)   Data to histogram
-        @param kwargs (dict)
-            xmin (float)
-            xmax (float)
-            nbins (int)
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        iamp : `int`
+            Amp index
+        data : `numpy.ndarray`
+            Data to histogram
+
+        Keywords
+        --------
+        xmin : `float`
+            The binning minimum
+        xmax : `float`
+            The binning maximum
+        nbins : `int`
+            The number of bins to use
         """
         xmin = kwargs.get('xmin', None)
         xmax = kwargs.get('xmax', None)
@@ -299,11 +382,18 @@ class FigureDict:
     def plot(self, key, iamp, xdata, ydata, **kwargs):
         """Plot x versus y data for one amp
 
-        @param key (str)               Key for the figure.
-        @param iamp (int)              Amp index
-        @param xdata (numpy.ndarray)   Data to histogram
-        @param ydata (numpy.ndarray)   Data to histogram
-        @param kwargs                  Passed to matplotlib
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        iamp : `int`
+            Amp index
+        xdata : `numpy.ndarray`
+            X-axis data
+        ydata : `numpy.ndarray`
+            Y-axis data
+        kwargs
+            Passed to matplotlib
         """
         self._fig_dict[key]['axs'].flat[iamp].plot(xdata, ydata, **kwargs)
 
@@ -311,14 +401,25 @@ class FigureDict:
     def plot_stats_band_amp(self, key, iamp, xvals, **kwargs):
         """Plot the data each amp in a set of runs in a single chart
 
-        @param key (str)          Key for the figure.
-        @param iamp (int)         Amp index
-        @param kwargs:
-            mean (array)
-            median (array)
-            std (array)
-            min (array)
-            max (array)
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        iamp : `int`
+            Amp index
+        xvals : `numpy.ndarray`
+            X-axis data
+
+        Keywords
+        --------
+        means : `array`
+            Means of the y-axis values
+        stds : `array`
+            Standard deviations of the y-axis values
+        mins : `array`
+            Minimum y-axis values
+        maxs : `array`
+            Maximum y-axis values
         """
         means = kwargs.pop('means')
         stds = kwargs.pop('stds')
@@ -329,26 +430,38 @@ class FigureDict:
         axes.plot(xvals, kwargs.pop('medians'), '.')
 
 
-    def plot_single(self, key, xdata, ydata):
+    def plot_single(self, key, xdata, ydata, **kwargs):
         """Plot x versus y data in a single figure
 
-        @param key (str)               Key for the figure.
-        @param xdata (numpy.ndarray)   Data to histogram
-        @param ydata (numpy.ndarray)   Data to histogram
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        xdata : `numpy.ndarray`
+            X-axis data
+        ydata : `numpy.ndarray`
+            Y-axis data
+        kwargs
+            Passed to matplotlib
         """
-        self._fig_dict[key]['axes'].plot(xdata, ydata)
+        self._fig_dict[key]['axes'].plot(xdata, ydata, **kwargs)
 
 
     def plot_two_image_hist2d(self, key, iamp, img_x, img_y, **kwargs):
-        """Plot pixel-py-pixel values for two
+        """Plot pixel-py-pixel scatter plot for two images
 
-        @param key (str)               Key for the figure.
-        @param iamp (int)              Amplifier index
-        @param img_x (numpy.ndarray)   Data to histogram
-        @param img_y (numpy.ndarray)   Data to histogram
-        @param kwargs
-           nbins
-           ranges
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        iamp : `int`
+            Amp index
+        img_x : `numpy.ndarray`
+            X-axis data
+        img_y : `numpy.ndarray`
+            Y-axis data
+        kwargs
+            Passed to `matplotlib`
         """
         histrange = kwargs.get('range', None)
 
@@ -367,15 +480,27 @@ class FigureDict:
     def plot_xy_axs_from_tabledict(self, dtables, key, idx, plotkey, **kwargs):
         """Plot x versus y data for each sub-figure using data in a table
 
-        @param dtables (TableDict)     Data
-        @param key (str)               Key for the data
-        @param idx (int)               Axis index
-        @param plotkey (str)           Key for the plot
-        @param kwargs:
-           x_name (str) Name for the x-axis data
-           y_name (str) Start of the name for the y-axis data
-           ymin (float) Y-axis min
-           ymax (float) Y-axis max
+        Parameters
+        ----------
+        dtables : `TableDict`
+            Data tables from the analysis
+        key : `str`
+            Key for the data for this plot
+        idx : `int`
+            Axis index for this plot
+        plotkey : `str`
+            Key for the plot
+
+        Keywords
+        --------
+        x_name : `str`
+            Column name for the x-axis data
+        y_name : `str`
+            Start of the name for the y-axis data
+        ymin : `float`
+            Y-axis min
+        ymax : `float`
+            Y-axis max
         """
         x_name = kwargs.get('x_name', 'x')
         y_name = kwargs.get('y_name', 'y')
@@ -397,14 +522,25 @@ class FigureDict:
     def plot_xy_from_tabledict(self, dtables, key, plotkey, **kwargs):
         """Plot x versus y data for each column in a table on a single plot
 
-        @param dtables (TableDict)     Data
-        @param key (str)               Key for the data
-        @param plotkey (str)           Key for the plot
-        @param kwargs:
-           x_name (str) Name for the x-axis data
-           y_name (str) Start of the name for the y-axis data
-           ymin (float) Y-axis min
-           ymax (float) Y-axis max
+        Parameters
+        ----------
+        dtables : `TableDict`
+            Data tables from the analysis
+        key : `str`
+            Key for the data for this plot
+        plotkey : `str`
+            Key for the plot
+
+        Keywords
+        --------
+        x_name : `str`
+            Column name for the x-axis data
+        y_name : `str`
+            Start of the name for the y-axis data
+        ymin : `float`
+            Y-axis min
+        ymax : `float`
+            Y-axis max
         """
         x_name = kwargs.get('x_name', 'x')
         y_name = kwargs.get('y_name', 'y')
@@ -422,12 +558,25 @@ class FigureDict:
     def plot_xy_amps_from_tabledict(self, dtables, key, plotkey, **kwargs):
         """Plot x versus y data for each column in a table for each sub-plot
 
-        @param fd (TableDict)          Data
-        @param key (str)               Key for the data
-        @param plotkey (str)           Key for the plot
-        @param kwargs:
-           x_name (str) Name for the x-axis data
-           y_name (str) Start of the name for the y-axis data
+        Parameters
+        ----------
+        dtables : `TableDict`
+            Data tables from the analysis
+        key : `str`
+            Key for the data for this plot
+        plotkey : `str`
+            Key for the plot
+
+        Keywords
+        --------
+        x_name : `str`
+            Column name for the x-axis data
+        y_name : `str`
+            Start of the name for the y-axis data
+        ymin : `float`
+            Y-axis min
+        ymax : `float`
+            Y-axis max
         """
         x_name = kwargs.get('x_name', 'x')
         y_name = kwargs.get('y_name', 'y')
@@ -460,14 +609,30 @@ class FigureDict:
     def plot_raft_correl_matrix(self, key, data, **kwargs):
         """Plot a correlation matrix
 
-        @param key (str)               Key for the figure.
-        @param data (numpy.ndarray)    Data to histogram
-        @param kwargs
-           slots (list)          Names of the slots
-           title (str)           Title for the figure
-           figsize (tuple)       Figure width, height in inches
-           vmin (float)          minimum value for color axis
-           vmax (float)          maximum value for color axis
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        data : `numpy.ndarray`
+            Data to histogram
+
+        Keywords
+        --------
+        slots : `list`
+            Names of the slots
+        title : `str`
+            Title for the figure
+        figsize : `tuple`
+            Figure width, height in inches
+        vmin : `float`
+            minimum value for color axis
+        vmax : `float`
+            maximum value for color axis
+
+        Returns
+        -------
+        o_dict : `dict`
+            Dictionary of `matplotlib` object
         """
         slots = kwargs.get('slots', None)
         title = kwargs.get('title', None)
@@ -508,20 +673,30 @@ class FigureDict:
     def plot_stat_color(self, key, data, **kwargs):
         """Make a 2D color image of an array of data
 
-        @param key (str)               Key for the figure.
-        @param data (numpy.ndarray)    The data to be plotted
-        @param kwargs
-          title (str)                  Figure title
-          clabel (str)                 Label for the colorbar
-          figsize (tuple)              Figure width, height in inches
-          xlabel (str)                 x-axis label
-          ylabel (str)                 y-axis label
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        data : `numpy.ndarray`
+            Data to plot
 
-        @returns (dict)
-           fig (matplotlib.figure.Figure)
-           ax (matplotlib.Axes._subplots.AxesSubplot)
-           im
-           cbar
+        Keywords
+        --------
+        title : `str`
+            Title for the figure
+        clabel : `str`
+            Label for the colorbar
+        figsize : `tuple`
+            Figure width, height in inches
+        vmin : `float`
+            minimum value for color axis
+        vmax : `float`
+            maximum value for color axis
+
+        Returns
+        -------
+        o_dict : `dict`
+            Dictionary of `matplotlib` object
         """
         kwcopy = kwargs.copy()
         title = kwcopy.pop('title', None)
@@ -544,13 +719,26 @@ class FigureDict:
     def plot_raft_vals_from_table(self, dtable, plotkey, **kwargs):
         """Plot x versus y data for each sub-figure using data in a table
 
-        @param dtable (Table)          Data
-        @param idx (int)               Axis index
-        @param plotkey (str)           Key for the plot
-        @param kwargs:
-           y_name (str) Start of the name for the y-axis data
-           ymin (float) Y-axis min
-           ymax (float) Y-axis max
+        Parameters
+        ----------
+        dtable : `Table`
+            Data table
+        plotkey : `str`
+            Key for the plot
+
+        Keywords
+        --------
+        y_name : `str`
+            Column name for the y-axis data
+        ymin : `float`
+            Y-axis min
+        ymax : `float`
+            Y-axis max
+
+        Returns
+        -------
+        o_dict : `dict`
+            Dictionary of `matplotlib` object
         """
         kwcopy = kwargs.copy()
 
@@ -572,12 +760,24 @@ class FigureDict:
     def plot_amp_arrays(self, key, array_dict, **kwargs):
         """Plot the data from all 16 amps on a sensor in a single figure
 
-        @param key (str)          Key for the figure.
-        @param array_dict         The data
-        @param kwargs
-            vmin (float)          minimum value for color axes
-            vmax (float)          maximum value for color axes
-            subtract_mean (bool)  Flag to subtract mean value from each image
+        Parameters
+        ----------
+        key : `str`
+            Key for the plot
+        array_dict : `dict`
+            Dictionary of data for each amp
+
+        Keywords
+        --------
+        ymin : `float`
+            Y-axis min
+        ymax : `float`
+            Y-axis max
+
+        Returns
+        -------
+        o_dict : `dict`
+            Dictionary of `matplotlib` object
         """
         fig, axs = plt.subplots(2, 8, figsize=(15, 10))
         axs = axs.ravel()
@@ -596,19 +796,32 @@ class FigureDict:
     def plot_sensor(self, key, butler, ccd, **kwargs):
         """Plot the data from all 16 amps on a sensor in a single figure
 
-        @param key (str)          Key for the figure.
-        @param butler (`Butler`)  The data butler
-        @param ccd (`MaskedCCD`)  name of the file containing data to be plotted
-        @param kwargs
-            vmin (float)          minimum value for color axes
-            vmax (float)          maximum value for color axes
-            bias (str)            method used to subtract bias
-            superbias (str)       file with superbias image to subtract
-            subtract_mean (bool)  Flag to subtract mean value from each image
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        butler : `Butler`
+            The data butler
+        ccd : `MaskedCCD` or `AFWImage`
+            Object with the image data
 
-        @returns (dict)
-            fig (matplotlib.figure.Figure)
-            axs (Array of `matplotlib.Axes._subplots.AxesSubplot)
+        Keywords
+        --------
+        vmin : `float`
+            minimum value for color axes
+        vmax : `float`
+            maximum value for color axes
+        bias : `str` or `None`
+            method used to subtract bias
+        superbias_frame : `MaskedCCD` or `None`
+            Superbias image to subtract
+        subtract_mean : `bool`
+            Flag to subtract mean value from each image
+
+        Returns
+        -------
+        o_dict : `dict`
+            Dictionary of `matplotlib` object
         """
         vmin = kwargs.get('vmin', -10)
         vmax = kwargs.get('vmax', 10)
@@ -652,21 +865,32 @@ class FigureDict:
     def histogram_array(self, key, butler, ccd, **kwargs):
         """Plot the data from all 16 amps on a sensor in a single figure
 
-        @param key (str)          Key for the figure.
-        @param butler (`Butler`)  The data butler
-        @param ccd (`MaskedCCD`)  name of the file containing data to be plotted
-        @param kwargs
-            vmin (float)          minimum value for x-axis
-            vmax (float)          maximum value for x-axis
-            nbins (int)           number of bins to use in historam
-            bias (str)            method used to subtract bias
-            superbias (str)       file with superbias image to subtract
-            subtract_mean (bool)  Flag to subtract mean value from each image
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        butler : `Butler`
+            The data butler
+        ccd : `MaskedCCD` or `AFWImage`
+            Object with the image data
 
-        @returns (dict)
-            fig (matplotlib.figure.Figure)
-            axs (Array of `matplotlib.Axes._subplots.AxesSubplot)
+        Keywords
+        --------
+        vmin : `float`
+            minimum value for color axes
+        vmax : `float`
+            maximum value for color axes
+        bias : `str` or `None`
+            method used to subtract bias
+        superbias_frame : `MaskedCCD` or `None`
+            Superbias image to subtract
+        subtract_mean : `bool`
+            Flag to subtract mean value from each image
 
+        Returns
+        -------
+        o_dict : `dict`
+            Dictionary of `matplotlib` object
         """
         kwcopy = kwargs.copy()
         bias_type = kwcopy.pop('bias', None)
@@ -713,14 +937,19 @@ class FigureDict:
     def histogram_raft_array(self, key, array_dict, **kwargs):
         """Plot the data from all the slots of raft
 
-        @param key (str)          Key for the figure.
-        @param array_dict (`dict`) Dictionary keyed by slot of the files for the raft
-        @param kwargs             Passed to matplotlib
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        array_dict : `dict`
+            Dictionary keyed by slot data for each slot
+        kwargs
+            Passed to matplotlib
 
-        @returns (dict)
-            fig (matplotlib.figure.Figure)
-            axs (Array of `matplotlib.Axes._subplots.AxesSubplot)
-
+        Returns
+        -------
+        o_dict : `dict`
+            Dictionary of `matplotlib` object
         """
         kwcopy = kwargs.copy()
 
@@ -754,17 +983,30 @@ class FigureDict:
     def plot_run_chart(self, key, runs, yvals, **kwargs):
         """Plot the data each amp in a set of runs in a single chart
 
-        @param key (str)          Key for the figure.
-        @param runs (array)       Aray of the run info
-        @param yvals (list)       Values being plotted
-        @param kwargs
-            title (str)           Figure title
-            clabel (str)          Label for the colorbar
-            figsize (tuple)       Figure width, height in inches
-            ylabel (str)          y-axis label
-            vmin (float)          minimum value for color axis
-            vmax (float)          maximum value for color axis
-            bias (str)            method used to subtract bias
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        runs : `array`
+            Aray of the run info
+        yvals : `list`
+            Values being plotted
+        kwargs
+            Passed to `matplotlib`
+
+        Keywords
+        --------
+        title : `str`
+            Figure title
+        figsize : `tuple`
+            Figure width, height in inches
+        ylabel : `str`
+            y-axis label
+
+        Returns
+        -------
+        o_dict : `dict`
+            Dictionary of `matplotlib` object
         """
         kwcopy = kwargs.copy()
         yerrs = kwcopy.pop('yerrs', None)
@@ -800,8 +1042,20 @@ class FigureDict:
     def plot_raft_mosaic(self, key, file_dict, **kwargs):
         """Make a mosaic of all the CCDs in a raft
 
-        @param key (str)          Key for the figure.
-        @param file_dict (dict)   Output files, keyed by slot
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        file_dict : `dict`
+            Image files, keyed by slot
+        kwargs
+            Passed to the RaftMosaic c'tor and plot() functions
+
+        Returns
+        -------
+        o_dict : `dict`
+            Dictionary of `matplotlib` object
+
         """
         kwcopy = kwargs.copy()
         kwctor = pop_values(kwcopy, ['gains',
@@ -816,10 +1070,14 @@ class FigureDict:
 
 
     def make_raft_outlier_plots(self, dtable, prefix=""):
-        """Make plots of the number of outlier pixels
+        """Make a set of plots of about the number of outlier pixels
 
-        @param dtable (`Table`)
-        @param prefix (str)
+        Parameters
+        ----------
+        dtable : `Table`
+            Table with the outlier dataq
+        prefix : `str`
+            Prepended to the plot keys
         """
         self.plot_raft_vals_from_table(dtable, prefix + 'out_row',
                                        title='Outliers by row',
@@ -846,8 +1104,12 @@ class FigureDict:
     def savefig(self, key, filename):
         """Save a single figure
 
-        @param key (str)          Key for the figure.
-        @param filename (str)     Name of the output file
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        filename : `str`
+            Name of the output file
         """
         fig = self._fig_dict[key]['fig']
         fig.savefig(filename)
@@ -858,7 +1120,14 @@ class FigureDict:
 
         The files will be named {basename}_{key}.png
 
-        @param basename (str)     Base of the output file names
+        If basename is None then the file will be shown on the display and not saved
+
+        Parameters
+        ----------
+        basename : `str` or `None`
+            Base of the output file names
+        ftype : `str`
+            File type to same, also filename extension
         """
         if basename is None:
             plt.ion()

@@ -15,12 +15,6 @@ from .defaults import DEFAULT_OUTDIR, DEFAULT_LOGFILE,\
     DEFAULT_NBINS, DEFAULT_BATCH_ARGS, DEFAULT_BITPIX
 
 
-# Some standard set of argument names
-STANDARD_SLOT_ARGS = ['run', 'slots', 'butler_repo', 'outdir',
-                      'plot', 'skip', 'nfiles']
-STANDARD_RAFT_ARGS = ['run', 'butler_repo', 'outdir',
-                      'plot', 'skip', 'nfiles']
-
 
 class EOUtilOptions(pexConfig.Config):
     """Library of configurate parameters used by eo_utils tasks
@@ -110,15 +104,21 @@ class EOUtilOptions(pexConfig.Config):
                                        int, default=10)
 
 
-
     @classmethod
     def clone_param(cls, par_name, **kwargs):
-        """
-        @param par_name       Parameter to clone
-        @param kwargs:
-            default           Set the default value for the cloned version
+        """Close a parameter from the set defined in this class.
 
-        @returns (`pexConfig.Field`) cloned version of parameter
+        Parameters
+        ----------
+        par_name : `str`
+            Parameter to clone
+        kwargs
+            default : `str`           Set the default value for the cloned version
+
+        Returns
+        -------
+        ret_val : `pexConfig.Field`
+            cloned version of parameter
         """
         ret_val = copy.deepcopy(cls.__dict__[par_name])
         if 'default' in kwargs:
@@ -126,12 +126,18 @@ class EOUtilOptions(pexConfig.Config):
         return ret_val
 
 
+
 def add_pex_arguments(parser, pex_class, exclude=None):
     """Adds a set of arguments to the argument parser (or parser group)
 
-    @param parser (`argumentParser`)   The argument parser we are using
-    @param pex_class (`pexConfig`)     The configuration class we are using to fill the parser
-    @param exclude (list)              Name of parameters to exclude
+    Parameters
+    ----------
+    parser : `argumentParser`
+        The argument parser we are using
+    pex_class : `pexConfig`
+        The configuration class we are using to fill the parser
+    exclude : `list`
+        Names of parameters to exclude
     """
     if exclude is None:
         exclude = []
@@ -159,9 +165,16 @@ def add_pex_arguments(parser, pex_class, exclude=None):
 def make_argstring(**kwargs):
     """Turns a dictionary of arguments into string with command line options
 
-    @param arg_dict (dict)  The dictionary mapping argument name to value
+    Parameters
+    ----------
+    kwargs
+        The dictionary mapping argument name to value
 
-    @returns (str) The corresponding string for a command line
+
+    Returns
+    -------
+    ostring : `str`
+        The corresponding string for a command line
     """
     ostring = ""
     for key, value in kwargs.items():
@@ -183,10 +196,17 @@ def make_argstring(**kwargs):
 def copy_items(arg_dict, argnames):
     """Copy a set of parameters tuples to an smaller dictionary
 
-    @param arg_dict (dict)  The dictionary mapping name to (type, default, helpstring) tuple
-    @param argnames (list)  List of keys to copy to the output dictionary
+    Parameters
+    ----------
+    arg_dict : `dict`
+        The dictionary mapping name to (type, default, helpstring) tuple
+    argnames : `list`
+        List of keys to copy to the output dictionary
 
-    @returns (dict) Dictionary with only the arguments we have selected
+    Returns
+    -------
+    outdict : `dict`
+        Dictionary with only the arguments we have selected
     """
     outdict = OrderedDict()
     for argname in argnames:
@@ -200,13 +220,16 @@ def copy_items(arg_dict, argnames):
 def setup_parser(**kwargs):
     """Creates an ArgumentParser and adds selected arguments
 
-    @param argnames (list)  List of keys to copy to the output dictionary
-    @param arg_dict (dict)  The dictionary mapping name to (type, default, helpstring) tuple
-    @param kwargs:
-        usage (str)             The usage string for the ArgumentParser
-                                All other keyword arguments will passed to the ArgumentParser c'tor
+    Keywords
+    --------
+    usage : `str`
+        The usage string for the ArgumentParser
+        All other keyword arguments will passed to the ArgumentParser c'tor
 
-    @returns (`argparse.ArgumentParser`) Argument parser loaded with the requested arguments
+    Returns
+    -------
+    parser : `argparse.ArgumentParser`
+        Argument parser loaded with the requested arguments
     """
 
     usage = kwargs.pop('usage', None)
@@ -222,10 +245,17 @@ def setup_parser(**kwargs):
 def copy_dict(in_dict, def_dict):
     """Copy a set of key-value pairs to an new dict
 
-    @param in_dict (dict)   The dictionary with the input values
-    @param def_dict (dict)  The dictionary with the default values
+    Parameters
+    ----------
+    in_dict : `dict`
+        The dictionary with the input values
+    def_dict : `dict`
+        The dictionary with the default values
 
-    @returns (dict) Dictionary with only the arguments we have selected
+    Returns
+    -------
+    outdict : `dict`
+        Dictionary with only the arguments we have selected
     """
     outdict = {key:in_dict.get(key, val) for key, val in def_dict.items()}
     return outdict
@@ -234,10 +264,17 @@ def copy_dict(in_dict, def_dict):
 def pop_values(in_dict, keylist):
     """Pop a set of key-value pairs to an new dict
 
-    @param in_dict (dict)   The dictionary with the input values
-    @param keylist (list)     The values to pop
+    Parameters
+    ----------
+    in_dict : `dict`
+        The dictionary with the input values
+    keylist : `list`
+        The values to pop
 
-    @returns (dict) Dictionary with only the arguments we have selected
+    Returns
+    -------
+    outdict : `dict`
+        Dictionary with only the arguments we have selected
     """
     outdict = {}
     for key in keylist:
@@ -254,9 +291,20 @@ def copy_pex_fields(field_names, target_class, library_class):
     package are using the same pexConfig.Field object and
     share the same parameters when appropriate
 
-    @param field_names (list)                 : Name of parameters to copy
-    @param target_class (`pexConfig.Config`)  : Class to add parameters to
-    @param library_class (`pexConfig.Config`) : Class to copy parameters from
+    Parameters
+    ----------
+    field_names : `list`
+        Name of parameters to copy
+    target_class : `pexConfig.Config`
+        Class to add parameters to
+    library_class : `pexConfig.Config`
+        Class to copy parameters from
+
+    Raises
+    ------
+    KeyError : one of the requested fields is not in the library class
+
+    TypeError : the library class attribute is not a `pexConfig.Field`
     """
     for fname in field_names:
         try:
@@ -284,18 +332,23 @@ class Configurable(pipeBase.Task):
     _DefaultName = "Configurable"
 
     def __init__(self, **kwargs):
-        """ C'tor
+        """C'tor
 
-        @param kwargs:    Used to override configruation
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
         """
         super(Configurable, self).__init__()
         self.safe_update(**kwargs)
 
     def safe_update(self, **kwargs):
-        """ C'tor
-        Update the configuration from a set of kw
+        """Update the configuration from a set of keywords
 
-        @returns (dict)   The key, val pairs not in the configuration class
+        Returns
+        -------
+        remain_dict : `dict`
+            The key, val pairs not in the configuration class
         """
         base_dict = self.config.toDict()
         update_dict = {}
@@ -310,11 +363,16 @@ class Configurable(pipeBase.Task):
 
 
     def extract_config_vals(self, def_dict):
-        """ C'tor
-        Extract a set of configuration values to a dict
+        """Extract a set of configuration values to a dict
 
-        @param def_dict (dict)     Dictionary with the default values
+        Parameters
+        ----------
+        def_dict : `dict`
+            Dictionary with the default values
 
-        @returns (dict)            Dictionary with the output values
+        Returns
+        -------
+        ret_val : `dict`
+            Dictionary with the output values
         """
         return copy_dict(self.config.toDict(), def_dict)

@@ -15,33 +15,33 @@ class EOTaskFactory:
         self._tasks = OrderedDict()
 
     def keys(self):
-        """@returns (list) the name of the tasks"""
+        """Returns the names of the tasks"""
         return self._tasks.keys()
 
     def values(self):
-        """@returns (list) the `BaseAnalysisTask` objects """
+        """Returns the `BaseAnalysisTask` objects"""
         return self._tasks.values()
 
     def items(self):
-        """@returns (list) the key-value pairs"""
+        """Retruns the name : task pairs"""
         return self._tasks.items()
 
     def __getitem__(self, key):
-        """Get a single `BaseAnalysisTask` object by namne
-
-        @param key (str)               The names
-        @returns (`BaseAnalysisTask`)  The corresponding task
-        """
+        """Get a single `BaseAnalysisTask` object by namne"""
         return self._tasks[key]
 
     def add_task_class(self, key, task_class):
-        """Add an item to the dict
+        """Add an item to the dictionary
 
-        Tnis used the default construct of the task class to build
+        This uses the default construct of the task class to build
         an instance of the class.
 
-        @param key (str)               The task name
-        @param task_class (class)      The class
+        Parameters
+        ----------
+        key : `str`
+            The task name
+        task_class : `class`
+            The class
         """
         task = task_class()
         if key not in self._tasks:
@@ -50,10 +50,12 @@ class EOTaskFactory:
     def run_task(self, key, **kwargs):
         """Run the selected task
 
-        @param key (str)               The task name
-        @param kwargs                  Passed to the task's handler
-
-        @returns (str) The corresponding filename
+        Parameters
+        ----------
+        key : `str`
+            The task name
+        kwargs
+            Passed to the task's handler to invoke the task
         """
         task = self._tasks[key]
         handler = task.iteratorClass(task)
@@ -62,10 +64,17 @@ class EOTaskFactory:
     def build_parser(self, task_names=None, **kwargs):
         """Build and argument parser for a set of defined tasks
 
-        @param task_names (list)    The tasks to include
-        @param kwargs               Used to add more parameters to the argument parser
+        Parameters
+        ----------
+        task_names : `list`
+            The tasks to include
+        kwargs
+            Used to add more parameters to the argument parser
 
-        @returns (`ArgumentParser`) The parser
+        Returns
+        -------
+        parser : `ArgumentParser`
+            The parser, filled with the options defined for the task in this dictionary
         """
         if task_names is None:
             task_names = self._tasks.keys()
@@ -83,7 +92,10 @@ class EOTaskFactory:
     def parse_and_run(self, **kwargs):
         """Run a task using the command line arguments
 
-        @param kwargs               Used to override command line arguments
+        Parameters
+        ----------
+        kwargs
+            Used to override command line arguments
         """
         parser = self.build_parser(usage="eo_task.py")
         args = parser.parse_args()

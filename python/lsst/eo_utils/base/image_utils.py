@@ -33,10 +33,17 @@ except AttributeError:
 def get_dims_from_ccd(butler, ccd):
     """Get the CCD amp dimensions for a particular dataId or file
 
-    @param butler (`Butler`)                      Data Butler (or none)
-    @param ccd (`ExposureF` or `MaskedCCD`)       CCD data object
+    Parameters
+    ----------
+    butler : `Butler` or `None`
+        Data Butler
+    ccd : `ExposureF` or `MaskedCCD`
+        CCD data object
 
-    @returns (dict) with the dimensions
+    Returns
+    -------
+    odict : `dict`
+        Dictionary with the dimensions
     """
     if butler is None:
         geom = ccd.amp_geom
@@ -62,10 +69,17 @@ def get_dims_from_ccd(butler, ccd):
 def get_readout_freqs_from_ccd(butler, ccd):
     """Get the frequencies corresponding to the FFTs
 
-    @param butler (`Butler`)                      Data Butler (or none)
-    @param ccd (`ExposureF` or `MaskedCCD`)       CCD data object
+    Parameters
+    ----------
+    butler : `Butler` or `None`
+        Data Butler
+    ccd : `ExposureF` or `MaskedCCD`
+        CCD data object
 
-    @returns (dict) with the arrays of the frequencies
+    Returns
+    -------
+    odict : `dict`
+        Dictionary with the frequencies
     """
 
     if butler is None:
@@ -94,12 +108,19 @@ def get_geom_steps_manu_hdu(manu, amp):
     """Get x and y steps (+1 or -1) to convert between
     readout and physical orientation for a particular amp
 
-    @param manu (str)              ITL or E2V
-    @param amp (int)               HDU index
+    Parameters
+    ----------
+    manu : `str`
+        Manufactor 'ITL' or 'E2V'
+    amp : `int`
+        HDU index
 
-    @returns (tuple)
-        step_x (int)
-        step_y (int)
+    Returns
+    -------
+    step_x : `int`
+        Step to take in x to go from readout to physical order
+    step_y : `int`
+        Step to take in y to go from readout to physical order
     """
     if manu == 'ITL':
         flip_y = -1
@@ -121,12 +142,19 @@ def get_geom_steps_from_amp(ccd, amp):
     """Get x and y steps (+1 or -1) to convert between
     readout and physical orientation for a particular amp
 
-    @param ccd (`ExposureF`)        CCD data object
-    @param amp (int)                Amplifier number
+    Parameters
+    ----------
+    ccd : `ExposureF` or `MaskedCCD`
+        CCD data object
+    amp : `int`
+        Amplifier index
 
-    @returns (tuple)
-        step_x (int)
-        step_y (int)
+    Returns
+    -------
+    step_x : `int`
+        Step to take in x to go from readout to physical order
+    step_y : `int`
+        Step to take in y to go from readout to physical order
     """
     manu = ccd.getInfo().getMetadata().getString('CCD_MANU')
     if manu == 'ITL':
@@ -148,7 +176,10 @@ def get_geom_steps_from_amp(ccd, amp):
 def flip_data_in_place(filepath):
     """Flip the data in a FITS file in place
 
-    @param filepath (str)      The file we are adjusting
+    Parameters
+    ----------
+    filepath : `str`
+        The file we are adjusting
     """
     hdus = fits.open(filepath)
     manu = hdus[0].header['CCD_MANU']
@@ -161,12 +192,19 @@ def flip_data_in_place(filepath):
 def get_geom_regions(butler, ccd, amp):
     """Get the ccd amp bounding boxes for a particular dataId or file
 
-    @param butler (`Butler`)                          Data Butler (or none)
-    @param ccd (`ExposureF` or `MaskedCCD`)           CCD data object
-    @param geom (`Detector` or `AmplifierGeometry`)   Object with the geometry
-    @param amp (int)                                  Amplifier index
+    Parameters
+    ----------
+    butler : `Butler` or `None`
+        Data Butler
+    ccd : `ExposureF` or `MaskedCCD`
+        CCD data object
+    amp : `int`
+        Amplifier index
 
-    @returns (dict) with the bounding boxes
+    Returns
+    -------
+    odict : `dict`
+        Dictionary with the bounding boxes
     """
     if butler is None:
         geom = ccd.amp_geom
@@ -193,10 +231,17 @@ def get_geom_regions(butler, ccd, amp):
 def get_dimension_arrays_from_ccd(butler, ccd):
     """Get the linear arrays with the indices for each direction and readout region
 
-    @param butler (`Butler`)                          Data Butler (or none)
-    @param geom (`Detector` or `AmplifierGeometry`)   Object with the geometry
+    Parameters
+    ----------
+    butler : `Butler` or `None`
+        Data Butler
+    ccd : `ExposureF` or `MaskedCCD`
+        CCD data object
 
-    @returns (dict) with the arrays
+    Returns
+    -------
+    odict : `dict`
+        Dictionary with the arrays
     """
 
     if butler is None:
@@ -228,9 +273,19 @@ def get_dimension_arrays_from_ccd(butler, ccd):
 def get_raw_image(butler, ccd, amp):
     """Get the raw image for a particular amp
 
-    @param butler (`Butler`)                  Data Butler (or none)
-    @param ccd (`ExposureF` or `MaskedCCD`)   CCD data object
-    @param amp (int)                          AmplifierIndex
+    Parameters
+    ----------
+    butler : `Butler` or `None`
+        Data Butler
+    ccd : `ExposureF` or `MaskedCCD`
+        CCD data object
+    amp : `int`
+        Amplifier index
+
+    Returns
+    -------
+    odict : `ImageF`
+        The image
     """
     if butler is None:
         img = ccd[amp].getImage()
@@ -241,15 +296,29 @@ def get_raw_image(butler, ccd, amp):
 
 
 def get_ccd_from_id(butler, data_id, mask_files, bias_frame=None):
-    """Get the Geometry for a particular dataId or file
+    """Get a CCD image from a data_id
 
-    @param butler (`Butler`)     Data Butler (or none)
-    @param data_id (dict or str) Data identifier
-    @param mask_files (list)     List of mask files
-    @param kwargs
-        bias_frame:              Frame to subtract off
+    If we are using `Butler` then this will take a
+    data_id `dict` ojbect and return an `ExposureF` object
 
-    @returns (`MaskedCCD` or `ExposureF`) CCD image
+    If we are not using `Butler` (i.e., if bulter is `None`)
+    then this will take a filename and return a `MaskedCCD` object
+
+    Parameters
+    ----------
+    butler : `Butler` or `None`
+        Data Butler
+    data_id : `dict` or `str`
+        Data identier
+    mask_files : `list`
+        List of data_ids for the files to construct the pixel mask
+    bias_frame : `ExposureF` or `MaskedCCD` or `None`
+        Object with the bias data
+
+    Returns
+    -------
+    ccd : `ExposureF` or `MaskedCCD`
+        CCD data object
     """
     if butler is None:
         exposure = MaskedCCD(str(data_id),
@@ -264,10 +333,17 @@ def get_ccd_from_id(butler, data_id, mask_files, bias_frame=None):
 def get_amp_list(butler, ccd):
     """Get the Geometry for a particular dataId or file
 
-    @param butler (`Butler`)                  Data Butler (or none)
-    @param ccd (`ExposureF` or `MaskedCCD)    CCD data object
+    Parameters
+    ----------
+    butler : `Butler` or `None`
+        Data Butler
+    ccd : `ExposureF` or `MaskedCCD`
+        CCD data object
 
-    @returns (list) list of amplifier indices
+    Returns
+    -------
+    amplist : `list`
+        List of amplifier indices
     """
     if butler is None:
         amplist = [amp for amp in ccd]
@@ -279,12 +355,19 @@ def get_amp_list(butler, ccd):
 def get_image_frames_2d(img, regions, regionlist=None):
     """Split out the arrays for the serial_overscan, parallel_overscan, and imaging regions
 
-    @param img (`ImageF`)                   Image Data
-    @param regions (dict)                   Geometry Object
-    @param regionlist (list)                List of regions
+    Parameters
+    ----------
+    img : `ImageF`
+        Image Data
+    regions : `dict`
+        Bounding boxes for the regions
+    regionlist : `list` or `None`
+        Names of the regions to extract data for
 
-    @returns (dict)
-      (str):(numpy.narray) with the data or each region
+    Returns
+    -------
+    o_dict : `dict`
+        Dictionary mapping name to data array for each region
     """
     step_x = regions['step_x']
     step_y = regions['step_y']
@@ -304,13 +387,21 @@ def get_data_as_read(butler, ccd, amp, regionlist=None):
     """Split out the arrays for the serial_overscan, parallel_overscan, and imaging regions
     and return the data in the readout order.
 
-    @param butler (`Butler`)                 Data Butler (or none)
-    @param ccd (`MaskedImageF`)              Data identifier
-    @param amp (int)                         Amplifier index
-    @param regionlist (list)                 List of regions
+    Parameters
+    ----------
+    butler : `Butler` or `None`
+        Data Butler (or none)
+    ccd : `ImageF` or `MaskedImageF`
+        CCD image object
+    amp : `int`
+        Amplifier index
+    regionlist : `list` or `None`
+        List of regions
 
-    @returns (dict)
-      (str):(numpy.narray) with the data or each region
+    Returns
+    -------
+    o_dict : `dict`
+        Dictionary mapping name to data array for each region
     """
     raw_image = get_raw_image(butler, ccd, amp)
     regions = get_geom_regions(butler, ccd, amp)
@@ -321,13 +412,21 @@ def get_data_as_read(butler, ccd, amp, regionlist=None):
 def array_struct(i_array, clip=None, do_std=False):
     """Extract the row-by-row and col-by-col mean (or standard deviation)
 
-    @param i_array (numpy.narray)  The input data
-    @param clip (tuple)            min and max used to clip the data, None implies no clipping
-    @param do_std (bool)           If true return the standard deviation instead of the mean
+    Parameters
+    ----------
+    i_array : `array`
+        The input data
+    clip : `tuple`
+        min and max used to clip the data, None implies no clipping
+    do_std : `bool`
+        If true return the standard deviation instead of the mean
 
-    @returns (dict)
-       rows (numpy.narray)  Row-wise means (or standard deviations)
-       cols (numpy.narray)  Col-wise means (or standard deviations)
+    Returns
+    -------
+    o_dict : `dict`
+       Dictionary with
+       rows : `array`  Row-wise means (or standard deviations)
+       cols : `array`  Col-wise means (or standard deviations)
     """
 
     if clip is not None:
@@ -350,12 +449,23 @@ def array_struct(i_array, clip=None, do_std=False):
 def unbias_amp(img, serial_oscan, bias_type=None, superbias_im=None, region=None):
     """Unbias the data from a particular amp
 
-    @param img (ImageF)                    The data
-    @param serial_oscan (Box2I)            Serial overscan bounding box
-    @param bias_type (str)                 Method of unbiasing to applly
-    @param superbias_im (ImageF)           Optional superbias frame to subtract off
+    Paramters
+    ---------
+    img : `ImageF`
+        The image
+    serial_oscan : `Box2I`
+        Serial overscan bounding box
+    bias_type : `str` or `None`
+        Method of unbiasing to applly
+    superbias_im : `ImageF`
+        Optional superbias frame to subtract off
+    region : `Box2I`
+        Return to return data for
 
-    @returns (MaskedImageF) The unbiased image
+    Returns
+    -------
+    iamge : `ImageF`
+        The unbiased image
     """
     if bias_type is not None:
         image = imutil.unbias_and_trim(img, serial_oscan,
@@ -375,15 +485,26 @@ def unbias_amp(img, serial_oscan, bias_type=None, superbias_im=None, region=None
 def extract_ccd_array_dict(butler, data_id, **kwargs):
     """Get the Geometry for a particular dataId or file
 
-    @param butler (`Butler`)     Data Butler (or none)
-    @param data_id (dict or str) Data identifier
-    @param mask_files (list)     List of mask files
-    @param kwargs
-        bias (str)               Method for bias subtraction
-        mask_files (list)        Mask files to apply
-        superbias_frame (ccd)    Frame to subtract off
+    Parameters
+    ----------
+    butler : `Butler` or `None
+        Data Butler
+    data_id : `dict` or `str`
+        Data identifier or filename
 
-    @returns (dict)              Arrays keyed by image
+    Keywords
+    --------
+    mask_files : `list`
+        List of mask files
+    bias : `str` or `None`
+        Method for bias subtraction
+    superbias_frame : `MaskedCCD` or `None`
+        Bias frame to subtract off
+
+    Returns
+    -------
+    o_dict : `dict`
+        Arrays keyed by amplifier index
     """
     kwcopy = kwargs.copy()
     mask_files = kwcopy.pop('mask_files', [])
@@ -415,17 +536,28 @@ def extract_ccd_array_dict(butler, data_id, **kwargs):
 
 
 def extract_raft_array_dict(butler, data_id_dict, **kwargs):
-    """Get the Geometry for a particular dataId or file
+    """Get raft level data
 
-    @param butler (`Butler`)     Data Butler (or none)
-    @param data_id_dict (dict or str) Data identifiers keyed by slot
-    @param mask_files (list)     List of mask files
-    @param kwargs
-        bias (str)               Method for bias subtraction
-        mask_dict (dict)         Mask files to apply
-        superbias_dict (dict)    Frame to subtract off
+    Parameters
+    ----------
+    butler : `Butler` or `None
+        Data Butler
+    data_id_dict : `dict`
+        Dictionary, keyed by slot, of data identifiers or filenames
 
-    @returns (dict)              Arrays keyed by image
+    Keywords
+    --------
+    mask_dict : `dict`
+        Dictionary, keyed by slot, of lists of mask files
+    bias : `str` or `None`
+        Method for bias subtraction
+    superbias_dict : `dict`
+        Dictionary, keyed by slot, of Bias frames to subtract off
+
+    Returns
+    -------
+    o_dict : `dict`
+        Dictionary, keyed by slot, of CCD images
     """
     kwcopy = kwargs.copy()
     o_dict = {}
@@ -450,16 +582,28 @@ def extract_raft_array_dict(butler, data_id_dict, **kwargs):
 
 
 def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
-    """Make a set of superbias images
+    """Stack a set of images
 
-    @param butler (`Butler`)     Data Butler (or none)
-    @param in_files (dict)       Data to stack
-    @param statistic (int)       Statisitic used to make superbias image
-    @param kwargs
-        bias_type (str)               Unbiasing method to use
-        superbias_frame (MaskedCCD)   Superbias image
+    Parameters
+    ----------
+    butler : `Butler` or `None`
+        Data Butler (or none)
+    in_files : `list`
+        Data to stack, either data_ids or filenames
+    statistic : `int`
+        Statisitic used to make superbias image
 
-    @returns (dict) mapping amplifier index to suberbias image
+    Keywords
+    --------
+    bias_type : `str`
+        Unbiasing method to use
+    superbias_frame : `MaskedCCD` or `None`
+        Bias image to subtract
+
+    Returns
+    -------
+    out_dict : `dict`
+        Mapping amplifier index to stacked image
     """
 
     bias_type = kwargs.get('bias_type', 'spline')
@@ -513,11 +657,17 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
 
 
 def read_masks(maskfile):
-    """Read a list of masks
+    """Read masks for all amplifiers from a file
 
-    @param maskfile (str)  The file we are reading
+    Parameters
+    ----------
+    maskfile : `str`
+        The file we are reading
 
-    @returns (list)  The mask images we have read
+    Returns
+    -------
+    mask_list : `list`
+        The mask images we have read
     """
     mask_list = []
     for i in range(16):
@@ -529,9 +679,14 @@ def read_masks(maskfile):
 def apply_masks(butler, ccd, maskfiles):
     """Apply a set of masks to an image (this is done in place)
 
-    @param butler (`Butler`)       Data Butler (or none)
-    @param ccd (`MaskedImageF`)    Data identifier
-    @param maskfiles (list)        The masks we are applying
+    Parameters
+    ----------
+    butler : `Butler` or `None`
+        Data Butler
+    ccd : `ExposureF` or `MaskedImageF`
+        Image we are masking
+    maskfiles : `list`
+        Files with the masks we are applying
     """
     if butler is None:
         return
@@ -545,12 +700,21 @@ def apply_masks(butler, ccd, maskfiles):
 
 
 def sort_sflats(butler, sflat_files):
-    """Make a set of superbias images
+    """Sort a set of superflat image filenames into low and high exposures
 
-    @param butler (`Butler`)     Data Butler (or none)
-    @param bias_files (dict)     Data used to make superbias
+    Parameters
+    ----------
+    butler : `Butler` or `None`
+        Data Butler (or none)
+    sflat_files : `list`
+        List of superflat files
 
-    @returns (list, list)        List of low and high superflats
+    Returns
+    -------
+    sflats_l : `list`
+        Low exposure superflats
+    sflats_h : `list`
+        High exposure superflats
     """
     sflats_l = []
     sflats_h = []
@@ -568,11 +732,19 @@ def sort_sflats(butler, sflat_files):
 def outlier_stats(data_array, mean_val, max_offset):
     """Get some stats on the number of outliers in an array
 
-    @param data_array (`np.array`) 2D data array
-    @param mean_val (float)        Expected value
-    @param max_offset (float)      Maximum offset from mean
+    Parameters
+    ----------
+    data_array : `np.array`
+        2D data array
+    mean_val : `float`
+        Expected value
+    max_offset : `float`
+        Maximum offset from mean
 
-    @returns (dict)
+    Returns
+    -------
+    o_dict : `dict`
+        Dictionary with information about outliers
     """
     mask_array = np.fabs(data_array - mean_val) > max_offset
     cols = mask_array.sum(0)
@@ -588,11 +760,19 @@ def outlier_stats(data_array, mean_val, max_offset):
 def outlier_raft_dict(raft_data, mean_val, max_offset):
     """Get some stats on the number of outliers for a raft
 
-    @param raft_data (dict)
-    @param mean_val (float)        Expected value
-    @param max_offset (float)      Maximum offset from mean
+    Parameters
+    ----------
+    data_array : `np.array`
+        2D data array
+    mean_val : `float`
+        Expected value
+    max_offset : `float`
+        Maximum offset from mean
 
-    @returns (dict)
+    Returns
+    -------
+    o_dict : `dict`
+        Dictionary of dictionaries with information about outliers, keyed by slot
     """
     out_data = dict(nbad_total=[],
                     nbad_rows=[],
