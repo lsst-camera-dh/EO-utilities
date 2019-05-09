@@ -52,7 +52,7 @@ class BiasAnalysisTask(AnalysisTask):
 
         @returns (dict) Dictionary mapping slot to file names
         """
-        kwargs.pop('run_num', None)
+        kwargs.pop('run', None)
 
         if butler is None:
             retval = get_bias_files_run(run_num, **kwargs)
