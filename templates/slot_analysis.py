@@ -20,33 +20,47 @@ from lsst.eo_utils.tmpl.file_utils import SLOT_TMPL_TABLE_FORMATTER,\
 from lsst.eo_utils.tmpl.analysis import TmplAnalysisConfig, TmplAnalysisTask
 
 
-class TmplTemplateConfig(TmplAnalysisConfig):
-    """Configuration for TmplTemplateTask"""
+class TemplateConfig(TmplAnalysisConfig):
+    """Configuration for TemplateTask"""
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='tmplsuffix')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
 
 
-class TmplSlotTemplatetTask(TmplAnalysisTask):
+class TemplateTask(TmplAnalysisTask):
     """Analyze some tmpl data"""
 
-    ConfigClass = TmplSlotTemplateConfig
-    _DefaultName = "TmplSlotTemplate"
+    ConfigClass = TemplateConfig
+    _DefaultName = "TemplateTask"
     iteratorClass = AnalysisBySlot
 
     def __init__(self, **kwargs):
-        """C'tor """
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         TmplAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
-        """Extract the data
+        """Extract data
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the tmpl and mask files
-        @param kwargs              Used to override defaults
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            Output data tables
         """
         self.safe_update(**kwargs)
 
@@ -80,19 +94,25 @@ class TmplSlotTemplatetTask(TmplAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the data
+        """Make plots 
 
-        @param dtables (`TableDict`)  The data
-        @param figs (`FigureDict`)    Object to store the figues
-        """
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
+        """        
         self.safe_update(**kwargs)
 
         # Analysis goes here.
         # you should use the data in dtables to make a bunch of figures in figs
 
 
-class TmplSlotTemplateStatsConfig(TmplAnalysisConfig):
-    """Configuration for TmplSlotTempalteStatsTask"""
+class TemplateStatsConfig(TmplAnalysisConfig):
+    """Configuration for TempalteStatsTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='tmplsuffix')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='tmplsuffix_stats')
     bias = EOUtilOptions.clone_param('bias')
@@ -100,11 +120,11 @@ class TmplSlotTemplateStatsConfig(TmplAnalysisConfig):
 
 
 
-class TmplSlotTemplateStatsTask(TmplAnalysisTask):
+class TemplateStatsTask(TmplAnalysisTask):
     """Extract summary statistics from the data"""
 
-    ConfigClass = TmplSlotTemplateStatsConfig
-    _DefaultName = "TmplSlotTemplateStats"
+    ConfigClass = TemplateStatsConfig
+    _DefaultName = "TemplateStatsTask"
     iteratorClass = TableAnalysisByRaft
 
     intablename_format = SLOT_TMPL_TABLE_FORMATTER
@@ -112,18 +132,32 @@ class TmplSlotTemplateStatsTask(TmplAnalysisTask):
     plotname_format = RAFT_TMPL_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """C'tor """
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         TmplAnalysisTask.__init__(self, **kwargs)
 
 
     def extract(self, butler, data, **kwargs):
-        """Extract the data
+        """Extract data
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the tmpl and mask files
-        @param kwargs              Used to override defaults
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            Output data tables
         """
         self.safe_update(**kwargs)
 
@@ -161,10 +195,16 @@ class TmplSlotTemplateStatsTask(TmplAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data from the tmpl fft statistics study
+        """Plot the summary data 
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 
@@ -172,7 +212,5 @@ class TmplSlotTemplateStatsTask(TmplAnalysisTask):
         # you should use the data in dtables to make a bunch of figures in figs
 
 
-
-
-EO_TASK_FACTORY.add_task_class('TmplSlotTemplate', TmplSlotTemplateTask)
-EO_TASK_FACTORY.add_task_class('TmplSlotTemplateStats', TmplSlotTemplateStatsTask)
+EO_TASK_FACTORY.add_task_class('Template', TemplateTask)
+EO_TASK_FACTORY.add_task_class('TemplateStats', TemplateStatsTask)

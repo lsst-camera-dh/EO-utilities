@@ -16,36 +16,50 @@ from lsst.eo_utils.tmpl.analysis import TmplAnalysisTask, TmplAnalysisConfig
 
 
 
-class TmplTemplateConfig(TmplAnalysisConfig):
-    """Configuration for TmplTemplateTask"""
+class TemplateConfig(TmplAnalysisConfig):
+    """Configuration for TemplateTask"""
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='tmplsuffix')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
 
 
-class TmplTemplateTask(TmplAnalysisTask):
-    """Analyze the correlations between the overscans for all amplifiers on a raft"""
+class TemplateTask(TmplAnalysisTask):
+    """Analyze some tmpl data"""
 
-    ConfigClass = TmplTemplateConfig
-    _DefaultName = "TmplTemplateTask"
+    ConfigClass = TemplateConfig
+    _DefaultName = "TemplateTask"
     iteratorClass = AnalysisByRaft
 
     tablename_format = RAFT_TMPL_TABLE_FORMATTER
     plotname_format = RAFT_TMPL_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         TmplAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
-        """Extract the correlations between the serial overscan for each amp on a raft
+        """Extract data
 
-        @param butler (Butler)   The data butler
-        @param data (dict)       Dictionary pointing to the tmpl and mask files
-        @param kwargs            Used to override configuration
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict)
+        Returns
+        -------
+        dtables : `TableDict`
+            output data tables
         """
         self.safe_update(**kwargs)
 
@@ -73,10 +87,16 @@ class TmplTemplateTask(TmplAnalysisTask):
         return dtables
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the tmpl fft
+        """Make plots
 
-        @param dtables (TableDict)  The data
-        @param figs (FigureDict)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 
@@ -84,4 +104,4 @@ class TmplTemplateTask(TmplAnalysisTask):
         # you should use the data in dtables to make a bunch of figures in figs
 
 
-EO_TASK_FACTORY.add_task_class('TmplTemplate', TmplTemplateTask)
+EO_TASK_FACTORY.add_task_class('Template', TemplateTask)

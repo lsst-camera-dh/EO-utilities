@@ -9,32 +9,46 @@ from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 from lsst.eo_utils.tmpl.meta_analysis import TmplSummaryAnalysisConfig, TmplSummaryAnalysisTask
 
 
-class TmplSummaryTemplateConfig(TmplSummaryAnalysisConfig):
-    """Configuration for TmplSummaryTemplateTask"""
+class TemplateConfig(TmplSummaryAnalysisConfig):
+    """Configuration for TemplateTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='tmplsuffix_stats')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='tmplsuffix_sum')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
 
 
-class TmplSummaryTemplateTask(TmplSummaryAnalysisTask):
+class TemplateTask(TmplSummaryAnalysisTask):
     """Summarize the analysis results for many runs"""
 
-    ConfigClass = TmplSummaryTemplateConfig
-    _DefaultName = "TmplSummaryTemplateTask"
+    ConfigClass = TemplateConfig
+    _DefaultName = "TemplateTask"
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         TmplSummaryAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
-        """Extract the data
+        """Extract data
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the tmpl and mask files
-        @param kwargs              Used to override defaults
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict)
+        Returns
+        -------
+        dtables : `TableDict`
+            Output data tables
         """
         self.safe_update(**kwargs)
 
@@ -54,10 +68,16 @@ class TmplSummaryTemplateTask(TmplSummaryAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data from the superbias statistics study
+        """Plot the summary data 
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 
@@ -65,4 +85,4 @@ class TmplSummaryTemplateTask(TmplSummaryAnalysisTask):
         # you should use the data in dtables to make a bunch of figures in figs
 
 
-EO_TASK_FACTORY.add_task_class('TmplSummaryTemplate', TmplSummaryTemplateTask)
+EO_TASK_FACTORY.add_task_class('Template', TemplateTask)
