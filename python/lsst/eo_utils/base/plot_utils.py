@@ -670,6 +670,63 @@ class FigureDict:
         self._fig_dict[key] = o_dict
         return o_dict
 
+    def plot_raft_amp_values(self, key, data, **kwargs):
+        """Make a 2D color image of an array of data
+
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        data : `numpy.ndarray`
+            Data to plot
+
+        Keywords
+        --------
+        title : `str`
+            Title for the figure
+        figsize : `tuple`
+            Figure width, height in inches
+        xlabel : `str`
+            X-axis label
+        ylabel : `str`
+            Y-axis label
+        ymin : `float`
+            Minimum value for y axis
+        ymax : `float`
+            Maximum value for y axis
+
+        Returns
+        -------
+        o_dict : `dict`
+            Dictionary of `matplotlib` object
+        """
+        kwcopy = kwargs.copy()
+        kwsetup = pop_values(kwcopy, ['title', 'xlabel', 'ylabel', 'figsize'])
+
+        o_dict = self.setup_figure(key, **kwsetup)
+        axes = o_dict['axes']
+        slots = kwcopy.pop('slots', None)
+        ymin = kwcopy.pop('ymin', None)
+        ymax = kwcopy.pop('ymax', None)
+        if ymin is not None and ymax is not None:
+            axes.set_ylim(ymin, ymax)
+        nvals = len(data)
+        xvals = np.linspace(0., nvals-1, nvals)
+        axes.plot(xvals, data, 'b.', **kwcopy)  
+        if slots is not None:
+            amps = 16
+            major_locs = [i*amps - 0.5 for i in range(len(slots) + 1)]
+            minor_locs = [amps//2 + i*amps for i in range(len(slots))]
+            for axis in [axes.xaxis]:
+                axis.set_tick_params(which='minor', length=0)
+                axis.set_major_locator(ticker.FixedLocator(major_locs))
+                axis.set_major_formatter(ticker.FixedFormatter(['']*len(major_locs)))
+                axis.set_minor_locator(ticker.FixedLocator(minor_locs))
+                axis.set_minor_formatter(ticker.FixedFormatter(slots))
+
+
+
+
     def plot_stat_color(self, key, data, **kwargs):
         """Make a 2D color image of an array of data
 
