@@ -581,6 +581,25 @@ def extract_raft_array_dict(butler, data_id_dict, **kwargs):
     return o_dict
 
 
+def get_exposure_time(butler, ccd):
+    """Return the exposure time
+    
+    Parameters
+    ----------
+    butler : `Butler` or `None`
+        Data Butler (or none)
+    ccd : `ImageF` or `MaskedImageF`
+        CCD image object
+
+    Returns
+    -------
+    exptime : `float`
+        The exposure time in seconds
+    """
+    if butler is None:
+        return ccd.md.md.get('EXPTIME')
+    raise NotImplementedError("Can't get exposure time for butlerlized data")
+
 def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
     """Stack a set of images
 
@@ -612,6 +631,7 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
     amp_stack_dict = {}
     out_dict = {}
 
+    exp_time = 0.0
 
     for ifile, in_file in enumerate(in_files):
         if ifile % 10 == 0:
@@ -619,6 +639,7 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
             sys.stdout.flush()
 
         ccd = get_ccd_from_id(butler, in_file, mask_files=[])
+        exp_time += get_exposure_time(butler, ccd)
         amps = get_amp_list(butler, ccd)
 
         for amp in amps:
@@ -642,6 +663,8 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
                                                       bias_type=bias_type,
                                                       superbias_im=superbias_im))
 
+    exp_time /= len(in_files)
+    out_dict['METADATA'] = dict(EXPTIME=exp_time)
 
     for key, val in amp_stack_dict.items():
         if butler is None:
