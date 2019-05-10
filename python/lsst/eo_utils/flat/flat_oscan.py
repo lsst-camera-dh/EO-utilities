@@ -38,7 +38,7 @@ class FlatOverscanConfig(FlatAnalysisConfig):
 
 
 class FlatOverscanTask(FlatAnalysisTask):
-    """Analyze some flat data"""
+    """Estimate the deffered charge by analyzing the overscan in flat frames"""
 
     ConfigClass = FlatOverscanConfig
     _DefaultName = "FlatOverscanTask"
@@ -430,7 +430,7 @@ class FlatOverscanStatsConfig(FlatAnalysisConfig):
 
 
 class FlatOverscanStatsTask(FlatAnalysisTask):
-    """Extract summary statistics from the data"""
+    """Extract statistics about deffered charge from overscan analysis"""
 
     ConfigClass = FlatOverscanStatsConfig
     _DefaultName = "FlatOverscanStatsTask"

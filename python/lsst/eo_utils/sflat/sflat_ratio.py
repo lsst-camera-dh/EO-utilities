@@ -34,7 +34,7 @@ class SflatRatioConfig(SflatAnalysisConfig):
 
 
 class SflatRatioTask(SflatAnalysisTask):
-    """Analyze some sflat data"""
+    """Analysis the ratio of low/high exposure superflats"""
 
     ConfigClass = SflatRatioConfig
     _DefaultName = "SflatRatio"
@@ -202,7 +202,7 @@ class SflatRatioStatsConfig(SflatAnalysisConfig):
 
 
 class SflatRatioStatsTask(SflatAnalysisTask):
-    """Extract summary statistics from the data"""
+    """Extract summary statistics from the low/high exposure ratio analysis"""
 
     ConfigClass = SflatRatioStatsConfig
     _DefaultName = "SflatRatioStatsTask"

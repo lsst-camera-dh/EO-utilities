@@ -49,7 +49,7 @@ class SuperdarkConfig(DarkAnalysisConfig):
 
 
 class SuperdarkTask(DarkAnalysisTask):
-    """Construct superflat frames"""
+    """Construct superdark frames"""
 
     ConfigClass = SuperdarkConfig
     _DefaultName = "SuperdarkTask"
@@ -223,7 +223,7 @@ class SuperdarkTask(DarkAnalysisTask):
 
 
 class SuperdarkRaftConfig(DarkAnalysisConfig):
-    """Configuration for DarkSuperdarkRaftTask"""
+    """Configuration for SuperdarkRaftTask"""
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='raft')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
@@ -233,7 +233,7 @@ class SuperdarkRaftConfig(DarkAnalysisConfig):
 
 
 class SuperdarkRaftTask(DarkAnalysisTask):
-    """Analyze the correlations between the overscans for all amplifiers on a raft"""
+    """Analyze the outliers in the superdark frames for a raft"""
 
     ConfigClass = SuperdarkRaftConfig
     _DefaultName = "SuperdarkRaftTask"

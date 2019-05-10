@@ -227,7 +227,7 @@ class SuperbiasRaftConfig(BiasAnalysisConfig):
 
 
 class SuperbiasRaftTask(BiasAnalysisTask):
-    """Analyze the correlations between the overscans for all amplifiers on a raft"""
+    """Analyze the outliers in Superbias frames for a raft"""
 
     ConfigClass = SuperbiasRaftConfig
     _DefaultName = "SuperbiasRaftTask"
