@@ -13,3 +13,6 @@ from .meta_analysis import DarkSummaryAnalysisConfig, DarkSummaryAnalysisTask
 
 from .superdark import SuperdarkConfig, SuperdarkTask,\
     SuperdarkRaftConfig, SuperdarkRaftTask
+
+from .dark_current import DarkCurrentConfig, DarkCurrentTask,\
+    DarkCurrentSummaryConfig, DarkCurrentSummaryTask
