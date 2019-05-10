@@ -63,7 +63,7 @@ SDARK_TEMPLATE = 'analysis/superdark/templates/sdark_template.fits'
 
 
 # Some default values
-DEFAULT_OUTDIR = 'analysis'
+DEFAULT_OUTDIR = 'analysis/ts8'
 DEFAULT_STAT_TYPE = 'median'
 DEFAULT_BITPIX = -32
 DEFAULT_BIAS_TYPE = 'spline'
