@@ -31,3 +31,6 @@ from .iter_utils import AnalysisHandlerConfig, AnalysisHandler,\
 from .factory import EO_TASK_FACTORY
 
 from .mask_analysis import MaskAddConfig, MaskAddTask
+
+from .eo_results import EOResultsRaftConfig, EOResultsRaftTask,\
+    EOResultsSummaryConfig, EOResultsSummaryTask
