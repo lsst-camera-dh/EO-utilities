@@ -149,7 +149,7 @@ class EOUtils(Configurable):
         return self._file_formats(filetype, **kwcopy)
 
     def inspect_tablefile(self, filetype, **kwargs):
-        """Print information about the contents of a particular 
+        """Print information about the contents of a particular
         type of file with data tables
 
         Parameters
