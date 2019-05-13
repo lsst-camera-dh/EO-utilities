@@ -694,6 +694,8 @@ class FigureDict:
             Minimum value for y axis
         ymax : `float`
             Maximum value for y axis
+        yerrs : `array` or `None`
+            Y-axis errors, if available
 
         Returns
         -------
@@ -708,11 +710,15 @@ class FigureDict:
         slots = kwcopy.pop('slots', None)
         ymin = kwcopy.pop('ymin', None)
         ymax = kwcopy.pop('ymax', None)
+        yerrs = kwcopy.pop('yerrs', None)
         if ymin is not None and ymax is not None:
             axes.set_ylim(ymin, ymax)
         nvals = len(data)
         xvals = np.linspace(0., nvals-1, nvals)
-        axes.plot(xvals, data, 'b.', **kwcopy)  
+        if yerrs is None:
+            axes.plot(xvals, data, 'b.', **kwcopy)
+        else:
+            axes.errorbar(xvals, data, yerr=yerrs, fmt='b.', **kwcopy)
         if slots is not None:
             amps = 16
             major_locs = [i*amps - 0.5 for i in range(len(slots) + 1)]

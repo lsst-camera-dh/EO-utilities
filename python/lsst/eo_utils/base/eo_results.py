@@ -2,15 +2,11 @@
 
 import numpy as np
 
-from astropy.table import Table
-
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
-
-from lsst.eo_utils.base.iter_utils import AnalysisByRaft
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
@@ -53,9 +49,9 @@ class EOResultsRaftTask(AnalysisTask):
         kwargs
             Used to override configruation
         """
-        AnalysisTask.__init__(self, **kwargs)    
+        AnalysisTask.__init__(self, **kwargs)
 
-  
+
     def extract(self, butler, data, **kwargs):
         """Extract data
 
@@ -112,29 +108,29 @@ class EOResultsRaftTask(AnalysisTask):
         table = dtables['eo_results']
 
         figs.plot_raft_amp_values('gain',
-                                  table['GAIN'], 
+                                  table['GAIN'],
                                   title="Fe55 Gain",
                                   yerrs=table['GAIN_ERROR'],
                                   ylabel='Gain Ne/DN',
                                   slots=ALL_SLOTS)
         figs.plot_raft_amp_values('ptc_gain',
-                                  table['PTC_GAIN'], 
+                                  table['PTC_GAIN'],
                                   title="PTC Gain",
                                   yerrs=table['PTC_GAIN_ERROR'],
                                   ylabel='Gain Ne/DN',
                                   slots=ALL_SLOTS)
         figs.plot_raft_amp_values('read_noise',
-                                  table['READ_NOISE'], 
+                                  table['READ_NOISE'],
                                   title="Read Noise",
                                   ylabel='rms e-/pixel',
                                   slots=ALL_SLOTS)
         figs.plot_raft_amp_values('full_well',
-                                  table['FULL_WELL'], 
-                                  title='Full well Measurment', 
+                                  table['FULL_WELL'],
+                                  title='Full well Measurment',
                                   ylabel='e-/pixel',
                                   slots=ALL_SLOTS)
         figs.plot_raft_amp_values('dark_current',
-                                  table['DARK_CURRENT_95'], 
+                                  table['DARK_CURRENT_95'],
                                   title='Dark Current 95%',
                                   ylabel='e-/s/pixel',
                                   slots=ALL_SLOTS)
@@ -204,7 +200,7 @@ class EOResultsSummaryTask(AnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data 
+        """Plot the summary data
 
         Parameters
         ----------
@@ -223,25 +219,25 @@ class EOResultsSummaryTask(AnalysisTask):
 
         figs.plot_run_chart('gain',
                             runs,
-                            table['GAIN'],                             
+                            table['GAIN'],
                             yerrs=table['GAIN_ERROR'],
                             ylabel='Gain Ne/DN')
         figs.plot_run_chart('ptc_gain',
                             runs,
-                            table['PTC_GAIN'], 
+                            table['PTC_GAIN'],
                             yerrs=table['PTC_GAIN_ERROR'],
                             ylabel='Gain Ne/DN')
         figs.plot_run_chart('read_noise',
                             runs,
-                            table['READ_NOISE'], 
+                            table['READ_NOISE'],
                             ylabel='rms e-/pixel')
         figs.plot_run_chart('full_well',
                             runs,
-                            table['FULL_WELL'], 
+                            table['FULL_WELL'],
                             ylabel='e-/pixel')
         figs.plot_run_chart('dark_current',
                             runs,
-                            table['DARK_CURRENT_95'], 
+                            table['DARK_CURRENT_95'],
                             ylabel='e-/s/pixel')
 
 

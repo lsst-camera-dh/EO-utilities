@@ -6,14 +6,14 @@ import scipy.optimize
 
 from scipy.special import erf
 
-_sqrt2 = np.sqrt(2)
+SQRT2 = np.sqrt(2)
 
-def gauss_intergral(x, norm, x_0, sigmax):
+def gauss_intergral(xval, norm, x_0, sigmax):
     """Integrate Gaussian centered at (x0) with width sigmax
-    
+
     Parameters
     ----------
-    x : `array`
+    xval : `array`
         The bin edges
     norm : `float`
         The integral normalization
@@ -21,21 +21,21 @@ def gauss_intergral(x, norm, x_0, sigmax):
         Mean of the Gaussian
     sigmax : `float`
         Width of the Gaussian
-   
+
     Returns
     -------
     retvals : `array`
         The values in the bins
     """
-    sqrt2sigmax = _sqrt2 * sigmax
-    edge_vals = erf((x - x_0)/sqrt2sigmax)
+    sqrt2sigmax = SQRT2 * sigmax
+    edge_vals = erf((xval - x_0)/sqrt2sigmax)
     bin_vals = 0.5 * norm * (edge_vals[1:] - edge_vals[0:-1])
     return bin_vals
 
 
 def gauss_residuals(pars, bin_edges, bin_values):
     """Get the residuals w.r.t. a Gaussian
-    
+
     Parameters
     ----------
     pars : `tuple`
@@ -44,7 +44,7 @@ def gauss_residuals(pars, bin_edges, bin_values):
         The bin edges
     bin_values : `array`
         The numbers of counts in each bin
-   
+
     Returns
     -------
     retvals : `array`
@@ -63,7 +63,7 @@ def gauss_fit(hist):
     ----------
     hist : `tuple`
         The output of `numpy.histogram`
-   
+
     Returns
     -------
     retvals : `tuple`

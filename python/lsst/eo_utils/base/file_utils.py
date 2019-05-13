@@ -272,7 +272,8 @@ SLOT_BASE_FORMATTER = FILENAME_FORMATS.add_format('slot_basename', SLOT_FORMAT_S
 RAFT_BASE_FORMATTER = FILENAME_FORMATS.add_format('raft_basename', RAFT_FORMAT_STRING)
 SUM_BASE_FORMATTER = FILENAME_FORMATS.add_format('summary_basename', SUMMARY_FORMAT_STRING)
 TS8_MASKIN_FORMATTER = FILENAME_FORMATS.add_format('ts8_mask_in', SLOT_FORMAT_STRING,
-                                                   fileType='masks_in', testType='', suffix='_mask.fits')
+                                                   fileType='masks_in', testType='',
+                                                   suffix='_mask.fits')
 MASK_FORMATTER = FILENAME_FORMATS.add_format('mask', SLOT_FORMAT_STRING,
                                              fileType='masks', testType='',
                                              suffix='_mask.fits')
@@ -288,6 +289,32 @@ TS8_FORMATTER = FILENAME_FORMATS.add_format('ts8_images',
 BOT_FORMATTER = FILENAME_FORMATS.add_format('bot_images',
                                             BOT_GLOB_STRING,
                                             archive=ARCHIVE_SLAC)
+
+TS8_EORESULTSIN_FORMATTER = FILENAME_FORMATS.add_format('ts8_eoresults_in',
+                                                        SLOT_FORMAT_STRING,
+                                                        fileType='eotest_results',
+                                                        testType='',
+                                                        suffix='_eotest_results.fits')
+EORESULTS_TABLE_FORMATTER = FILENAME_FORMATS.add_format('eoresults_table',
+                                                        RAFT_FORMAT_STRING,
+                                                        fileType='tables',
+                                                        testType='eotest_results',
+                                                        suffix='_eotest_results.fits')
+EORESULTS_PLOT_FORMATTER = FILENAME_FORMATS.add_format('eoresults_plot',
+                                                       RAFT_FORMAT_STRING,
+                                                       fileType='plots',
+                                                       testType='eotest_results',
+                                                       suffix='_eotest_results')
+EORESULTS_SUMMARY_TABLE_FORMATTER = FILENAME_FORMATS.add_format('eoresults_sum_table',
+                                                                SUMMARY_FORMAT_STRING,
+                                                                fileType='tables',
+                                                                testType='eotest_results',
+                                                                suffix='_eotest_results.fits')
+EORESULTS_SUMMARY_PLOT_FORMATTER = FILENAME_FORMATS.add_format('eoresults_sum_plot',
+                                                               SUMMARY_FORMAT_STRING,
+                                                               fileType='plots',
+                                                               testType='eotest_results',
+                                                               suffix='_eotest_results')
 
 def get_ts8_files_glob(**kwargs):
     """Returns a `list` with the matching file names using the format string for TS8 data """
@@ -428,19 +455,17 @@ def get_files_for_run(run_id, **kwargs):
     return outdict
 
 
-def get_mask_files_run(run_id, **kwargs):
-    """Get a set of mask for a particular run
+def get_run_files_from_formatter(run_id, formatter, **kwargs):
+    """Get a set of files for a particular run
 
     Parameters
     ----------
     run_id : `str`
         The number number we are reading
-
-    Keywords
-    --------
-    mask_types : `list`
-        The types of acquistions we want to include
-
+    formatter : `FilenameFormat`
+        Object that constructs the file naem
+    kwargs
+        Passed to formatter
 
     Returns
     -------
@@ -464,12 +489,34 @@ def get_mask_files_run(run_id, **kwargs):
         slotdict = {}
         outdict[raft] = slotdict
         for slot in ALL_SLOTS:
-            glob_string = TS8_MASKIN_FORMATTER(slot=slot, run=run_id,
-                                               suffix='*_mask.fits', **kwcopy)
+            glob_string = formatter(slot=slot, run=run_id, **kwcopy)
             slotdict[slot] = dict(MASK=sorted(glob.glob(glob_string)))
-
     return outdict
 
+
+def get_mask_files_run(run_id, **kwargs):
+    """Get a set of mask for a particular run
+
+    Parameters
+    ----------
+    run_id : `str`
+        The number number we are reading
+
+    Keywords
+    --------
+    mask_types : `list`
+        The types of acquistions we want to include
+    kwargs
+        Passed to formatter
+
+
+    Returns
+    -------
+    retval : `dict`
+        Dictionary mapping slot to file names
+    """
+    return get_run_files_from_formatter(run_id, TS8_MASKIN_FORMATTER,
+                                        suffix='*_mask.fits', **kwargs)
 
 def read_runlist(filepath):
     """Read a list of runs from a txt file

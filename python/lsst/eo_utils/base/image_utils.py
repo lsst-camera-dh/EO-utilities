@@ -583,7 +583,7 @@ def extract_raft_array_dict(butler, data_id_dict, **kwargs):
 
 def get_exposure_time(butler, ccd):
     """Return the exposure time
-    
+
     Parameters
     ----------
     butler : `Butler` or `None`

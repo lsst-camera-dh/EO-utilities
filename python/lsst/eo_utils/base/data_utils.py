@@ -2,6 +2,8 @@
 
 import os
 
+import sys
+
 import numpy as np
 
 import h5py
@@ -211,7 +213,11 @@ def vstack_tables(filedict, **kwargs):
     tables = []
 
     for irun, pair in enumerate(sorted(filedict.items())):
-        dtables = TableDict(pair[1], [tablename])
+        try:
+            dtables = TableDict(pair[1], [tablename])
+        except FileNotFoundError:
+            sys.stderr.write("Warning, failed to open: %s\n" % pair[1])
+            continue
         table = dtables[tablename]
         if keep_cols is not None:
             table.keep_columns(keep_cols)
