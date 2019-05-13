@@ -9,8 +9,8 @@ from lsst.eo_utils.base.file_utils import link_eo_results_runlist
 
 SEARCHPATH = ['/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive/LCA-11021_RTM',
               '/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive-test/LCA-11021_RTM',
-              '/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive/LCA-11021_RTM',
-              '/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive-test/LCA-11021_RTM']
+              '/gpfs/slac/lsst/fs3/g/data/jobHarness/jh_archive/LCA-11021_RTM',
+              '/gpfs/slac/lsst/fs3/g/data/jobHarness/jh_archive-test/LCA-11021_RTM']
 
 
 GLOB_FORMAT = os.path.join('{path}', 'LCA-11021_{raft}*', '{run}',
