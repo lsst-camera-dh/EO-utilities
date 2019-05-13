@@ -109,7 +109,7 @@ class SuperdarkTask(DarkAnalysisTask):
 
     def make_superdark(self, butler, slot_data, **kwargs):
         """Stack the input data to make superflat frames
-        
+
         The superdarks are stored as data members of this class
 
         Parameters
@@ -295,7 +295,7 @@ class SuperdarkRaftTask(DarkAnalysisTask):
     def plot(self, dtables, figs, **kwargs):
         """Plot the raft-level mosaic and histrograms
         of the numbers of outliers in the superdark frames
-        
+
         Parameters
         ----------
         dtables : `TableDict`

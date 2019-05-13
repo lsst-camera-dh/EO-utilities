@@ -125,7 +125,7 @@ class FlatOverscanTask(FlatAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Make plots of the overscan data to study 
+        """Make plots of the overscan data to study
         the deffered charge
 
         Parameters
@@ -148,7 +148,7 @@ class FlatOverscanTask(FlatAnalysisTask):
 
 
     def epr_plot(self, dtables, figs):
-        """Plot the data showing the signal levels 
+        """Plot the data showing the signal levels
 
         Parameters
         ----------

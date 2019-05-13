@@ -96,10 +96,10 @@ class DarkCurrentTask(DarkAnalysisTask):
         sys.stdout.flush()
 
         for islot, slot in enumerate(slots):
-                     
+
             sys.stdout.write(" %s" % slot)
             sys.stdout.flush()
-            
+
             mask_files = self.get_mask_files(slot=slot)
             superdark_frame = self.get_superdark_frame(mask_files, slot=slot)
 
@@ -126,8 +126,8 @@ class DarkCurrentTask(DarkAnalysisTask):
                 dark_current_data['fit_chi2'].append(0.)
                 dark_current_data['exptime'].append(exptime)
                 dark_current_data['current'].append(median/exptime)
-                dark_current_data['slot'].append(slot)
-                dark_current_data['amp'].append(amp)
+                dark_current_data['slot'].append(islot)
+                dark_current_data['amp'].append(iamp)
 
         sys.stdout.write(".\n")
         sys.stdout.flush()
@@ -217,7 +217,7 @@ class DarkCurrentSummaryTask(DarkSummaryAnalysisTask):
         return dtables
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data 
+        """Plot the summary data
 
         Parameters
         ----------
@@ -233,12 +233,12 @@ class DarkCurrentSummaryTask(DarkSummaryAnalysisTask):
         runtable = dtables['runs']
 
         yvals = sumtable['current']
-        yerrs = (sumtable['stdev'] / sumtable['exptime']).clip(0.,0.05)
-        
+        yerrs = (sumtable['stdev'] / sumtable['exptime']).clip(0., 0.05)
+
         runs = runtable['runs']
 
-        #figs.plot_run_chart("stats", runs, yvals, yerrs=yerrs, ylabel="Dark Current [ADU/s]")
-        figs.plot_run_chart("stats", runs, yvals, ylabel="Dark Current [ADU/s]")
+        figs.plot_run_chart("stats", runs, yvals, yerrs=yerrs, ylabel="Dark Current [ADU/s]")
+        #figs.plot_run_chart("stats", runs, yvals, ylabel="Dark Current [ADU/s]")
 
 
 EO_TASK_FACTORY.add_task_class('DarkCurrent', DarkCurrentTask)

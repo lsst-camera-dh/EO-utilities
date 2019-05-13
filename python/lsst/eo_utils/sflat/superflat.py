@@ -152,7 +152,7 @@ class SuperflatTask(SflatAnalysisTask):
         makedir_safe(output_file)
 
         if not self.config.skip:
-            sflats = self.extract(butler, slot_data)
+            sflats = self.extract(butler, data)
             imutil.writeFits(sflats[0], output_file + '_l.fits',
                              data['SFLAT'][0], self.config.bitpix)
             imutil.writeFits(sflats[1], output_file + '_h.fits',
