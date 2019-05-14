@@ -588,6 +588,7 @@ def read_raft_ccd_map(yamlfile):
     return yaml.safe_load(open(yamlfile))
 
 
+
 def find_eo_results(glob_format, paths, **kwargs):
     """Get a particular EO test result
 
@@ -663,7 +664,12 @@ def link_eo_results_runlist(args, glob_format, paths, outformat, **kwargs):
     outformat : `str`
         Formatting string for output path
     """
-    run_list = read_runlist(args['input'])
+    runlist_file = args.get('input', None)
+    if runlist_file is not None:
+        run_list = read_runlist(args['input'])
+    else:
+        run_list = [(args['raft'], args['run'])]
+
     ccd_map = read_raft_ccd_map(args['mapping'])
 
     for run in run_list:
@@ -673,8 +679,95 @@ def link_eo_results_runlist(args, glob_format, paths, outformat, **kwargs):
 
         fdict = find_eo_results(glob_format, paths, run=run_num, raft=hid, **kwargs)
         if fdict is None:
-            sys.stderr.write("Could not find eotest_results for %s %s\n" % (run_num, hid))
+            sys.stderr.write("Could not find eotest_results for %s %s %s\n" % (run_num, hid, glob_format))
             continue
 
         link_eo_results(ccd_map, fdict, outformat, run=run_num,
                         raft=hid, outdir=args['outdir'], **kwargs)
+
+
+def find_eo_bot_results(glob_format, paths, **kwargs):
+    """Get a particular EO test result
+
+    Parameters
+    ----------
+    glob_format : `str`
+        Formatting string for search path
+    paths : `list`
+        Search paths
+    kwargs
+        Passed to formatting string
+
+    Returns
+    -------
+    odict : `dict`
+        The mapping of run, bot to filename
+    """
+    for path in paths:
+        globstring = glob_format.format(path=path, **kwargs)
+        globfiles = glob.glob(globstring)
+        if not globfiles:
+            continue
+        odict = {}
+        for fname in globfiles:
+            tokens = os.path.basename(fname).split('_')
+            raft, sensor = (tokens[0], tokens[1])
+            if raft not in odict:
+                odict[raft] = {}
+            raft_dict = odict[raft]
+            raft_dict[sensor] = fname
+        return odict
+    return None
+
+
+def link_eo_bot_results(fdict, outformat, **kwargs):
+    """Link eo results to the analysis area
+
+    Parameters
+    ----------
+    fdict : `dict`
+        Mapping between CCD id and filename
+    outformat : `str`
+        Formatting string for output path
+    kwargs
+        Passed to formatting string
+
+    Raises
+    ------
+    KeyError : If missing values in fdict
+    """
+    for raft, raft_dict in fdict.items():
+        for slot, fname in raft_dict.items():
+            outpath = outformat.format(raft=raft, slot=slot, **kwargs)
+            makedir_safe(outpath)
+            os.system("ln -s %s %s" % (fname, outpath))
+
+
+def link_eo_bot_results_runlist(args, glob_format, paths, outformat, **kwargs):
+    """Link eo results to the analysis area
+
+    Parameters
+    ----------
+    args : `dict`
+        Mapping between rafts, slot and CCD id
+    glob_format : `str`
+        Formatting string for search path
+    paths : `list`
+        Search paths for input datra
+    outformat : `str`
+        Formatting string for output path
+    """
+    runlist_file = args.get('input', None)
+    if runlist_file is not None:
+        run_list = read_runlist(args['input'])
+    else:
+        run_list = [('0001', args['run'])]
+
+    for run in run_list:
+        run_num = run[1]
+        fdict = find_eo_bot_results(glob_format, paths, run=run_num, **kwargs)
+        if fdict is None:
+            sys.stderr.write("Could not find eotest_results for %s %s\n" % (run_num, glob_format))
+            continue
+
+        link_eo_bot_results(fdict, outformat, run=run_num, outdir=args['outdir'], **kwargs)
