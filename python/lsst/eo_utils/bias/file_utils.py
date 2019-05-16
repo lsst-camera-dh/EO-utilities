@@ -168,7 +168,6 @@ def get_bias_files_run(run_id, **kwargs):
     """
     testtypes = kwargs.get('testtypes', None)
     hinfo = get_hardware_type_and_id(run_id)
-
     if testtypes is None:
         if hinfo[0] == 'LCA-11021':
             testtypes = DATACAT_TS8_TEST_TYPES

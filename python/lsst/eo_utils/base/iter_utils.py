@@ -426,8 +426,8 @@ def iterate_over_slots(analysis_task, butler, data_files, **kwargs):
         analysis_task(butler, slot_data, **kwargs)
 
 
-def iterate_over_rafts(analysis_task, butler, data_files, **kwargs):
-    """Run a task over a series of rafts
+def iterate_over_rafts_slots(analysis_task, butler, data_files, **kwargs):
+    """Run a task over a series of rafts and slots in each raft
 
     Parameters
     ----------
@@ -453,6 +453,33 @@ def iterate_over_rafts(analysis_task, butler, data_files, **kwargs):
         kwargs['raft'] = raft
         iterate_over_slots(analysis_task, butler, raft_data, **kwargs)
 
+
+def iterate_over_rafts(analysis_task, butler, data_files, **kwargs):
+    """Run a task over a series of rafts 
+
+    Parameters
+    ----------
+    analysis_task : `AnalysisTask`
+        Task that does the the analysis
+    butler : `Butler`
+        The data butler that fetches data to analyze
+    data_files : `dict`
+        Dictionary with all the files need for analysis
+    kwargs
+        Passed along to the analysis function
+
+    Keywords
+    --------
+    rafts : `list` or `None`
+        Defines rafts to run over
+    """
+    raft_list = kwargs.get('rafts', None)
+    if raft_list is None:
+        raft_list = sorted(data_files.keys())
+    for raft in raft_list:
+        raft_data = data_files[raft]
+        kwargs['raft'] = raft
+        analysis_task(butler, raft_data, **kwargs)
 
 
 class AnalysisBySlotConfig(AnalysisIteratorConfig):
@@ -525,7 +552,7 @@ class AnalysisBySlot(AnalysisIterator):
 
         kwargs['run'] = run
         if htype == "LCA-10134":
-            iterate_over_rafts(self._task, self._butler, data_files, **kwargs)
+            iterate_over_rafts_slots(self._task, self._butler, data_files, **kwargs)
         elif htype == "LCA-11021":
             kwargs['raft'] = hid
             iterate_over_slots(self._task, self._butler, data_files[hid], **kwargs)

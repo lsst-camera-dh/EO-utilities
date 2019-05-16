@@ -78,11 +78,13 @@ def get_dark_files_run(run_id, **kwargs):
     if testtypes is None:
         if hinfo[0] == 'LCA-11021':
             testtypes = ['dark_raft_acq']
+            imagetype = 'DARK_DARK'
         else:
             testtypes = ['DARK']
+            imagetype = 'DARK'
 
     return get_files_for_run(run_id,
-                             imagetype="DARK_DARK",
+                             imagetype=imagetype,
                              testtypes=testtypes,
                              outkey='DARK',
                              **kwargs)

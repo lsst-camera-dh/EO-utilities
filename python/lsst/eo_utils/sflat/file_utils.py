@@ -77,11 +77,14 @@ def get_sflat_files_run(run_id, **kwargs):
     if testtypes is None:
         if hinfo[0] == 'LCA-11021':
             testtypes = ['sflat_raft_acq']
+            imagetype = "SFLAT"
+
         else:
             testtypes = ['SFLAT']
+            imagetype = "FLAT"
 
     return get_files_for_run(run_id,
-                             imagetype="SFLAT",
+                             imagetype=imagetype,
                              testtypes=testtypes,
                              outkey='SFLAT',
                              **kwargs)

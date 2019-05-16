@@ -272,7 +272,7 @@ class SuperbiasRaftTask(BiasAnalysisTask):
             sys.stdout.write("Ignoring butler in SuperbiasRaft\n")
         if data is not None:
             sys.stdout.write("Ignoring raft_data in SuperbiasRaft\n")
-
+        
         for slot in ALL_SLOTS:
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
             self._sbias_file_dict[slot] = self.get_superbias_file('.fits', slot=slot)

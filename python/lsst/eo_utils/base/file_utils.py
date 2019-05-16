@@ -329,10 +329,12 @@ def get_ts8_files_glob(**kwargs):
 def get_bot_files_glob(**kwargs):
     """Returns a `list` with the matching file names using the format string for BOT data """
     outdict = {}
+    kwcopy = kwargs.copy()
+    testName = kwcopy.pop('testName').lower()
     for raft in ALL_RAFTS:
         raftdict = {}
         for slot in ALL_SLOTS:
-            glob_string = BOT_FORMATTER(raft=raft, slot=slot, **kwargs)
+            glob_string = BOT_FORMATTER(raft=raft, slot=slot, testName=testName, **kwcopy)
             raftdict[slot] = sorted(glob.glob(glob_string))
         outdict[raft] = raftdict
     return outdict

@@ -744,9 +744,9 @@ def sort_sflats(butler, sflat_files):
 
     for sflat in sflat_files:
         if butler is None:
-            if sflat.find('flat_L') >= 0:
+            if sflat.find('_L_') >= 0:
                 sflats_l.append(sflat)
-            elif sflat.find('flat_H') >= 0:
+            elif sflat.find('_H_') >= 0:
                 sflats_h.append(sflat)
 
     return (sflats_l, sflats_h)
