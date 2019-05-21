@@ -330,11 +330,11 @@ def get_bot_files_glob(**kwargs):
     """Returns a `list` with the matching file names using the format string for BOT data """
     outdict = {}
     kwcopy = kwargs.copy()
-    testName = kwcopy.pop('testName').lower()
+    test_name = kwcopy.pop('testName').lower()
     for raft in ALL_RAFTS:
         raftdict = {}
         for slot in ALL_SLOTS:
-            glob_string = BOT_FORMATTER(raft=raft, slot=slot, testName=testName, **kwcopy)
+            glob_string = BOT_FORMATTER(raft=raft, slot=slot, testName=test_name, **kwcopy)
             raftdict[slot] = sorted(glob.glob(glob_string))
         outdict[raft] = raftdict
     return outdict
@@ -681,7 +681,8 @@ def link_eo_results_runlist(args, glob_format, paths, outformat, **kwargs):
 
         fdict = find_eo_results(glob_format, paths, run=run_num, raft=hid, **kwargs)
         if fdict is None:
-            sys.stderr.write("Could not find eotest_results for %s %s %s\n" % (run_num, hid, glob_format))
+            sys.stderr.write("Could not find eotest_results for %s %s %s\n"\
+                             % (run_num, hid, glob_format))
             continue
 
         link_eo_results(ccd_map, fdict, outformat, run=run_num,

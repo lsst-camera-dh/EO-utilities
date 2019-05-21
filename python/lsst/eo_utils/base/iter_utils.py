@@ -455,7 +455,7 @@ def iterate_over_rafts_slots(analysis_task, butler, data_files, **kwargs):
 
 
 def iterate_over_rafts(analysis_task, butler, data_files, **kwargs):
-    """Run a task over a series of rafts 
+    """Run a task over a series of rafts
 
     Parameters
     ----------
