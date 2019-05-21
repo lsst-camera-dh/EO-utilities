@@ -191,6 +191,7 @@ class SuperbiasStructConfig(BiasAnalysisConfig):
     """Configuration for SuperbiasStructTask"""
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='sbiasst')
     superbias = EOUtilOptions.clone_param('superbias')
+    bias = EOUtilOptions.clone_param('bias')
     mask = EOUtilOptions.clone_param('mask')
     std = EOUtilOptions.clone_param('std')
     stat = EOUtilOptions.clone_param('stat')
