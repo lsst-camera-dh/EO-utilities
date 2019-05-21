@@ -4,6 +4,8 @@ import os
 
 import sys
 
+import numpy as np
+
 import lsst.pex.config as pexConfig
 
 from lsst.eo_utils.base.config_utils import Configurable, EOUtilOptions
@@ -210,6 +212,72 @@ class EOUtils(Configurable):
         """
         fname = self.get_filename(filetype, **kwargs)
         return self.get_data_column_from_file(fname, tname, clist)
+
+    def get_task_table_dict(self, key, **kwargs):
+        """Get the tables produceded by a particular task
+
+        Parameters
+        ----------
+        key : `str`
+            Name associated to that `Task`
+        kwargs
+            Passed to the class file name formatting function
+
+        Returns
+        -------
+        tdict: `TableDict`
+            The tables produced by the task/ configuration
+        """
+        tfile = self.get_task_tablefile(key, **kwargs) + '.fits'
+        tdict = TableDict(tfile)
+        return tdict
+
+
+    def get_summary_data_run(self, task, tablename, run, cols, **kwargs):
+        """Get the rows that match a particular run
+
+        Parameters
+        ----------
+        task : `str`
+            The name of the task in question
+        tablename : `str`
+            The name of the table in question
+        run : `str`
+            The run in question
+        cols : `list`
+            The columns to fetch
+
+        Returns
+        -------
+        data : `dict`
+            Dictonary mapping name : array
+        """
+        tdict = self.get_task_table_dict('EOResultsSummary', **kwargs)
+        datatable = tdict[tablename]
+        mask = self.get_run_mask(datatable, tdict['runs'], run)
+        data = { col: datatable[col][mask] for col in cols }
+        return data
+
+    @staticmethod
+    def get_run_mask(data_table, run_table, run):
+        """Get the rows that match a particular run
+
+        Parameters
+        ----------
+        data_table : `Table`
+            The table with the data
+        run_table : `Table`
+            The table with the run ids
+        run : `str`
+            The run in question
+
+        Returns
+        -------
+        mask : `np.array`
+            The masking array
+        """
+        mask = data_table['run'] == np.argmax(run_table['runs'] == run)
+        return mask
 
     @staticmethod
     def get_data_column_from_file(fname, tname, cname):
