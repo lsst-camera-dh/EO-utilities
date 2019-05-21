@@ -44,6 +44,9 @@ class SuperbiasConfig(BiasAnalysisConfig):
     plot = EOUtilOptions.clone_param('plot')
     stats_hist = EOUtilOptions.clone_param('stats_hist')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='.fits')
+    vmin = EOUtilOptions.clone_param('vmin')
+    vmax = EOUtilOptions.clone_param('vmax')
+    nbins = EOUtilOptions.clone_param('nbins')
 
 
 class SuperbiasTask(BiasAnalysisTask):
@@ -156,6 +159,10 @@ class SuperbiasTask(BiasAnalysisTask):
             raise ValueError("dtables should not be set")
 
         subtract_mean = self.config.stat == DEFAULT_STAT_TYPE
+        if self.config.vmin is None or self.config.vmax is None:
+            hist_range = (0., 2000.)
+        else:
+            hist_range = (self.config.vmin, self.config.vmax)
 
         if self.config.plot:
             figs.plot_sensor("img", None, self._superbias_frame)
@@ -166,8 +173,8 @@ class SuperbiasTask(BiasAnalysisTask):
             figs.histogram_array("hist", None, self._superbias_frame,
                                  title="Historam of RMS of bias-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
-                                 subtract_mean=subtract_mean, bins=100, range=(0., 2000,),
-                                 **kwcopy)
+                                 subtract_mean=subtract_mean, bins=self.config.nbins, 
+                                 range=hist_range, **kwcopy)
 
 
     def make_plots(self, dtables, **kwargs):
@@ -272,7 +279,7 @@ class SuperbiasRaftTask(BiasAnalysisTask):
             sys.stdout.write("Ignoring butler in SuperbiasRaft\n")
         if data is not None:
             sys.stdout.write("Ignoring raft_data in SuperbiasRaft\n")
-        
+
         for slot in ALL_SLOTS:
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
             self._sbias_file_dict[slot] = self.get_superbias_file('.fits', slot=slot)
