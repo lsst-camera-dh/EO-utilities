@@ -1065,6 +1065,8 @@ class FigureDict:
             Figure width, height in inches
         ylabel : `str`
             y-axis label
+        yextras : `list`
+            Additional quantities to plot on y-axis
 
         Returns
         -------
@@ -1074,8 +1076,10 @@ class FigureDict:
         kwcopy = kwargs.copy()
         yerrs = kwcopy.pop('yerrs', None)
         title = kwcopy.pop('title', None)
+        yextras = kwcopy.pop('yextras', None)
         fig = plt.figure(figsize=kwcopy.pop('figsize', (14, 8)))
         axes = fig.add_subplot(111)
+
 
         if title is not None:
             axes.set_title(title)
@@ -1091,6 +1095,10 @@ class FigureDict:
             axes.plot(xvals, yvals, 'b.', **kwcopy)
         else:
             axes.errorbar(xvals, yvals, yerr=yerrs, fmt='b.', **kwcopy)
+
+        if yextras is not None:
+            for yextra in yextras:
+                axes.plot(xvals, yextra, '.', **kwcopy)
 
         locs = [n_amps//2 + i*n_amps for i in range(n_runs)]
         axes.set_xticks(locs)
