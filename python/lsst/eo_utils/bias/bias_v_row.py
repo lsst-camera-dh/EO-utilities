@@ -6,9 +6,7 @@ import numpy as np
 
 import lsst.eotest.image_utils as imutil
 
-from lsst.eo_utils.base.defaults import DEFAULT_BIAS_TYPE
-
-from lsst.eo_utils.base.config_utils import EOUtilConfig
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict
 
@@ -17,40 +15,55 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_dims_from_ccd,\
     get_ccd_from_id, get_raw_image, get_geom_regions, get_amp_list
 
-from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisBySlot
+from lsst.eo_utils.base.iter_utils import AnalysisBySlot
+
+from lsst.eo_utils.base.factory import EO_TASK_FACTORY
+
+from .analysis import BiasAnalysisConfig, BiasAnalysisTask
 
 
 class BiasVRowConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasval')
-    bias = EOUtilConfig.clone_param('bias')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasval')
+    bias = EOUtilOptions.clone_param('bias')
 
 
 class BiasVRowTask(BiasAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Analyze the overscan bias as a function of row number"""
     ConfigClass = BiasVRowConfig
     _DefaultName = "BiasVRowTask"
-    iteratorClass = BiasAnalysisBySlot
+    iteratorClass = AnalysisBySlot
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
         """Extract the bias as function of row
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the bias and mask files
-        @param kwargs
-            slot (str)           Slot in question, i.e., 'S00'
-            bias (str)           Method to use for unbiasing
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (`TableDict`) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
         slot = self.config.slot
-        bias_type = self.config.bias
 
         bias_files = data['BIAS']
 
@@ -87,8 +100,17 @@ class BiasVRowTask(BiasAnalysisTask):
     def plot(self, dtables, figs, **kwargs):
         """Plot the bias as function of row
 
-        @param dtables (`TableDict`)  The data
-        @param figs (`FigureDict`)    Object to store the figues
+        It should use a `TableDict` object to create a set of
+        plots and fill a `FigureDict` object
+
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
         figs.setup_amp_plots_grid("biasval", title="Bias by row",
@@ -100,12 +122,23 @@ class BiasVRowTask(BiasAnalysisTask):
     def get_ccd_data(self, butler, ccd, data, **kwargs):
         """Get the bias values and update the data dictionary
 
-        @param butler (`Butler`)   The data butler
-        @param ccd (`MaskedCCD`)   The ccd we are getting data from
-        @param data (dict)         The data we are updating
-        @param kwargs:
-            ifile (int)       The file index
-            nfiles (int)      Total number of files
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        ccd : `MaskedCCD`
+            The ccd we are getting data from
+        data : `dict`
+            The data we are updating
+
+        Keywords
+        --------
+        slot : `str`
+            The slot name
+        ifile : `int`
+            The file index
+        nfiles_used : `int`
+            Total number of files
         """
         slot = self.config.slot
         bias_type = self.config.bias
@@ -116,10 +149,13 @@ class BiasVRowTask(BiasAnalysisTask):
         for i, amp in enumerate(amps):
             regions = get_geom_regions(butler, ccd, amp)
             serial_oscan = regions['serial_overscan']
-            im = get_raw_image(butler, ccd, amp)
-            bim = imutil.bias_image(im, serial_oscan, bias_method=bias_type)
-            bim_row_mean = bim[serial_oscan].getArray().mean(1)
+            img = get_raw_image(butler, ccd, amp)
+            bimg = imutil.bias_image(img, serial_oscan, bias_method=bias_type)
+            bimg_row_mean = bimg[serial_oscan].getArray().mean(1)
             key_str = "biasval_%s_a%02i" % (slot, i)
             if key_str not in data:
-                data[key_str] = np.ndarray((len(bim_row_mean), nfiles))
-            data[key_str][:, ifile] = bim_row_mean
+                data[key_str] = np.ndarray((len(bimg_row_mean), nfiles))
+            data[key_str][:, ifile] = bimg_row_mean
+
+
+EO_TASK_FACTORY.add_task_class('BiasVRow', BiasVRowTask)

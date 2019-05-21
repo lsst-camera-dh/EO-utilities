@@ -1,14 +1,12 @@
-"""Class to analyze the overscan bias as a function of row number"""
+"""Class to analyze the variation in the bias images"""
 
 import sys
 
 import numpy as np
 
-from lsst.eo_utils.base.file_utils import get_mask_files
-
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.config_utils import STANDARD_RAFT_ARGS
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
@@ -16,62 +14,89 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import get_raw_image, get_amp_list
 
-from .analysis import BiasAnalysisFunc, BiasAnalysisByRaft
+from lsst.eo_utils.base.iter_utils import AnalysisByRaft
 
-from .file_utils import raft_superbias_tablename, raft_superbias_plotname,\
-    get_superbias_frame, superbias_summary_tablename, superbias_summary_plotname
+from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
+from .analysis import BiasAnalysisConfig, BiasAnalysisTask
 
-from .meta_analysis import SuperbiasSummaryByRaft, BiasSummaryAnalysisFunc
+from .file_utils import RAFT_SBIAS_TABLE_FORMATTER, RAFT_SBIAS_PLOT_FORMATTER
+
+from .meta_analysis import SuperbiasSummaryAnalysisConfig, SuperbiasSummaryAnalysisTask
 
 
 class SuperbiasStatsConfig(BiasAnalysisConfig):
     """Configuration for SuperbiasStatsTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='stats')
-    bias = EOUtilConfig.clone_param('bias')
-    mask = EOUtilConfig.clone_param('mask')
-    stat = EOUtilConfig.clone_param('stat')
+    insuffix = EOUtilOptions.clone_param('insuffix', default='')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='stats')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
+    stat = EOUtilOptions.clone_param('stat')
+    mask = EOUtilOptions.clone_param('mask')
+    stat = EOUtilOptions.clone_param('stat')
 
 
 class SuperbiasStatsTask(BiasAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Analyze the variation in the bias images"""
 
     ConfigClass = SuperbiasStatsConfig
     _DefaultName = "SuperbiasStatsTask"
-    iteratorClass = BiasAnalysisByRaft
-    tablefile_name = raft_superbias_tablename
-    plotfile_name = raft_superbias_plotname
+    iteratorClass = AnalysisByRaft
+
+    tablename_format = RAFT_SBIAS_TABLE_FORMATTER
+    plotname_format = RAFT_SBIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
-        """Extract the correlations between the serial overscan for each amp on a raft
+        """Extract the statistics from the superbias frames
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the bias and mask files
-        @param kwargs:
-        raft (str)                 Raft in question, i.e., 'RTM-004-Dev'
-        run_num (str)              Run number, i.e,. '6106D'
-        outdir (str)               Output directory
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
         slots = ALL_SLOTS
 
-        kwcopy = kwargs.copy()
         if butler is not None:
-            sys.stdout.write("Ignoring butler in superbias_stats.extract")
+            sys.stdout.write("Ignoring butler in superbias_stats.extract\n")
         if data is not None:
-            sys.stdout.write("Ignoring raft_data in superbias_stats.extract")
+            sys.stdout.write("Ignoring raft_data in superbias_stats.extract\n")
 
         stats_data = {}
+
+        sys.stdout.write("Working on 9 slots: ")
+        sys.stdout.flush()
+
         for islot, slot in enumerate(slots):
-            kwcopy['slot'] = slot
-            mask_files = get_mask_files(**kwcopy)
-            superbias = get_superbias_frame(mask_files=mask_files, **kwcopy)
-            superbias_stats.get_superbias_stats(None, superbias, stats_data,
-                                                islot=islot, slot=slot)
+
+            sys.stdout.write(" %s" % slot)
+            sys.stdout.flush()
+
+            mask_files = self.get_mask_files(slot=slot)
+            superbias_frame = self.get_superbias_frame(mask_files, slot=slot)
+            self.get_superbias_stats(None, superbias_frame, stats_data, islot)
+
+        sys.stdout.write(".\n")
+        sys.stdout.flush()
 
         dtables = TableDict()
         dtables.make_datatable('files', make_file_dict(None, slots))
@@ -83,8 +108,14 @@ class SuperbiasStatsTask(BiasAnalysisTask):
     def plot(self, dtables, figs, **kwargs):
         """Plot the stats on the superbias frames
 
-        @param dtables (TableDict)  The data
-        @param figs (FigureDict)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         data = dtables.get_table('stats')
 
@@ -93,17 +124,24 @@ class SuperbiasStatsTask(BiasAnalysisTask):
 
 
     @staticmethod
-    def get_superbias_stats(butler, superbias, stats_data, **kwargs):
+    def get_superbias_stats(butler, superbias, stats_data, islot):
         """Get the serial overscan data
 
-        @param butler (`Butler)         The data butler
-        @param superbias (`MaskedCCD)   The ccd we are getting data from
-        @param stats_data (dict)       The dictionary we are filling
-        @param kwargs:
-        islot (int)              Index of the slot in question
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        superbias : `MaskedCCD`
+            The ccd we are getting data from
+        stats_data : `dict`
+            The data we are updating
+
+        Keywords
+        --------
+        islot : `int`
+            The slot index
         """
         amps = get_amp_list(butler, superbias)
-        islot = kwargs.get('islot')
 
         if 'mean' not in stats_data:
             stats_data['mean'] = np.ndarray((9, 16))
@@ -113,52 +151,64 @@ class SuperbiasStatsTask(BiasAnalysisTask):
             stats_data['max'] = np.ndarray((9, 16))
 
         for i, amp in enumerate(amps):
-            im = get_raw_image(butler, superbias, amp)
-            stats_data['mean'][islot, i] = im.array.mean()
-            stats_data['median'][islot, i] = np.median(im.array)
-            stats_data['std'][islot, i] = im.array.std()
-            stats_data['min'][islot, i] = im.array.min()
-            stats_data['max'][islot, i] = im.array.max()
+            img = get_raw_image(butler, superbias, amp)
+            stats_data['mean'][islot, i] = img.array.mean()
+            stats_data['median'][islot, i] = np.median(img.array)
+            stats_data['std'][islot, i] = img.array.std()
+            stats_data['min'][islot, i] = img.array.min()
+            stats_data['max'][islot, i] = img.array.max()
 
 
-class SuperbiasSummaryConfig(BiasSummaryAnalysisConfig):
+class SuperbiasSummaryConfig(SuperbiasSummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='_stats_sum')
-    dataset = EOUtilConfig.clone_param('dataset')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
+    insuffix = EOUtilOptions.clone_param('insuffix', default='stats')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='sum')
+    dataset = EOUtilOptions.clone_param('dataset')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
+    stat = EOUtilOptions.clone_param('stat')
 
 
-class SuperbiasSummaryTask(BiasSummaryAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+class SuperbiasSummaryTask(SuperbiasSummaryAnalysisTask):
+    """Summarize the results for the analysis of variations of the bias frames"""
 
     ConfigClass = SuperbiasSummaryConfig
     _DefaultName = "SuperbiasSummaryTask"
-    iteratorClass = SuperbiasSummaryByRaft
-    tablefile_name = superbias_summary_tablename
-    plotfile_name = superbias_summary_plotname
 
     def __init__(self, **kwargs):
-        """C'tor"""
-        BiasSummaryAnalysisTask.__init__(self, **kwargs)
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
+        SuperbiasSummaryAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
-        """Make a summry table of the bias FFT data
+        """Make a summary table of the superbias statistics
 
-        @param filedict (dict)      The files we are analyzing
-        @param kwargs
-            bias (str)
-            superbias (str)
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict)
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in superbias_stats_summary.extract %s\n" % kwargs)
+            sys.stdout.write("Ignoring butler in superbias_stats_summary.extract\n")
 
-        for key,val in data.items():
-            data[key] = val.replace('.fits', '_stdevclip_stats.fits')
+        for key, val in data.items():
+            data[key] = val.replace('_sum.fits', '_stats.fits')
 
         outtable = vstack_tables(data, tablename='stats')
 
@@ -171,8 +221,14 @@ class SuperbiasSummaryTask(BiasSummaryAnalysisTask):
     def plot(self, dtables, figs, **kwargs):
         """Plot the summary data from the superbias statistics study
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 
@@ -183,3 +239,7 @@ class SuperbiasSummaryTask(BiasSummaryAnalysisTask):
         runs = runtable['runs']
 
         figs.plot_run_chart("stats", runs, yvals, yerrs=yerrs, ylabel="Superbias STD [ADU]")
+
+
+EO_TASK_FACTORY.add_task_class('SuperbiasStats', SuperbiasStatsTask)
+EO_TASK_FACTORY.add_task_class('SuperbiasSummary', SuperbiasSummaryTask)

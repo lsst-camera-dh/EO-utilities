@@ -1,158 +1,22 @@
 """Functions to analyse summary data from bias and superbias frames"""
 
-import sys
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS
-
-from lsst.eo_utils.base.config_utils import EOUtilConfig
-
-from lsst.eo_utils.base.file_utils import read_runlist
-
-from lsst.eo_utils.base.iter_utils import AnalysisIterator,\
-    SummaryAnalysisIterator, AnalysisByRaft
+from lsst.eo_utils.base.iter_utils import SummaryAnalysisIterator
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
-from .file_utils import slot_bias_tablename,\
-    slot_bias_plotname, raft_bias_tablename, raft_superbias_tablename
-
-
-
-def get_tablenames_by_raft(caller, butler, run, **kwargs):
-    """Extract the statistics of the FFT of the bias
-
-    @param rum_num (str)     The run number
-    @param raft_list (list)  The raft names
-    @param kwargs:
-        bias (str)
-        superbias (str)
-    """
-    kwcopy = kwargs.copy()
-    kwcopy['run'] = run
-
-    out_dict = {}
-    raft_list = AnalysisIterator.get_raft_list(butler, run)
-
-    for raft in raft_list:
-        kwcopy['raft'] = raft
-        slot_dict = {}
-        for slot in ALL_SLOTS:
-            kwcopy['slot'] = slot
-            basename = slot_bias_tablename(caller, **kwcopy)
-            datapath = basename + '.fits'
-            slot_dict[slot] = datapath
-        out_dict[raft] = slot_dict
-    return out_dict
-
-
-def get_raft_bias_tablefiles(caller, butler, dataset, **kwargs):
-    """Extract the statistics of the FFT of the bias
-
-    @param butler (`Butler`)    The data butler
-    @param dataset (str)
-    @param kwargs:
-        bias (str)
-        superbias (str)
-
-    @returns (dict) mapping runkey to filename
-    """
-    if butler is not None:
-        sys.stdout.write("Ignoring butler in get_raft_bias_tablefiles\n")
-
-    infile = '%s_runs.txt' % dataset
-
-    run_list = read_runlist(infile)
-    kwcopy = kwargs.copy()
-
-    filedict = {}
-    for runinfo in run_list:
-        raft = runinfo[0].replace('-Dev', '')
-        run = runinfo[1]
-        run_key = "%s_%s" % (raft, run)
-        kwcopy['run'] = run
-        kwcopy['raft'] = raft
-        filedict[run_key] = raft_bias_tablename(caller, **kwcopy) + '.fits'
-
-    return filedict
-
-
-def get_raft_superbias_tablefiles(caller, butler, dataset, **kwargs):
-    """Extract the statistics of the FFT of the bias
-
-    @param butler (`Butler`)    The data butler
-    @param dataset (str)
-    @param kwargs:
-        bias (str)
-        superbias (str)
-
-    @returns (dict) mapping runkey to filename
-    """
-    if butler is not None:
-        sys.stdout.write("Ignoring butler in get_raft_superbias_tablefiles\n")
-
-    infile = '%s_runs.txt' % dataset
-
-    run_list = read_runlist(infile)
-    kwcopy = kwargs.copy()
-    kwcopy.setdefault('superbias', kwargs.get('bias'))
-
-    filedict = {}
-    for runinfo in run_list:
-        raft = runinfo[0].replace('-Dev', '')
-        run = runinfo[1]
-        run_key = "%s_%s" % (raft, run)
-        kwcopy['run'] = run
-        kwcopy['raft'] = raft
-        filedict[run_key] = raft_superbias_tablename(caller, **kwcopy) + '.fits'
-
-    return filedict
-
-
-class BiasTableAnalysisByRaft(AnalysisByRaft):
-    """Small class to iterate an analysis function over all the slots in a raft"""
-
-    get_data = get_tablenames_by_raft
-
-    def __init__(self, task):
-        """C'tor
-        
-        @param task (AnalysisTask)     Task that this will run
-        """
-        AnalysisByRaft.__init__(self, task)
-
-
-class BiasSummaryByRaft(SummaryAnalysisIterator):
-    """Small class to iterate an analysis function over all the slots in a raft"""
-
-    get_data = get_raft_bias_tablefiles
-
-    def __init__(self, task):
-        """C'tor
-
-        @param task (AnalysisTask)     Task that this will run
-        """
-        SummaryAnalysisIterator.__init__(self, task)
-
-
-class SuperbiasSummaryByRaft(SummaryAnalysisIterator):
-    """Small class to iterate an analysis task over all the raft and then all the slots in a raft"""
-
-    get_data = get_raft_superbias_tablefiles
-
-    def __init__(self, task):
-        """C'tor
-
-        @param task (AnalysisTask)     Task that this will run
-        """
-        SummaryAnalysisIterator.__init__(self, task)
+from .file_utils import SUM_BIAS_TABLE_FORMATTER, SUM_BIAS_PLOT_FORMATTER,\
+    SUM_SBIAS_TABLE_FORMATTER, SUM_SBIAS_PLOT_FORMATTER,\
+    RAFT_BIAS_TABLE_FORMATTER, RAFT_SBIAS_TABLE_FORMATTER
 
 
 
 class BiasSummaryAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
-    outdir = EOUtilConfig.clone_param('outdir')
-    dataset = EOUtilConfig.clone_param('dataset')
-    suffix = EOUtilConfig.clone_param('suffix')
+    outdir = EOUtilOptions.clone_param('outdir')
+    dataset = EOUtilOptions.clone_param('dataset')
+    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class BiasSummaryAnalysisTask(AnalysisTask):
@@ -162,13 +26,127 @@ class BiasSummaryAnalysisTask(AnalysisTask):
     # These can overridden by the sub-class
     ConfigClass = BiasSummaryAnalysisConfig
     _DefaultName = "BiasSummaryAnalysisTask"
-    iteratorClass = BiasSummaryByRaft
-    tablefile_name = slot_bias_tablename
-    plotfile_name = slot_bias_plotname
+    iteratorClass = SummaryAnalysisIterator
+
+    intablename_format = RAFT_BIAS_TABLE_FORMATTER
+    tablename_format = SUM_BIAS_TABLE_FORMATTER
+    plotname_format = SUM_BIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """ C'tor
-        @param datasuffix (str)        Suffix for filenames
-        @param kwargs:
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
         """
-        super(BiasSummaryAnalysisTask, self).__init__(**kwargs)
+        AnalysisTask.__init__(self, **kwargs)
+
+    def extract(self, butler, data, **kwargs):
+        """This needs to be implemented by the sub-class
+
+        It should analyze the input data and create a set of tables
+        in a `TableDict` object
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
+        """
+        raise NotImplementedError("BiasSummaryAnalysisTask.extract is not overridden.")
+
+    def plot(self, dtables, figs, **kwargs):
+        """This needs to be implemented by the sub-class
+
+        It should use a `TableDict` object to create a set of
+        plots and fill a `FigureDict` object
+
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
+        """
+        raise NotImplementedError("BiasSummaryAnalysisTask.plot is not overridden.")
+
+
+class SuperbiasSummaryAnalysisConfig(AnalysisConfig):
+    """Configuration for bias analyses"""
+    outdir = EOUtilOptions.clone_param('outdir')
+    dataset = EOUtilOptions.clone_param('dataset')
+    outsuffix = EOUtilOptions.clone_param('outsuffix')
+
+
+class SuperbiasSummaryAnalysisTask(AnalysisTask):
+    """Simple functor class to tie together standard bias data analysis
+    """
+
+    # These can overridden by the sub-class
+    ConfigClass = SuperbiasSummaryAnalysisConfig
+    _DefaultName = "BiasSummaryAnalysisTask"
+    iteratorClass = SummaryAnalysisIterator
+
+    intablename_format = RAFT_SBIAS_TABLE_FORMATTER
+    tablename_format = SUM_SBIAS_TABLE_FORMATTER
+    plotname_format = SUM_SBIAS_PLOT_FORMATTER
+
+    def __init__(self, **kwargs):
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
+        AnalysisTask.__init__(self, **kwargs)
+
+    def extract(self, butler, data, **kwargs):
+        """This needs to be implemented by the sub-class
+
+        It should analyze the input data and create a set of tables
+        in a `TableDict` object
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
+        """
+        raise NotImplementedError("SuperbiasSummaryAnalysisTask.extract is not overridden.")
+
+    def plot(self, dtables, figs, **kwargs):
+        """This needs to be implemented by the sub-class
+
+        It should use a `TableDict` object to create a set of
+        plots and fill a `FigureDict` object
+
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
+        """
+        raise NotImplementedError("SuperbiasSummaryAnalysisTask.plot is not overridden.")

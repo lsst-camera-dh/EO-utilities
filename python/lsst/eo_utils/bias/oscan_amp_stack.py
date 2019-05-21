@@ -1,15 +1,13 @@
-
-"""Class to analyze the overscan bias as a function of row number"""
+"""Task to look for coherent noise by stacking the overscan from all the amplifiers"""
 
 import sys
 
 import numpy as np
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS, DEFAULT_BIAS_TYPE
+from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.config_utils import EOUtilConfig
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.file_utils import get_mask_files
 
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
@@ -18,59 +16,72 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import  REGION_KEYS,\
     get_ccd_from_id, get_dimension_arrays_from_ccd
 
-from .file_utils import get_superbias_frame,\
-    raft_bias_tablename, raft_bias_plotname,\
-    bias_summary_tablename, bias_summary_plotname
+from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft, AnalysisBySlot
+
+from lsst.eo_utils.base.factory import EO_TASK_FACTORY
+
+from .file_utils import SLOT_BIAS_TABLE_FORMATTER,\
+    RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
 
 from .data_utils import stack_by_amps, convert_stack_arrays_to_dict
 
-from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisBySlot
+from .analysis import BiasAnalysisConfig, BiasAnalysisTask
 
-from .meta_analysis import BiasSummaryByRaft, BiasTableAnalysisByRaft,\
-    BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask
+from .meta_analysis import BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask
 
 
 
 class OscanAmpStackConfig(BiasAnalysisConfig):
-    """Configuration for BiasVRowTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasosstack')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
-    mask = EOUtilConfig.clone_param('mask')
+    """Configuration for OscanAmpStackTask"""
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasosstack')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
+    mask = EOUtilOptions.clone_param('mask')
 
 
 class OscanAmpStackTask(BiasAnalysisTask):
-    """Class to analyze correlations between the imaging section
-    and the overscan regions in a series of bias frames"""
+    """Look for coherent noise by stacking the overscan from all the amplifiers"""
 
     ConfigClass = OscanAmpStackConfig
     _DefaultName = "OscanAmpStackTask"
-    iteratorClass = BiasAnalysisBySlot
+    iteratorClass = AnalysisBySlot
 
     def __init__(self, **kwargs):
-        """ C'tor """
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
         """Stack the overscan region from all the amps on a sensor
         to look for coherent read noise
 
-        @param butler (Butler)   The data butler
-        @param data (dict)       Dictionary pointing to the bias and mask files
-        @param kwargs
-            raft (str)           Raft in question, i.e., 'RTM-004-Dev'
-            bias (str)           Method to use for unbiasing
-            superbias (str)      Method to use for superbias subtraction
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
-        print (self.config.toDict())
         self.safe_update(**kwargs)
-        print (self.config.toDict())
 
         slot = self.config.slot
 
         bias_files = data['BIAS']
-        mask_files = get_mask_files(**kwargs)
-        superbias_frame = get_superbias_frame(mask_files=mask_files, **kwargs)
+
+        mask_files = self.get_mask_files()
+        superbias_frame = self.get_superbias_frame(mask_files=mask_files)
 
         sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
         sys.stdout.flush()
@@ -108,10 +119,16 @@ class OscanAmpStackTask(BiasAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the bias structure
+        """Plot the stacked overscan region data
 
-        @param dtables (TableDict)  The data
-        @param figs (FigureDict)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 
@@ -135,33 +152,49 @@ class OscanAmpStackTask(BiasAnalysisTask):
 
 class OscanAmpStackStatsConfig(BiasAnalysisConfig):
     """Configuration for OscanAmpStackStatsTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasosstack_stats')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
+    insuffix = EOUtilOptions.clone_param('insuffix', default='biasosstack')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasosstack_stats')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
 
 
 class OscanAmpStackStatsTask(BiasAnalysisTask):
-    """Class to analyze the overscan correlation with imaging region"""
+    """Extract statistics from overscan amplifier stacking analysis"""
 
     ConfigClass = OscanAmpStackStatsConfig
     _DefaultName = "OscanAmpStackStatsTask"
-    iteratorClass = BiasTableAnalysisByRaft
-    tablefile_name = raft_bias_tablename
-    plotfile_name = raft_bias_plotname
+    iteratorClass = TableAnalysisByRaft
+
+    intablename_format = SLOT_BIAS_TABLE_FORMATTER
+    tablename_format = RAFT_BIAS_TABLE_FORMATTER
+    plotname_format = RAFT_BIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """C'tor """
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasAnalysisTask.__init__(self, **kwargs)
 
 
     def extract(self, butler, data, **kwargs):
-        """Extract the bias as function of row
+        """Extract the summary statistics about the fluctuations
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the bias and mask files
-        @param kwargs
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -190,7 +223,7 @@ class OscanAmpStackStatsTask(BiasAnalysisTask):
                          p_col_max_max=[],
                          slot=[])
 
-        sys.stdout.write("Working on 9 slots: " )
+        sys.stdout.write("Working on 9 slots: ")
         sys.stdout.flush()
 
         for islot, slot in enumerate(ALL_SLOTS):
@@ -255,10 +288,16 @@ class OscanAmpStackStatsTask(BiasAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data from the bias fft statistics study
+        """Plot the summary statistics
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
         sumtable = dtables['biasosstack_stats']
@@ -266,42 +305,52 @@ class OscanAmpStackStatsTask(BiasAnalysisTask):
 
 class OscanAmpStackSummaryConfig(BiasSummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasosstack_sum')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
+    insuffix = EOUtilOptions.clone_param('insuffix', default='biasosstack_stats')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasosstack_sum')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
 
 
 class OscanAmpStackSummaryTask(BiasSummaryAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Summarize the results for the analysis of the overscan amplifeir stacking"""
 
     ConfigClass = OscanAmpStackSummaryConfig
     _DefaultName = "OscanAmpStackSummaryTask"
-    iteratorClass = BiasSummaryByRaft
-    tablefile_name = bias_summary_tablename
-    plotfile_name = bias_summary_plotname
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasSummaryAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
-        """Make a summry table of the bias FFT data
+        """Make a summary table
 
-        @param filedict (dict)      The files we are analyzing
-        @param kwargs
-            bias (str)
-            superbias (str)
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict)
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
         if butler is not None:
             sys.stdout.write("Ignoring butler in correl_wrt_oscan_summary.extract\n")
 
-        for key,val in data.items():
+        for key, val in data.items():
             data[key] = val.replace('_sum.fits', '_stats.fits')
-            print (data[key])
 
         outtable = vstack_tables(data, tablename='biasosstack_stats')
 
@@ -312,10 +361,16 @@ class OscanAmpStackSummaryTask(BiasSummaryAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data from the superbias statistics study
+        """Plot the summary data
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 
@@ -342,5 +397,8 @@ class OscanAmpStackSummaryTask(BiasSummaryAnalysisTask):
                             yerrs=yvals_s_err, ylabel="Amplitude of Row-wise amp stack [ADU]")
         figs.plot_run_chart("p_col_diff", runs, yvals_p_diff,
                             yerrs=yvals_p_err, ylabel="Amplitude of Col-wise amp stack [ADU]")
-        
- 
+
+
+EO_TASK_FACTORY.add_task_class('OscanAmpStack', OscanAmpStackTask)
+EO_TASK_FACTORY.add_task_class('OscanAmpStackStats', OscanAmpStackStatsTask)
+EO_TASK_FACTORY.add_task_class('OscanAmpStackSummary', OscanAmpStackSummaryTask)

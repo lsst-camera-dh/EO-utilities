@@ -1,4 +1,4 @@
-"""Class to analyze the overscan bias as a function of row number"""
+"""Class to analyze the FFT of the bias frames"""
 
 import sys
 
@@ -6,69 +6,82 @@ import numpy as np
 
 from scipy import fftpack
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS, DEFAULT_BIAS_TYPE
+from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.config_utils import STANDARD_SLOT_ARGS
-
-from lsst.eo_utils.base.file_utils import get_mask_files
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES,\
-    get_readout_frequencies_from_ccd, get_ccd_from_id, get_raw_image,\
+    get_readout_freqs_from_ccd, get_ccd_from_id, get_raw_image,\
     get_geom_regions, get_amp_list, get_image_frames_2d, array_struct, unbias_amp
 
-from .file_utils import get_superbias_frame,\
-    slot_superbias_tablename, slot_superbias_plotname,\
-    bias_summary_tablename, bias_summary_plotname,\
-    raft_bias_tablename, raft_bias_plotname
+from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft, AnalysisBySlot
 
-from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisBySlot
+from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from .meta_analysis import BiasSummaryByRaft, BiasTableAnalysisByRaft,\
-    BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask
+from .file_utils import SLOT_BIAS_TABLE_FORMATTER,\
+    SLOT_SBIAS_TABLE_FORMATTER, SLOT_SBIAS_PLOT_FORMATTER,\
+    RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
+
+from .analysis import BiasAnalysisConfig, BiasAnalysisTask
+
+from .meta_analysis import BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask
 
 
 class BiasFFTConfig(BiasAnalysisConfig):
     """Configuration for BiasFFTTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasfft')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
-    mask = EOUtilConfig.clone_param('mask')
-    std = EOUtilConfig.clone_param('std')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasfft')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
+    mask = EOUtilOptions.clone_param('mask')
+    std = EOUtilOptions.clone_param('std')
 
 
 class BiasFFTTask(BiasAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Analyze the FFT of the bias frames"""
 
     ConfigClass = BiasFFTConfig
     _DefaultName = "BiasFFTTask"
-    iteratorClass = BiasAnalysisBySlot
+    iteratorClass = AnalysisBySlot
 
     def __init__(self, **kwargs):
-        """C'tor """
-        BiasAnalysisFunc.__init__(self, **kwargs)
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
+        BiasAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
-        """Extract the bias as function of row
+        """Extract the FFT of the bias as function of row
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the bias and mask files
-        @param kwargs
-            slot (str)           Slot in question, i.e., 'S00'
-            bias (str)           Method to use for unbiasing
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
-        
+
         slot = self.config.slot
 
         bias_files = data['BIAS']
-        mask_files = get_mask_files(**kwargs)
-        superbias_frame = get_superbias_frame(mask_files=mask_files, **kwargs)
+
+        mask_files = self.get_mask_files()
+        superbias_frame = self.get_superbias_frame(mask_files)
 
         sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
         sys.stdout.flush()
@@ -82,16 +95,15 @@ class BiasFFTTask(BiasAnalysisTask):
 
             ccd = get_ccd_from_id(butler, bias_file, mask_files)
             if ifile == 0:
-                freqs_dict = get_readout_frequencies_from_ccd(butler, ccd)
+                freqs_dict = get_readout_freqs_from_ccd(butler, ccd)
             for key in REGION_KEYS:
                 freqs = freqs_dict['freqs_%s' % key]
                 nfreqs = len(freqs)
                 fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
 
-            bias_fft.get_ccd_data(butler, ccd, fft_data,
-                                  ifile=ifile, nfiles=len(bias_files),
-                                  slot=slot, bias_type=self.config.bias,
-                                  std=self.config.std, superbias_frame=superbias_frame)
+            self.get_ccd_data(butler, ccd, fft_data,
+                              ifile=ifile, nfiles_used=len(bias_files),
+                              slot=slot, superbias_frame=superbias_frame)
 
         sys.stdout.write("!\n")
         sys.stdout.flush()
@@ -105,50 +117,68 @@ class BiasFFTTask(BiasAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the bias as function of row
+        """Plot the FFT of the bias as function of row
 
-        @param dtables (`TableDict`)  The data
-        @param figs (`FigureDict`)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 
         for key, region in zip(REGION_KEYS, REGION_NAMES):
             datakey = 'biasfft-%s' % key
             figs.setup_amp_plots_grid(datakey, title="FFT of %s region mean by row" % region,
-                                      xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]", 
+                                      xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]",
                                       ymin=0., ymax=3.)
             figs.plot_xy_amps_from_tabledict(dtables, datakey, datakey,
                                              x_name='freqs', y_name='fftpow',
                                              ymin=0., ymax=3.)
 
-    @staticmethod
-    def get_ccd_data(butler, ccd, data, **kwargs):
 
+    def get_ccd_data(self, butler, ccd, data, **kwargs):
         """Get the fft of the overscan values and update the data dictionary
 
-        @param butler (`Butler`)   The data butler
-        @param ccd (`MaskedCCD`)   The ccd we are getting data from
-        @param data (dict)         The data we are updatign
-        @param kwargs:
-            slot  (str)                 The slot number
-            ifile (int)                 The file index
-            nfiles (int)                Total number of files
-            bias_type (str)             Method to use to construct bias
-            std (str)                   Do standard deviation instead of mean
-            superbias_frame (MaskedCCD) The superbias
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        ccd : `MaskedCCD`
+            The ccd we are getting data from
+        data : `dict`
+            The data we are updating
+
+        Keywords
+        --------
+        slot : `str`
+            The slot name
+        ifile : `int`
+            The file index
+        nfiles_used : `int`
+            Total number of files
+        bias_type : `str`
+            Method to use to construct bias
+        std : `bool`
+            Used standard deviation instead of mean
+        superbias_frame : `MaskedCCD`
+            The superbias frame to subtract away
         """
+        self.safe_update(**kwargs)
+
         slot = kwargs['slot']
-        bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
         ifile = kwargs.get('ifile', 0)
-        nfiles = kwargs.get('nfiles', 1)
-        std = kwargs.get('std', False)
+        nfiles_used = kwargs.get('nfiles_used', 1)
         superbias_frame = kwargs.get('superbias_frame', None)
 
         amps = get_amp_list(butler, ccd)
         for i, amp in enumerate(amps):
             regions = get_geom_regions(butler, ccd, amp)
             serial_oscan = regions['serial_overscan']
-            im = get_raw_image(butler, ccd, amp)
+            img = get_raw_image(butler, ccd, amp)
             if superbias_frame is not None:
                 if butler is not None:
                     superbias_im = get_raw_image(None, superbias_frame, amp+1)
@@ -156,77 +186,90 @@ class BiasFFTTask(BiasAnalysisTask):
                     superbias_im = get_raw_image(None, superbias_frame, amp)
             else:
                 superbias_im = None
-            image = unbias_amp(im, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+            image = unbias_amp(img, serial_oscan,
+                               bias_type=self.get_config_param('bias', None),
+                               superbias_im=superbias_im)
             frames = get_image_frames_2d(image, regions)
+            key_str = "fftpow_%s_a%02i" % (slot, i)
 
             for key, region in zip(REGION_KEYS, REGION_NAMES):
-                struct = array_struct(frames[region], do_std=std)
+                struct = array_struct(frames[region], do_std=self.config.std)
                 fftpow = np.abs(fftpack.fft(struct['rows']-struct['rows'].mean()))
                 nval = len(fftpow)
                 fftpow /= nval/2
-                key_str = "fftpow_%s_a%02i" % (slot, i)
                 if key_str not in data[key]:
-                    data[key][key_str] = np.ndarray((int(nval/2), nfiles))
+                    data[key][key_str] = np.ndarray((int(nval/2), nfiles_used))
                 data[key][key_str][:, ifile] = np.sqrt(fftpow[0:int(nval/2)])
 
 
 
 class SuperbiasFFTConfig(BiasAnalysisConfig):
-    """Configuration for BiasFFTTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasfft')
-    superbias = EOUtilConfig.clone_param('superbias')
-    mask = EOUtilConfig.clone_param('mask')
+    """Configuration for SuperbiasFFTTask"""
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='sbiasfft')
+    superbias = EOUtilOptions.clone_param('superbias')
+    mask = EOUtilOptions.clone_param('mask')
+    std = EOUtilOptions.clone_param('std')
 
 
-class SuperbiasFFTTask(BiasAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+class SuperbiasFFTTask(BiasFFTTask):
+    """Analyze the FFT of the superbias frames"""
 
     ConfigClass = SuperbiasFFTConfig
     _DefaultName = "SuperbiasFFTTask"
-    iteratorClass = BiasAnalysisBySlot
+    iteratorClass = AnalysisBySlot
 
-    tablefile_name = slot_superbias_tablename
-    plotfile_name = slot_superbias_plotname
+    tablename_format = SLOT_SBIAS_TABLE_FORMATTER
+    plotname_format = SLOT_SBIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        BiasAnalysisTask.__init__(self, **kwargs)
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
+        BiasFFTTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
         """Extract the FFTs of the row-wise and col-wise struture
         in a superbias frame
 
-        @param butler (Butler)   The data butler
-        @param data (dict)       Dictionary pointing to the bias and mask files
-        @param kwargs
-            raft (str)           Raft in question, i.e., 'RTM-004-Dev'
-            run_num (str)        Run number, i.e,. '6106D'
-            slot (str)           Slot in question, i.e., 'S00'
-            superbias (str)      Method to use for superbias subtraction
-            outdir (str)         Output directory
-            std (bool)           Plot standard deviation instead of median
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
         slot = self.config.slot
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in extract_superbias_fft_slot")
+            sys.stdout.write("Ignoring butler in extract_superbias_fft_slot\n")
         if data is not None:
-            sys.stdout.write("Ignoring raft_data in extract_superbias_fft_raft")
+            sys.stdout.write("Ignoring raft_data in extract_superbias_fft_raft\n")
 
-        mask_files = get_mask_files(**kwargs)
-        superbias = get_superbias_frame(mask_files=mask_files, **kwargs)
+        mask_files = self.get_mask_files()
+        superbias = self.get_superbias_frame(mask_files=mask_files)
 
         fft_data = {}
 
-        freqs_dict = get_readout_frequencies_from_ccd(None, superbias)
+        freqs_dict = get_readout_freqs_from_ccd(None, superbias)
         for key in REGION_KEYS:
             freqs = freqs_dict['freqs_%s' % key]
             nfreqs = len(freqs)
             fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
 
-        bias_fft.get_ccd_data(None, superbias, fft_data,
-                              slot=slot, bias_type=None,
-                              std=False, superbias_frame=None)
+        self.get_ccd_data(None, superbias, fft_data,
+                          slot=slot, superbias_frame=None)
 
         sys.stdout.write("!\n")
         sys.stdout.flush()
@@ -237,44 +280,57 @@ class SuperbiasFFTTask(BiasAnalysisTask):
             dtables.make_datatable('biasfft-%s' % key, fft_data[key])
         return dtables
 
-    def plot(self, dtables, figs, **kwargs):
-        """Just pass along to bias_fft.plot"""
-        bias_fft.plot(dtables, figs)
-
 
 class BiasFFTStatsConfig(BiasAnalysisConfig):
-    """Configuration for OscanAmpStackStatsTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='_biasfft_stats')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
+    """Configuration for BiasFFTStatsTask"""
+    insuffix = EOUtilOptions.clone_param('insuffix', default='biasfft')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasfft_stats')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
 
 
 
 class BiasFFTStatsTask(BiasAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Extract statistics about the FFT of the bias frames"""
 
     ConfigClass = BiasFFTStatsConfig
     _DefaultName = "BiasAnalysisTask"
-    iteratorClass = BiasTableAnalysisByRaft
-    tablefile_name = raft_bias_tablename
-    plotfile_name = raft_bias_plotname
+    iteratorClass = TableAnalysisByRaft
 
-    def __init__(self), **kwargs):
-        """C'tor """
+    intablename_format = SLOT_BIAS_TABLE_FORMATTER
+    tablename_format = RAFT_BIAS_TABLE_FORMATTER
+    plotname_format = RAFT_BIAS_PLOT_FORMATTER
+
+    def __init__(self, **kwargs):
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasAnalysisTask.__init__(self, **kwargs)
 
 
     def extract(self, butler, data, **kwargs):
-        """Extract the bias as function of row
+        """Extract the FFT summary statistics
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the bias and mask files
-        @param kwargs
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
-       
+
         if butler is not None:
             sys.stdout.write("Ignoring butler in bias_fft_stats.extract\n")
 
@@ -292,7 +348,7 @@ class BiasFFTStatsTask(BiasAnalysisTask):
 
         freqs = None
 
-        sys.stdout.write("Working on 9 slots: " )
+        sys.stdout.write("Working on 9 slots: ")
         sys.stdout.flush()
 
         for islot, slot in enumerate(ALL_SLOTS):
@@ -301,7 +357,7 @@ class BiasFFTStatsTask(BiasAnalysisTask):
             sys.stdout.flush()
 
             basename = data[slot]
-            datapath = basename.replace('.fits', '_biasfft.fits')
+            datapath = basename.replace('_biasfft_stats.fits', '_biasfft.fits')
 
             dtables = TableDict(datapath, [datakey])
             table = dtables[datakey]
@@ -332,57 +388,74 @@ class BiasFFTStatsTask(BiasAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data from the bias fft statistics study
+        """Plot the data from the bias fft statistics study
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         sumtable = dtables['biasfft_stats']
-        figs.plot_stat_color('max_fft_noise', sumtable['fftpow_maxval'].reshape(9,16))
+        figs.plot_stat_color('max_fft_noise', sumtable['fftpow_maxval'].reshape(9, 16))
 
 
 
 class BiasFFTSummaryConfig(BiasSummaryAnalysisConfig):
-    """Configuration for CorrelWRTOScanSummaryTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='_biasfft_sum')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
+    """Configuration for BiasFFTSummaryTask"""
+    insuffix = EOUtilOptions.clone_param('insuffix', default='biasfft_stats')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasfft_sum')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
 
 
 class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+    """Summarize the results for the analysis of the FFT of the bias frames"""
 
     ConfigClass = BiasFFTSummaryConfig
     _DefaultName = "BiasFFTSummaryTask"
-    iteratorClass = BiasSummaryByRaft
-    tablefile_name = bias_summary_tablename
-    plotfile_name = bias_summary_plotname
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasSummaryAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
         """Make a summry table of the bias FFT data
 
-        @param filedict (dict)      The files we are analyzing
-        @param kwargs
-            bias (str)
-            superbias (str)
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict)
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
         if butler is not None:
             sys.stdout.write("Ignoring butler in bias_fft_summary.extract\n")
 
-        for key,val in data.items():
-            data[key] = val.replace('.fits', '_biasfft_stats.fits')
+        for key, val in data.items():
+            data[key] = val.replace('_biasfft_sum.fits', '_biasfft_stats.fits')
 
-        KEEP_COLS = ['fftpow_maxval', 'fftpow_argmax', 'slot', 'amp']
+        keep_cols = ['fftpow_maxval', 'fftpow_argmax', 'slot', 'amp']
 
-        outtable = vstack_tables(data, tablename='biasfft_stats', keep_cols=KEEP_COLS)
+        outtable = vstack_tables(data, tablename='biasfft_stats', keep_cols=keep_cols)
 
         dtables = TableDict()
         dtables.add_datatable('biasfft_sum', outtable)
@@ -393,8 +466,14 @@ class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
     def plot(self, dtables, figs, **kwargs):
         """Plot the summary data from the superbias statistics study
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 
@@ -405,3 +484,9 @@ class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
         runs = runtable['runs']
 
         figs.plot_run_chart("fftpow_maxval", runs, yvals, ylabel="Maximum FFT Power [ADU]")
+
+
+EO_TASK_FACTORY.add_task_class('BiasFFT', BiasFFTTask)
+EO_TASK_FACTORY.add_task_class('SuperbiasFFT', SuperbiasFFTTask)
+EO_TASK_FACTORY.add_task_class('BiasFFTStats', BiasFFTStatsTask)
+EO_TASK_FACTORY.add_task_class('BiasFFTSummary', BiasFFTSummaryTask)

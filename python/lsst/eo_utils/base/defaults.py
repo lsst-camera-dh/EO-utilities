@@ -7,6 +7,9 @@ BUTLER_BOT_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/bot'
 BUTLER_TS8_NCSA_REPO = '/datasets/ts8/repo'
 BUTLER_BOT_NCSA_REPO = '/datasets/bot/repo'
 
+# Location of slac archive
+ARCHIVE_SLAC = '/gpfs/slac/lsst/fs*/g/data/jobHarness/jh_archive*'
+
 # Map the Butler repos to simple names
 BUTLER_REPO_DICT = dict(TS8=BUTLER_TS8_REPO,
                         BOT=BUTLER_BOT_REPO,
@@ -20,10 +23,13 @@ ALL_RAFTS = ["R10", "R22"]
 
 
 # Various types of tests
-MASK_TEST_TYPES = ['fe55_raft_analysis',
-                   'dark_defects_raft',
-                   'traps_raft',
-                   'bright_defects_raft']
+TS8_MASK_TEST_TYPES = ['bright_pixel_mask',
+                       'dark_pixel_mask',
+                       'rolloff_defects_mask',
+                       'traps_mask']
+BOT_MASK_TEST_TYPES = ['fe55_analysis_BOT',
+                       'pixel_defects_BOT']
+
 
 BUTLER_TEST_TYPES = ['DARK', 'FLAT', 'FE55', 'PPUMP', 'SFLAT', 'LAMBDA', 'TRAP']
 DATACAT_TS8_TEST_TYPES = ['fe55_raft_acq',
@@ -34,11 +40,6 @@ DATACAT_TS8_TEST_TYPES = ['fe55_raft_acq',
 DATACAT_BOT_TEST_TYPES = ['DARK', 'FLAT', 'FE55', 'PPUMP', 'SFLAT', 'LAMBDA', 'TRAP']
 
 
-
-# These strings define the standard output filenames
-SLOT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}{suffix}'
-RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-RFT{suffix}'
-SUMMARY_FORMAT_STRING = '{outdir}/{fileType}/summary/{testType}/{dataset}{suffix}'
 
 
 # These readout times, in seconds
@@ -57,10 +58,12 @@ TESTCOLORMAP = dict(DARK="black",
 
 # Template to make superbias files
 SBIAS_TEMPLATE = 'analysis/superbias/templates/sbias_template.fits'
+SFLAT_TEMPLATE = 'analysis/superflat/templates/sflat_template.fits'
+SDARK_TEMPLATE = 'analysis/superdark/templates/sdark_template.fits'
 
 
 # Some default values
-DEFAULT_OUTDIR = 'analysis'
+DEFAULT_OUTDIR = 'analysis/ts8'
 DEFAULT_STAT_TYPE = 'median'
 DEFAULT_BITPIX = -32
 DEFAULT_BIAS_TYPE = 'spline'

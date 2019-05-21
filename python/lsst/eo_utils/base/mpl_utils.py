@@ -11,10 +11,16 @@ def init_matplotlib_backend(backend=None):
     """This function initializes the matplotlib backend.  When no
     DISPLAY is available the backend is automatically set to 'Agg'.
 
-    @param backend (str)  matplotlib backend name.
+    Parameters
+    ----------
+    backend : `str`
+        matplotlib backend name to use in interactive mode
     """
 
     import matplotlib
+
+    if 'MPLBACKEND' in os.environ:
+        return
 
     try:
         os.environ['DISPLAY']

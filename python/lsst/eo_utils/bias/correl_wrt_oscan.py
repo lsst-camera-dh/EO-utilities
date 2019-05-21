@@ -1,4 +1,4 @@
-"""Class to analyze the overscan bias as a function of row number"""
+"""Tasks to analyze the correlation between the overscan and the imaging region"""
 
 import sys
 
@@ -6,9 +6,7 @@ import numpy as np
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.config_utils import EOUtilConfig
-
-from lsst.eo_utils.base.file_utils import get_mask_files
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
@@ -17,52 +15,69 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_dims_from_ccd, get_ccd_from_id,\
     get_raw_image, get_geom_regions, get_amp_list, get_image_frames_2d
 
-from .file_utils import raft_bias_tablename, raft_bias_plotname,\
-    bias_summary_tablename, bias_summary_plotname
+from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft, AnalysisBySlot
 
-from .analysis import BiasAnalysisConfig, BiasAnalysisTask, BiasAnalysisBySlot
+from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from .meta_analysis import BiasSummaryByRaft, BiasTableAnalysisByRaft,\
-    BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask
+from .file_utils import SLOT_BIAS_TABLE_FORMATTER,\
+    RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
 
+from .analysis import BiasAnalysisConfig, BiasAnalysisTask
 
-
-class CorrelWRTOScanConfig(BiasAnalysisConfig):
-    """Configuration for BiasVRowTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='biasoscorr')
-    bias = EOUtilConfig.clone_param('bias')
-    mask = EOUtilConfig.clone_param('mask')
+from .meta_analysis import BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask
 
 
-class CorrelWRTOScanTask(BiasAnalysisTask):
-    """Class to analyze correlations between the imaging section
+
+class CorrelWRTOscanConfig(BiasAnalysisConfig):
+    """Configuration for CorrelWRTOscanTask"""
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasoscorr')
+    bias = EOUtilOptions.clone_param('bias')
+    mask = EOUtilOptions.clone_param('mask')
+
+
+class CorrelWRTOscanTask(BiasAnalysisTask):
+    """Analyze correlations between the imaging section
     and the overscan regions in a series of bias frames"""
 
-    ConfigClass = CorrelWRTOScanConfig
-    _DefaultName = "CorrelWRTOScanTask"
-    iteratorClass = BiasAnalysisBySlot
+    ConfigClass = CorrelWRTOscanConfig
+    _DefaultName = "CorrelWRTOscanTask"
+    iteratorClass = AnalysisBySlot
 
     def __init__(self, **kwargs):
-        """C'tor"""
-        BiasAnalysisTask.__init__(self, **kwargs)
+        """C'tor
 
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
+        BiasAnalysisTask.__init__(self, **kwargs)
+        self.clip_value = 50.
 
     def extract(self, butler, data, **kwargs):
         """Extract the correlations between the imaging section
         and the overscan regions in a series of bias frames
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the bias and mask files
-        @param kwargs:
-            slot (str)           Slot in question, i.e., 'S00'
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (`TableDict`) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
         slot = self.config.slot
 
         bias_files = data['BIAS']
-        mask_files = get_mask_files(**kwargs)
+
+        mask_files = self.get_mask_files()
 
         sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
         sys.stdout.flush()
@@ -108,38 +123,56 @@ class CorrelWRTOScanTask(BiasAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the bias structure
+        """Plot the correlations between the imaging section
+        and the overscan regions
 
-        @param dtables (`TableDict`)  The data
-        @param figs (`FigureDict`)    Object to store the figues
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
-        figs.setup_amp_plots_grid("oscorr-row", title="Correlation: imaging region and serial overscan",
+        figs.setup_amp_plots_grid("oscorr-row",
+                                  title="Correlation: imaging region and serial overscan",
                                   xlabel="Correlation",
                                   ylabel="Number of frames")
-        figs.setup_amp_plots_grid("oscorr-col", title="Correlation: imaging region and paralell overscan",
+        figs.setup_amp_plots_grid("oscorr-col",
+                                  title="Correlation: imaging region and paralell overscan",
                                   xlabel="Correlation",
                                   ylabel="Number of frames")
 
-        df = dtables.get_table("correl")
+        dtab = dtables.get_table("correl")
         for i in range(16):
-            s_correl = df['s_correl_a%02i' % i]
-            p_correl = df['p_correl_a%02i' % i]
+            s_correl = dtab['s_correl_a%02i' % i]
+            p_correl = dtab['p_correl_a%02i' % i]
             figs.get_obj('oscorr-row', 'axs').flat[i].hist(s_correl, bins=100, range=(-1., 1.))
             figs.get_obj('oscorr-col', 'axs').flat[i].hist(p_correl, bins=100, range=(-1., 1.))
 
 
-    @staticmethod
-    def get_ccd_data(butler, ccd, ref_frames, **kwargs):
+    def get_ccd_data(self, butler, ccd, ref_frames, **kwargs):
         """Get the bias values and update the data dictionary
 
-        @param butler (`Butler`)   The data butler
-        @param ccd (`MaskedCCD`)   The ccd we are getting data from
-        @param ref_frames (dict)   Reference data
-        @param kwargs:
-          ifile (int)                 The file index
-          s_correl (np.array)         Serial overscan correlations
-          p_correl (np.array)         Parallel overscan correlations
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        ccd : `MaskedCCD`
+            The ccd we are getting data from
+        data : `dict`
+            The data we are updating
+
+        Keywords
+        --------
+        ifile : `int`
+            The file index
+        s_correl : `array`
+            Serial overscan correlations
+        p_correl : `array`
+            Parallel overscan correlations
         """
         ifile = kwargs['ifile']
         s_correl = kwargs['s_correl']
@@ -154,18 +187,14 @@ class CorrelWRTOScanTask(BiasAnalysisTask):
             image = get_raw_image(butler, ccd, amp)
             frames = get_image_frames_2d(image, regions)
 
-            ref_i_array = ref_frames[i]['imaging']
-            ref_s_array = ref_frames[i]['serial_overscan']
-            ref_p_array = ref_frames[i]['parallel_overscan']
-
-            del_i_array = frames['imaging'] - ref_i_array
-            del_s_array = frames['serial_overscan'] - ref_s_array
-            del_p_array = frames['parallel_overscan'] - ref_p_array
+            del_i_array = frames['imaging'] - ref_frames[i]['imaging']
+            del_s_array = frames['serial_overscan'] - ref_frames[i]['serial_overscan']
+            del_p_array = frames['parallel_overscan'] - ref_frames[i]['parallel_overscan']
 
             dd_s = del_s_array.mean(1)[0:nrow_i]-del_i_array.mean(1)
             dd_p = del_p_array.mean(0)[0:ncol_i]-del_i_array.mean(0)
-            mask_s = np.fabs(dd_s) < 50.
-            mask_p = np.fabs(dd_p) < 50.
+            mask_s = np.fabs(dd_s) < self.clip_value
+            mask_p = np.fabs(dd_p) < self.clip_value
 
             s_correl[i, ifile-1] = np.corrcoef(del_s_array.mean(1)[0:nrow_i][mask_s],
                                                dd_s[mask_s])[0, 1]
@@ -173,35 +202,53 @@ class CorrelWRTOScanTask(BiasAnalysisTask):
                                                dd_p[mask_p])[0, 1]
 
 
-class CorrelWRTOScanStatsConfig(BiasAnalysisConfig):
-    """Configuration for BiasVRowTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='_biasoscorr')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
+class CorrelWRTOscanStatsConfig(BiasAnalysisConfig):
+    """Configuration for CorrelWRTOscanStatsTask"""
+    insuffix = EOUtilOptions.clone_param('insuffix', default='biasoscorr')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasoscorr_stats')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
 
 
-class CorrelWRTOScanStatsTask(BiasAnalysisTask):
-    """Class to analyze the overscan correlation with imaging region"""
+class CorrelWRTOscanStatsTask(BiasAnalysisTask):
+    """Extract statistics about the correlation between
+    the overscan and imaging regions in bias frames"""
 
-    ConfigClass = CorrelWRTOScanStatsConfig
-    _DefaultName = "CorrelWRTOScanStatsTask"
-    iteratorClass = BiasTableAnalysisByRaft
-    tablefile_name = raft_bias_tablename
-    plotfile_name = raft_bias_plotname
+    ConfigClass = CorrelWRTOscanStatsConfig
+    _DefaultName = "CorrelWRTOscanStatsTask"
+    iteratorClass = TableAnalysisByRaft
+
+    intablename_format = SLOT_BIAS_TABLE_FORMATTER
+    tablename_format = RAFT_BIAS_TABLE_FORMATTER
+    plotname_format = RAFT_BIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
-        """C'tor """
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasAnalysisTask.__init__(self, **kwargs)
 
 
     def extract(self, butler, data, **kwargs):
-        """Extract the bias as function of row
+        """Extract the the summary statistics data
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the bias and mask files
-        @param kwargs
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict) with the extracted data
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
@@ -223,7 +270,7 @@ class CorrelWRTOScanStatsTask(BiasAnalysisTask):
                          slot=[],
                          amp=[])
 
-        sys.stdout.write("Working on 9 slots: " )
+        sys.stdout.write("Working on 9 slots: ")
         sys.stdout.flush()
 
         for islot, slot in enumerate(ALL_SLOTS):
@@ -232,7 +279,7 @@ class CorrelWRTOScanStatsTask(BiasAnalysisTask):
             sys.stdout.flush()
 
             basename = data[slot]
-            datapath = basename.replace('.fits', 'biasoscorr.fits')
+            datapath = basename.replace('biasoscorr_stats.fits', 'biasoscorr.fits')
 
             try:
                 dtables = TableDict(datapath, [datakey])
@@ -280,58 +327,75 @@ class CorrelWRTOScanStatsTask(BiasAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data from the bias fft statistics study
+        """Plot the summary data from the statistics study
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
         sumtable = dtables['biasoscorr_stats']
-        figs.plot_stat_color('mean_oscorr_s', sumtable['s_correl_mean'].reshape(9,16))
-        figs.plot_stat_color('mean_oscorr_p', sumtable['p_correl_mean'].reshape(9,16))
+        figs.plot_stat_color('mean_oscorr_s', sumtable['s_correl_mean'].reshape(9, 16))
+        figs.plot_stat_color('mean_oscorr_p', sumtable['p_correl_mean'].reshape(9, 16))
 
 
 
+class CorrelWRTOscanSummaryConfig(BiasSummaryAnalysisConfig):
+    """Configuration for CorrelWRTOscanSummaryTask"""
+    insuffix = EOUtilOptions.clone_param('insuffix', default='biasoscorr_stats')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasoscorr_sum')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
 
-class CorrelWRTOScanSummaryConfig(BiasSummaryAnalysisConfig):
-    """Configuration for CorrelWRTOScanSummaryTask"""
-    suffix = EOUtilConfig.clone_param('suffix', default='_biasoscorr_sum')
-    bias = EOUtilConfig.clone_param('bias')
-    superbias = EOUtilConfig.clone_param('superbias')
 
+class CorrelWRTOscanSummaryTask(BiasSummaryAnalysisTask):
+    """Summarize the results for the analysis correlation between imaging
+    and overscan regions"""
 
-class CorrelWRTOScanSummaryTask(BiasSummaryAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
-
-    ConfigClass = CorrelWRTOScanSummaryConfig
-    _DefaultName = "CorrelWRTOScanSummaryTask"
-    iteratorClass = BiasSummaryByRaft
-    tablefile_name = bias_summary_tablename
-    plotfile_name = bias_summary_plotname
+    ConfigClass = CorrelWRTOscanSummaryConfig
+    _DefaultName = "CorrelWRTOscanSummaryTask"
 
     def __init__(self, **kwargs):
-        """C'tor"""
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
         BiasSummaryAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
-        """Make a summry table of the bias FFT data
+        """Make a summry table
 
-        @param filedict (dict)      The files we are analyzing
-        @param kwargs
-            bias (str)
-            superbias (str)
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
 
-        @returns (TableDict)
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
         self.safe_update(**kwargs)
 
         if butler is not None:
             sys.stdout.write("Ignoring butler in correl_wrt_oscan_summary.extract\n")
 
-        for key,val in data.items():
-            data[key] = val.replace('.fits', 'biasoscorr_stats.fits')
+        for key, val in data.items():
+            data[key] = val.replace('biasoscorr_sum.fits', 'biasoscorr_stats.fits')
 
-        if not kwargs.get('skip', False):
+        if not self.config.skip:
             outtable = vstack_tables(data, tablename='biasoscorr_stats')
 
         dtables = TableDict()
@@ -341,10 +405,19 @@ class CorrelWRTOScanSummaryTask(BiasSummaryAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data from the superbias statistics study
+        """Plot the summary data
 
-        @param dtables (TableDict)    The data we are ploting
-        @param fgs (FigureDict)       Keeps track of the figures
+        It should use a `TableDict` object to create a set of
+        plots and fill a `FigureDict` object
+
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
         self.safe_update(**kwargs)
 
@@ -355,5 +428,12 @@ class CorrelWRTOScanSummaryTask(BiasSummaryAnalysisTask):
         yvals_p = sumtable['p_correl_mean'].flatten().clip(0., 1.)
         runs = runtable['runs']
 
-        figs.plot_run_chart("s_correl_mean", runs, yvals_s, ylabel="Correlation between serial overscan and imaging")
-        figs.plot_run_chart("p_correl_mean", runs, yvals_p, ylabel="Correlation between parallel overscan and imaging")
+        figs.plot_run_chart("s_correl_mean", runs, yvals_s,
+                            ylabel="Correlation between serial overscan and imaging")
+        figs.plot_run_chart("p_correl_mean", runs, yvals_p,
+                            ylabel="Correlation between parallel overscan and imaging")
+
+
+EO_TASK_FACTORY.add_task_class('CorrelWRTOscan', CorrelWRTOscanTask)
+EO_TASK_FACTORY.add_task_class('CorrelWRTOscanStats', CorrelWRTOscanStatsTask)
+EO_TASK_FACTORY.add_task_class('CorrelWRTOscanSummary', CorrelWRTOscanSummaryTask)

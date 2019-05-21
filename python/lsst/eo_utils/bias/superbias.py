@@ -1,4 +1,4 @@
-"""Class to construct and plot superbias frames"""
+"""Class to construct superbias frames"""
 
 import sys
 
@@ -6,71 +6,84 @@ import lsst.afw.math as afwMath
 
 import lsst.eotest.image_utils as imutil
 
-from lsst.eo_utils.base.file_utils import makedir_safe,\
-    get_mask_files
+from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.defaults import SBIAS_TEMPLATE, DEFAULT_BIAS_TYPE,\
-    DEFAULT_STAT_TYPE, DEFAULT_BITPIX
+from lsst.eo_utils.base.file_utils import makedir_safe
 
-from lsst.eo_utils.base.config_utils import EOUtilConfig
+from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
+
+from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.plot_utils import FigureDict
 
+from lsst.eo_utils.base.data_utils import TableDict
+
 from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
-    flip_data_in_place, make_superbias
+    flip_data_in_place, stack_images, extract_raft_array_dict,\
+    outlier_raft_dict
 
-from lsst.eo_utils.base.analysis import BaseAnalysisConfig, BaseAnalysisTask
+from lsst.eo_utils.base.iter_utils import AnalysisBySlot,\
+    AnalysisByRaft
 
-from .file_utils import superbias_filename, superbias_stat_filename
+from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from .analysis import BiasAnalysisBySlot
+from lsst.eo_utils.bias.analysis import BiasAnalysisConfig,\
+    BiasAnalysisTask
+
+from lsst.eo_utils.bias.file_utils import RAFT_BIAS_TABLE_FORMATTER,\
+    RAFT_BIAS_PLOT_FORMATTER
 
 
-class SuperbiasConfig(BaseAnalysisConfig):
+class SuperbiasConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    outdir = EOUtilConfig.clone_param('outdir')
-    run = EOUtilConfig.clone_param('run')
-    raft = EOUtilConfig.clone_param('raft')
-    slot = EOUtilConfig.clone_param('slot')
-    suffix = EOUtilConfig.clone_param('suffix')
-    mask = EOUtilConfig.clone_param('mask')
-    stat = EOUtilConfig.clone_param('stat')
-    bias = EOUtilConfig.clone_param('bias')
-    nfiles = EOUtilConfig.clone_param('nfiles')
+    mask = EOUtilOptions.clone_param('mask')
+    stat = EOUtilOptions.clone_param('stat')
+    bias = EOUtilOptions.clone_param('bias')
+    bitpix = EOUtilOptions.clone_param('bitpix')
+    skip = EOUtilOptions.clone_param('skip')
+    plot = EOUtilOptions.clone_param('plot')
+    stats_hist = EOUtilOptions.clone_param('stats_hist')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='.fits')
+    vmin = EOUtilOptions.clone_param('vmin')
+    vmax = EOUtilOptions.clone_param('vmax')
+    nbins = EOUtilOptions.clone_param('nbins')
 
 
-class SuperbiasTask(BaseAnalysisTask):
-    """Class to analyze the overscan bias as a function of row number"""
+class SuperbiasTask(BiasAnalysisTask):
+    """Construct superbias frames"""
 
     ConfigClass = SuperbiasConfig
     _DefaultName = "SuperbiasTask"
-    iteratorClass = BiasAnalysisBySlot
+    iteratorClass = AnalysisBySlot
 
 
     def __init__(self, **kwargs):
-        """ C'tor
+        """C'tor
 
-        @param kwargs:    Used to override configruation
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
         """
-        BaseAnalysisTask.__init__(self, **kwargs)
-
+        BiasAnalysisTask.__init__(self, **kwargs)
+        self._superbias_frame = None
 
     def extract(self, butler, data, **kwargs):
         """Make superbias frame for one slot
 
-        @param butler (`Butler`)   The data butler
-        @param data (dict)         Dictionary pointing to the bias and mask files
-        @param kwargs
-            raft (str)           Raft in question, i.e., 'RTM-004-Dev'
-            run_num (str)        Run number, i.e,. '6106D'
-            slot (str)           Slot in question, i.e., 'S00'
-            bias (str)           Method to use for unbiasing
-            stat (str)           Statistic to use to stack data
-            outdir (str)         Output directory
-            bitpix (int)         Output data format BITPIX field
-            skip (bool)          Flag to skip making superbias, only produce plots
-            plot (bool)          Plot superbias images
-            stats_hist (bool)    Plot superbias summary histograms
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        sbias : `dict`
+            The superbias frames, keyed by amp
         """
         self.safe_update(**kwargs)
         slot = self.config.slot
@@ -81,101 +94,237 @@ class SuperbiasTask(BaseAnalysisTask):
 
         bias_files = data['BIAS']
 
-        sys.stdout.write("Working on %s, %i files.\n" % (slot, len(bias_files)))
+        sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
 
         if stat_type.upper() in afwMath.__dict__:
             statistic = afwMath.__dict__[stat_type.upper()]
         else:
-            raise ValueError("Can not convert %s to a valid statistic to perform stacking" % stat_type)
+            raise ValueError("Can not convert %s to a valid statistic" % stat_type)
 
-        sbias = make_superbias(butler, bias_files, statistic=statistic, bias_type=bias_type)
+        sbias = stack_images(butler, bias_files, statistic=statistic, bias_type=bias_type)
         return sbias
 
-
     def make_superbias(self, butler, slot_data, **kwargs):
-        """Tie together the functions to make the data tables
-        @param butler (`Butler`)   The data butler
-        @param slot_data (dict)    Dictionary pointing to the bias and mask files
-        @param kwargs
+        """Stack the input data to make superbias frames
 
-        @return (dict)
+        The superbias frames are stored as data members of this class
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
         """
+        self.safe_update(**kwargs)
 
-        mask_files = get_mask_files(**kwargs)
-        if kwargs.get('stat', DEFAULT_STAT_TYPE) == DEFAULT_STAT_TYPE:
-            output_file = superbias_filename(bias_type=kwargs.get('bias'), **kwargs)
-        else:
-            output_file = superbias_stat_filename(bias_type=kwargs.get('bias'),
-                                                  stat_type=kwargs.get('stat'),
-                                                  **kwargs)
-
+        mask_files = self.get_mask_files()
+        output_file = self.get_superbias_file('.fits', superbias=self.config.bias)
         makedir_safe(output_file)
 
-        if not kwargs.get('skip', False):
-            out_data = self.extract(butler, slot_data, **kwargs)
-            imutil.writeFits(out_data, output_file, SBIAS_TEMPLATE, kwargs.get('bitpix', DEFAULT_BITPIX))
+        if not self.config.skip:
+            out_data = self.extract(butler, slot_data)
+            imutil.writeFits(out_data, output_file, slot_data['BIAS'][0], self.config.bitpix)
             if butler is not None:
                 flip_data_in_place(output_file)
 
-        sbias = get_ccd_from_id(None, output_file, mask_files)
-        return sbias
+        self._superbias_frame = get_ccd_from_id(None, output_file, mask_files)
+        dtables = TableDict()
+        return dtables
 
 
-    def plot(self, sbias, figs, **kwargs):
-        """Make plots of the superbias frame
+    def plot(self, dtables, figs, **kwargs):
+        """Make plots of the pixel-by-pixel distributions
+        of the superbias frames
 
-        @param sbias (str)          The superbias frame
-        @param figs (`FigureDict`)  Place to collect figures
-        @param kwargs:
-            plot (bool)              Plot images of the superbias
-            stats_hist (bool)        Plot statistics
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
         """
+        self.safe_update(**kwargs)
+
+        if dtables.keys():
+            raise ValueError("dtables should not be set")
+
         subtract_mean = self.config.stat == DEFAULT_STAT_TYPE
+        if self.config.vmin is None or self.config.vmax is None:
+            hist_range = (0., 2000.)
+        else:
+            hist_range = (self.config.vmin, self.config.vmax)
 
         if self.config.plot:
-            figs.plot_sensor("img", None, sbias)
+            figs.plot_sensor("img", None, self._superbias_frame)
 
+        default_array_kw = {}
         if self.config.stats_hist:
-            kwcopy = kwargs.copy()
-            kwcopy.pop('bias', None)
-            kwcopy.pop('superbias', None)
-            figs.histogram_array("hist", None, sbias,
+            kwcopy = self.extract_config_vals(default_array_kw)
+            figs.histogram_array("hist", None, self._superbias_frame,
                                  title="Historam of RMS of bias-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
-                                 subtract_mean=subtract_mean, **kwcopy)
+                                 subtract_mean=subtract_mean, bins=self.config.nbins,
+                                 range=hist_range, **kwcopy)
 
-    def make_plots(self, sbias):
-        """Tie together the functions to make the data tables
-        @param sbias (`MaskedCCD`)   The superbias frame
 
-        @return (`FigureDict`) the figues we produced
+    def make_plots(self, dtables, **kwargs):
+        """Tie together the functions to make the figures
+
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+
+        Returns
+        -------
+        figs : `FigureDict`
+            The resulting figures
         """
-        figs = FigureDict()
-        self.plot(sbias, figs)
-        return figs
+        self.safe_update(**kwargs)
 
+        figs = FigureDict()
+        self.plot(dtables, figs)
+        if self.config.plot == 'display':
+            figs.save_all(None)
+            return figs
+
+        plotbase = self.get_superbias_file('', superbias=self.config.bias)
+
+        makedir_safe(plotbase)
+        figs.save_all(plotbase, self.config.plot)
+        return None
 
     def __call__(self, butler, slot_data, **kwargs):
-        """Tie together the functions
-        @param butler (`Butler`)   The data butler
-        @param slot_data (dict)    Dictionary pointing to the bias and mask files
-        @param kwargs              Passed to the functions that do the actual work
+        """Tie together analysis functions
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
         """
-        sbias = self.make_superbias(butler, slot_data, **kwargs)
-        if kwargs.get('plot', False):
-            figs = self.make_plots(sbias)
-            if kwargs.get('interactive', False):
-                figs.save_all(None)
-            else:
-                if kwargs.get('stat', DEFAULT_STAT_TYPE) == DEFAULT_STAT_TYPE:
-                    plotbase = superbias_filename(bias_type=kwargs.get('bias'),
-                                                  **kwargs).replace('.fits', '')
-                else:
-                    plotbase = superbias_stat_filename(bias_type=kwargs.get('bias'),
-                                                       stat_type=kwargs.get('stat'),
-                                                       **kwargs).replace('.fits', '')
-
-                makedir_safe(plotbase)
-                figs.save_all(plotbase)
+        self.safe_update(**kwargs)
+        dtables = self.make_superbias(butler, slot_data)
+        if self.config.plot is not None:
+            self.make_plots(dtables)
 
 
+
+class SuperbiasRaftConfig(BiasAnalysisConfig):
+    """Configuration for SuperbiasRaftTask"""
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='raft')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
+    mask = EOUtilOptions.clone_param('mask')
+    stats_hist = EOUtilOptions.clone_param('stats_hist')
+    mosaic = EOUtilOptions.clone_param('mosaic')
+
+
+class SuperbiasRaftTask(BiasAnalysisTask):
+    """Analyze the outliers in Superbias frames for a raft"""
+
+    ConfigClass = SuperbiasRaftConfig
+    _DefaultName = "SuperbiasRaftTask"
+    iteratorClass = AnalysisByRaft
+
+    tablename_format = RAFT_BIAS_TABLE_FORMATTER
+    plotname_format = RAFT_BIAS_PLOT_FORMATTER
+
+    def __init__(self, **kwargs):
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
+        BiasAnalysisTask.__init__(self, **kwargs)
+        self._mask_file_dict = {}
+        self._sbias_file_dict = {}
+        self._sbias_arrays = None
+
+    def extract(self, butler, data, **kwargs):
+        """Extract the outliers in the superbias frames for the raft
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
+        """
+        self.safe_update(**kwargs)
+
+        if butler is not None:
+            sys.stdout.write("Ignoring butler in SuperbiasRaft\n")
+        if data is not None:
+            sys.stdout.write("Ignoring raft_data in SuperbiasRaft\n")
+
+        for slot in ALL_SLOTS:
+            self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
+            self._sbias_file_dict[slot] = self.get_superbias_file('.fits', slot=slot)
+
+        self._sbias_arrays = extract_raft_array_dict(None, self._sbias_file_dict,
+                                                     mask_dict=self._mask_file_dict)
+
+
+        out_data = outlier_raft_dict(self._sbias_arrays, 0., 10.)
+        dtables = TableDict()
+        dtables.make_datatable('outliers', out_data)
+        return dtables
+
+
+    def plot(self, dtables, figs, **kwargs):
+        """Plot the raft-level mosaic and histrograms
+        of the numbers of outliers in the superbias frames
+
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
+        """
+        self.safe_update(**kwargs)
+
+        figs.make_raft_outlier_plots(dtables['outliers'])
+
+        if self.config.skip:
+            return
+
+        if self.config.mosaic:
+            figs.plot_raft_mosaic('mosaic', self._sbias_file_dict, bias_subtract=False)
+
+        if self.config.stats_hist:
+            figs.histogram_raft_array('stats', self._sbias_arrays,
+                                      xlabel='Counts [ADU]',
+                                      ylabel='Pixels',
+                                      bins=100,
+                                      range=(-100., 100.),
+                                      histtype='step')
+
+
+EO_TASK_FACTORY.add_task_class('Superbias', SuperbiasTask)
+EO_TASK_FACTORY.add_task_class('SuperbiasRaft', SuperbiasRaftTask)

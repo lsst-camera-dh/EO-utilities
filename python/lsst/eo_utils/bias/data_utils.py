@@ -12,13 +12,23 @@ from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES,\
 def stack_by_amps(stack_arrays, butler, ccd, **kwargs):
     """Stack arrays for all the amps to look for coherent noise
 
-    @param stack_arrays (dict)   Dictionary of arrays with stacked data
-    @param butler (`Butler`)     The data butler
-    @param ccd (`MaskedCCD`)     The ccd we are getting data from
-    @param kwargs:
-      ifile (int)                    File index
-      bias_type (str)                Method to use to construct bias
-      superbias_frame (`MaskedCCD`)  The superbias
+    Parameters
+    ----------
+    stack_arrays : `dict`
+        Dictionary of arrays with stacked data, filled by this function
+    butler : `Butler` or `None`
+        The data butler
+    ccd : `MaskedCCD`
+        The ccd we are getting data from
+
+    Keywords
+    --------
+    ifile : `int`
+        File index
+    bias_type : `str`
+        Method to use to construct bias
+    superbias_frame : `MaskedCCD` or `None`
+        The superbias frame to subtract off
     """
     bias_type = kwargs.get('bias', DEFAULT_BIAS_TYPE)
     ifile = kwargs['ifile']
@@ -29,7 +39,7 @@ def stack_by_amps(stack_arrays, butler, ccd, **kwargs):
 
         regions = get_geom_regions(butler, ccd, amp)
         serial_oscan = regions['serial_overscan']
-        im = get_raw_image(butler, ccd, amp)
+        img = get_raw_image(butler, ccd, amp)
         if superbias_frame is not None:
             if butler is not None:
                 superbias_im = get_raw_image(None, superbias_frame, amp+1)
@@ -37,7 +47,7 @@ def stack_by_amps(stack_arrays, butler, ccd, **kwargs):
                 superbias_im = get_raw_image(None, superbias_frame, amp)
         else:
             superbias_im = None
-        image = unbias_amp(im, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+        image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
         frames = get_image_frames_2d(image, regions)
 
         for key, region in zip(REGION_KEYS, REGION_NAMES):
@@ -52,11 +62,19 @@ def stack_by_amps(stack_arrays, butler, ccd, **kwargs):
 def convert_stack_arrays_to_dict(stack_arrays, dim_array_dict, nfiles):
     """Convert the stack arrays to a dictionary
 
-    @param stack_arrays (dict)   The stacked data
-    @param dim_array_dict (dict) The array shapes
-    @param nfiles (int)          Number of input files
+    Parameters
+    ----------
+    stack_arrays : `dict`
+        The stacked data
+    dim_array_dict : `dict`
+        The array shapes
+    nfiles : `int`
+        Number of input files
 
-    @returns (dict) the re-organized data
+    Returns
+    -------
+    stackdata_dict : `dict`
+        The re-organized data
     """
     stackdata_dict = {}
 
