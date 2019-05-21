@@ -134,6 +134,40 @@ class EOResultsRaftTask(AnalysisTask):
                                   title='Dark Current 95%',
                                   ylabel='e-/s/pixel',
                                   slots=ALL_SLOTS)
+        figs.plot_raft_amp_values('cti_high_serial',
+                                  table['CTI_HIGH_SERIAL'],
+                                  title="CTI High Serial",
+                                  yerrs=table['CTI_HIGH_SERIAL_ERROR'],
+                                  ylabel='loss/pixel',
+                                  slots=ALL_SLOTS)
+        figs.plot_raft_amp_values('cti_high_parallel',
+                                  table['CTI_HIGH_PARALLEL'],
+                                  title="CTI High Parallel",
+                                  yerrs=table['CTI_HIGH_PARALLEL_ERROR'],
+                                  ylabel='loss/pixel',
+                                  slots=ALL_SLOTS)
+        figs.plot_raft_amp_values('cti_low_serial',
+                                  table['CTI_LOW_SERIAL'],
+                                  title="CTI Low Serial",
+                                  yerrs=table['CTI_LOW_SERIAL_ERROR'],
+                                  ylabel='loss/pixel',
+                                  slots=ALL_SLOTS)
+        figs.plot_raft_amp_values('cti_low_parallel',
+                                  table['CTI_LOW_PARALLEL'],
+                                  title="CTI Low Parallel",
+                                  yerrs=table['CTI_LOW_PARALLEL_ERROR'],
+                                  ylabel='loss/pixel',
+                                  slots=ALL_SLOTS)
+        figs.plot_raft_amp_values('max_frac_dev',
+                                  table['MAX_FRAC_DEV'],
+                                  title="Maximum fractional deviation",
+                                  ylabel='Fraction',
+                                  slots=ALL_SLOTS)
+        figs.plot_raft_amp_values('psf_sigma',
+                                  table['PSF_SIGMA'],
+                                  title="PSF Width",
+                                  ylabel='pixels',
+                                  slots=ALL_SLOTS)
 
 
 class EOResultsSummaryConfig(AnalysisConfig):
@@ -231,6 +265,14 @@ class EOResultsSummaryTask(AnalysisTask):
                             runs,
                             table['READ_NOISE'],
                             ylabel='rms e-/pixel')
+        figs.plot_run_chart('shot_noise',
+                            runs,
+                            table['DC95_SHOT_NOISE'],
+                            ylabel='rms e-/pixel')
+        figs.plot_run_chart('total_noise',
+                            runs,
+                            table['TOTAL_NOISE'],
+                            ylabel='rms e-/pixel')
         figs.plot_run_chart('full_well',
                             runs,
                             table['FULL_WELL'],
@@ -239,7 +281,34 @@ class EOResultsSummaryTask(AnalysisTask):
                             runs,
                             table['DARK_CURRENT_95'],
                             ylabel='e-/s/pixel')
-
+        figs.plot_run_chart('cti_high_serial',
+                            runs,
+                            table['CTI_HIGH_SERIAL'],
+                            yerrs=table['CTI_HIGH_SERIAL_ERROR'],
+                            ylabel='loss/pixel')
+        figs.plot_run_chart('cti_high_parallel',
+                            runs,
+                            table['CTI_HIGH_PARALLEL'],
+                            yerrs=table['CTI_HIGH_PARALLEL_ERROR'],
+                            ylabel='loss/pixel')
+        figs.plot_run_chart('cti_low_serial',
+                            runs,
+                            table['CTI_LOW_SERIAL'],
+                            yerrs=table['CTI_LOW_SERIAL_ERROR'],
+                            ylabel='loss/pixel')
+        figs.plot_run_chart('cti_low_parallel',
+                            runs,
+                            table['CTI_LOW_PARALLEL'],
+                            yerrs=table['CTI_LOW_PARALLEL_ERROR'],
+                            ylabel='loss/pixel')
+        figs.plot_run_chart('max_frac_dev',
+                            runs,
+                            table['MAX_FRAC_DEV'],
+                            ylabel='Fraction')
+        figs.plot_run_chart('psf_sigma',
+                            runs,
+                            table['PSF_SIGMA'],
+                            ylabel='pixels')
 
 EO_TASK_FACTORY.add_task_class('EOResultsRaft', EOResultsRaftTask)
 EO_TASK_FACTORY.add_task_class('EOResultsSummary', EOResultsSummaryTask)
