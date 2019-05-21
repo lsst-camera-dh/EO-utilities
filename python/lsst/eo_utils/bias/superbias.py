@@ -173,7 +173,7 @@ class SuperbiasTask(BiasAnalysisTask):
             figs.histogram_array("hist", None, self._superbias_frame,
                                  title="Historam of RMS of bias-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
-                                 subtract_mean=subtract_mean, bins=self.config.nbins, 
+                                 subtract_mean=subtract_mean, bins=self.config.nbins,
                                  range=hist_range, **kwcopy)
 
 

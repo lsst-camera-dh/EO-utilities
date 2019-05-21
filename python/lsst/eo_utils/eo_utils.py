@@ -233,12 +233,12 @@ class EOUtils(Configurable):
         return tdict
 
 
-    def get_summary_data_run(self, task, tablename, run, cols, **kwargs):
+    def get_summary_data_run(self, taskname, tablename, run, cols, **kwargs):
         """Get the rows that match a particular run
 
         Parameters
         ----------
-        task : `str`
+        taskname : `str`
             The name of the task in question
         tablename : `str`
             The name of the table in question
@@ -252,10 +252,10 @@ class EOUtils(Configurable):
         data : `dict`
             Dictonary mapping name : array
         """
-        tdict = self.get_task_table_dict('EOResultsSummary', **kwargs)
+        tdict = self.get_task_table_dict(taskname, **kwargs)
         datatable = tdict[tablename]
         mask = self.get_run_mask(datatable, tdict['runs'], run)
-        data = { col: datatable[col][mask] for col in cols }
+        data = {col: datatable[col][mask] for col in cols}
         return data
 
     @staticmethod
