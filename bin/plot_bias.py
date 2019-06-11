@@ -2,17 +2,31 @@
 
 """This module is just a command line interface to plot bias images"""
 
-from lsst.eo_utils.base.config_utils import setup_parser
+import lsst.pex.config as pexConfig
+
+from lsst.eo_utils.base.config_utils import EOUtilOptions,\
+    setup_parser, add_pex_arguments
 from lsst.eo_utils.base.image_utils import get_ccd_from_id
 from lsst.eo_utils.base.plot_utils import FigureDict
 
+class PlotConfig(pexConfig.Config):
+    """Configuration for Plotting"""
+    input = EOUtilOptions.clone_param('input')
+    output = EOUtilOptions.clone_param('output')
+    bias = EOUtilOptions.clone_param('bias')
+    superbias = EOUtilOptions.clone_param('superbias')
+    vmin = EOUtilOptions.clone_param('vmin')
+    vmax = EOUtilOptions.clone_param('vmax')
+    nbins = EOUtilOptions.clone_param('nbins')
+    subtract_mean = EOUtilOptions.clone_param('subtract_mean')
+    stats_hist = EOUtilOptions.clone_param('stats_hist')
+
 def main():
     """Hook for setup.py"""
-    argnames = ['input', 'output', 'bias', 'superbias',
-                'vmin', 'vmax', 'nbins',
-                'subtract_mean', 'stats_hist']
 
-    parser = setup_parser(argnames)
+    parser = setup_parser()
+    add_pex_arguments(parser, PlotConfig)
+
     args = parser.parse_args()
 
     if args.output is None:

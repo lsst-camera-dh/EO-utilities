@@ -50,7 +50,8 @@ def main():
     link_eo_bot_results_runlist(args.__dict__, GLOB_FORMAT_PTC, SEARCHPATH, OUTFORMAT_PTC)
     sys.stdout.write("Linking mask\n")
     for mask in ['edge_rolloff_mask', 'dark_pixel_mask']:
-        link_eo_bot_results_runlist(args.__dict__, GLOB_FORMAT_MASK_RAFT, SEARCHPATH, OUTFORMAT_MASK, mask=mask)
+        link_eo_bot_results_runlist(args.__dict__, GLOB_FORMAT_MASK_RAFT,
+                                    SEARCHPATH, OUTFORMAT_MASK, mask=mask)
 
 if __name__ == '__main__':
     main()

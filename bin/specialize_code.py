@@ -11,13 +11,23 @@ from collections import OrderedDict
 
 
 def specialize_file(infile, outfile, trans_dict):
-    
+    """Perform a series of replacements to turn a template file into usable code
+
+    Parameters
+    ----------
+    infile : `str`
+        The input file
+    outfile : `str` or `None`
+        The output file, None for stdout
+    trans_dict : `dict`
+        The translation dictionary
+    """
     fin = open(infile)
     if outfile is None:
         fout = sys.stdout
     else:
         fout = open(outfile, 'w')
-    
+
     line = fin.readline()
 
     while line:
