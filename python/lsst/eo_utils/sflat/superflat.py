@@ -26,13 +26,15 @@ from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
     flip_data_in_place, sort_sflats, stack_images, extract_raft_array_dict,\
     outlier_raft_dict
 
+from lsst.eo_utils.bias.analysis import AnalysisConfig, AnalysisTask
+
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot,\
-    AnalysisByRaft
+    TableAnalysisByRaft
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from lsst.eo_utils.sflat.file_utils import RAFT_SFLAT_TABLE_FORMATTER,\
-    RAFT_SFLAT_PLOT_FORMATTER
+    RAFT_SFLAT_PLOT_FORMATTER, SUPERFLAT_FORMATTER
 
 from lsst.eo_utils.sflat.analysis import SflatAnalysisConfig,\
     SflatAnalysisTask
@@ -102,9 +104,12 @@ class SuperflatTask(SflatAnalysisTask):
         superbias_frame = self.get_superbias_frame(mask_files)
 
         sflat_files = data['SFLAT']
-        sys.stdout.write("Working on %s, %i files.\n" % (slot, len(sflat_files)))
 
         sflat_files_l, sflat_files_h = sort_sflats(butler, sflat_files)
+        sys.stdout.write("Working on %s, %i, %i, %i files.\n" % (slot,
+                                                                 len(sflat_files),
+                                                                 len(sflat_files_l),
+                                                                 len(sflat_files_h)))
 
         if stat_type.upper() in afwMath.__dict__:
             statistic = afwMath.__dict__[stat_type.upper()]
@@ -262,9 +267,12 @@ class SuperflatTask(SflatAnalysisTask):
 
 
 
-class SuperflatRaftConfig(SflatAnalysisConfig):
+class SuperflatRaftConfig(AnalysisConfig):
     """Configuration for FlatSuperflatRaftTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='raft')
+    outdir = EOUtilOptions.clone_param('outdir')
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='sflat')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
@@ -272,13 +280,14 @@ class SuperflatRaftConfig(SflatAnalysisConfig):
     mosaic = EOUtilOptions.clone_param('mosaic')
 
 
-class SuperflatRaftTask(SflatAnalysisTask):
+class SuperflatRaftTask(AnalysisTask):
     """Analyze the correlations between the overscans for all amplifiers on a raft"""
 
     ConfigClass = SuperflatRaftConfig
     _DefaultName = "SuperflatRaftTask"
-    iteratorClass = AnalysisByRaft
+    iteratorClass = TableAnalysisByRaft
 
+    intablename_format = SUPERFLAT_FORMATTER
     tablename_format = RAFT_SFLAT_TABLE_FORMATTER
     plotname_format = RAFT_SFLAT_PLOT_FORMATTER
 
@@ -290,7 +299,7 @@ class SuperflatRaftTask(SflatAnalysisTask):
         kwargs
             Used to override configruation
         """
-        SflatAnalysisTask.__init__(self, **kwargs)
+        AnalysisTask.__init__(self, **kwargs)
         self._mask_file_dict = {}
         self._sflat_file_dict_l = {}
         self._sflat_file_dict_h = {}
@@ -320,15 +329,13 @@ class SuperflatRaftTask(SflatAnalysisTask):
 
         if butler is not None:
             sys.stdout.write("Ignoring butler in extract_superflat_fft_slot\n")
-        if data is not None:
-            sys.stdout.write("Ignoring raft_data in extract_superflat_fft_raft\n")
 
         for slot in ALL_SLOTS:
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
-            basename = self.get_superflat_file('', slot=slot).replace('.fits', '')
-            self._sflat_file_dict_l[slot] = basename + '_l.fits'
-            self._sflat_file_dict_h[slot] = basename + '_h.fits'
-            self._sflat_file_dict_r[slot] = basename + '_ratio.fits'
+            basename = data[slot]
+            self._sflat_file_dict_l[slot] = basename.replace('.fits.fits', '_l.fits')
+            self._sflat_file_dict_h[slot] = basename.replace('.fits.fits', '_h.fits')
+            self._sflat_file_dict_r[slot] = basename.replace('.fits.fits', '_ratio.fits')
 
         self._sflat_array_l = extract_raft_array_dict(None, self._sflat_file_dict_l,
                                                       mask_dict=self._mask_file_dict)

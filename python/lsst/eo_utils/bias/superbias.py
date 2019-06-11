@@ -8,7 +8,7 @@ import lsst.eotest.image_utils as imutil
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.file_utils import makedir_safe
+from lsst.eo_utils.base.file_utils import SUPERBIAS_FORMATTER, makedir_safe
 
 from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
@@ -18,20 +18,22 @@ from lsst.eo_utils.base.plot_utils import FigureDict
 
 from lsst.eo_utils.base.data_utils import TableDict
 
+from lsst.eo_utils.bias.analysis import AnalysisConfig, AnalysisTask
+
 from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
     flip_data_in_place, stack_images, extract_raft_array_dict,\
     outlier_raft_dict
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot,\
-    AnalysisByRaft
+    TableAnalysisByRaft
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from lsst.eo_utils.bias.analysis import BiasAnalysisConfig,\
     BiasAnalysisTask
 
-from lsst.eo_utils.bias.file_utils import RAFT_BIAS_TABLE_FORMATTER,\
-    RAFT_BIAS_PLOT_FORMATTER
+from lsst.eo_utils.bias.file_utils import RAFT_SBIAS_TABLE_FORMATTER,\
+    RAFT_SBIAS_PLOT_FORMATTER
 
 
 class SuperbiasConfig(BiasAnalysisConfig):
@@ -223,9 +225,12 @@ class SuperbiasTask(BiasAnalysisTask):
 
 
 
-class SuperbiasRaftConfig(BiasAnalysisConfig):
+class SuperbiasRaftConfig(AnalysisConfig):
     """Configuration for SuperbiasRaftTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='raft')
+    outdir = EOUtilOptions.clone_param('outdir')
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='sbias')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
@@ -233,15 +238,16 @@ class SuperbiasRaftConfig(BiasAnalysisConfig):
     mosaic = EOUtilOptions.clone_param('mosaic')
 
 
-class SuperbiasRaftTask(BiasAnalysisTask):
+class SuperbiasRaftTask(AnalysisTask):
     """Analyze the outliers in Superbias frames for a raft"""
 
     ConfigClass = SuperbiasRaftConfig
     _DefaultName = "SuperbiasRaftTask"
-    iteratorClass = AnalysisByRaft
+    iteratorClass = TableAnalysisByRaft
 
-    tablename_format = RAFT_BIAS_TABLE_FORMATTER
-    plotname_format = RAFT_BIAS_PLOT_FORMATTER
+    intablename_format = SUPERBIAS_FORMATTER
+    tablename_format = RAFT_SBIAS_TABLE_FORMATTER
+    plotname_format = RAFT_SBIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """C'tor
@@ -251,7 +257,7 @@ class SuperbiasRaftTask(BiasAnalysisTask):
         kwargs
             Used to override configruation
         """
-        BiasAnalysisTask.__init__(self, **kwargs)
+        AnalysisTask.__init__(self, **kwargs)
         self._mask_file_dict = {}
         self._sbias_file_dict = {}
         self._sbias_arrays = None
@@ -277,12 +283,10 @@ class SuperbiasRaftTask(BiasAnalysisTask):
 
         if butler is not None:
             sys.stdout.write("Ignoring butler in SuperbiasRaft\n")
-        if data is not None:
-            sys.stdout.write("Ignoring raft_data in SuperbiasRaft\n")
 
         for slot in ALL_SLOTS:
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
-            self._sbias_file_dict[slot] = self.get_superbias_file('.fits', slot=slot)
+            self._sbias_file_dict[slot] = data[slot]
 
         self._sbias_arrays = extract_raft_array_dict(None, self._sbias_file_dict,
                                                      mask_dict=self._mask_file_dict)

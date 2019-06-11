@@ -10,23 +10,29 @@ from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
+from lsst.eo_utils.base.file_utils import SUPERBIAS_STAT_FORMATTER
+
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
-from lsst.eo_utils.base.image_utils import get_raw_image, get_amp_list
+from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
+    get_raw_image, get_amp_list
 
-from lsst.eo_utils.base.iter_utils import AnalysisByRaft
+from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from .analysis import BiasAnalysisConfig, BiasAnalysisTask
+from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
 from .file_utils import RAFT_SBIAS_TABLE_FORMATTER, RAFT_SBIAS_PLOT_FORMATTER
 
 from .meta_analysis import SuperbiasSummaryAnalysisConfig, SuperbiasSummaryAnalysisTask
 
 
-class SuperbiasStatsConfig(BiasAnalysisConfig):
+class SuperbiasStatsConfig(AnalysisConfig):
     """Configuration for SuperbiasStatsTask"""
+    outdir = EOUtilOptions.clone_param('outdir')
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
     insuffix = EOUtilOptions.clone_param('insuffix', default='')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='stats')
     bias = EOUtilOptions.clone_param('bias')
@@ -36,13 +42,14 @@ class SuperbiasStatsConfig(BiasAnalysisConfig):
     stat = EOUtilOptions.clone_param('stat')
 
 
-class SuperbiasStatsTask(BiasAnalysisTask):
+class SuperbiasStatsTask(AnalysisTask):
     """Analyze the variation in the bias images"""
 
     ConfigClass = SuperbiasStatsConfig
     _DefaultName = "SuperbiasStatsTask"
-    iteratorClass = AnalysisByRaft
+    iteratorClass = TableAnalysisByRaft
 
+    intablename_format = SUPERBIAS_STAT_FORMATTER
     tablename_format = RAFT_SBIAS_TABLE_FORMATTER
     plotname_format = RAFT_SBIAS_PLOT_FORMATTER
 
@@ -54,7 +61,7 @@ class SuperbiasStatsTask(BiasAnalysisTask):
         kwargs
             Used to override configruation
         """
-        BiasAnalysisTask.__init__(self, **kwargs)
+        AnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
         """Extract the statistics from the superbias frames
@@ -78,8 +85,6 @@ class SuperbiasStatsTask(BiasAnalysisTask):
 
         if butler is not None:
             sys.stdout.write("Ignoring butler in superbias_stats.extract\n")
-        if data is not None:
-            sys.stdout.write("Ignoring raft_data in superbias_stats.extract\n")
 
         stats_data = {}
 
@@ -91,8 +96,10 @@ class SuperbiasStatsTask(BiasAnalysisTask):
             sys.stdout.write(" %s" % slot)
             sys.stdout.flush()
 
+            superbias_file = data[slot]
             mask_files = self.get_mask_files(slot=slot)
-            superbias_frame = self.get_superbias_frame(mask_files, slot=slot)
+
+            superbias_frame = get_ccd_from_id(None, superbias_file, mask_files)
             self.get_superbias_stats(None, superbias_frame, stats_data, islot)
 
         sys.stdout.write(".\n")

@@ -1,5 +1,7 @@
 """Class to analyze the correlations between the overscans for all amplifiers on a raft"""
 
+import copy
+
 import itertools
 
 import numpy as np
@@ -88,6 +90,7 @@ class OscanCorrelTask(BiasAnalysisTask):
             overscans += self.get_ccd_data(butler, ccd, superbias_frame=superbias_frame)
 
         namps = len(overscans)
+
         if self.config.covar:
             data = np.array([np.cov(overscans[i[0]].ravel(),
                                     overscans[i[1]].ravel())[0, 1]
@@ -158,10 +161,12 @@ class OscanCorrelTask(BiasAnalysisTask):
 
             regions = get_geom_regions(butler, ccd, amp)
             serial_oscan = regions['serial_overscan']
+
             img = get_raw_image(butler, ccd, amp)
             image = unbias_amp(img, serial_oscan, bias_type=None, superbias_im=superbias_im)
-            serial_oscan.grow(-self.boundry)
-            oscan_data = image[serial_oscan]
+            oscan_copy = copy.deepcopy(serial_oscan)
+            oscan_copy.grow(-self.boundry)
+            oscan_data = image[oscan_copy]
             step_x = regions['step_x']
             step_y = regions['step_y']
             overscans.append(oscan_data.getArray()[::step_x, ::step_y])

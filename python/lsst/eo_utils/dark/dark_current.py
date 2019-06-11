@@ -12,35 +12,41 @@ from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
 from lsst.eo_utils.base.stat_utils import gauss_fit
 
-from lsst.eo_utils.base.iter_utils import AnalysisByRaft
+from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft
 
-from lsst.eo_utils.base.image_utils import get_exposure_time,\
-    get_amp_list, get_raw_image, get_geom_regions
+from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
+    get_exposure_time, get_amp_list, get_raw_image, get_geom_regions
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.dark.file_utils import RAFT_DARK_TABLE_FORMATTER, RAFT_DARK_PLOT_FORMATTER
+from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
-from lsst.eo_utils.dark.analysis import DarkAnalysisTask, DarkAnalysisConfig
+from lsst.eo_utils.dark.file_utils import SUPERDARK_FORMATTER,\
+    RAFT_DARK_TABLE_FORMATTER, RAFT_DARK_PLOT_FORMATTER
 
 from lsst.eo_utils.dark.meta_analysis import DarkSummaryAnalysisConfig, DarkSummaryAnalysisTask
 
 
-class DarkCurrentConfig(DarkAnalysisConfig):
+class DarkCurrentConfig(AnalysisConfig):
     """Configuration for DarkCurrentTask"""
+    outdir = EOUtilOptions.clone_param('outdir')
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
+    insuffix = EOUtilOptions.clone_param('insuffix', default='')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='dark_current')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
 
 
-class DarkCurrentTask(DarkAnalysisTask):
+class DarkCurrentTask(AnalysisTask):
     """Analyze some dark data"""
 
     ConfigClass = DarkCurrentConfig
     _DefaultName = "DarkCurrentTask"
-    iteratorClass = AnalysisByRaft
+    iteratorClass = TableAnalysisByRaft
 
+    intablename_format = SUPERDARK_FORMATTER
     tablename_format = RAFT_DARK_TABLE_FORMATTER
     plotname_format = RAFT_DARK_PLOT_FORMATTER
 
@@ -52,7 +58,7 @@ class DarkCurrentTask(DarkAnalysisTask):
         kwargs
             Used to override configruation
         """
-        DarkAnalysisTask.__init__(self, **kwargs)
+        AnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
         """Extract data
@@ -77,8 +83,6 @@ class DarkCurrentTask(DarkAnalysisTask):
 
         if butler is not None:
             sys.stdout.write("Ignoring butler in DarkCurrentTask.extract\n")
-        if data is not None:
-            sys.stdout.write("Ignoring raft_data in DarkCurrentTask.extract\n")
 
         dark_current_data = dict(median=[],
                                  stdev=[],
@@ -101,8 +105,8 @@ class DarkCurrentTask(DarkAnalysisTask):
             sys.stdout.flush()
 
             mask_files = self.get_mask_files(slot=slot)
-            superdark_frame = self.get_superdark_frame(mask_files, slot=slot)
-
+            superdark_file = data[slot]
+            superdark_frame = get_ccd_from_id(None, superdark_file, mask_files)
             exptime = get_exposure_time(None, superdark_frame)
 
             amps = get_amp_list(None, superdark_frame)

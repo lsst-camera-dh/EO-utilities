@@ -177,7 +177,7 @@ class TableDict:
                 if tablelist is None or hdu.name.lower() in tablelist:
                     self._table_dict[hdu.name.lower()] = Table.read(filepath, hdu=hdu.name)
         else:
-            raise ValueError("Can only write pickle and hdf5 files for now, not %s" % extype)
+            raise ValueError("Can only read pickle and hdf5 files for now, not %s" % extype)
 
 
 def vstack_tables(filedict, **kwargs):

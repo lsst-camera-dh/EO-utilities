@@ -25,7 +25,8 @@ from .analysis import BaseAnalysisConfig, BaseAnalysisTask,\
 from .iter_utils import AnalysisHandlerConfig, AnalysisHandler,\
     SimpleAnalysisHandler, AnalysisIterator,\
     AnalysisBySlotConfig, AnalysisBySlot,\
-    AnalysisByRaftConfig, AnalysisByRaft, TableAnalysisByRaft,\
+    AnalysisByRaftConfig, AnalysisByRaft,\
+    TableAnalysisBySlot, TableAnalysisByRaft,\
     SummaryAnalysisIterator
 
 from .factory import EO_TASK_FACTORY

@@ -232,6 +232,8 @@ class PTCStatsTask(FlatAnalysisTask):
                          ptc_mean=[],
                          ptc_var=[],
                          med_gain=[],
+                         a00=[],
+                         a00_error=[],
                          alpha=[],
                          alpha_error=[],
                          gain=[],
@@ -248,7 +250,7 @@ class PTCStatsTask(FlatAnalysisTask):
             sys.stdout.flush()
 
             dtables = TableDict(data[slot].replace('ptc_stats.fits', 'ptc.fits'))
-            tab = dtables['ptc_stats']
+            tab = dtables['ptc']
 
             for amp in range(1, 17):
                 mean = tab["AMP%02i_MEAN" % (amp)]
@@ -257,17 +259,21 @@ class PTCStatsTask(FlatAnalysisTask):
                 frac_resids = np.abs((var - mean/med_gain)/var)
                 index = np.where(frac_resids < 0.2)
                 try:
-                    results = scipy.optimize.leastsq(residuals, (0, med_gain), full_output=1,
+                    results = scipy.optimize.leastsq(residuals, (1., med_gain, 0.), full_output=1,
                                                      args=(mean[index], var[index]))
                     pars, cov = results[:2]
-                    ptc_alpha = pars[0]
-                    ptc_alpha_error = np.sqrt(cov[0][0])
-                    ptc_gain = pars[1]
-                    ptc_gain_error = np.sqrt(cov[1][1])
+                    ptc_a00 = pars[0]
+                    ptc_a00_error = np.sqrt(cov[0][0])
+                    ptc_alpha = pars[1]
+                    ptc_alpha_error = np.sqrt(cov[1][1])
+                    ptc_gain = pars[2]
+                    ptc_gain_error = np.sqrt(cov[2][2])
                 except Exception as eobj:
                     sys.stderr.write("Exception caught while fitting PTC:")
                     sys.stderr.write(str(eobj))
                     sys.stderr.write("\n")
+                    ptc_a00 = 0.
+                    ptc_a00_error = -1.
                     ptc_gain = 0.
                     ptc_gain_error = -1.
                     ptc_alpha = 0.
@@ -277,6 +283,8 @@ class PTCStatsTask(FlatAnalysisTask):
                 data_dict['npts'].append(mean.size)
                 data_dict['nused'].append(len(index))
                 data_dict['med_gain'].append(med_gain)
+                data_dict['a00'].append(ptc_a00)
+                data_dict['a00_error'].append(ptc_a00_error)
                 data_dict['alpha'].append(ptc_alpha)
                 data_dict['alpha_error'].append(ptc_alpha_error)
                 data_dict['gain'].append(ptc_gain)
@@ -306,6 +314,7 @@ class PTCStatsTask(FlatAnalysisTask):
         table = dtables['ptc_stats']
         ptc_means = table['ptc_mean']
         ptc_vars = table['ptc_var']
+        a00s = table['a00']
         alphas = table['alpha']
         gains = table['gain']
 
@@ -321,7 +330,7 @@ class PTCStatsTask(FlatAnalysisTask):
                 axes.set_yscale('log')
                 axes.scatter(ptc_means[idx], ptc_vars[idx])
                 xvals = np.logspace(log_xmins[idx], log_xmaxs[idx], 100)
-                ptc_pars = (alphas[idx], gains[idx])
+                ptc_pars = (a00s[idx], gains[idx], alphas[idx])
                 yvals = ptc_func(ptc_pars, xvals)
                 axes.plot(xvals, yvals, 'r-')
                 idx += 1

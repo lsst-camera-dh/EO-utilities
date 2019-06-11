@@ -8,9 +8,9 @@ from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_fo
     FILENAME_FORMATS, SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
 
 SUPERFLAT_FORMAT_STRING =\
-    '{outdir}/superflat/{raft}/{raft}-{run}-{slot}_superflat_b-{bias_type}{suffix}.fits'
+    '{outdir}/superflat/{raft}/{raft}-{run}-{slot}_superflat_b-{bias}_s-{superbias}{suffix}.fits'
 SUPERFLAT_STAT_FORMAT_STRING =\
-    '{outdir}/superflat/{raft}/{raft}-{run}-{slot}_{stat_type}_b-{bias_type}{suffix}.fits'
+    '{outdir}/superflat/{raft}/{raft}-{run}-{slot}_{stat}_b-{bias}_s-{superbias}{suffix}.fits'
 
 SLOT_SFLAT_FORMAT_STRING =\
     SLOT_FORMAT_STRING.replace('{suffix}', '_b-{bias}_s-{superbias}_{suffix}')
@@ -23,10 +23,10 @@ SFLAT_DEFAULT_FIELDS = dict(testType='sflat', bias=None, superbias=None, suffix=
 
 SUPERFLAT_FORMATTER = FILENAME_FORMATS.add_format('superflat',
                                                   SUPERFLAT_FORMAT_STRING,
-                                                  bias_type=None, suffix='')
+                                                  bias=None, superbias=None, suffix='')
 SUPERFLAT_STAT_FORMATTER = FILENAME_FORMATS.add_format('superflat_stat',
                                                        SUPERFLAT_STAT_FORMAT_STRING,
-                                                       bias_type=None, suffix='')
+                                                       bias=None, superbias=None, suffix='')
 
 RAFT_SFLAT_TABLE_FORMATTER = FILENAME_FORMATS.add_format('raft_sflat_table',
                                                          RAFT_SFLAT_FORMAT_STRING,
@@ -77,8 +77,8 @@ def get_sflat_files_run(run_id, **kwargs):
     if testtypes is None:
         if hinfo[0] == 'LCA-11021':
             testtypes = ['sflat_raft_acq']
+            #testtypes = ['SFLAT']
             imagetype = "SFLAT"
-
         else:
             testtypes = ['SFLAT']
             imagetype = "FLAT"

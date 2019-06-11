@@ -330,7 +330,8 @@ class AnalysisTask(BaseAnalysisTask):
         if self.config.superbias is None:
             return None
         superbias_file = self.get_superbias_file('.fits')
-        return get_ccd_from_id(None, superbias_file, mask_files)
+        ccd = get_ccd_from_id(None, superbias_file, mask_files)
+        return ccd
 
     def make_datatables(self, butler, data, **kwargs):
         """Construct or read back the `TableDict` object with the analysis results

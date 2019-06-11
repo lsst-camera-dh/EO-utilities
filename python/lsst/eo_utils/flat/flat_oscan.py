@@ -118,7 +118,7 @@ class FlatOverscanTask(FlatAnalysisTask):
 
         dtables = TableDict(primary=primary)
         for key, val in data_dict.items():
-            dtables.make_datatable(key, val)
+            dtables.make_datatable(key.lower(), val)
         dtables.make_datatable('files', make_file_dict(butler, flat_files))
 
         return dtables
@@ -234,7 +234,7 @@ class FlatOverscanTask(FlatAnalysisTask):
             flux = data['FLUX'][sorted_indices] - offset
 
             axs.plot(flux[flux <= self.maxflux], overscan1[flux <= self.maxflux],
-                     label="Amp {0}".format(i+1), marker=marker)
+                     label="amp {0}".format(i+1), marker=marker)
 
         axs.set_ylim(bottom=-1.0)
         axs.set_xlim(left=50)

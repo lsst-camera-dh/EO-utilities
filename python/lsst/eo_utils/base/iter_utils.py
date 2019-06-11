@@ -638,6 +638,60 @@ class AnalysisByRaft(AnalysisIterator):
             raise ValueError("Do not recognize hardware type for run %s: %s" % (run, htype))
 
 
+class TableAnalysisBySlot(AnalysisBySlot):
+    """Small class to iterate an analysis function over slots"""
+
+    def __init__(self, task, **kwargs):
+        """C'tor
+
+        Parameters
+        ----------
+        task : `AnalysisTask`
+            Task that this handler will run
+        kwargs
+            Used to override configuration defaults
+        """
+        AnalysisBySlot.__init__(self, task, **kwargs)
+
+    def get_data(self, butler, datakey, **kwargs):
+        """Get the data to analyze
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        datakey : `str`
+            Run number or other id that defines the data to analyze
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        retval : `dict`
+            Dictionary mapping input data by raft, slot and file type
+        """
+        kwcopy = kwargs.copy()
+        kwcopy['run'] = datakey
+
+        raft = AnalysisIterator.get_raft_list(butler, datakey)[0]
+        kwcopy['raft'] = raft
+
+        out_dict = {}
+
+        formatter = self._task.intablename_format
+        insuffix = self._task.get_config_param('insuffix', '')
+
+        slot_dict = {}
+        for slot in ALL_SLOTS:
+            kwcopy['slot'] = slot
+            datapath = self._task.get_filename_from_format(formatter, insuffix, **kwcopy)
+            slot_dict[slot] = [datapath + '.fits']
+
+        out_dict = {raft:slot_dict}
+        print(out_dict)
+        return out_dict
+
+
 class TableAnalysisByRaft(AnalysisByRaft):
     """Small class to iterate an analysis function over all the slots in a raft"""
 
@@ -687,9 +741,8 @@ class TableAnalysisByRaft(AnalysisByRaft):
             slot_dict = {}
             for slot in ALL_SLOTS:
                 kwcopy['slot'] = slot
-                basename = self._task.get_filename_from_format(formatter, insuffix, **kwcopy)
-                datapath = basename + '.fits'
-                slot_dict[slot] = datapath
+                datapath = self._task.get_filename_from_format(formatter, insuffix, **kwcopy)
+                slot_dict[slot] = datapath + '.fits'
             out_dict[raft] = slot_dict
         return out_dict
 

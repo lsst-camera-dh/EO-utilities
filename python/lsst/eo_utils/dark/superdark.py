@@ -22,13 +22,15 @@ from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
     flip_data_in_place, stack_images, extract_raft_array_dict,\
     outlier_raft_dict
 
+from lsst.eo_utils.bias.analysis import AnalysisTask
+
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot,\
-    AnalysisByRaft
+    TableAnalysisByRaft
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.dark.file_utils import RAFT_DARK_TABLE_FORMATTER,\
-    RAFT_DARK_PLOT_FORMATTER
+from lsst.eo_utils.dark.file_utils import RAFT_SDARK_TABLE_FORMATTER,\
+    RAFT_SDARK_PLOT_FORMATTER, SUPERDARK_FORMATTER
 
 from lsst.eo_utils.dark.analysis import DarkAnalysisConfig,\
     DarkAnalysisTask
@@ -224,7 +226,7 @@ class SuperdarkTask(DarkAnalysisTask):
 
 class SuperdarkRaftConfig(DarkAnalysisConfig):
     """Configuration for SuperdarkRaftTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='raft')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='sdark')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
@@ -232,15 +234,16 @@ class SuperdarkRaftConfig(DarkAnalysisConfig):
     mosaic = EOUtilOptions.clone_param('mosaic')
 
 
-class SuperdarkRaftTask(DarkAnalysisTask):
+class SuperdarkRaftTask(AnalysisTask):
     """Analyze the outliers in the superdark frames for a raft"""
 
     ConfigClass = SuperdarkRaftConfig
     _DefaultName = "SuperdarkRaftTask"
-    iteratorClass = AnalysisByRaft
+    iteratorClass = TableAnalysisByRaft
 
-    tablename_format = RAFT_DARK_TABLE_FORMATTER
-    plotname_format = RAFT_DARK_PLOT_FORMATTER
+    intablename_format = SUPERDARK_FORMATTER
+    tablename_format = RAFT_SDARK_TABLE_FORMATTER
+    plotname_format = RAFT_SDARK_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -250,7 +253,7 @@ class SuperdarkRaftTask(DarkAnalysisTask):
         kwargs
             Used to override configruation
         """
-        DarkAnalysisTask.__init__(self, **kwargs)
+        AnalysisTask.__init__(self, **kwargs)
         self._mask_file_dict = {}
         self._sdark_file_dict = {}
         self._sdark_arrays = None
@@ -276,13 +279,11 @@ class SuperdarkRaftTask(DarkAnalysisTask):
 
         if butler is not None:
             sys.stdout.write("Ignoring butler in extract_superbias_fft_slot\n")
-        if data is not None:
-            sys.stdout.write("Ignoring raft_data in extract_superbias_fft_raft\n")
 
         for slot in ALL_SLOTS:
             mask_files = self.get_mask_files(slot=slot)
             self._mask_file_dict[slot] = mask_files
-            self._sdark_file_dict[slot] = self.get_superdark_file('', slot=slot)
+            self._sdark_file_dict[slot] = data[slot].replace('.fits.fits', '.fits')
 
         self._sdark_arrays = extract_raft_array_dict(None, self._sdark_file_dict,
                                                      mask_dict=self._mask_file_dict)

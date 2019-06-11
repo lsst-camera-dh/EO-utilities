@@ -14,11 +14,14 @@ from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
+from lsst.eo_utils.base.file_utils import SUPERBIAS_FORMATTER
+
 from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES,\
     get_readout_freqs_from_ccd, get_ccd_from_id, get_raw_image,\
     get_geom_regions, get_amp_list, get_image_frames_2d, array_struct, unbias_amp
 
-from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft, AnalysisBySlot
+from lsst.eo_utils.base.iter_utils import TableAnalysisBySlot,\
+    TableAnalysisByRaft, AnalysisBySlot
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
@@ -203,9 +206,14 @@ class BiasFFTTask(BiasAnalysisTask):
 
 
 
-class SuperbiasFFTConfig(BiasAnalysisConfig):
+class SuperbiasFFTConfig(BiasFFTConfig):
     """Configuration for SuperbiasFFTTask"""
+    outdir = EOUtilOptions.clone_param('outdir')
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
+    slot = EOUtilOptions.clone_param('slot')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='sbiasfft')
+    bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
     std = EOUtilOptions.clone_param('std')
@@ -216,8 +224,9 @@ class SuperbiasFFTTask(BiasFFTTask):
 
     ConfigClass = SuperbiasFFTConfig
     _DefaultName = "SuperbiasFFTTask"
-    iteratorClass = AnalysisBySlot
+    iteratorClass = TableAnalysisBySlot
 
+    intablename_format = SUPERBIAS_FORMATTER
     tablename_format = SLOT_SBIAS_TABLE_FORMATTER
     plotname_format = SLOT_SBIAS_PLOT_FORMATTER
 
@@ -254,11 +263,10 @@ class SuperbiasFFTTask(BiasFFTTask):
 
         if butler is not None:
             sys.stdout.write("Ignoring butler in extract_superbias_fft_slot\n")
-        if data is not None:
-            sys.stdout.write("Ignoring raft_data in extract_superbias_fft_raft\n")
 
         mask_files = self.get_mask_files()
-        superbias = self.get_superbias_frame(mask_files=mask_files)
+        superbias_file = data[0] + '.fits'
+        superbias = get_ccd_from_id(None, superbias_file, mask_files)
 
         fft_data = {}
 

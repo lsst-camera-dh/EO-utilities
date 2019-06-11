@@ -29,7 +29,7 @@ OUTFORMAT_EOTEST = os.path.join('{outdir}', 'eotest_results', '{raft}', '{raft}-
 OUTFORMAT_FE55 = os.path.join('{outdir}', 'fe55', '{raft}',
                          '{raft}-{run}-{slot}_fe55-clusters.fits')
 OUTFORMAT_PTC = os.path.join('{outdir}', 'flat', '{raft}', '{raft}-{run}-{slot}_ptc.fits')
-OUTFORMAT_MASK = os.path.join('{outdir}', 'eotest_results', '{raft}', '{raft}-{run}-{slot}_{mask}.fits')
+OUTFORMAT_MASK = os.path.join('{outdir}', 'masks_in', '{raft}', '{raft}-{run}-{slot}_{mask}.fits')
 
 
 def main():
@@ -42,7 +42,7 @@ def main():
                         help="Run id")
     parser.add_argument("--raft", default=None,
                         help="Raft id")
-    parser.add_argument("-o", "--outdir", default='analysis',
+    parser.add_argument("-o", "--outdir", default='analysis/ts8',
                         help="Output directory")
     parser.add_argument("-m", "--mapping", default=None,
                         help="Yaml file with raft to ccd mapping")

@@ -9,6 +9,10 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 
 from lsst.eotest.raft import RaftMosaic
 
+from lsst.eotest.sensor import MaskedCCD, parse_geom_kwd
+
+import lsst.afw.image as afwImage
+
 from .config_utils import pop_values
 
 from .image_utils import get_raw_image,\
@@ -763,11 +767,11 @@ class FigureDict:
         """
         kwcopy = kwargs.copy()
         title = kwcopy.pop('title', None)
-        clabel = kwargs.pop('clabel', None)
-        figsize = kwargs.pop('figsize', (14, 8))
+        clabel = kwcopy.pop('clabel', None)
+        figsize = kwcopy.pop('figsize', (14, 8))
         fig, axes = plt.subplots(nrows=1, ncols=1, figsize=figsize)
-        axes.set_xlabel(kwargs.pop('xlabel', "Amp. Index"))
-        axes.set_ylabel(kwargs.pop('ylabel', "Slot Index"))
+        axes.set_xlabel(kwcopy.pop('xlabel', "Amp. Index"))
+        axes.set_ylabel(kwcopy.pop('ylabel', "Slot Index"))
         img = axes.imshow(data, interpolation='nearest', **kwcopy)
         if title is not None:
             axes.set_title(title)
@@ -1106,6 +1110,94 @@ class FigureDict:
         fig.tight_layout()
 
         o_dict = dict(fig=fig, axes=axes)
+        self._fig_dict[key] = o_dict
+        return o_dict
+
+
+    def plot_ccd_mosaic(self, key, infile, **kwargs):
+        """Combine amplifier image arrays into a single mosaic CCD image image
+
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        file_dict : `dict`
+            Image files, keyed by slot
+
+        Keywords
+        --------
+        bias_frame : `str` or `None`
+            Path to file with bias frame
+        gains : `array` or `None`
+            Gain values
+        fit_order : `int`
+
+        Returns
+        -------
+        o_dict : `dict`
+            Dictionary of `matplotlib` object
+        """
+        kwcopy = kwargs.copy()
+        bias_frame = kwcopy.pop('bias_frame', None)
+        gains = kwcopy.pop('gains', None)
+        fit_order = kwcopy.pop('fit_order', 1)
+        figsize = kwcopy.pop('figsize', (12, 12))
+
+        ccd = MaskedCCD(infile, bias_frame=bias_frame)
+        datasec = parse_geom_kwd(ccd.amp_geom[1]['DATASEC'])
+        nx_segments = 8
+        ny_segments = 2
+        nx_pix = nx_segments*(datasec['xmax'] - datasec['xmin'] + 1)
+        ny_pix = ny_segments*(datasec['ymax'] - datasec['ymin'] + 1)
+
+        # this array has [0,0] in the upper right corner on LCA-13381 view of CCDs
+        # and [ny,nx] in the lower right
+        mosaic = np.zeros((ny_pix, nx_pix), dtype=np.float32)
+
+        for ypos in range(ny_segments):
+            for xpos in range(nx_segments):
+                amp = ypos*nx_segments + xpos + 1
+
+                detsec = parse_geom_kwd(ccd.amp_geom[amp]['DETSEC'])
+                xmin = nx_pix - max(detsec['xmin'], detsec['xmax'])
+                xmax = nx_pix - min(detsec['xmin'], detsec['xmax']) + 1
+                ymin = ny_pix - max(detsec['ymin'], detsec['ymax'])
+                ymax = ny_pix - min(detsec['ymin'], detsec['ymax']) + 1
+                #
+                # Extract bias-subtracted image for this segment - overscan corrected here
+                #
+                segment_image = ccd.unbiased_and_trimmed_image(amp, fit_order=fit_order)
+                subarr = segment_image.getImage().getArray()
+                #
+                # Determine flips in x- and y- direction
+                #
+                if detsec['xmax'] > detsec['xmin']: # flip in x-direction
+                    subarr = subarr[:, ::-1]
+                if detsec['ymax'] > detsec['ymin']: # flip in y-direction
+                    subarr = subarr[::-1, :]
+                #
+                # Convert from ADU to e-
+                #
+                if gains is not None:
+                    subarr *= gains[amp]
+                #
+                # Set sub-array to the mosaiced image
+                #
+                mosaic[ymin:ymax, xmin:xmax] = subarr
+
+        # transpose and rotate by -90 to get a mosaic ndarray that will
+        # look like the LCA-13381 view with matplotlib(origin='lower') rotated CW by 90 for DM view
+        mosaicprime = np.zeros((ny_pix, nx_pix), dtype=np.float32)
+        mosaicprime[:, :] = np.rot90(np.transpose(mosaic), k=-1)
+
+        image = afwImage.ImageF(mosaicprime)
+
+        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+        axes.set_xlabel(kwcopy.pop('xlabel', "Amp. Index"))
+        axes.set_ylabel(kwcopy.pop('ylabel', "Slot Index"))
+        img = axes.imshow(image.array, interpolation='nearest', **kwcopy)
+
+        o_dict = dict(fig=fig, axes=axes, img=img, image=image)
         self._fig_dict[key] = o_dict
         return o_dict
 

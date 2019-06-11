@@ -12,33 +12,46 @@ from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
-from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft, AnalysisBySlot
+from lsst.eo_utils.base.iter_utils import TableAnalysisBySlot,\
+    TableAnalysisByRaft
 
-from lsst.eo_utils.base.image_utils import get_dims_from_ccd,\
-    get_raw_image, get_geom_regions, get_amp_list
+from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
+
+from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
+    get_dims_from_ccd, get_raw_image, get_geom_regions, get_amp_list
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.sflat.file_utils import SLOT_SFLAT_TABLE_FORMATTER,\
-    RAFT_SFLAT_TABLE_FORMATTER, RAFT_SFLAT_PLOT_FORMATTER
+from lsst.eo_utils.sflat.file_utils import SUPERFLAT_FORMATTER,\
+    SLOT_SFLAT_TABLE_FORMATTER, SLOT_SFLAT_PLOT_FORMATTER,\
+RAFT_SFLAT_TABLE_FORMATTER, RAFT_SFLAT_PLOT_FORMATTER
 
 from lsst.eo_utils.sflat.analysis import SflatAnalysisConfig, SflatAnalysisTask
 
 
-class SflatRatioConfig(SflatAnalysisConfig):
+class SflatRatioConfig(AnalysisConfig):
     """Configuration for SflatSflatRatioTask"""
+    outdir = EOUtilOptions.clone_param('outdir')
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
+    slot = EOUtilOptions.clone_param('slot')
+    insuffix = EOUtilOptions.clone_param('insuffix', default='')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='sflatratio')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
 
 
-class SflatRatioTask(SflatAnalysisTask):
+class SflatRatioTask(AnalysisTask):
     """Analysis the ratio of low/high exposure superflats"""
 
     ConfigClass = SflatRatioConfig
     _DefaultName = "SflatRatio"
-    iteratorClass = AnalysisBySlot
+    iteratorClass = TableAnalysisBySlot
+
+    intablename_format = SUPERFLAT_FORMATTER
+    tablename_format = SLOT_SFLAT_TABLE_FORMATTER
+    plotname_format = SLOT_SFLAT_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -48,7 +61,7 @@ class SflatRatioTask(SflatAnalysisTask):
         kwargs
             Used to override configruation
         """
-        SflatAnalysisTask.__init__(self, **kwargs)
+        AnalysisTask.__init__(self, **kwargs)
         self.low_images = {}
         self.high_images = {}
         self.ratio_images = {}
@@ -78,16 +91,20 @@ class SflatRatioTask(SflatAnalysisTask):
 
         if butler is not None:
             sys.stdout.write("Ignoring butler in extract_superbias_fft_slot\n")
-        if data is not None:
-            sys.stdout.write("Ignoring raft_data in extract_superbias_fft_raft\n")
 
         mask_files = self.get_mask_files()
         superbias_frame = self.get_superbias_frame(mask_files)
+        superflat_file = data[0]
 
-        superflat_frames = self.get_superflat_frames(mask_files)
-        l_frame = superflat_frames['l']
-        h_frame = superflat_frames['h']
-        ratio_frame = superflat_frames['ratio']
+        l_frame = get_ccd_from_id(None,
+                                  superflat_file.replace('.fits.fits', '_l.fits'),
+                                  mask_files)
+        h_frame = get_ccd_from_id(None,
+                                  superflat_file.replace('.fits.fits', '_h.fits'),
+                                  mask_files)
+        ratio_frame = get_ccd_from_id(None,
+                                      superflat_file.replace('.fits.fits', '_ratio.fits'),
+                                      mask_files)
 
         # This is a dictionary of dictionaries to store all the
         # data you extract from the sflat_files
