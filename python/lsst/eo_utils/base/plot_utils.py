@@ -1114,23 +1114,26 @@ class FigureDict:
         return o_dict
 
 
-    def plot_ccd_mosaic(self, key, infile, **kwargs):
+    def plot_ccd_mosaic(self, key, ccd, **kwargs):
         """Combine amplifier image arrays into a single mosaic CCD image image
 
         Parameters
         ----------
         key : `str`
             Key for the figure.
-        file_dict : `dict`
-            Image files, keyed by slot
+        ccd : `MaskedCCD`
+            The CCD we are plotting
 
         Keywords
         --------
-        bias_frame : `str` or `None`
-            Path to file with bias frame
+        bias : `str` or `None`
+            Method to subtract overscan
+        superbias_frame : `MaskedCCD` or `None`
+            Superbias image
         gains : `array` or `None`
             Gain values
-        fit_order : `int`
+        figsize : `tuple`
+            Figure size (in inches)
 
         Returns
         -------
@@ -1138,12 +1141,13 @@ class FigureDict:
             Dictionary of `matplotlib` object
         """
         kwcopy = kwargs.copy()
-        bias_frame = kwcopy.pop('bias_frame', None)
+        bias_type = kwcopy.pop('bias', None)
+        superbias_frame = kwcopy.pop('superbias_frame', None)
         gains = kwcopy.pop('gains', None)
-        fit_order = kwcopy.pop('fit_order', 1)
-        figsize = kwcopy.pop('figsize', (12, 12))
+        figsize = kwcopy.pop('figsize', (10, 10))
+        vmin = kwcopy.pop('vmin', None)
+        vmax = kwcopy.get('vmax', None)
 
-        ccd = MaskedCCD(infile, bias_frame=bias_frame)
         datasec = parse_geom_kwd(ccd.amp_geom[1]['DATASEC'])
         nx_segments = 8
         ny_segments = 2
@@ -1157,6 +1161,9 @@ class FigureDict:
         for ypos in range(ny_segments):
             for xpos in range(nx_segments):
                 amp = ypos*nx_segments + xpos + 1
+                regions = get_geom_regions(None, ccd, amp)
+                serial_oscan = regions['serial_overscan']
+                imaging = regions['imaging']
 
                 detsec = parse_geom_kwd(ccd.amp_geom[amp]['DETSEC'])
                 xmin = nx_pix - max(detsec['xmin'], detsec['xmax'])
@@ -1166,8 +1173,13 @@ class FigureDict:
                 #
                 # Extract bias-subtracted image for this segment - overscan corrected here
                 #
-                segment_image = ccd.unbiased_and_trimmed_image(amp, fit_order=fit_order)
-                subarr = segment_image.getImage().getArray()
+                if superbias_frame is not None:
+                    superbias_im = get_raw_image(None, superbias_frame, amp)
+                else:
+                    superbias_im = None
+                img = get_raw_image(None, ccd, amp)
+                segment_image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+                subarr = segment_image[imaging].array
                 #
                 # Determine flips in x- and y- direction
                 #
@@ -1190,14 +1202,24 @@ class FigureDict:
         mosaicprime = np.zeros((ny_pix, nx_pix), dtype=np.float32)
         mosaicprime[:, :] = np.rot90(np.transpose(mosaic), k=-1)
 
+        if vmin is None or vmax is None:
+            interval = viz.PercentileInterval(98.)
+            vrange = interval.get_limits(mosaicprime.flatten())
+        else:
+            vrange = (vmin, vmax)
+        norm = ImageNormalize(vmin=vrange[0], vmax=vrange[1])
+
         image = afwImage.ImageF(mosaicprime)
 
         fig, axes = plt.subplots(nrows=1, ncols=1, figsize=figsize)
-        axes.set_xlabel(kwcopy.pop('xlabel', "Amp. Index"))
-        axes.set_ylabel(kwcopy.pop('ylabel', "Slot Index"))
-        img = axes.imshow(image.array, interpolation='nearest', **kwcopy)
+        axes.set_xlabel(kwcopy.pop('xlabel', "X [pix]"))
+        axes.set_ylabel(kwcopy.pop('ylabel', "Y [pix]"))
+        img = axes.imshow(image.array, interpolation='nearest', origin='lower',norm=norm, **kwcopy)
+        cbar = plt.colorbar(img)
 
-        o_dict = dict(fig=fig, axes=axes, img=img, image=image)
+        plt.tight_layout()
+
+        o_dict = dict(fig=fig, axes=axes, img=img, image=image, cbar=cbar)
         self._fig_dict[key] = o_dict
         return o_dict
 

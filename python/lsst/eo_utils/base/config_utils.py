@@ -50,6 +50,8 @@ class EOUtilOptions(pexConfig.Config):
     rafts = pexConfig.ListField("Raft Slot(s)", str, default=None)
     nfiles = pexConfig.Field("Number of files to use", int, default=None)
     insuffix = pexConfig.Field("Suffix for input files", str, default="")
+    infile = pexConfig.Field("Input file name", str, default=None)
+    outfile = pexConfig.Field("Output file name", str, default=None)
 
     # Options for input data processing
     bias = pexConfig.Field("Method to use for unbiasing", str, default=None)
@@ -88,7 +90,7 @@ class EOUtilOptions(pexConfig.Config):
                             default=DEFAULT_NBINS)
     subtract_mean = pexConfig.Field("Subtract the mean from all images frames", bool,
                                     default=False)
-    mosaic = pexConfig.Field("Plot a raft-level mosaic", bool,
+    mosaic = pexConfig.Field("Plot a raft- or ccd-level mosaic", bool,
                              default=False)
 
     # Other output options
