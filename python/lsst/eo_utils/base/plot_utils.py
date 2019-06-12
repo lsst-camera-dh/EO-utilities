@@ -1245,6 +1245,8 @@ class FigureDict:
         kwcopy = kwargs.copy()
         kwctor = pop_values(kwcopy, ['gains',
                                      'bias_subtract',
+                                     'bias_frames',
+                                     'dark_currents',
                                      'segment_processor'])
 
         raft_mosaic = RaftMosaic(file_dict, **kwctor)
