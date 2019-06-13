@@ -44,7 +44,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-l', "--level", type=str, default='slot',
-                        help="Level of analysis [slot, raft, summary]")
+                        help="Level of analysis [slot, table, raft, summary]")
 
     parser.add_argument('-t', "--type", type=str, default='bias',
                         help="Type of analysis [bias, flat, dark ...]")
