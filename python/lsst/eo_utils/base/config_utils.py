@@ -106,6 +106,16 @@ class EOUtilOptions(pexConfig.Config):
     num_oscan_pixels = pexConfig.Field("Number of overscan pixels used for model fit.",
                                        int, default=10)
 
+    # Options for BF Tasks
+    maxLag = pexConfig.Field("Max lag for BF analysis", int, default=1)
+    nSigmaClip = pexConfig.Field("Sigma clip for BF analysis", int, default=3)
+    backgroundBinSize = pexConfig.Field("Background bin size for BF analysis", int, default=128)
+
+    # Options for CTE Tasks
+    overscans = pexConfig.Field("Number of overscan rows/columns to use", int, default=2)
+    nframes = pexConfig.Field("Number of frames used to make superflat", int, default=5)
+
+
 
     @classmethod
     def clone_param(cls, par_name, **kwargs):
