@@ -688,7 +688,6 @@ class TableAnalysisBySlot(AnalysisBySlot):
             slot_dict[slot] = [datapath + '.fits']
 
         out_dict = {raft:slot_dict}
-        print(out_dict)
         return out_dict
 
 
