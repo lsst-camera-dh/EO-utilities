@@ -16,3 +16,7 @@ from .superflat import SuperflatConfig, SuperflatTask,\
 
 from .sflat_ratio import SflatRatioConfig, SflatRatioTask,\
     SflatRatioStatsConfig, SflatRatioStatsTask
+
+from .sflat_cte import CTEConfig, CTETask,\
+    CTEStatsConfig, CTEStatsTask
+
