@@ -600,6 +600,25 @@ def get_exposure_time(butler, ccd):
         return ccd.md.md.get('EXPTIME')
     raise NotImplementedError("Can't get exposure time for butlerlized data")
 
+def get_mondiode_val(butler, ccd):
+    """Return the monitoring diode value
+
+    Parameters
+    ----------
+    butler : `Butler` or `None`
+        Data Butler (or none)
+    ccd : `ImageF` or `MaskedImageF`
+        CCD image object
+
+    Returns
+    -------
+    val : `float`
+        The value
+    """
+    if butler is None:
+        return ccd.md.get('MONDIODE')
+    raise NotImplementedError("Can't get mondiode value for butlerlized data")
+
 def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
     """Stack a set of images
 
