@@ -10,7 +10,7 @@ from .utils import RUN_TASKS
 
 RUN_OPTIONS = dict(runs=['6106D'], bias='spline',
                    superbias='spline', outdir='test_out', plot='png')
-SUMMARY_OPTIONS = dict(dataset='test', bias='spline',
+SUMMARY_OPTIONS = dict(dataset='tests/test', bias='spline',
                        superbias='spline', outdir='test_out', plot='png')
 
 def test_bias_file_utils():

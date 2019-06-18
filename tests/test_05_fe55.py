@@ -10,7 +10,7 @@ from .utils import RUN_TASKS
 
 RUN_OPTIONS = dict(runs=['6106D'], bias='orig',
                    superbias='orig', outdir='test_out', plot='png')
-SUMMARY_OPTIONS = dict(dataset='test', bias='orig',
+SUMMARY_OPTIONS = dict(dataset='tests/test', bias='orig',
                        superbias='orig', outdir='test_out', plot='png')
 
 def test_fe55_file_utils():

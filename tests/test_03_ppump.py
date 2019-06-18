@@ -9,7 +9,7 @@ from lsst.eo_utils.ppump.file_utils import get_ppump_files_run
 from .utils import RUN_TASKS
 
 RUN_OPTIONS = dict(runs=['6106D'], bias='spline', superbias='spline', outdir='test_out', plot='png')
-SUMMARY_OPTIONS = dict(dataset='test', bias='spline',
+SUMMARY_OPTIONS = dict(dataset='tests/test', bias='spline',
                        superbias='spline', outdir='test_out', plot='png')
 
 def test_ppump_file_utils():

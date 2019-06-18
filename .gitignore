@@ -45,8 +45,6 @@ coverage.xml
 pytest_session.txt
 .pytest_cache/
 test_out
-test_runs.txt
-ts8_mapping.yaml
 
 # Translations
 *.mo
