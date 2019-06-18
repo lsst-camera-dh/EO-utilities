@@ -1,14 +1,12 @@
 """Class to construct superbias frames"""
 
-import sys
-
 import lsst.afw.math as afwMath
 
 import lsst.eotest.image_utils as imutil
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.file_utils import SUPERBIAS_FORMATTER, makedir_safe
+from lsst.eo_utils.base.file_utils import makedir_safe
 
 from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
@@ -18,22 +16,18 @@ from lsst.eo_utils.base.plot_utils import FigureDict
 
 from lsst.eo_utils.base.data_utils import TableDict
 
-from lsst.eo_utils.bias.analysis import AnalysisConfig, AnalysisTask
-
 from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
     flip_data_in_place, stack_images, extract_raft_array_dict,\
     outlier_raft_dict
 
-from lsst.eo_utils.base.iter_utils import AnalysisBySlot,\
-    TableAnalysisByRaft
+from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.bias.analysis import BiasAnalysisConfig,\
-    BiasAnalysisTask
+from lsst.eo_utils.bias.analysis import BiasAnalysisConfig, BiasAnalysisTask
 
-from lsst.eo_utils.bias.file_utils import RAFT_SBIAS_TABLE_FORMATTER,\
-    RAFT_SBIAS_PLOT_FORMATTER
+from lsst.eo_utils.bias.meta_analysis import SuperbiasRaftTableAnalysisConfig,\
+    SuperbiasRaftTableAnalysisTask
 
 
 class SuperbiasConfig(BiasAnalysisConfig):
@@ -57,7 +51,6 @@ class SuperbiasTask(BiasAnalysisTask):
     ConfigClass = SuperbiasConfig
     _DefaultName = "SuperbiasTask"
     iteratorClass = AnalysisBySlot
-
 
     def __init__(self, **kwargs):
         """C'tor
@@ -88,7 +81,6 @@ class SuperbiasTask(BiasAnalysisTask):
             The superbias frames, keyed by amp
         """
         self.safe_update(**kwargs)
-        slot = self.config.slot
         bias_type = self.config.bias
         stat_type = self.config.stat
         if stat_type is None:
@@ -96,7 +88,7 @@ class SuperbiasTask(BiasAnalysisTask):
 
         bias_files = data['BIAS']
 
-        sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
+        self.log_info_slot_msg(self.config, "%i files" % len(bias_files))
 
         if stat_type.upper() in afwMath.__dict__:
             statistic = afwMath.__dict__[stat_type.upper()]
@@ -104,6 +96,7 @@ class SuperbiasTask(BiasAnalysisTask):
             raise ValueError("Can not convert %s to a valid statistic" % stat_type)
 
         sbias = stack_images(butler, bias_files, statistic=statistic, bias_type=bias_type)
+        self.log_progress("Done!")
         return sbias
 
     def make_superbias(self, butler, slot_data, **kwargs):
@@ -225,7 +218,7 @@ class SuperbiasTask(BiasAnalysisTask):
 
 
 
-class SuperbiasRaftConfig(AnalysisConfig):
+class SuperbiasRaftConfig(SuperbiasRaftTableAnalysisConfig):
     """Configuration for SuperbiasRaftTask"""
     outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
@@ -238,16 +231,11 @@ class SuperbiasRaftConfig(AnalysisConfig):
     mosaic = EOUtilOptions.clone_param('mosaic')
 
 
-class SuperbiasRaftTask(AnalysisTask):
+class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
     """Analyze the outliers in Superbias frames for a raft"""
 
     ConfigClass = SuperbiasRaftConfig
     _DefaultName = "SuperbiasRaftTask"
-    iteratorClass = TableAnalysisByRaft
-
-    intablename_format = SUPERBIAS_FORMATTER
-    tablename_format = RAFT_SBIAS_TABLE_FORMATTER
-    plotname_format = RAFT_SBIAS_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """C'tor
@@ -257,7 +245,7 @@ class SuperbiasRaftTask(AnalysisTask):
         kwargs
             Used to override configruation
         """
-        AnalysisTask.__init__(self, **kwargs)
+        SuperbiasRaftTableAnalysisTask.__init__(self, **kwargs)
         self._mask_file_dict = {}
         self._sbias_file_dict = {}
         self._sbias_arrays = None
@@ -282,7 +270,7 @@ class SuperbiasRaftTask(AnalysisTask):
         self.safe_update(**kwargs)
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in SuperbiasRaft\n")
+            self.log.warn("Ignoring butler")
 
         for slot in ALL_SLOTS:
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
@@ -290,7 +278,6 @@ class SuperbiasRaftTask(AnalysisTask):
 
         self._sbias_arrays = extract_raft_array_dict(None, self._sbias_file_dict,
                                                      mask_dict=self._mask_file_dict)
-
 
         out_data = outlier_raft_dict(self._sbias_arrays, 0., 10.)
         dtables = TableDict()

@@ -9,14 +9,14 @@ from . import file_utils as sflat_file_utils
 
 from .analysis import SflatAnalysisConfig, SflatAnalysisTask
 
-from .meta_analysis import SflatSummaryAnalysisConfig, SflatSummaryAnalysisTask
+from .meta_analysis import SflatSlotTableAnalysisConfig,\
+    SflatSlotTableAnalysisTask,\
+    SflatRaftTableAnalysisConfig, SflatRaftTableAnalysisTask,\
+    SflatSummaryAnalysisConfig, SflatSummaryAnalysisTask
 
 from .superflat import SuperflatConfig, SuperflatTask,\
     SuperflatRaftConfig, SuperflatRaftTask
 
-from .sflat_ratio import SflatRatioConfig, SflatRatioTask,\
-    SflatRatioStatsConfig, SflatRatioStatsTask
+from .sflat_ratio import SflatRatioConfig, SflatRatioTask
 
-from .sflat_cte import CTEConfig, CTETask,\
-    CTEStatsConfig, CTEStatsTask
-
+from .sflat_cte import CTEConfig, CTETask

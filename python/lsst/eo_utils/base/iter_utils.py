@@ -785,7 +785,7 @@ class SummaryAnalysisIterator(AnalysisHandler):
             Dictionary mapping input data by run
         """
         if butler is not None:
-            sys.stdout.write("Ignoring butler in get_data for %s\n" % self._task.getName())
+            self.log.warn("Ignoring butler in get_data")
 
         kwcopy = self._task.safe_update(**kwargs)
 

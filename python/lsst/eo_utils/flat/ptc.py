@@ -1,17 +1,8 @@
 """Class to analyze the photon transfer curve"""
 
-
-import sys
-
-import operator
-
 import scipy.optimize
 
 import numpy as np
-
-import lsst.afw.math as afwMath
-
-import lsst.afw.image as afwImage
 
 from lsst.eotest.sensor.ptcTask import ptc_func, residuals
 
@@ -21,25 +12,14 @@ from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
-from lsst.eo_utils.base.butler_utils import make_file_dict
-
-from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_amp_list,\
-    get_geom_regions, get_raw_image, unbias_amp
-
-from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft, AnalysisBySlot
-
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.flat.file_utils import SLOT_FLAT_TABLE_FORMATTER,\
-    RAFT_FLAT_TABLE_FORMATTER, RAFT_FLAT_PLOT_FORMATTER
-
-from lsst.eo_utils.flat.analysis import FlatAnalysisConfig,\
-    FlatAnalysisTask
-
-from lsst.eo_utils.flat.meta_analysis import FlatSummaryAnalysisConfig, FlatSummaryAnalysisTask
+from .meta_analysis import  FlatRaftTableAnalysisConfig,\
+    FlatRaftTableAnalysisTask,\
+    FlatSummaryAnalysisConfig, FlatSummaryAnalysisTask
 
 
-class PTCConfig(FlatAnalysisConfig):
+class PTCConfig(FlatRaftTableAnalysisConfig):
     """Configuration for PTCStatsTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='flat')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='ptc')
@@ -47,27 +27,11 @@ class PTCConfig(FlatAnalysisConfig):
     superbias = EOUtilOptions.clone_param('superbias')
 
 
-class PTCTask(FlatAnalysisTask):
+class PTCTask(FlatRaftTableAnalysisTask):
     """Extract statistics about the photon transfer curves"""
 
     ConfigClass = PTCConfig
     _DefaultName = "PTCTask"
-    iteratorClass = TableAnalysisByRaft
-
-    intablename_format = SLOT_FLAT_TABLE_FORMATTER
-    tablename_format = RAFT_FLAT_TABLE_FORMATTER
-    plotname_format = RAFT_FLAT_PLOT_FORMATTER
-
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        FlatAnalysisTask.__init__(self, **kwargs)
-
 
     def extract(self, butler, data, **kwargs):
         """Extract the PTC summary statistics
@@ -89,7 +53,7 @@ class PTCTask(FlatAnalysisTask):
         self.safe_update(**kwargs)
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in ptc_stats.extract\n")
+            self.log.warn("Ignoring butler")
 
         data_dict = dict(npts=[],
                          nused=[],
@@ -105,13 +69,11 @@ class PTCTask(FlatAnalysisTask):
                          slot=[],
                          amp=[])
 
-        sys.stdout.write("Working on 9 slots: ")
-        sys.stdout.flush()
+        self.log_info_raft_msg(self.config, "")
 
         for islot, slot in enumerate(ALL_SLOTS):
 
-            sys.stdout.write(" %s" % slot)
-            sys.stdout.flush()
+            self.log_progress("  %s" % slot)
 
             dtables = TableDict(data[slot].replace('ptc.fits', 'flat.fits'))
             tab = dtables['flat']
@@ -133,9 +95,8 @@ class PTCTask(FlatAnalysisTask):
                     ptc_gain = pars[2]
                     ptc_gain_error = np.sqrt(cov[2][2])
                 except Exception as eobj:
-                    sys.stderr.write("Exception caught while fitting PTC:")
-                    sys.stderr.write(str(eobj))
-                    sys.stderr.write("\n")
+                    self.log.warn("Exception caught while fitting PTC:")
+                    self.log.warn(str(eobj))
                     ptc_a00 = 0.
                     ptc_a00_error = -1.
                     ptc_gain = 0.
@@ -156,8 +117,7 @@ class PTCTask(FlatAnalysisTask):
                 data_dict['slot'].append(islot)
                 data_dict['amp'].append(amp-1)
 
-        sys.stdout.write(".\n")
-        sys.stdout.flush()
+        self.log_progress("Done!")
 
         outtables = TableDict()
         outtables.make_datatable("ptc", data_dict)
@@ -233,17 +193,6 @@ class PTCSummaryTask(FlatSummaryAnalysisTask):
     ConfigClass = PTCSummaryConfig
     _DefaultName = "PTCSummaryTask"
 
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        FlatSummaryAnalysisTask.__init__(self, **kwargs)
-
-
     def extract(self, butler, data, **kwargs):
         """Extract the summary data from the PTC analyses
 
@@ -264,7 +213,7 @@ class PTCSummaryTask(FlatSummaryAnalysisTask):
         self.safe_update(**kwargs)
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in ptc_summary.extract\n")
+            self.log.warn("Ignoring butler")
 
         for key, val in data.items():
             data[key] = val.replace('_ptc_sum.fits', '_ptc_stats.fits')
@@ -272,7 +221,7 @@ class PTCSummaryTask(FlatSummaryAnalysisTask):
         remove_cols = ['ptc_mean', 'ptc_var']
 
         if not self.config.skip:
-            outtable = vstack_tables(data, tablename='ptc_stats',
+            outtable = vstack_tables(data, tablename='ptc',
                                      remove_cols=remove_cols)
 
         dtables = TableDict()

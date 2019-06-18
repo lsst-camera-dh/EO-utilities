@@ -3,8 +3,6 @@ These functions will work both with Butlerized and un-Butlerized data.
 
 """
 
-import sys
-
 import numpy as np
 
 from scipy import fftpack
@@ -481,6 +479,71 @@ def unbias_amp(img, serial_oscan, bias_type=None, superbias_im=None, region=None
 
     return image
 
+def raw_amp_image(butler, ccd, amp):
+    """Get the image for a particular amp
+
+    Parameters
+    ----------
+    butler : `Butler` or `None
+        Data Butler
+    ccd : `MaskedCCD` or `ImageF`
+        CCD data object
+    amp : `int`
+
+    Returns
+    -------
+    iamge : `ImageF`
+        The image
+    """
+    if ccd is not None:
+        if butler is not None:
+            image = get_raw_image(None, ccd, amp+1)
+        else:
+            image = get_raw_image(None, ccd, amp)
+    else:
+        image = None
+    return image
+
+
+def unbiased_ccd_image_dict(butler, ccd, **kwargs):
+    """Get the images keys by amp for a ccd
+
+    Parameters
+    ----------
+    butler : `Butler` or `None
+        Data Butler
+    ccd : `MaskedCCD` or `ImageF`
+        CCD data object
+
+    Keywords
+    --------
+    bias : `str` or `None`
+        Method for bias subtraction
+    superbias_frame : `MaskedCCD` or `None`
+        Bias frame to subtract off
+
+    Returns
+    -------
+    o_dict : `dict`
+        Images keyed by amplifier index
+    """
+    kwcopy = kwargs.copy()
+    bias_type = kwcopy.pop('bias', None)
+    superbias_frame = kwcopy.pop('superbias_frame', None)
+
+    amps = get_amp_list(butler, ccd)
+
+    o_dict = {}
+    for amp in amps:
+        regions = get_geom_regions(butler, ccd, amp)
+        serial_oscan = regions['serial_overscan']
+        img = get_raw_image(butler, ccd, amp)
+        superbias_im = raw_amp_image(butler, superbias_frame, amp)
+        image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+        o_dict[amp] = image
+
+    return o_dict
+
 
 def extract_ccd_array_dict(butler, data_id, **kwargs):
     """Get the Geometry for a particular dataId or file
@@ -508,29 +571,14 @@ def extract_ccd_array_dict(butler, data_id, **kwargs):
     """
     kwcopy = kwargs.copy()
     mask_files = kwcopy.pop('mask_files', [])
-    bias_type = kwcopy.pop('bias', None)
-    superbias_frame = kwcopy.pop('superbias_frame', None)
-
     ccd = get_ccd_from_id(None, data_id, mask_files)
-    amps = get_amp_list(butler, ccd)
+    unbiased_images = unbiased_ccd_image_dict(butler, ccd, **kwargs)
 
     o_dict = {}
-    for idx, amp in enumerate(amps):
-        regions = get_geom_regions(butler, ccd, amp)
-        serial_oscan = regions['serial_overscan']
-        img = get_raw_image(butler, ccd, amp)
-        if superbias_frame is not None:
-            if butler is not None:
-                superbias_im = get_raw_image(None, superbias_frame, amp+1)
-            else:
-                superbias_im = get_raw_image(None, superbias_frame, amp)
-        else:
-            superbias_im = None
-
-        image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+    for amp, image in unbiased_images.items():
         regions = get_geom_regions(butler, ccd, amp)
         frames = get_image_frames_2d(image, regions)
-        o_dict[idx] = frames[kwcopy.pop('region', 'imaging')]
+        o_dict[amp] = frames[kwcopy.pop('region', 'imaging')]
 
     return o_dict
 
@@ -619,6 +667,27 @@ def get_mondiode_val(butler, ccd):
         return ccd.md.get('MONDIODE')
     raise NotImplementedError("Can't get mondiode value for butlerlized data")
 
+
+def get_mono_wl(butler, ccd):
+    """Return the monochromatic wavelength
+
+    Parameters
+    ----------
+    butler : `Butler` or `None`
+        Data Butler (or none)
+    ccd : `ImageF` or `MaskedImageF`
+        CCD image object
+
+    Returns
+    -------
+    val : `float`
+        The value
+    """
+    if butler is None:
+        return ccd.md.get('MONOWL')
+    raise NotImplementedError("Can't get monowl for butlerlized data")
+
+
 def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
     """Stack a set of images
 
@@ -637,6 +706,8 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
         Unbiasing method to use
     superbias_frame : `MaskedCCD` or `None`
         Bias image to subtract
+    log : `log`
+        Logging stream
 
     Returns
     -------
@@ -646,6 +717,7 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
 
     bias_type = kwargs.get('bias_type', 'spline')
     superbias_frame = kwargs.get('superbias_frame', None)
+    log = kwargs.get('log', None)
 
     amp_stack_dict = {}
     out_dict = {}
@@ -654,8 +726,8 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
 
     for ifile, in_file in enumerate(in_files):
         if ifile % 10 == 0:
-            sys.stdout.write('.')
-            sys.stdout.flush()
+            if log is not None:
+                log.info("  %i" % ifile)
 
         ccd = get_ccd_from_id(butler, in_file, mask_files=[])
         exp_time += get_exposure_time(butler, ccd)
@@ -665,13 +737,7 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
             regions = get_geom_regions(butler, ccd, amp)
             serial_oscan = regions['serial_overscan']
             img = get_raw_image(butler, ccd, amp)
-            if superbias_frame is not None:
-                if butler is not None:
-                    superbias_im = get_raw_image(None, superbias_frame, amp+1)
-                else:
-                    superbias_im = get_raw_image(None, superbias_frame, amp)
-            else:
-                superbias_im = None
+            superbias_im = raw_amp_image(butler, superbias_frame, amp)
 
             if ifile == 0:
                 amp_stack_dict[amp] = [unbias_amp(img, serial_oscan,
@@ -693,7 +759,8 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
         stackimage = imutil.stack(val, statistic)
         out_dict[outkey] = stackimage
 
-    sys.stdout.write('!\n')
+    if log is not None:
+        log.info("Done!")
 
     return out_dict
 
@@ -830,8 +897,7 @@ def outlier_raft_dict(raft_data, mean_val, max_offset):
 
     for islot, slot in enumerate(ALL_SLOTS):
         slot_arrays = raft_data[slot]
-        for iamp in range(16):
-            ccd_data = slot_arrays[iamp]
+        for iamp, (_, ccd_data) in enumerate(sorted(slot_arrays.items())):
             outlier_data = outlier_stats(ccd_data, mean_val, max_offset)
             out_data['slot'].append(islot)
             out_data['amp'].append(iamp)

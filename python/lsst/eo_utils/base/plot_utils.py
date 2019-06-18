@@ -9,15 +9,15 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 
 from lsst.eotest.raft import RaftMosaic
 
-from lsst.eotest.sensor import MaskedCCD, parse_geom_kwd
+from lsst.eotest.sensor import parse_geom_kwd
 
 import lsst.afw.image as afwImage
 
 from .config_utils import pop_values
 
-from .image_utils import get_raw_image,\
+from .image_utils import get_raw_image, raw_amp_image,\
     get_amp_list, unbias_amp, get_geom_regions,\
-    get_image_frames_2d
+    get_image_frames_2d, unbiased_ccd_image_dict
 
 from .defaults import TESTCOLORMAP
 
@@ -899,23 +899,12 @@ class FigureDict:
         fig, axs = plt.subplots(2, 8, figsize=(15, 10))
         axs = axs.ravel()
 
+        unbiased_images = unbiased_ccd_image_dict(butler, ccd,
+                                                  superbias_frame=superbias_frame,
+                                                  bias_type=bias_type)
         amps = get_amp_list(butler, ccd)
         for idx, amp in enumerate(amps):
-
-            regions = get_geom_regions(butler, ccd, amp)
-            serial_oscan = regions['serial_overscan']
-
-            if superbias_frame is not None:
-                if butler is not None:
-                    superbias_im = get_raw_image(None, superbias_frame, amp+1)
-                else:
-                    superbias_im = get_raw_image(None, superbias_frame, amp)
-            else:
-                superbias_im = None
-
-            img = get_raw_image(butler, ccd, amp)
-            image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
-
+            image = unbiased_images[amp]
             darray = image.array
             if subtract_mean:
                 darray -= darray.mean()
@@ -960,38 +949,23 @@ class FigureDict:
             Dictionary of `matplotlib` object
         """
         kwcopy = kwargs.copy()
-        bias_type = kwcopy.pop('bias', None)
-        #mask_files = kwcopy.pop('mask_files', [])
-        superbias_frame = kwcopy.pop('superbias_frame', None)
 
         kwsetup = pop_values(kwcopy, ['title', 'xlabel', 'ylabel', 'figsize'])
-
         o_dict = self.setup_amp_plots_grid(key, **kwsetup)
 
         axs = o_dict['axs']
-        amps = get_amp_list(butler, ccd)
-        for idx, amp in enumerate(amps):
+        unbiased_images = unbiased_ccd_image_dict(butler, ccd, **kwcopy)
 
-            regions = get_geom_regions(butler, ccd, amp)
-            serial_oscan = regions['serial_overscan']
-            img = get_raw_image(butler, ccd, amp)
-            if superbias_frame is not None:
-                if butler is not None:
-                    superbias_im = get_raw_image(None, superbias_frame, amp+1)
-                else:
-                    superbias_im = get_raw_image(None, superbias_frame, amp)
-            else:
-                superbias_im = None
-
-            image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+        for amp, image in unbiased_images.items():
             regions = get_geom_regions(butler, ccd, amp)
             frames = get_image_frames_2d(image, regions)
-
             darray = frames[kwcopy.pop('region', 'imaging')]
-
             if kwcopy.pop('subtract_mean', False):
                 darray -= darray.mean()
-
+            if butler is None:
+                idx = amp - 1
+            else:
+                idx = amp
             axes = axs.flat[idx]
             axes.hist(darray.flat, **kwcopy)
 
@@ -1039,7 +1013,7 @@ class FigureDict:
                 try:
                     axes.hist(darray.flat, label="amp%02i" % (idx+1), **kwcopy)
                 except ValueError:
-                    sys.stdout.write("Plotting failed for %s %i\n" % (slot, idx))
+                    sys.stderr.write("Plotting failed for %s %i\n" % (slot, idx))
 
         plt.tight_layout()
 
@@ -1173,12 +1147,10 @@ class FigureDict:
                 #
                 # Extract bias-subtracted image for this segment - overscan corrected here
                 #
-                if superbias_frame is not None:
-                    superbias_im = get_raw_image(None, superbias_frame, amp)
-                else:
-                    superbias_im = None
+                superbias_im = raw_amp_image(None, superbias_frame, amp)
                 img = get_raw_image(None, ccd, amp)
-                segment_image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+                segment_image = unbias_amp(img, serial_oscan,
+                                           bias_type=bias_type, superbias_im=superbias_im)
                 subarr = segment_image[imaging].array
                 #
                 # Determine flips in x- and y- direction
@@ -1214,7 +1186,7 @@ class FigureDict:
         fig, axes = plt.subplots(nrows=1, ncols=1, figsize=figsize)
         axes.set_xlabel(kwcopy.pop('xlabel', "X [pix]"))
         axes.set_ylabel(kwcopy.pop('ylabel', "Y [pix]"))
-        img = axes.imshow(image.array, interpolation='nearest', origin='lower',norm=norm, **kwcopy)
+        img = axes.imshow(image.array, interpolation='nearest', origin='lower', norm=norm, **kwcopy)
         cbar = plt.colorbar(img)
 
         plt.tight_layout()

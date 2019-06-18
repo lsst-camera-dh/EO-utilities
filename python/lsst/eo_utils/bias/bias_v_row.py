@@ -1,7 +1,5 @@
 """Class to analyze the overscan bias as a function of row number"""
 
-import sys
-
 import numpy as np
 
 import lsst.eotest.image_utils as imutil
@@ -34,16 +32,6 @@ class BiasVRowTask(BiasAnalysisTask):
     _DefaultName = "BiasVRowTask"
     iteratorClass = AnalysisBySlot
 
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        BiasAnalysisTask.__init__(self, **kwargs)
-
     def extract(self, butler, data, **kwargs):
         """Extract the bias as function of row
 
@@ -63,18 +51,15 @@ class BiasVRowTask(BiasAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        slot = self.config.slot
-
         bias_files = data['BIAS']
 
-        sys.stdout.write("Working on %s, %i files: \n" % (slot, len(bias_files)))
+        self.log_info_slot_msg(self.config, "%i files" % len(bias_files))
 
         biasval_data = {}
 
         for ifile, bias_file in enumerate(bias_files):
             if ifile % 10 == 0:
-                sys.stdout.write('.')
-                sys.stdout.flush()
+                self.log_progress("  %i" % ifile)
 
             ccd = get_ccd_from_id(butler, bias_file, [])
             if ifile == 0:
@@ -88,8 +73,7 @@ class BiasVRowTask(BiasAnalysisTask):
             a_row = biasval_data[sorted(biasval_data.keys())[0]]
             biasval_data['row_s'] = xrow_s[0:len(a_row)]
 
-        sys.stdout.write("!\n")
-        sys.stdout.flush()
+        self.log_progress("Done!")
 
         dtables = TableDict()
         dtables.make_datatable('files', make_file_dict(butler, bias_files))

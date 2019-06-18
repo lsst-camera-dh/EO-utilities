@@ -47,16 +47,7 @@ class OscanCorrelTask(BiasAnalysisTask):
     tablename_format = RAFT_BIAS_TABLE_FORMATTER
     plotname_format = RAFT_BIAS_PLOT_FORMATTER
 
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        BiasAnalysisTask.__init__(self, **kwargs)
-        self.boundry = 10
+    boundry = 10
 
     def extract(self, butler, data, **kwargs):
         """Extract the correlations between the serial overscan for each amp on a raft

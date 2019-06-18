@@ -115,6 +115,15 @@ class EOUtilOptions(pexConfig.Config):
     overscans = pexConfig.Field("Number of overscan rows/columns to use", int, default=2)
     nframes = pexConfig.Field("Number of frames used to make superflat", int, default=5)
 
+    # Options for Trap Tasks
+    cycles = pexConfig.Field("Trap cycles", int, default=100)
+    threshold = pexConfig.Field("Trap threshold", float, default=200.)
+    C2_thresh = pexConfig.Field("C2 threshold", float, default=10.)
+    C3_thresh = pexConfig.Field("C3 threshold", float, default=1.)
+    bkg_nx = pexConfig.Field("Local background width (pixels)", int, default=10)
+    bkg_ny = pexConfig.Field("Local background height (pixels)", int, default=10)
+    edge_rolloff = pexConfig.Field("Edge rolloff width (pixels)", int, default=10)
+
 
 
     @classmethod

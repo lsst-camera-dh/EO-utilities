@@ -1,7 +1,5 @@
 """Class to analyze the FFT of the bias frames"""
 
-import sys
-
 from lsst.eotest.sensor.DetectorResponse import DetectorResponse
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
@@ -10,19 +8,12 @@ from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict
 
-from lsst.eo_utils.base.butler_utils import make_file_dict
-
-from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft, AnalysisBySlot
-
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.flat.file_utils import SLOT_FLAT_TABLE_FORMATTER,\
-    RAFT_FLAT_TABLE_FORMATTER, RAFT_FLAT_PLOT_FORMATTER
-
-from lsst.eo_utils.flat.analysis import FlatAnalysisConfig, FlatAnalysisTask
+from .meta_analysis import FlatRaftTableAnalysisConfig, FlatRaftTableAnalysisTask
 
 
-class FlatLinearityConfig(FlatAnalysisConfig):
+class FlatLinearityConfig(FlatRaftTableAnalysisConfig):
     """Configuration for FlatLinearityTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='flat')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='flat_lin')
@@ -31,27 +22,11 @@ class FlatLinearityConfig(FlatAnalysisConfig):
 
 
 
-class FlatLinearityTask(FlatAnalysisTask):
+class FlatLinearityTask(FlatRaftTableAnalysisTask):
     """Extract summary statistics from the data"""
 
     ConfigClass = FlatLinearityConfig
     _DefaultName = "FlatLinearityTask"
-    iteratorClass = TableAnalysisByRaft
-
-    intablename_format = SLOT_FLAT_TABLE_FORMATTER
-    tablename_format = RAFT_FLAT_TABLE_FORMATTER
-    plotname_format = RAFT_FLAT_PLOT_FORMATTER
-
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        FlatAnalysisTask.__init__(self, **kwargs)
-
 
     def extract(self, butler, data, **kwargs):
         """Extract data
@@ -78,13 +53,11 @@ class FlatLinearityTask(FlatAnalysisTask):
                          full_well=[],
                          max_dev=[])
 
-        sys.stdout.write("Working on 9 slots: ")
-        sys.stdout.flush()
+        self.log_info_raft_msg(self.config, "")
 
         for islot, slot in enumerate(ALL_SLOTS):
 
-            sys.stdout.write(" %s" % slot)
-            sys.stdout.flush()
+            self.log_progress("  %s" % slot)
 
             basename = data[slot]
             datapath = basename.replace(self.config.outsuffix, self.config.insuffix)
@@ -104,8 +77,7 @@ class FlatLinearityTask(FlatAnalysisTask):
                 data_dict['full_well'].append(full_well_data[0])
                 data_dict['max_dev'].append(linearity_data[0])
 
-        sys.stdout.write(".\n")
-        sys.stdout.flush()
+        self.log_progress("Done!")
 
         outtables = TableDict()
         outtables.make_datatable("flat_lin", data_dict)
@@ -113,7 +85,7 @@ class FlatLinearityTask(FlatAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data 
+        """Plot the summary data
 
         Parameters
         ----------

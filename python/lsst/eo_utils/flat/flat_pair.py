@@ -1,7 +1,5 @@
 """Class to analyze the FFT of the bias frames"""
 
-import sys
-
 import operator
 
 import numpy as np
@@ -9,8 +7,6 @@ import numpy as np
 import lsst.afw.math as afwMath
 
 import lsst.afw.image as afwImage
-
-from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
@@ -21,12 +17,9 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_amp_list,\
     get_exposure_time, get_mondiode_val, get_geom_regions, get_raw_image, unbias_amp
 
-from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft, AnalysisBySlot
+from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
-
-from lsst.eo_utils.flat.file_utils import SLOT_FLAT_TABLE_FORMATTER,\
-    RAFT_FLAT_TABLE_FORMATTER, RAFT_FLAT_PLOT_FORMATTER
 
 from lsst.eo_utils.flat.analysis import FlatAnalysisConfig, FlatAnalysisTask
 
@@ -45,17 +38,6 @@ class FlatPairTask(FlatAnalysisTask):
     ConfigClass = FlatPairConfig
     _DefaultName = "FlatPairTask"
     iteratorClass = AnalysisBySlot
-
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        FlatAnalysisTask.__init__(self, **kwargs)
-        self.stat_ctrl = afwMath.StatisticsControl()
 
     def mean(self, img):
         """Return the mean of an image"""
@@ -97,24 +79,21 @@ class FlatPairTask(FlatAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        slot = self.config.slot
-
         flat1_files = data['FLAT1']
         flat2_files = data['FLAT2']
 
         mask_files = self.get_mask_files()
         superbias_frame = self.get_superbias_frame(mask_files)
 
-        gains = None
+        gains = np.ones((17))
 
-        sys.stdout.write("Working on %s, %i files: " % (slot, len(flat1_files)))
-        sys.stdout.flush()
+        self.log_info_slot_msg(self.config, "%i files" % len(flat1_files))
 
         # This is a dictionary of dictionaries to store all the
         # data you extract from the flat_files
         data_dict = dict(FLUX=[],
                          EXPTIME=[],
-                         MONDIODE1=[], 
+                         MONDIODE1=[],
                          MONDIODE2=[])
         for i in range(1, 17):
             data_dict['AMP%02i_MEAN' % i] = []
@@ -124,11 +103,10 @@ class FlatPairTask(FlatAnalysisTask):
         # Analysis goes here, you should fill data_dict with data extracted
         # by the analysis
         #
-        for i, (id_1, id_2) in enumerate(zip(flat1_files, flat2_files)):
-            
-            if i % 10 == 0:
-                sys.stdout.write('.')
-                sys.stdout.flush()
+        for ifile, (id_1, id_2) in enumerate(zip(flat1_files, flat2_files)):
+
+            if ifile % 10 == 0:
+                self.log_progress("  %i" % ifile)
 
             flat_1 = get_ccd_from_id(butler, id_1, [])
             flat_2 = get_ccd_from_id(butler, id_2, [])
@@ -184,14 +162,13 @@ class FlatPairTask(FlatAnalysisTask):
                 fstats = self.get_pair_stats(image_1, image_2)
                 signal = fstats[1]
                 if gains is not None:
-                    signal *= gains[1]
+                    signal *= gains[i]
 
                 data_dict['AMP%02i_MEAN' % (i+1)].append(fstats[1])
                 data_dict['AMP%02i_VAR' % (i+1)].append(fstats[2])
                 data_dict['AMP%02i_SIGNAL' % (i+1)].append(signal)
 
-        sys.stdout.write("!\n")
-        sys.stdout.flush()
+        self.log_progress("Done!")
 
         dtables = TableDict()
         dtables.make_datatable('files', make_file_dict(butler, flat1_files + flat2_files))
@@ -201,7 +178,7 @@ class FlatPairTask(FlatAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Make plots 
+        """Make plots
 
         Parameters
         ----------
@@ -211,7 +188,7 @@ class FlatPairTask(FlatAnalysisTask):
             The resulting figures
         kwargs
             Used to override default configuration
-        """        
+        """
         self.safe_update(**kwargs)
 
         # Analysis goes here.

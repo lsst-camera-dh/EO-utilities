@@ -1,7 +1,5 @@
 """Class to analyze the overscan bias as a function of row number"""
 
-import sys
-
 import numpy as np
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
@@ -40,16 +38,6 @@ class BiasStructTask(BiasAnalysisTask):
     _DefaultName = "BiasStructTask"
     iteratorClass = AnalysisBySlot
 
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        BiasAnalysisTask.__init__(self, **kwargs)
-
     def extract(self, butler, data, **kwargs):
         """Plot the row-wise and col-wise struture
         in a series of bias frames
@@ -76,15 +64,13 @@ class BiasStructTask(BiasAnalysisTask):
         mask_files = self.get_mask_files()
         superbias_frame = self.get_superbias_frame(mask_files=mask_files)
 
-        sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
-        sys.stdout.flush()
+        self.log_info_slot_msg(self.config, "%i files" % len(bias_files))
 
         biasstruct_data = {}
 
         for ifile, bias_file in enumerate(bias_files):
             if ifile % 10 == 0:
-                sys.stdout.write('.')
-                sys.stdout.flush()
+                self.log_progress("  %i" % ifile)
 
             ccd = get_ccd_from_id(butler, bias_file, mask_files)
             if ifile == 0:
@@ -97,8 +83,7 @@ class BiasStructTask(BiasAnalysisTask):
                               nfiles_used=len(bias_files),
                               superbias_frame=superbias_frame)
 
-        sys.stdout.write("!\n")
-        sys.stdout.flush()
+        self.log_progress("Done!")
 
         dtables = TableDict()
         dtables.make_datatable('files', make_file_dict(butler, bias_files))
@@ -207,16 +192,6 @@ class SuperbiasStructTask(BiasStructTask):
     tablename_format = SLOT_SBIAS_TABLE_FORMATTER
     plotname_format = SLOT_SBIAS_PLOT_FORMATTER
 
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        BiasStructTask.__init__(self, **kwargs)
-
     def extract(self, butler, data, **kwargs):
         """Extract the row-wise and col-wise struture  in a superbias frame
 
@@ -239,12 +214,14 @@ class SuperbiasStructTask(BiasStructTask):
         slot = self.config.slot
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in superbias_struct.extract\n")
+            self.log.warn("Ignoring butler")
         if data is not None:
-            sys.stdout.write("Ignoring butler in superbias_struct.extract\n")
+            self.log.warn("Ignoring data")
 
         mask_files = self.get_mask_files()
         superbias = self.get_superbias_frame(mask_files=mask_files)
+
+        self.log_info_slot_msg(self.config, "")
 
         biasstruct_data = {}
 
@@ -256,8 +233,8 @@ class SuperbiasStructTask(BiasStructTask):
                           slot=slot, bias_type=None,
                           std=self.config.std, superbias_frame=None)
 
-        sys.stdout.write("!\n")
-        sys.stdout.flush()
+        self.log_progress("Done!")
+
 
         dtables = TableDict()
         dtables.make_datatable('files', make_file_dict(None, [slot]))

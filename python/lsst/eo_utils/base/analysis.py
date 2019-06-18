@@ -3,6 +3,8 @@
 This module contains base classes for analysis tasks.
 """
 
+import abc
+
 import lsst.pex.config as pexConfig
 
 from .defaults import DEFAULT_STAT_TYPE
@@ -43,6 +45,8 @@ class BaseAnalysisTask(Configurable):
     iteratorClass : this should be set to a `AnalysisHandler` sub-class that
                     can provide data for the sub-class
     """
+    __metaclass__ = abc.ABCMeta
+
     # These can overridden by the sub-class
     ConfigClass = BaseAnalysisConfig
     _DefaultName = "BaseAnalysisTask"
@@ -73,7 +77,7 @@ class BaseAnalysisTask(Configurable):
         kwargs
             Used to override default configuration
         """
-        raise NotImplementedError('BaseAnalysisTask.__call__')
+        raise NotImplementedError()
 
     def make_iterator(self):
         """Construct an object to iterate this task.
@@ -210,6 +214,70 @@ class BaseAnalysisTask(Configurable):
         handler = cls.iteratorClass(functor)
         handler.run_with_args(**kwargs)
 
+    def log_info_slot_msg(self, config, msg):
+        """Make an info message that we are running a particular slot
+
+        Parameters
+        ----------
+        log : `lsst.log.log.log.Log`
+            The log to write to
+
+        config : `pexConfig`
+            The object with the configuration to get the run, raft, slot
+
+        msg : `str`
+            The rest of the message
+        """
+        if hasattr(config, 'run'):
+            run = config.run
+        else:
+            run = 'xx'
+        if hasattr(config, 'raft'):
+            raft = config.raft
+        else:
+            raft = 'xx'
+        if hasattr(config, 'slot'):
+            slot = config.slot
+        else:
+            slot = 'xx'
+        self.log.info("Working on %s:%s:%s.  %s" % (run, raft, slot, msg))
+
+
+    def log_info_raft_msg(self, config, msg):
+        """Make an info message that we are running a particular raft
+
+        Parameters
+        ----------
+        log : `lsst.log.log.log.Log`
+            The log to write to
+
+        config : `pexConfig`
+            The object with the configuration to get the run, raft, slot
+
+        msg : `str`
+            The rest of the message
+        """
+        if hasattr(config, 'run'):
+            run = config.run
+        else:
+            run = 'xx'
+        if hasattr(config, 'raft'):
+            raft = config.raft
+        else:
+            raft = 'xx'
+
+        self.log.info("Working on %s:%s.  %s" % (run, raft, msg))
+
+
+    def log_progress(self, msg):
+        """Make an info message that we are running a particular slot
+
+        Parameters
+        ----------
+        msg : `str`
+            The message
+        """
+        self.log.info(msg)
 
 
 class AnalysisConfig(BaseAnalysisConfig):
@@ -368,7 +436,7 @@ class AnalysisTask(BaseAnalysisTask):
             dtables = self.extract(butler, data)
             if dtables is not None:
                 dtables.save_datatables(output_data)
-                print("Writing %s" % output_data)
+                self.log.info("Writing %s" % output_data)
         return dtables
 
     def make_plots(self, dtables, **kwargs):
@@ -424,6 +492,7 @@ class AnalysisTask(BaseAnalysisTask):
         if self.config.plot is not None:
             self.make_plots(dtables)
 
+    @abc.abstractmethod
     def extract(self, butler, data, **kwargs):
         """This needs to be implemented by the sub-class
 
@@ -444,8 +513,9 @@ class AnalysisTask(BaseAnalysisTask):
         dtables : `TableDict`
             The resulting data
         """
-        raise NotImplementedError("AnalysisFunc.extract is not overridden.")
+        raise NotImplementedError()
 
+    @abc.abstractmethod
     def plot(self, dtables, figs, **kwargs):
         """This needs to be implemented by the sub-class
 
@@ -461,4 +531,4 @@ class AnalysisTask(BaseAnalysisTask):
         kwargs
             Used to override default configuration
         """
-        raise NotImplementedError("AnalysisFunc.plot is not overridden.")
+        raise NotImplementedError()

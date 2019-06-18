@@ -11,7 +11,8 @@ from . import data_utils as bias_data_utils
 
 from .analysis import BiasAnalysisConfig, BiasAnalysisTask
 
-from .meta_analysis import BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask,\
+from .meta_analysis import BiasRaftTableAnalysisConfig, BiasRaftTableAnalysisTask,\
+    BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask,\
     SuperbiasSummaryAnalysisConfig, SuperbiasSummaryAnalysisTask
 
 from .bias_fft import BiasFFTConfig, BiasFFTTask,\

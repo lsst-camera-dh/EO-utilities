@@ -1,7 +1,5 @@
 """Class to analyze the variation in the bias images"""
 
-import sys
-
 import numpy as np
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
@@ -17,18 +15,14 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
     get_raw_image, get_amp_list
 
-from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft
-
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
-
-from .file_utils import RAFT_SBIAS_TABLE_FORMATTER, RAFT_SBIAS_PLOT_FORMATTER
-
-from .meta_analysis import SuperbiasSummaryAnalysisConfig, SuperbiasSummaryAnalysisTask
+from .meta_analysis import  SuperbiasRaftTableAnalysisConfig,\
+    SuperbiasRaftTableAnalysisTask,\
+    SuperbiasSummaryAnalysisConfig, SuperbiasSummaryAnalysisTask
 
 
-class SuperbiasStatsConfig(AnalysisConfig):
+class SuperbiasStatsConfig(SuperbiasRaftTableAnalysisConfig):
     """Configuration for SuperbiasStatsTask"""
     outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
@@ -42,26 +36,13 @@ class SuperbiasStatsConfig(AnalysisConfig):
     stat = EOUtilOptions.clone_param('stat')
 
 
-class SuperbiasStatsTask(AnalysisTask):
+class SuperbiasStatsTask(SuperbiasRaftTableAnalysisTask):
     """Analyze the variation in the bias images"""
 
     ConfigClass = SuperbiasStatsConfig
     _DefaultName = "SuperbiasStatsTask"
-    iteratorClass = TableAnalysisByRaft
 
     intablename_format = SUPERBIAS_STAT_FORMATTER
-    tablename_format = RAFT_SBIAS_TABLE_FORMATTER
-    plotname_format = RAFT_SBIAS_PLOT_FORMATTER
-
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        AnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
         """Extract the statistics from the superbias frames
@@ -84,17 +65,15 @@ class SuperbiasStatsTask(AnalysisTask):
         slots = ALL_SLOTS
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in superbias_stats.extract\n")
+            self.log.warn("Ignoring butler")
 
         stats_data = {}
 
-        sys.stdout.write("Working on 9 slots: ")
-        sys.stdout.flush()
+        self.log_info_raft_msg(self.config, "")
 
         for islot, slot in enumerate(slots):
 
-            sys.stdout.write(" %s" % slot)
-            sys.stdout.flush()
+            self.log_progress("  %s" % slot)
 
             superbias_file = data[slot]
             mask_files = self.get_mask_files(slot=slot)
@@ -102,8 +81,7 @@ class SuperbiasStatsTask(AnalysisTask):
             superbias_frame = get_ccd_from_id(None, superbias_file, mask_files)
             self.get_superbias_stats(None, superbias_frame, stats_data, islot)
 
-        sys.stdout.write(".\n")
-        sys.stdout.flush()
+        self.log_progress("Done!")
 
         dtables = TableDict()
         dtables.make_datatable('files', make_file_dict(None, slots))
@@ -182,16 +160,6 @@ class SuperbiasSummaryTask(SuperbiasSummaryAnalysisTask):
     ConfigClass = SuperbiasSummaryConfig
     _DefaultName = "SuperbiasSummaryTask"
 
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        SuperbiasSummaryAnalysisTask.__init__(self, **kwargs)
-
     def extract(self, butler, data, **kwargs):
         """Make a summary table of the superbias statistics
 
@@ -212,7 +180,7 @@ class SuperbiasSummaryTask(SuperbiasSummaryAnalysisTask):
         self.safe_update(**kwargs)
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in superbias_stats_summary.extract\n")
+            self.log.warn("Ignoring butler")
 
         for key, val in data.items():
             data[key] = val.replace('_sum.fits', '_stats.fits')

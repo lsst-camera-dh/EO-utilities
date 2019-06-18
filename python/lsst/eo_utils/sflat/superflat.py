@@ -1,7 +1,5 @@
 """Class to construct superbias frames"""
 
-import sys
-
 import numpy as np
 
 import lsst.afw.math as afwMath
@@ -26,18 +24,17 @@ from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
     flip_data_in_place, sort_sflats, stack_images, extract_raft_array_dict,\
     outlier_raft_dict
 
-from lsst.eo_utils.bias.analysis import AnalysisConfig, AnalysisTask
-
-from lsst.eo_utils.base.iter_utils import AnalysisBySlot,\
-    TableAnalysisByRaft
+from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.sflat.file_utils import RAFT_SFLAT_TABLE_FORMATTER,\
-    RAFT_SFLAT_PLOT_FORMATTER, SUPERFLAT_FORMATTER
+from .file_utils import SUPERFLAT_FORMATTER
 
-from lsst.eo_utils.sflat.analysis import SflatAnalysisConfig,\
+from .analysis import SflatAnalysisConfig,\
     SflatAnalysisTask
+
+from .meta_analysis import SflatRaftTableAnalysisConfig,\
+    SflatRaftTableAnalysisTask
 
 
 class SuperflatConfig(SflatAnalysisConfig):
@@ -95,7 +92,6 @@ class SuperflatTask(SflatAnalysisTask):
             Dictionary keyed by amp of the low/high ratio images
         """
         self.safe_update(**kwargs)
-        slot = self.config.slot
         stat_type = self.config.stat
         if stat_type is None:
             stat_type = DEFAULT_STAT_TYPE
@@ -106,10 +102,10 @@ class SuperflatTask(SflatAnalysisTask):
         sflat_files = data['SFLAT']
 
         sflat_files_l, sflat_files_h = sort_sflats(butler, sflat_files)
-        sys.stdout.write("Working on %s, %i, %i, %i files.\n" % (slot,
-                                                                 len(sflat_files),
-                                                                 len(sflat_files_l),
-                                                                 len(sflat_files_h)))
+
+        self.log_info_raft_msg(self.config, "%i %i %i files" % (len(sflat_files),
+                                                                len(sflat_files_l),
+                                                                len(sflat_files_h)))
 
         if stat_type.upper() in afwMath.__dict__:
             statistic = afwMath.__dict__[stat_type.upper()]
@@ -128,7 +124,9 @@ class SuperflatTask(SflatAnalysisTask):
             ratio = im_l.array / im_h.array
             ratio_images[amp] = afwImage.ImageF(ratio)
 
+        self.log_progress("Done!")
         return (sflat_l, sflat_h, ratio_images)
+
 
     def make_superflats(self, butler, data, **kwargs):
         """Stack the input data to make superflat frames
@@ -267,7 +265,7 @@ class SuperflatTask(SflatAnalysisTask):
 
 
 
-class SuperflatRaftConfig(AnalysisConfig):
+class SuperflatRaftConfig(SflatRaftTableAnalysisConfig):
     """Configuration for FlatSuperflatRaftTask"""
     outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
@@ -280,16 +278,13 @@ class SuperflatRaftConfig(AnalysisConfig):
     mosaic = EOUtilOptions.clone_param('mosaic')
 
 
-class SuperflatRaftTask(AnalysisTask):
+class SuperflatRaftTask(SflatRaftTableAnalysisTask):
     """Analyze the correlations between the overscans for all amplifiers on a raft"""
 
     ConfigClass = SuperflatRaftConfig
     _DefaultName = "SuperflatRaftTask"
-    iteratorClass = TableAnalysisByRaft
 
     intablename_format = SUPERFLAT_FORMATTER
-    tablename_format = RAFT_SFLAT_TABLE_FORMATTER
-    plotname_format = RAFT_SFLAT_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """C'tor
@@ -299,7 +294,7 @@ class SuperflatRaftTask(AnalysisTask):
         kwargs
             Used to override configruation
         """
-        AnalysisTask.__init__(self, **kwargs)
+        SflatRaftTableAnalysisTask.__init__(self, **kwargs)
         self._mask_file_dict = {}
         self._sflat_file_dict_l = {}
         self._sflat_file_dict_h = {}
@@ -328,7 +323,7 @@ class SuperflatRaftTask(AnalysisTask):
         self.safe_update(**kwargs)
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in extract_superflat_fft_slot\n")
+            self.log.warn("Ignoring butler")
 
         for slot in ALL_SLOTS:
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)

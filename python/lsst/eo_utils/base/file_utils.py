@@ -30,6 +30,7 @@ BOT_GLOB_STRING =\
 
 
 # These strings define the standard output filenames
+PD_CALIB_FORMAT_STRING = '{outdir}/pd_calib/{raft}/{raft}-{run}-pd_calib.dat'
 SLOT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}{suffix}'
 RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-RFT{suffix}'
 SUMMARY_FORMAT_STRING = '{outdir}/{fileType}/summary/{testType}/{dataset}{suffix}'
@@ -268,6 +269,7 @@ class FilenameFormatDict:
 
 FILENAME_FORMATS = FilenameFormatDict()
 
+PD_CALIB_FORMATTER = FILENAME_FORMATS.add_format('pd_calib', PD_CALIB_FORMAT_STRING)
 SLOT_BASE_FORMATTER = FILENAME_FORMATS.add_format('slot_basename', SLOT_FORMAT_STRING)
 RAFT_BASE_FORMATTER = FILENAME_FORMATS.add_format('raft_basename', RAFT_FORMAT_STRING)
 SUM_BASE_FORMATTER = FILENAME_FORMATS.add_format('summary_basename', SUMMARY_FORMAT_STRING)
@@ -590,6 +592,32 @@ def read_raft_ccd_map(yamlfile):
     return yaml.safe_load(open(yamlfile))
 
 
+def find_eo_calib(glob_format, paths, **kwargs):
+    """Get a particular EO test result
+
+    Parameters
+    ----------
+    glob_format : `str`
+        Formatting string for search path
+    paths : `list`
+        Search paths
+    kwargs
+        Passed to formatting string
+
+    Returns
+    -------
+    fname : `str`
+        The filename
+    """
+    fname = None
+    for path in paths:
+        globstring = glob_format.format(path=path, **kwargs)
+        globfiles = glob.glob(globstring)
+        if len(globfiles) != 1:
+            continue
+        fname = globfiles[0]
+    return fname
+
 
 def find_eo_results(glob_format, paths, **kwargs):
     """Get a particular EO test result
@@ -650,6 +678,62 @@ def link_eo_results(ccd_map, fdict, outformat, **kwargs):
         outpath = outformat.format(raft=raft, slot=slot, **kwargs)
         makedir_safe(outpath)
         os.system("ln -s %s %s" % (fname, outpath))
+
+def link_eo_calib(fname, outformat, **kwargs):
+    """Link eo results to the analysis area
+
+    Parameters
+    ----------
+    fname : `str`
+        Input file name
+    outformat : `str`
+        Formatting string for output path
+    kwargs
+        Passed to formatting string
+
+    Raises
+    ------
+    KeyError : If missing values in fdict
+    """
+    raft = kwargs.pop('raft')
+    outpath = outformat.format(raft=raft, **kwargs)
+    makedir_safe(outpath)
+    os.system("ln -s %s %s" % (fname, outpath))
+
+
+def link_eo_calib_runlist(args, glob_format, paths, outformat, **kwargs):
+    """Link eo results to the analysis area
+
+    Parameters
+    ----------
+    args : `dict`
+        Mapping between rafts, slot and CCD id
+    glob_format : `str`
+        Formatting string for search path
+    paths : `list`
+        Search paths for input datra
+    outformat : `str`
+        Formatting string for output path
+    """
+    runlist_file = args.get('input', None)
+    if runlist_file is not None:
+        run_list = read_runlist(args['input'])
+    else:
+        run_list = [(args['raft'], args['run'])]
+
+    for run in run_list:
+
+        run_num = run[1]
+        hid = run[0].replace('-Dev', '')
+
+        fname = find_eo_calib(glob_format, paths, run=run_num, raft=hid, **kwargs)
+        if fname is None:
+            sys.stderr.write("Could not find eotest_calib for %s %s %s\n"\
+                             % (run_num, hid, glob_format))
+            continue
+
+        link_eo_calib(fname, outformat, run=run_num,
+                      raft=hid, outdir=args['outdir'], **kwargs)
 
 
 def link_eo_results_runlist(args, glob_format, paths, outformat, **kwargs):

@@ -1,7 +1,5 @@
 """Class to construct superdark frames"""
 
-import sys
-
 import lsst.afw.math as afwMath
 
 import lsst.eotest.image_utils as imutil
@@ -88,7 +86,6 @@ class SuperdarkTask(DarkAnalysisTask):
             Dictionary keyed by amp of the superdark
         """
         self.safe_update(**kwargs)
-        slot = self.config.slot
         stat_type = self.config.stat
         if stat_type is None:
             stat_type = DEFAULT_STAT_TYPE
@@ -97,7 +94,8 @@ class SuperdarkTask(DarkAnalysisTask):
         superbias_frame = self.get_superbias_frame(mask_files)
 
         dark_files = data['DARK']
-        sys.stdout.write("Working on %s, %i files." % (slot, len(dark_files)))
+
+        self.log_info_slot_msg(self.config, "%i files" % len(dark_files))
 
         if stat_type.upper() in afwMath.__dict__:
             statistic = afwMath.__dict__[stat_type.upper()]
@@ -106,7 +104,7 @@ class SuperdarkTask(DarkAnalysisTask):
 
         sdark = stack_images(butler, dark_files, statistic=statistic,
                              bias_type=self.config.bias, superbias_frame=superbias_frame)
-
+        self.log_progress("Done!")
         return sdark
 
     def make_superdark(self, butler, slot_data, **kwargs):
@@ -278,7 +276,7 @@ class SuperdarkRaftTask(AnalysisTask):
         self.safe_update(**kwargs)
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in extract_superbias_fft_slot\n")
+            self.log.warn("Ignoring butler")
 
         for slot in ALL_SLOTS:
             mask_files = self.get_mask_files(slot=slot)
