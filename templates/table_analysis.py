@@ -10,7 +10,7 @@ from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
-from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft, AnalysisBySlot
+from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft, TableAnalysisBySlot
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
