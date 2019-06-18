@@ -60,7 +60,7 @@ def main():
 
     args = parser.parse_args()
 
-    tmpl_dir = __file__.replace('bin/specialize_code.py', 'templates')
+    tmpl_dir = __file__.replace('bin/eo_specialize_code.py', 'templates')
 
     tmpl_file = os.path.join(tmpl_dir, '%s_analysis.py' % args.level)
 

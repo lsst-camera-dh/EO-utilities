@@ -4,7 +4,7 @@
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils import base, bias, flat, fe55, sflat, dark
+from lsst.eo_utils import base, bias, flat, fe55, sflat, dark, qe, ppump
 
 
 def main():
