@@ -64,7 +64,7 @@ class SuperflatTask(SflatAnalysisTask):
         kwargs
             Used to override configruation
         """
-        SflatAnalysisTask.__init__(self, **kwargs)
+        super().__init__(**kwargs)
         self._superflat_frame_l = None
         self._superflat_frame_h = None
         self._superflat_frame_r = None
@@ -103,7 +103,7 @@ class SuperflatTask(SflatAnalysisTask):
 
         sflat_files_l, sflat_files_h = sort_sflats(butler, sflat_files)
 
-        self.log_info_raft_msg(self.config, "%i %i %i files" % (len(sflat_files),
+        self.log_info_slot_msg(self.config, "%i %i %i files" % (len(sflat_files),
                                                                 len(sflat_files_l),
                                                                 len(sflat_files_h)))
 

@@ -13,6 +13,7 @@ from .analysis import BiasAnalysisConfig, BiasAnalysisTask
 
 from .meta_analysis import BiasRaftTableAnalysisConfig, BiasRaftTableAnalysisTask,\
     BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask,\
+    SuperbiasSlotTableAnalysisConfig, SuperbiasSlotTableAnalysisTask,\
     SuperbiasSummaryAnalysisConfig, SuperbiasSummaryAnalysisTask
 
 from .bias_fft import BiasFFTConfig, BiasFFTTask,\

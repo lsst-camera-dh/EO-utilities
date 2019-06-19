@@ -12,23 +12,19 @@ from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
-from lsst.eo_utils.base.file_utils import SUPERBIAS_FORMATTER
-
 from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES,\
     raw_amp_image, get_readout_freqs_from_ccd, get_ccd_from_id, get_raw_image,\
     get_geom_regions, get_amp_list, get_image_frames_2d, array_struct, unbias_amp
 
-from lsst.eo_utils.base.iter_utils import TableAnalysisBySlot,\
-    AnalysisBySlot
+from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
-
-from .file_utils import SLOT_SBIAS_TABLE_FORMATTER, SLOT_SBIAS_PLOT_FORMATTER
 
 from .analysis import BiasAnalysisConfig, BiasAnalysisTask
 
 from .meta_analysis import BiasRaftTableAnalysisConfig, BiasRaftTableAnalysisTask,\
-    BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask
+    BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask,\
+    SuperbiasSlotTableAnalysisConfig, SuperbiasSlotTableAnalysisTask
 
 
 class BiasFFTConfig(BiasAnalysisConfig):
@@ -89,9 +85,9 @@ class BiasFFTTask(BiasAnalysisTask):
                 nfreqs = len(freqs)
                 fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
 
-            self.get_ccd_data(butler, ccd, fft_data,
-                              ifile=ifile, nfiles_used=len(bias_files),
-                              slot=slot, superbias_frame=superbias_frame)
+            BiasFFTTask.get_ccd_data(self, butler, ccd, fft_data,
+                                     ifile=ifile, nfiles_used=len(bias_files),
+                                     slot=slot, superbias_frame=superbias_frame)
 
         self.log_progress("Done!")
 
@@ -126,12 +122,14 @@ class BiasFFTTask(BiasAnalysisTask):
                                              x_name='freqs', y_name='fftpow',
                                              ymin=0., ymax=3.)
 
-
-    def get_ccd_data(self, butler, ccd, data, **kwargs):
+    @staticmethod
+    def get_ccd_data(for_whom, butler, ccd, data, **kwargs):
         """Get the fft of the overscan values and update the data dictionary
 
         Parameters
         ----------
+        for_whom : `Task`
+            Task this is being run for
         butler : `Butler`
             The data butler
         ccd : `MaskedCCD`
@@ -154,7 +152,7 @@ class BiasFFTTask(BiasAnalysisTask):
         superbias_frame : `MaskedCCD`
             The superbias frame to subtract away
         """
-        self.safe_update(**kwargs)
+        for_whom.safe_update(**kwargs)
 
         slot = kwargs['slot']
         ifile = kwargs.get('ifile', 0)
@@ -168,13 +166,13 @@ class BiasFFTTask(BiasAnalysisTask):
             img = get_raw_image(butler, ccd, amp)
             superbias_im = raw_amp_image(butler, superbias_frame, amp)
             image = unbias_amp(img, serial_oscan,
-                               bias_type=self.get_config_param('bias', None),
+                               bias_type=for_whom.get_config_param('bias', None),
                                superbias_im=superbias_im)
             frames = get_image_frames_2d(image, regions)
             key_str = "fftpow_%s_a%02i" % (slot, i)
 
             for key, region in zip(REGION_KEYS, REGION_NAMES):
-                struct = array_struct(frames[region], do_std=self.config.std)
+                struct = array_struct(frames[region], do_std=for_whom.config.std)
                 fftpow = np.abs(fftpack.fft(struct['rows']-struct['rows'].mean()))
                 nval = len(fftpow)
                 fftpow /= nval/2
@@ -184,12 +182,8 @@ class BiasFFTTask(BiasAnalysisTask):
 
 
 
-class SuperbiasFFTConfig(BiasFFTConfig):
+class SuperbiasFFTConfig(SuperbiasSlotTableAnalysisConfig):
     """Configuration for SuperbiasFFTTask"""
-    outdir = EOUtilOptions.clone_param('outdir')
-    run = EOUtilOptions.clone_param('run')
-    raft = EOUtilOptions.clone_param('raft')
-    slot = EOUtilOptions.clone_param('slot')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='sbiasfft')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
@@ -197,16 +191,11 @@ class SuperbiasFFTConfig(BiasFFTConfig):
     std = EOUtilOptions.clone_param('std')
 
 
-class SuperbiasFFTTask(BiasFFTTask):
+class SuperbiasFFTTask(SuperbiasSlotTableAnalysisTask):
     """Analyze the FFT of the superbias frames"""
 
     ConfigClass = SuperbiasFFTConfig
     _DefaultName = "SuperbiasFFTTask"
-    iteratorClass = TableAnalysisBySlot
-
-    intablename_format = SUPERBIAS_FORMATTER
-    tablename_format = SLOT_SBIAS_TABLE_FORMATTER
-    plotname_format = SLOT_SBIAS_PLOT_FORMATTER
 
     def extract(self, butler, data, **kwargs):
         """Extract the FFTs of the row-wise and col-wise struture
@@ -246,8 +235,8 @@ class SuperbiasFFTTask(BiasFFTTask):
             nfreqs = len(freqs)
             fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
 
-        self.get_ccd_data(None, superbias, fft_data,
-                          slot=slot, superbias_frame=None)
+        BiasFFTTask.get_ccd_data(self, None, superbias, fft_data,
+                                 slot=slot, superbias_frame=None)
 
 
         dtables = TableDict()
