@@ -19,7 +19,8 @@ from .data_utils import TableDict, vstack_tables
 
 from .plot_utils import FigureDict
 
-from .analysis import BaseAnalysisConfig, BaseAnalysisTask,\
+from .analysis import BaseConfig, BaseTask,\
+    BaseAnalysisConfig, BaseAnalysisTask,\
     AnalysisConfig, AnalysisTask
 
 from .iter_utils import AnalysisHandlerConfig, AnalysisHandler,\
@@ -28,6 +29,8 @@ from .iter_utils import AnalysisHandlerConfig, AnalysisHandler,\
     AnalysisByRaftConfig, AnalysisByRaft,\
     TableAnalysisBySlot, TableAnalysisByRaft,\
     SummaryAnalysisIterator
+
+from .pipeline import MetaConfig, MetaTask
 
 from .factory import EO_TASK_FACTORY
 

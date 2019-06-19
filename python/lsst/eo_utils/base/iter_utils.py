@@ -9,7 +9,7 @@ from .defaults import ALL_SLOTS
 
 from .config_utils import EOUtilOptions, Configurable,\
     setup_parser, add_pex_arguments,\
-    make_argstring
+    make_argstring, parse_args_to_dict
 
 from .file_utils import get_hardware_type_and_id, get_raft_names_dc, read_runlist
 
@@ -104,7 +104,7 @@ class AnalysisHandler(Configurable):
         parser = setup_parser()
         self.add_parser_arguemnts(parser)
         args = parser.parse_args()
-        arg_dict = args.__dict__.copy()
+        arg_dict = parse_args_to_dict(args)
         arg_dict.update(**kwargs)
 
         self.run_with_args(**arg_dict)
@@ -547,8 +547,10 @@ class AnalysisBySlot(AnalysisIterator):
         ------
         ValueError : If the hardware type (raft or focal plane) is not recognized
         """
+        kwdata = kwargs.copy()
+        kwdata['nfiles'] = self._task.config.toDict().get('nfiles', None)
         htype, hid = self.get_hardware(self._butler, run)
-        data_files = self.get_data(self._butler, run, **kwargs)
+        data_files = self.get_data(self._butler, run, **kwdata)
 
         kwargs['run'] = run
         if htype == "LCA-10134":

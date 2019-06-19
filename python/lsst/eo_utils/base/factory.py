@@ -5,7 +5,7 @@ This module contains a factory to build objects that run analyses
 
 from collections import OrderedDict
 
-from .config_utils import setup_parser
+from .config_utils import setup_parser, parse_args_to_dict
 
 class EOTaskFactory:
     """Small class to keep track of analysis tasks"""
@@ -100,7 +100,7 @@ class EOTaskFactory:
         parser = self.build_parser(usage="eo_task.py")
         args = parser.parse_args()
 
-        arg_dict = args.__dict__.copy()
+        arg_dict = parse_args_to_dict(args)
         arg_dict.update(**kwargs)
 
         self.run_task(args.task, **arg_dict)

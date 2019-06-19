@@ -22,12 +22,13 @@ from .iter_utils import SimpleAnalysisHandler
 
 from .image_utils import get_ccd_from_id
 
-class BaseAnalysisConfig(pexConfig.Config):
+
+class BaseConfig(pexConfig.Config):
     """Configuration for EO analysis tasks"""
 
 
-class BaseAnalysisTask(Configurable):
-    """Base class for EO testing analysis tasks
+class BaseTask(Configurable):
+    """Base class for EO testing tasks
 
     At minimum, sub-classes will need to implement the
     __call__ function to perform the data analysis.
@@ -48,8 +49,8 @@ class BaseAnalysisTask(Configurable):
     __metaclass__ = abc.ABCMeta
 
     # These can overridden by the sub-class
-    ConfigClass = BaseAnalysisConfig
-    _DefaultName = "BaseAnalysisTask"
+    ConfigClass = BaseConfig
+    _DefaultName = "BaseTask"
     iteratorClass = SimpleAnalysisHandler
 
     def __init__(self, **kwargs):
@@ -62,7 +63,8 @@ class BaseAnalysisTask(Configurable):
         """
         Configurable.__init__(self, **kwargs)
 
-    def __call__(self, butler, data, **kwargs):
+    @abc.abstractmethod
+    def __call__(self, **kwargs):
         """Perform the data analysis
 
         It is up to the iteratorClass to construct the data object that is
@@ -70,10 +72,6 @@ class BaseAnalysisTask(Configurable):
 
         Parameters
         ----------
-        butler : `Butler`
-            The data butler
-        data : `dict`
-            Dictionary (or other structure) contain the input data
         kwargs
             Used to override default configuration
         """
@@ -111,6 +109,94 @@ class BaseAnalysisTask(Configurable):
         if key in self.config.keys():
             return getattr(self.config, key)
         return default
+
+    @classmethod
+    def add_parser_arguments(cls, parser):
+        """Add parser arguments for this class
+
+        Parameters
+        ----------
+        parser : `ArgumentParser`
+            The parser to add arguments to
+        """
+        functor = cls()
+        handler = cls.iteratorClass(functor)
+        handler.add_parser_arguemnts(parser)
+
+    @classmethod
+    def parse_and_run(cls):
+        """Run the task using the command line arguments"""
+        functor = cls()
+        handler = cls.iteratorClass(functor)
+        handler.run_analysis()
+
+    @classmethod
+    def run(cls, **kwargs):
+        """Run the analysis using the keyword arguments
+
+        Parameters
+        ----------
+        kwargs
+            Used to override default configuration
+        """
+        functor = cls()
+        handler = cls.iteratorClass(functor)
+        handler.run_with_args(**kwargs)
+
+    def run_self(self, **kwargs):
+        """Run the analysis using the keyword arguments
+
+        Parameters
+        ----------
+        kwargs
+            Used to override default configuration
+        """
+        handler = self.iteratorClass(self)
+        handler.run_with_args(**kwargs)
+
+    def log_progress(self, msg):
+        """Make an info message that we are running a particular slot
+
+        Parameters
+        ----------
+        msg : `str`
+            The message
+        """
+        self.log.info(msg)
+
+
+class BaseAnalysisConfig(BaseConfig):
+    """Configuration for EO analysis tasks"""
+
+
+class BaseAnalysisTask(BaseTask):
+    """Sub-class for simple analyses
+
+    """
+    __metaclass__ = abc.ABCMeta
+
+    # These can overridden by the sub-class
+    ConfigClass = BaseAnalysisConfig
+    _DefaultName = "BaseAnalysisTask"
+    iteratorClass = SimpleAnalysisHandler
+
+    def __call__(self, butler, data, **kwargs):
+        """Perform the data analysis
+
+        It is up to the iteratorClass to construct the data object that is
+        passed to this function.
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+        """
+        raise NotImplementedError()
+
 
     def get_filename_from_format(self, formatter, suffix, **kwargs):
         """Use a `FilenameFormat` object to construct a filename for a
@@ -180,39 +266,6 @@ class BaseAnalysisTask(Configurable):
         if self.config.mask:
             return [self.get_filename_from_format(MASK_FORMATTER, "_mask.fits")]
         return []
-
-    @classmethod
-    def add_parser_arguments(cls, parser):
-        """Add parser arguments for this class
-
-        Parameters
-        ----------
-        parser : `ArgumentParser`
-            The parser to add arguments to
-        """
-        functor = cls()
-        handler = cls.iteratorClass(functor)
-        handler.add_parser_arguemnts(parser)
-
-    @classmethod
-    def parse_and_run(cls):
-        """Run the task using the command line arguments"""
-        functor = cls()
-        handler = cls.iteratorClass(functor)
-        handler.run_analysis()
-
-    @classmethod
-    def run(cls, **kwargs):
-        """Run the analysis using the keyword arguments
-
-        Parameters
-        ----------
-        kwargs
-            Used to override default configuration
-        """
-        functor = cls()
-        handler = cls.iteratorClass(functor)
-        handler.run_with_args(**kwargs)
 
     def log_info_slot_msg(self, config, msg):
         """Make an info message that we are running a particular slot

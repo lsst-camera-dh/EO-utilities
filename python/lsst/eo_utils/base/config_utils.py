@@ -124,11 +124,9 @@ class EOUtilOptions(pexConfig.Config):
     bkg_ny = pexConfig.Field("Local background height (pixels)", int, default=10)
     edge_rolloff = pexConfig.Field("Edge rolloff width (pixels)", int, default=10)
 
-
-
     @classmethod
     def clone_param(cls, par_name, **kwargs):
-        """Close a parameter from the set defined in this class.
+        """Clone a parameter from the set defined in this class.
 
         Parameters
         ----------
@@ -147,9 +145,27 @@ class EOUtilOptions(pexConfig.Config):
             ret_val.default = kwargs['default']
         return ret_val
 
+    @staticmethod
+    def task_param(task_class):
+        """Build parameter from for a particular Task
+
+        Parameters
+        ----------
+        task_class : `class`
+            Class of task of build parameter for
+
+        Returns
+        -------
+        ret_val : `pexConfig.ConfigurableField`
+            Parameter connect to the task class
+        """
+        param = pexConfig.ConfigurableField(target=task_class,
+                                            doc=task_class.__doc__)
+        return param
 
 
-def add_pex_arguments(parser, pex_class, exclude=None):
+
+def add_pex_arguments(parser, pex_class, exclude=None, prefix=None):
     """Adds a set of arguments to the argument parser (or parser group)
 
     Parameters
@@ -163,22 +179,30 @@ def add_pex_arguments(parser, pex_class, exclude=None):
     """
     if exclude is None:
         exclude = []
+
     for key, val in pex_class._fields.items():
         if key in exclude:
             continue
+        if prefix is not None:
+            parser_key = "%s.%s" % (prefix, key)
+        else:
+            parser_key = key
         if isinstance(val, pexConfig.listField.ListField):
-            parser.add_argument("--%s" % key,
+            parser.add_argument("--%s" % parser_key,
                                 action='append',
                                 type=val.itemtype,
                                 default=val.default,
                                 help=val.doc)
+        elif isinstance(val, pexConfig.configurableField.ConfigurableField):
+            parser_group = parser.add_argument_group(val.name)
+            add_pex_arguments(parser_group, val.default, exclude, val.name)
         elif val.dtype in [bool]:
-            parser.add_argument("--%s" % key,
+            parser.add_argument("--%s" % parser_key,
                                 action='store_true',
                                 default=val.default,
                                 help=val.doc)
         else:
-            parser.add_argument("--%s" % key,
+            parser.add_argument("--%s" % parser_key,
                                 type=val.dtype,
                                 default=val.default,
                                 help=val.doc)
@@ -210,6 +234,9 @@ def make_argstring(**kwargs):
         elif isinstance(value, (list, pexConfig.listField.List)):
             for val2 in value:
                 ostring += " --%s %s" % (key, val2)
+        elif isinstance(value, (dict)):
+            for key2, val2 in value.items():
+                ostring += " --%s.%s %s" % (key, key2, val2)
         else:
             ostring += " --%s %s" % (key, value)
     return ostring
@@ -339,6 +366,52 @@ def copy_pex_fields(field_names, target_class, library_class):
             raise TypeError("Field %s in class %s\n is not a pexConfig.Field" %
                             (fname, type(library_class)))
 
+def update_dict_from_string(o_dict, key, val):
+    """Update a dictionary with sub-dictionaries
+
+    Parameters
+    ----------
+    o_dict : dict
+        The output
+
+    key : `str`
+        The string we are parsing
+
+    val : `str`
+        The value
+    """
+    idx = key.find('.')
+    use_key = key[0:idx]
+    remain = key[idx+1:]
+    if use_key not in o_dict:
+        o_dict[use_key] = {}
+    if remain.find('.') < 0:
+        o_dict[use_key][remain] = val
+    else:
+        update_dict_from_string(o_dict[use_key], remain, val)
+
+
+def parse_args_to_dict(args):
+    """Parse the output of argparse
+
+    Parameters
+    ----------
+    args : `Namespace`
+        The output of argparse
+
+    Returns
+    -------
+    o_dict : dict
+         The output
+    """
+    o_dict = {}
+    for key, val in args.__dict__.items():
+        if key.find('.') < 0:
+            o_dict[key] = val
+        else:
+            update_dict_from_string(o_dict, key, val)
+    return o_dict
+
 
 
 class Configurable(pipeBase.Task):
@@ -375,12 +448,20 @@ class Configurable(pipeBase.Task):
         base_dict = self.config.toDict()
         update_dict = {}
         remain_dict = {}
+        dict_set = {}
         for key, val in kwargs.items():
             if key in base_dict:
-                update_dict[key] = val
+                if isinstance(val, dict):
+                    dict_set[key] = True
+                    getattr(self.config, key).update(**val)
+                else:
+                    update_dict[key] = val
             else:
                 remain_dict[key] = val
         self.config.update(**update_dict)
+        top_dict = self.config.toDict()
+        for key in dict_set:
+            getattr(self, key).config.update(**top_dict[key])
         return remain_dict
 
 
