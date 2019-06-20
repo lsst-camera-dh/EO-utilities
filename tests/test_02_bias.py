@@ -6,12 +6,7 @@ from __future__ import absolute_import, division, print_function
 from lsst.eo_utils import bias
 from lsst.eo_utils.bias.file_utils import get_bias_files_run
 
-from .utils import RUN_TASKS
-
-RUN_OPTIONS = dict(runs=['6106D'], bias='spline',
-                   superbias='spline', outdir='test_out', plot='png')
-SUMMARY_OPTIONS = dict(dataset='tests/test', bias='spline',
-                       superbias='spline', outdir='test_out', plot='png')
+from .utils import RUN_TASKS, RUN_OPTIONS, SUMMARY_OPTIONS
 
 def test_bias_file_utils():
     """Test the bias.file_utils module"""
@@ -40,19 +35,19 @@ def test_superbias():
     """Test the SuperbiasTask"""
     task = bias.SuperbiasTask()
     if RUN_TASKS:
-        task.run(nfiles=2, **RUN_OPTIONS)
+        task.run(nfiles=2, slots=['S00'], **RUN_OPTIONS)
 
 def test_superbias_raft():
     """Test the SuperbiasRaftTask"""
     task = bias.SuperbiasRaftTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS)
 
 def test_bias_fft():
     """Test the BiasFFTTask"""
     task = bias.BiasFFTTask()
     if RUN_TASKS:
-        task.run(nfiles=2, **RUN_OPTIONS)
+        task.run(nfiles=2, slots=['S00'], **RUN_OPTIONS)
 
 def test_bias_fft_stats():
     """Test the BiasFFTStatsTask"""
@@ -70,31 +65,31 @@ def test_superbias_fft():
     """Test the SuperbiasFFTTask"""
     task = bias.SuperbiasFFTTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS)
 
 def test_bias_struct():
     """Test the BiasStructTask"""
     task = bias.BiasStructTask()
     if RUN_TASKS:
-        task.run(nfiles=2, **RUN_OPTIONS)
+        task.run(nfiles=2, slots=['S00'], **RUN_OPTIONS)
 
 def test_superbias_struct():
     """Test theSuperbiasStructTask """
     task = bias.SuperbiasStructTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS)
 
 def test_bias_v_row():
     """Test the BiasVRowTask"""
     task = bias.BiasVRowTask()
     if RUN_TASKS:
-        task.run(nfiles=2, **RUN_OPTIONS)
+        task.run(nfiles=2, slots=['S00'], **RUN_OPTIONS)
 
 def test_correl_wrt_oscan():
     """Test the CorrelWRTOscanTask"""
     task = bias.CorrelWRTOscanTask()
     if RUN_TASKS:
-        task.run(nfiles=2, **RUN_OPTIONS)
+        task.run(nfiles=2, slots=['S00'], **RUN_OPTIONS)
 
 def test_correl_wrt_oscan_stats():
     """Test the CorrelWRTOscanStatsTask"""
@@ -112,7 +107,7 @@ def test_oscan_amp_stack():
     """Test the OscanAmpStackTask"""
     task = bias.OscanAmpStackTask()
     if RUN_TASKS:
-        task.run(nfiles=2, **RUN_OPTIONS)
+        task.run(nfiles=2, slots=['S00'], **RUN_OPTIONS)
 
 def test_oscan_amp_stack_stats():
     """Test the OscanAmpStackStatsTask"""
@@ -130,19 +125,19 @@ def test_oscan_correl():
     """Test the OscanCorrelTask"""
     task = bias.OscanCorrelTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(superbias=None, **RUN_OPTIONS)
 
 def test_superbias_stdev():
     """Test the SuperbiasTask in stdevclip mode"""
     task = bias.SuperbiasTask()
     if RUN_TASKS:
-        task.run(stat='stdevclip', nfiles=2, **RUN_OPTIONS)
+        task.run(stat='stdevclip', nfiles=2, slots=['S00'], **RUN_OPTIONS)
 
 def test_superbias_stdev_stats():
     """Test the SuperbiasStatsTask"""
     task = bias.SuperbiasStatsTask()
     if RUN_TASKS:
-        task.run(stat='stdevclip', **RUN_OPTIONS)
+        task.run(stat='stdevclip', slots=['S00'], **RUN_OPTIONS)
 
 def test_superbias_stdev_sum():
     """Test the SuperbiasSummaryTask"""

@@ -6,12 +6,7 @@ from __future__ import absolute_import, division, print_function
 from lsst.eo_utils import dark
 from lsst.eo_utils.dark.file_utils import get_dark_files_run
 
-from .utils import RUN_TASKS
-
-RUN_OPTIONS = dict(runs=['6106D'], bias='spline',
-                   superbias='spline', outdir='test_out', plot='png')
-SUMMARY_OPTIONS = dict(dataset='tests/test', bias='spline',
-                       superbias='spline', outdir='test_out', plot='png')
+from .utils import RUN_TASKS, RUN_OPTIONS, RUN_OPTIONS_NOPLOT, SUMMARY_OPTIONS
 
 def test_dark_file_utils():
     """Test the dark.file_utils module"""
@@ -40,19 +35,19 @@ def test_superdark():
     """Test the SuperdarkTask"""
     task = dark.SuperdarkTask()
     if RUN_TASKS:
-        task.run(nfiles=2, **RUN_OPTIONS)
+        task.run(nfiles=2, slots=['S00'], **RUN_OPTIONS)
 
 def test_superdark_raft():
     """Test the SuperdarkRaftTask"""
     task = dark.SuperdarkRaftTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS_NOPLOT)
 
 def test_dark_current():
     """Test the DarkCurrentTask"""
     task = dark.DarkCurrentTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS_NOPLOT)
 
 def test_dark_current_sum():
     """Test the DarkCurrentSummaryTask"""

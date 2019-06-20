@@ -6,12 +6,7 @@ from __future__ import absolute_import, division, print_function
 from lsst.eo_utils import flat
 from lsst.eo_utils.flat.file_utils import get_flat_files_run
 
-from .utils import RUN_TASKS
-
-RUN_OPTIONS = dict(runs=['6106D'], bias='spline',
-                   superbias='spline', outdir='test_out', plot='png')
-SUMMARY_OPTIONS = dict(dataset='tests/test', bias='spline',
-                       superbias='spline', outdir='test_out', plot='png')
+from .utils import RUN_TASKS, RUN_OPTIONS, RUN_OPTIONS_NOPLOT, SUMMARY_OPTIONS
 
 
 def test_flat_file_utils():
@@ -40,31 +35,31 @@ def test_flat_oscan():
     """Test the FlatOverscanTask"""
     task = flat.FlatOverscanTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS)
 
 def test_flat_pair():
     """Test the FlatPairTask"""
     task = flat.FlatPairTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS)
 
 def test_flat_linearity():
     """Test the FlatLinearityTask"""
     task = flat.FlatLinearityTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS_NOPLOT)
 
 def test_flat_bf():
     """Test the BFTask"""
     task = flat.BFTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS)
 
 def test_flat_ptc():
     """Test the PTCTask"""
     task = flat.PTCTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS_NOPLOT)
 
 def test_flat_ptc_sum():
     """Test the PTCSummaryTask"""

@@ -6,12 +6,7 @@ from __future__ import absolute_import, division, print_function
 from lsst.eo_utils import fe55
 from lsst.eo_utils.fe55.file_utils import get_fe55_files_run
 
-from .utils import RUN_TASKS
-
-RUN_OPTIONS = dict(runs=['6106D'], bias='orig',
-                   superbias='orig', outdir='test_out', plot='png')
-SUMMARY_OPTIONS = dict(dataset='tests/test', bias='orig',
-                       superbias='orig', outdir='test_out', plot='png')
+from .utils import RUN_TASKS, RUN_OPTIONS, SUMMARY_OPTIONS
 
 def test_fe55_file_utils():
     """Test the fe55.file_utils module"""

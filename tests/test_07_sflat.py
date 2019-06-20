@@ -6,12 +6,7 @@ from __future__ import absolute_import, division, print_function
 from lsst.eo_utils import sflat
 from lsst.eo_utils.sflat.file_utils import get_sflat_files_run
 
-from .utils import RUN_TASKS
-
-RUN_OPTIONS = dict(runs=['6106D'], bias='spline',
-                   superbias='spline', outdir='test_out', plot='png')
-SUMMARY_OPTIONS = dict(dataset='tests/test', bias='spline',
-                       superbias='spline', outdir='test_out', plot='png')
+from .utils import RUN_TASKS, RUN_OPTIONS, RUN_OPTIONS_NOPLOT, SUMMARY_OPTIONS
 
 
 def test_sflat_file_utils():
@@ -41,22 +36,22 @@ def test_superflat():
     """Test the SuperflatTask"""
     task = sflat.SuperflatTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS)
 
 def test_superflat_raft():
     """Test the SuperflatRaftTask"""
     task = sflat.SuperflatRaftTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS_NOPLOT)
 
 def test_sflat_ratio():
     """Test the SflatRatioTask"""
     task = sflat.SflatRatioTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS_NOPLOT)
 
 def test_sflat_cte():
     """Test the CTETask"""
     task = sflat.CTETask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS_NOPLOT)

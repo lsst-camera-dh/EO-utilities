@@ -6,12 +6,7 @@ from __future__ import absolute_import, division, print_function
 from lsst.eo_utils import qe
 from lsst.eo_utils.qe.file_utils import get_qe_files_run
 
-from .utils import RUN_TASKS
-
-RUN_OPTIONS = dict(runs=['6106D'], bias='spline',
-                   superbias='spline', outdir='test_out', plot='png')
-SUMMARY_OPTIONS = dict(dataset='tests/test', bias='spline',
-                       superbias='spline', outdir='test_out', plot='png')
+from .utils import RUN_TASKS, RUN_OPTIONS, SUMMARY_OPTIONS
 
 
 def test_qe_file_utils():
@@ -42,10 +37,10 @@ def test_qe_median():
     """Test the QEMedianTask"""
     task = qe.QEMedianTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS)
 
 def test_qe_task():
     """Test the QETask"""
     task = qe.QETask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS)

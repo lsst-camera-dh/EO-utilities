@@ -83,12 +83,12 @@ def test_file_utils_get_names_dc():
 
 def test_file_utils_read_raft_map():
     """Test the file_utils module"""
-    ccdmap = read_raft_ccd_map('ts8_mapping.yaml')
+    ccdmap = read_raft_ccd_map('tests/test_ts8_mapping.yaml')
     assert len(ccdmap['RTM-004']) == 9
 
 def test_file_utils_read_runlist():
     """Test the file_utils module"""
-    runs = read_runlist('test_runs.txt')
+    runs = read_runlist('tests/test_runs.txt')
     assert len(runs) == 2
     assert len(runs[0]) == 2
     assert len(runs[1]) == 2

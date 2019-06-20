@@ -9,12 +9,10 @@ from lsst.eo_utils.base.mask_analysis import MaskAddTask
 
 from lsst.eo_utils.base.eo_results import EOResultsRaftTask, EOResultsSummaryTask
 
-from .utils import RUN_TASKS
+from .utils import RUN_TASKS, RUN_OPTIONS, SUMMARY_OPTIONS
 
 LINK_OPTIONS = dict(run='6106D', raft='RTM-004',
                     outdir='test_out', mapping='tests/test_ts8_mapping.yaml')
-RUN_OPTIONS = dict(runs=['6106D'], outdir='test_out', plot='png')
-SUMMARY_OPTIONS = dict(dataset='tests/test', outdir='test_out', plot='png')
 
 def test_link_ts8():
     """Test linking input ts8 files"""

@@ -9,6 +9,9 @@ from astropy.tests.helper import pytest
 __all__ = ['requires_file', 'RUN_TASKS']
 
 RUN_TASKS = True
+RUN_OPTIONS = dict(runs=['6106D'], outdir='test_out', plot='png')
+RUN_OPTIONS_NOPLOT = dict(runs=['6106D'], outdir='test_out')
+SUMMARY_OPTIONS = dict(dataset='tests/test', outdir='test_out', plot='png')
 
 def requires_file(filepath):
     "Skip test if required file is missing"""

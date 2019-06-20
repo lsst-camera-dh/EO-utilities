@@ -8,9 +8,8 @@ from lsst.eo_utils.ppump.file_utils import get_ppump_files_run
 
 from .utils import RUN_TASKS
 
-RUN_OPTIONS = dict(runs=['6106D'], bias='spline', superbias='spline', outdir='test_out', plot='png')
-SUMMARY_OPTIONS = dict(dataset='tests/test', bias='spline',
-                       superbias='spline', outdir='test_out', plot='png')
+RUN_OPTIONS = dict(runs=['6106D'], outdir='test_out', plot='png')
+SUMMARY_OPTIONS = dict(dataset='tests/test', outdir='test_out', plot='png')
 
 def test_ppump_file_utils():
     """Test the ppump.file_utils module"""
@@ -40,4 +39,4 @@ def test_ppump_traps():
     """Test the TrapTask"""
     task = ppump.TrapTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS)
