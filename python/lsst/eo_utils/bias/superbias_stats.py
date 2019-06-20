@@ -24,9 +24,6 @@ from .meta_analysis import  SuperbiasRaftTableAnalysisConfig,\
 
 class SuperbiasStatsConfig(SuperbiasRaftTableAnalysisConfig):
     """Configuration for SuperbiasStatsTask"""
-    outdir = EOUtilOptions.clone_param('outdir')
-    run = EOUtilOptions.clone_param('run')
-    raft = EOUtilOptions.clone_param('raft')
     insuffix = EOUtilOptions.clone_param('insuffix', default='')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='stats')
     bias = EOUtilOptions.clone_param('bias')
@@ -62,8 +59,6 @@ class SuperbiasStatsTask(SuperbiasRaftTableAnalysisTask):
             The resulting data
         """
         self.safe_update(**kwargs)
-        slots = ALL_SLOTS
-
         if butler is not None:
             self.log.warn("Ignoring butler")
 
@@ -71,7 +66,11 @@ class SuperbiasStatsTask(SuperbiasRaftTableAnalysisTask):
 
         self.log_info_raft_msg(self.config, "")
 
-        for islot, slot in enumerate(slots):
+        slot_list = self.config.slots
+        if slot_list is None:
+            slot_list = ALL_SLOTS
+
+        for islot, slot in enumerate(slot_list):
 
             self.log_progress("  %s" % slot)
 
@@ -84,8 +83,8 @@ class SuperbiasStatsTask(SuperbiasRaftTableAnalysisTask):
         self.log_progress("Done!")
 
         dtables = TableDict()
-        dtables.make_datatable('files', make_file_dict(None, slots))
-        dtables.make_datatable('slots', dict(slots=slots))
+        dtables.make_datatable('files', make_file_dict(None, slot_list))
+        dtables.make_datatable('slots', dict(slots=slot_list))
         dtables.make_datatable('stats', stats_data)
         return dtables
 

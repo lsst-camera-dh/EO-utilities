@@ -55,7 +55,11 @@ class FlatLinearityTask(FlatRaftTableAnalysisTask):
 
         self.log_info_raft_msg(self.config, "")
 
-        for islot, slot in enumerate(ALL_SLOTS):
+        slots = self.config.slots
+        if slots is None:
+            slots = ALL_SLOTS
+
+        for islot, slot in enumerate(slots):
 
             self.log_progress("  %s" % slot)
 

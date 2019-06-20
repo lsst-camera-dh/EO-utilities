@@ -27,7 +27,7 @@ from .meta_analysis import BiasRaftTableAnalysisConfig, BiasRaftTableAnalysisTas
 class CorrelWRTOscanConfig(BiasAnalysisConfig):
     """Configuration for CorrelWRTOscanTask"""
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasoscorr')
-    bias = EOUtilOptions.clone_param('bias')
+    bias = EOUtilOptions.clone_param('bias', default=None)
     mask = EOUtilOptions.clone_param('mask')
 
 

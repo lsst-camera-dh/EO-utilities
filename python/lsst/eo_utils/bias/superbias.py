@@ -220,9 +220,6 @@ class SuperbiasTask(BiasAnalysisTask):
 
 class SuperbiasRaftConfig(SuperbiasRaftTableAnalysisConfig):
     """Configuration for SuperbiasRaftTask"""
-    outdir = EOUtilOptions.clone_param('outdir')
-    run = EOUtilOptions.clone_param('run')
-    raft = EOUtilOptions.clone_param('raft')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='sbias')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
@@ -272,7 +269,10 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
         if butler is not None:
             self.log.warn("Ignoring butler")
 
-        for slot in ALL_SLOTS:
+        slot_list = self.config.slots
+        if slot_list is None:
+            slot_list = ALL_SLOTS
+        for slot in slot_list:
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
             self._sbias_file_dict[slot] = data[slot]
 

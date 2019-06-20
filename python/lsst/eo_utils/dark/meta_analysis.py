@@ -14,6 +14,10 @@ from lsst.eo_utils.dark.file_utils import SLOT_DARK_TABLE_FORMATTER,\
 
 class DarkRaftTableAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
+    outdir = EOUtilOptions.clone_param('outdir')
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
+    slots = EOUtilOptions.clone_param('slots')
     insuffix = EOUtilOptions.clone_param('insuffix')
     outsuffix = EOUtilOptions.clone_param('outsuffix')
 

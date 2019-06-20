@@ -737,10 +737,14 @@ class TableAnalysisByRaft(AnalysisByRaft):
         formatter = self._task.intablename_format
         insuffix = self._task.get_config_param('insuffix', '')
 
+        slot_list = kwcopy.get('slots', None)
+        if slot_list is None:
+            slot_list = ALL_SLOTS
+
         for raft in raft_list:
             kwcopy['raft'] = raft
             slot_dict = {}
-            for slot in ALL_SLOTS:
+            for slot in slot_list:
                 kwcopy['slot'] = slot
                 datapath = self._task.get_filename_from_format(formatter, insuffix, **kwcopy)
                 slot_dict[slot] = datapath + '.fits'

@@ -20,15 +20,14 @@ class SummaryAnalysisConfig(MetaConfig):
     """Configuration for SummaryAnalysisTask"""
     dataset = EOUtilOptions.clone_param('dataset')
     runs = EOUtilOptions.clone_param('runs')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
     plot = EOUtilOptions.clone_param('plot')
+
 
 SummaryAnalysisConfig.add_task('_bias_fft_sum', BiasFFTSummaryTask)
 SummaryAnalysisConfig.add_task('_oscan_amp_stack_sum', OscanAmpStackSummaryTask)
 SummaryAnalysisConfig.add_task('_superbias_sum', SuperbiasSummaryTask)
 SummaryAnalysisConfig.add_task('_dark_current_sum', DarkCurrentSummaryTask)
-#SummaryAnalysisConfig.add_task('_fe55_gain_sum', Fe55GainSummaryTask)
+SummaryAnalysisConfig.add_task('_fe55_gain_sum', Fe55GainSummaryTask)
 SummaryAnalysisConfig.add_task('_ptc_sum', PTCSummaryTask)
 
 

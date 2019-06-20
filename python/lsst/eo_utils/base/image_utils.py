@@ -895,8 +895,7 @@ def outlier_raft_dict(raft_data, mean_val, max_offset):
                     slot=[],
                     amp=[])
 
-    for islot, slot in enumerate(ALL_SLOTS):
-        slot_arrays = raft_data[slot]
+    for islot, (slot, slot_arrays) in enumerate(sorted(raft_data.items())):
         for iamp, (_, ccd_data) in enumerate(sorted(slot_arrays.items())):
             outlier_data = outlier_stats(ccd_data, mean_val, max_offset)
             out_data['slot'].append(islot)

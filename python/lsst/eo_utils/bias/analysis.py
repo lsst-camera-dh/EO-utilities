@@ -19,7 +19,7 @@ class BiasAnalysisConfig(AnalysisConfig):
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
     outsuffix = EOUtilOptions.clone_param('outsuffix')
-    nfiles = EOUtilOptions.clone_param('nfiles')
+    nfiles = EOUtilOptions.clone_param('nfiles', default=10)
 
 
 class BiasAnalysisTask(AnalysisTask):

@@ -245,6 +245,29 @@ class SuperbiasFFTTask(SuperbiasSlotTableAnalysisTask):
             dtables.make_datatable('biasfft-%s' % key, fft_data[key])
         return dtables
 
+    def plot(self, dtables, figs, **kwargs):
+        """Plot the FFT of the bias as function of row
+
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
+        """
+        self.safe_update(**kwargs)
+
+        for key, region in zip(REGION_KEYS, REGION_NAMES):
+            datakey = 'biasfft-%s' % key
+            figs.setup_amp_plots_grid(datakey, title="FFT of %s region mean by row" % region,
+                                      xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]",
+                                      ymin=0., ymax=3.)
+            figs.plot_xy_amps_from_tabledict(dtables, datakey, datakey,
+                                             x_name='freqs', y_name='fftpow',
+                                             ymin=0., ymax=3.)
+
 
 class BiasFFTStatsConfig(BiasRaftTableAnalysisConfig):
     """Configuration for BiasFFTStatsTask"""
@@ -299,7 +322,11 @@ class BiasFFTStatsTask(BiasRaftTableAnalysisTask):
 
         self.log_info_raft_msg(self.config, "")
 
-        for islot, slot in enumerate(ALL_SLOTS):
+        slot_list = self.config.slots
+        if slot_list is None:
+            slot_list = ALL_SLOTS
+
+        for islot, slot in enumerate(slot_list):
 
             self.log_progress("  %s" % slot)
 

@@ -54,9 +54,9 @@ class EOUtilOptions(pexConfig.Config):
     outfile = pexConfig.Field("Output file name", str, default=None)
 
     # Options for input data processing
-    bias = pexConfig.Field("Method to use for unbiasing", str, default=None)
+    bias = pexConfig.Field("Method to use for unbiasing", str, default='spline')
     superbias = pexConfig.Field("Version of superbias frame to use", str,
-                                default=None)
+                                default='spline')
     mask = pexConfig.Field("Use the mask files", bool, default=False)
 
     # Options for where to put output data and what to include

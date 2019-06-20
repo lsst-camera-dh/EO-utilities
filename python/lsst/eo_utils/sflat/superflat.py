@@ -267,9 +267,6 @@ class SuperflatTask(SflatAnalysisTask):
 
 class SuperflatRaftConfig(SflatRaftTableAnalysisConfig):
     """Configuration for FlatSuperflatRaftTask"""
-    outdir = EOUtilOptions.clone_param('outdir')
-    run = EOUtilOptions.clone_param('run')
-    raft = EOUtilOptions.clone_param('raft')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='sflat')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
@@ -325,7 +322,11 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
         if butler is not None:
             self.log.warn("Ignoring butler")
 
-        for slot in ALL_SLOTS:
+        slots = self.config.slots
+        if slots is None:
+            slots = ALL_SLOTS
+
+        for slot in slots:
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
             basename = data[slot]
             self._sflat_file_dict_l[slot] = basename.replace('.fits.fits', '_l.fits')

@@ -22,6 +22,7 @@ class BiasRaftTableAnalysisConfig(AnalysisConfig):
     outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
+    slots = EOUtilOptions.clone_param('slots')
     insuffix = EOUtilOptions.clone_param('insuffix')
     outsuffix = EOUtilOptions.clone_param('outsuffix')
 
@@ -92,6 +93,7 @@ class SuperbiasRaftTableAnalysisConfig(AnalysisConfig):
     outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
+    slots = EOUtilOptions.clone_param('slots')
     insuffix = EOUtilOptions.clone_param('insuffix')
     outsuffix = EOUtilOptions.clone_param('outsuffix')
 

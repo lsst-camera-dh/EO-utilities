@@ -227,6 +227,7 @@ class SuperdarkRaftConfig(DarkAnalysisConfig):
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='sdark')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
+    slots = EOUtilOptions.clone_param('slots')
     mask = EOUtilOptions.clone_param('mask')
     stats_hist = EOUtilOptions.clone_param('stats_hist')
     mosaic = EOUtilOptions.clone_param('mosaic')
@@ -278,7 +279,11 @@ class SuperdarkRaftTask(AnalysisTask):
         if butler is not None:
             self.log.warn("Ignoring butler")
 
-        for slot in ALL_SLOTS:
+        slots = self.config.slots
+        if slots is None:
+            slots = ALL_SLOTS
+
+        for slot in slots:
             mask_files = self.get_mask_files(slot=slot)
             self._mask_file_dict[slot] = mask_files
             self._sdark_file_dict[slot] = data[slot].replace('.fits.fits', '.fits')

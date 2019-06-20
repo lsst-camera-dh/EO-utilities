@@ -40,6 +40,10 @@ class SflatRaftTableAnalysisConfig(AnalysisConfig):
     """Configuration for superflat analyses"""
     insuffix = EOUtilOptions.clone_param('insuffix')
     outsuffix = EOUtilOptions.clone_param('outsuffix')
+    outdir = EOUtilOptions.clone_param('outdir')
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
+    slots = EOUtilOptions.clone_param('slots')
 
 
 class SflatRaftTableAnalysisTask(AnalysisTask):

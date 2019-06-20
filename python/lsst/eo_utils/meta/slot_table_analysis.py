@@ -6,7 +6,7 @@ from lsst.eo_utils.base.pipeline import MetaConfig, MetaTask
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.bias import SuperbiasFFTTask
+from lsst.eo_utils.bias import SuperbiasFFTTask, SuperbiasStructTask
 
 from lsst.eo_utils.sflat import CTETask, SflatRatioTask
 
@@ -19,12 +19,11 @@ class SlotTableAnalysisConfig(MetaConfig):
     runs = EOUtilOptions.clone_param('runs')
     rafts = EOUtilOptions.clone_param('rafts')
     slots = EOUtilOptions.clone_param('slots')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
     plot = EOUtilOptions.clone_param('plot')
-    mosaic = EOUtilOptions.clone_param('mosaic')
+
 
 SlotTableAnalysisConfig.add_task('_superbias_fft', SuperbiasFFTTask)
+SlotTableAnalysisConfig.add_task('_superbias_struct', SuperbiasStructTask)
 SlotTableAnalysisConfig.add_task('_cte', CTETask)
 SlotTableAnalysisConfig.add_task('_sflat_ratio', SflatRatioTask)
 SlotTableAnalysisConfig.add_task('_qe', QETask)

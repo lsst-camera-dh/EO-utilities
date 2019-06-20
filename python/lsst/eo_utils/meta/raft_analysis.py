@@ -20,14 +20,13 @@ class RaftAnalysisConfig(MetaConfig):
     dataset = EOUtilOptions.clone_param('dataset')
     runs = EOUtilOptions.clone_param('runs')
     rafts = EOUtilOptions.clone_param('rafts')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
     plot = EOUtilOptions.clone_param('plot')
+
 
 RaftAnalysisConfig.add_task('_oscan_amp_stack_stats', OscanAmpStackStatsTask)
 RaftAnalysisConfig.add_task('_bias_fft_stats', BiasFFTStatsTask)
 RaftAnalysisConfig.add_task('_dark_current', DarkCurrentTask)
-#RaftAnalysisConfig.add_task('_fe55_gain_stats', Fe55GainStatsTask)
+RaftAnalysisConfig.add_task('_fe55_gain_stats', Fe55GainStatsTask)
 RaftAnalysisConfig.add_task('_flat_linearity', FlatLinearityTask)
 RaftAnalysisConfig.add_task('_ptc', PTCTask)
 

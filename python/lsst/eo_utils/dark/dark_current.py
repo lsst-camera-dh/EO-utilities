@@ -24,9 +24,6 @@ from .meta_analysis import DarkRaftTableAnalysisConfig,\
 
 class DarkCurrentConfig(DarkRaftTableAnalysisConfig):
     """Configuration for DarkCurrentTask"""
-    outdir = EOUtilOptions.clone_param('outdir')
-    run = EOUtilOptions.clone_param('run')
-    raft = EOUtilOptions.clone_param('raft')
     insuffix = EOUtilOptions.clone_param('insuffix', default='')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='dark_current')
     bias = EOUtilOptions.clone_param('bias')
@@ -61,7 +58,9 @@ class DarkCurrentTask(DarkRaftTableAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        slots = ALL_SLOTS
+        slots = self.config.slots
+        if slots is None:
+            slots = ALL_SLOTS
 
         if butler is not None:
             self.log.warn("Ignoring butler")

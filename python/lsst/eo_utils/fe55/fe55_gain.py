@@ -21,8 +21,8 @@ class Fe55GainStatsConfig(Fe55RaftTableAnalysisConfig):
     """Configuration for Fe55GainStatsTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='fe55_clusters')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='fe55_gain_stats')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
+    bias = EOUtilOptions.clone_param('bias', default='orig')
+    superbias = EOUtilOptions.clone_param('superbias', default='orig')
     use_all = EOUtilOptions.clone_param('use_all')
 
 
@@ -153,8 +153,8 @@ class Fe55GainSummaryConfig(Fe55SummaryAnalysisConfig):
     """Configuration for Fe55GainSummaryTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='fe55_gain_stats')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='fe55_gain_sum')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
+    bias = EOUtilOptions.clone_param('bias', default='orig')
+    superbias = EOUtilOptions.clone_param('superbias', default='orig')
     use_all = EOUtilOptions.clone_param('use_all')
 
 
