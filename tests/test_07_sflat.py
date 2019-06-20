@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 from lsst.eo_utils import sflat
 from lsst.eo_utils.sflat.file_utils import get_sflat_files_run
 
-from .utils import RUN_TASKS, RUN_OPTIONS, RUN_OPTIONS_NOPLOT, SUMMARY_OPTIONS
+from .utils import RUN_TASKS, RUN_OPTIONS, RUN_OPTIONS_NOPLOT
 
 
 def test_sflat_file_utils():

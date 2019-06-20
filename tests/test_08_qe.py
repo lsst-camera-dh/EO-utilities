@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 from lsst.eo_utils import qe
 from lsst.eo_utils.qe.file_utils import get_qe_files_run
 
-from .utils import RUN_TASKS, RUN_OPTIONS, SUMMARY_OPTIONS
+from .utils import RUN_TASKS, RUN_OPTIONS
 
 
 def test_qe_file_utils():

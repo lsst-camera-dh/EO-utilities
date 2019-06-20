@@ -18,27 +18,27 @@ def test_meta_calib_stack():
     task = meta.CalibStackTask()
     assert task
 
-def test_meta_DefectAnalysisTask():
+def test_meta_defect_analysis():
     """Test the DefectAnalysisTask"""
     task = meta.DefectAnalysisTask()
     assert task
 
-def test_meta_SlotAnalysisTask():
+def test_meta_slot_analysis():
     """Test the SlotAnalysisTask"""
     task = meta.SlotAnalysisTask()
     assert task
 
-def test_meta_SlotTableAnalysisTask():
+def test_meta_slot_table_analysis():
     """Test the SlotTableAnalysisTask"""
     task = meta.SlotTableAnalysisTask()
     assert task
 
-def test_meta_RaftAnalysisTask():
+def test_meta_raft_analysis():
     """Test the RaftAnalysisTask"""
     task = meta.RaftAnalysisTask()
     assert task
 
-def test_meta_SummaryAnalysisTask():
+def test_meta_summary_analysis():
     """Test the SummaryAnalysisTask"""
     task = meta.SummaryAnalysisTask()
     assert task

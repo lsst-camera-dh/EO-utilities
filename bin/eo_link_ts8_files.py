@@ -2,8 +2,6 @@
 
 """This module is just a command line interface to dispatch jobs to the SLAC batch farm"""
 
-import os
-import sys
 import argparse
 
 from lsst.eo_utils.base.link_utils import link_ts8_files

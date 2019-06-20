@@ -2,8 +2,6 @@
 
 """This module is just a command line interface to plot bias images"""
 
-import glob
-
 import lsst.pex.config as pexConfig
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
@@ -14,9 +12,9 @@ from lsst.eo_utils.base.config_utils import EOUtilOptions,\
 from lsst.eo_utils.base.plot_utils import FigureDict
 
 
-def get_files_by_slot(basepath):    
+def get_files_by_slot(basepath):
     """Make a mosaic of all the CCDs in a raft
-    
+
     Parameters
     ----------
     basepath : `str` or `None`
@@ -52,16 +50,13 @@ def main():
         output_file = args.infile.replace('SLOT', 'RFT').replace('.fits', '')
     else:
         output_file = args.outfile
-        
+
     ccd_dict = get_files_by_slot(args.infile)
     bias_dict = get_files_by_slot(args.superbias)
 
     figs = FigureDict()
 
-    if args.bias is not None:
-        bias_subtract = True
-    else:
-        bias_subtract = False
+    bias_subtract = bool(args.bias is not None)
 
     figs.plot_raft_mosaic('mosaic', ccd_dict, bias_subtract=bias_subtract,
                           bias_frames=bias_dict)

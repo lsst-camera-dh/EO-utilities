@@ -52,7 +52,7 @@ def main():
                          vmin=args.vmin, vmax=args.vmax,
                          bias=args.bias, superbias_frame=superbias_frame,
                          subtract_mean=args.subtract_mean)
-        
+
     if args.stats_hist:
         figs.histogram_array("hist", None, ccd,
                              bias=args.bias, superbias_frame=superbias_frame,

@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 from lsst.eo_utils import bias
 from lsst.eo_utils.bias.file_utils import get_bias_files_run
 
-from .utils import RUN_TASKS, RUN_OPTIONS, SUMMARY_OPTIONS
+from .utils import RUN_TASKS, RUN_OPTIONS, RUN_OPTIONS_NOPLOT, SUMMARY_OPTIONS
 
 def test_bias_file_utils():
     """Test the bias.file_utils module"""
@@ -41,7 +41,7 @@ def test_superbias_raft():
     """Test the SuperbiasRaftTask"""
     task = bias.SuperbiasRaftTask()
     if RUN_TASKS:
-        task.run(slots=['S00'], **RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS_NOPLOT)
 
 def test_bias_fft():
     """Test the BiasFFTTask"""
@@ -53,7 +53,7 @@ def test_bias_fft_stats():
     """Test the BiasFFTStatsTask"""
     task = bias.BiasFFTStatsTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(slots=['S00'], **RUN_OPTIONS_NOPLOT)
 
 def test_bias_fft_sum():
     """Test the BiasFFTSummaryTask"""
