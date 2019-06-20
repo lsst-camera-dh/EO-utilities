@@ -448,7 +448,7 @@ class AnalysisTask(BaseAnalysisTask):
             The superbias frame
         """
         self.safe_update(**kwargs)
-        if self.config.superbias is None:
+        if self.config.superbias in [None, 'none', 'None']:
             return None
         superbias_file = self.get_superbias_file('.fits')
         ccd = get_ccd_from_id(None, superbias_file, mask_files)
