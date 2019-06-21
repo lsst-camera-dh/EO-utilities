@@ -14,4 +14,6 @@ from .meta_analysis import QeRaftTableAnalysisConfig,\
 
 from .qe_median import QEMedianConfig, QEMedianTask
 
+from .dust_color import DustColorConfig, DustColorTask
+
 from .qe import QEConfig, QETask
