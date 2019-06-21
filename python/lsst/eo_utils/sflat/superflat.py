@@ -22,7 +22,8 @@ from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
     flip_data_in_place, sort_sflats, stack_images, extract_raft_array_dict,\
-    outlier_raft_dict
+    outlier_raft_dict, fill_footprint_dict, extract_raft_imaging_data,\
+    extract_raft_unbiased_images
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
@@ -296,9 +297,47 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
         self._sflat_file_dict_l = {}
         self._sflat_file_dict_h = {}
         self._sflat_file_dict_r = {}
+        self._sflat_images_h = None
         self._sflat_array_l = None
         self._sflat_array_h = None
         self._sflat_array_r = None
+
+
+    @staticmethod
+    def build_defect_dict(flat_array, **kwargs):
+        """Extract information about the defects into a dictionary
+
+        Parameters
+        ----------
+        flat_array : `dict`
+            The images, keyed by slot, amp
+        kwargs
+            Used to override default configuration
+
+        Returns
+        ------- 
+        out_dict : `dict`
+            The output dictionary
+        """
+        fp_dict = dict(slot=[],
+                       amp=[],
+                       x_corner=[],
+                       y_corner=[],
+                       x_peak=[],
+                       y_peak=[],
+                       x_size=[],
+                       y_size=[],
+                       ratio_full=[])
+        for i in range(4):
+            fp_dict['ratio_%i' % i] = []
+            fp_dict['npix_%i' % i] = []
+            fp_dict['npix_0p2_%i' % i]  = []
+       
+        for islot, (_, slot_data) in enumerate(sorted(flat_array.items())):
+            for iamp, (_, image) in enumerate(sorted(slot_data.items())):
+                image *= -1
+                fill_footprint_dict(image, fp_dict, iamp, islot, **kwargs)
+        return fp_dict
 
     def extract(self, butler, data, **kwargs):
         """Extract the outliers in the superflat frames for the raft
@@ -333,17 +372,24 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
             self._sflat_file_dict_h[slot] = basename.replace('.fits.fits', '_h.fits')
             self._sflat_file_dict_r[slot] = basename.replace('.fits.fits', '_ratio.fits')
 
+        self._sflat_images_h, ccd_dict = extract_raft_unbiased_images(None,
+                                                                      self._sflat_file_dict_h,
+                                                                      mask_dict=self._mask_file_dict)        
         self._sflat_array_l = extract_raft_array_dict(None, self._sflat_file_dict_l,
                                                       mask_dict=self._mask_file_dict)
-        self._sflat_array_h = extract_raft_array_dict(None, self._sflat_file_dict_h,
-                                                      mask_dict=self._mask_file_dict)
+        self._sflat_array_h = extract_raft_imaging_data(None,
+                                                        self._sflat_images_h,
+                                                        ccd_dict)
         self._sflat_array_r = extract_raft_array_dict(None, self._sflat_file_dict_r,
                                                       mask_dict=self._mask_file_dict)
         out_data_l = outlier_raft_dict(self._sflat_array_l, 1000., 300.)
         out_data_h = outlier_raft_dict(self._sflat_array_h, 50000., 15000.)
         out_data_r = outlier_raft_dict(self._sflat_array_r, 0.019, 0.002)
 
+        fp_dict = SuperflatRaftTask.build_defect_dict(self._sflat_images_h, frac_thresh=0.9)
+
         dtables = TableDict()
+        dtables.make_datatable('defects', fp_dict)
         dtables.make_datatable('outliers_l', out_data_l)
         dtables.make_datatable('outliers_h', out_data_h)
         dtables.make_datatable('outliers_r', out_data_r)

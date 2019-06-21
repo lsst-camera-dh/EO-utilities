@@ -10,7 +10,14 @@ from scipy import fftpack
 from astropy.io import fits
 
 import lsst.afw.math as afwMath
+
 import lsst.afw.image as afwImage
+
+import lsst.afw.detection as afwDetect
+
+import lsst.afw.geom as afwGeom
+
+from lsst.pex.exceptions.wrappers import LengthError
 
 import lsst.eotest.image_utils as imutil
 from lsst.eotest.sensor import MaskedCCD
@@ -583,6 +590,53 @@ def extract_ccd_array_dict(butler, data_id, **kwargs):
     return o_dict
 
 
+def extract_raft_unbiased_images(butler, data_id_dict, **kwargs):
+    """Get the unbiased raft-level images
+
+    Parameters
+    ----------
+    butler : `Butler` or `None
+        Data Butler
+    data_id : `dict`
+        Dictionary, keyed by slot, amp of images
+
+    Keywords
+    --------
+    mask_files : `list`
+        List of mask files
+    bias : `str` or `None`
+        Method for bias subtraction
+    superbias_frame : `MaskedCCD` or `None`
+        Bias frame to subtract off
+
+    Returns
+    -------
+    o_dict : `dict`
+        Arrays keyed by slot, amp of images
+    ccd_dict : `dict`
+        CCD object, keyed by slot
+    """
+    kwcopy = kwargs.copy()
+    o_dict = {}
+    ccd_dict = {}
+    mask_dict = kwcopy.pop('mask_dict', None)
+    superbias_dict = kwcopy.pop('superbias_dict', None)
+
+    for slot, data_id in data_id_dict.items():
+        if mask_dict is None:
+            mask_files = []
+        else:
+            mask_files = mask_dict[slot]
+        if superbias_dict is None:
+            superbias_frame = None
+        else:
+            superbias_frame = superbias_dict[slot]
+        ccd = get_ccd_from_id(None, data_id, mask_files)
+        ccd_dict[slot] = ccd
+        o_dict[slot] = unbiased_ccd_image_dict(butler, ccd, **kwargs)
+    return o_dict, ccd_dict
+
+
 def extract_raft_array_dict(butler, data_id_dict, **kwargs):
     """Get raft level data
 
@@ -870,13 +924,43 @@ def outlier_stats(data_array, mean_val, max_offset):
     return o_dict
 
 
+def extract_raft_imaging_data(butler, image_dict, ccd_dict, **kwargs):
+    """Get data from the imaging regions
+
+    Parameters
+    ----------
+    butler : `Butler` or `None
+        Data Butler
+    image_dict : `dict`
+        Dictionary, keyed by slot, amp of images
+    ccd_dict : `dict`
+        Dictionary, keyed by slot, amp of CCD objects
+
+    Returns
+    -------
+    o_dict : `dict`
+        Dictionary, keyed by slot, amp of array data
+    """
+    kwcopy = kwargs.copy()
+    o_dict = {}
+    for slot, slot_data in image_dict.items():
+        ccd = ccd_dict[slot]
+        o_dict[slot] = {}
+        for amp, image in slot_data.items():
+            regions = get_geom_regions(butler, ccd, amp)
+            frames = get_image_frames_2d(image, regions)
+            o_dict[slot][amp] = frames[kwcopy.pop('region', 'imaging')]
+
+    return o_dict
+
+
 def outlier_raft_dict(raft_data, mean_val, max_offset):
     """Get some stats on the number of outliers for a raft
 
     Parameters
     ----------
-    data_array : `np.array`
-        2D data array
+    raft_data : `dict`
+        dictionary, keyed by slot, amp index of array data
     mean_val : `float`
         Expected value
     max_offset : `float`
@@ -903,3 +987,107 @@ def outlier_raft_dict(raft_data, mean_val, max_offset):
             for key, val in outlier_data.items():
                 out_data[key].append(val)
     return out_data
+
+
+def fill_footprint_dict(image, fp_dict, amp, slot, **kwargs):
+    """Fill a dictionary with data about the footprints from an image
+
+    Parameters
+    ----------
+    image : `imageF`
+        The image we are analyzing
+
+    fp_dict : `dict`
+        The dictionary we are filling
+
+    amp : `int`
+        Amplifier index
+
+    slot : `int`
+        Slot index
+
+    Keywords
+    --------
+    frac_thresh : float
+        Threshold as a fraction of the median
+    """
+    kwcopy = kwargs.copy()
+    frac_thresh = kwargs.get('frac_thresh', 0.9)
+
+    median = np.median(image.array)
+    stdev = np.std(image.array)
+
+    thresh_float = frac_thresh*median
+    thresh_0p2_float = (1. - (1. - frac_thresh)*0.2)*median
+
+    threshold = afwDetect.Threshold(thresh_float)
+    fpset = afwDetect.FootprintSet(image, threshold)
+  
+    for footprint in fpset.getFootprints():
+        bbox = footprint.getBBox()
+        
+        if bbox.getWidth() > 500:
+            continue
+
+        fp_dict['slot'].append(slot)
+        fp_dict['amp'].append(amp)
+        
+        fp_dict['x_corner'].append(bbox.getMinX())
+        fp_dict['y_corner'].append(bbox.getMinY())
+
+        fp_dict['x_size'].append(bbox.getWidth())
+        fp_dict['y_size'].append(bbox.getHeight())
+        
+        cutout = image[bbox].array
+        peak_idx = cutout.argmax()
+
+        peak_x = bbox.getMinX() + int(peak_idx % cutout.shape[1])
+        peak_y = bbox.getMinY() + int(peak_idx / cutout.shape[1])
+        fp_dict['x_peak'].append(peak_x)
+        fp_dict['y_peak'].append(peak_y)
+        
+        peak = afwGeom.Point2I(peak_x, peak_y)
+        extent = afwGeom.Extent2I(1, 1)
+        bbox_expand = afwGeom.Box2I(peak, extent)
+    
+        fp_dict['ratio_full'].append(np.mean(cutout)/median)
+
+        npix = np.array([1, 9, 25, 49])
+        npix_cumul = np.array([1, 8, 16, 24])
+        sums = np.zeros((4))
+        over_thresh = np.zeros((4), int)
+        over_0p2_thresh = np.zeros((4), int)
+
+        sums_cumul = np.zeros((4))
+        over_thresh_cumul  = np.zeros((4), int)
+        over_0p2_thresh_cumul  = np.zeros((4), int)        
+
+        for i in range(4):
+
+            try:
+                cuttout_array = image[bbox_expand].array
+            except LengthError:
+                break
+                
+            sums[i] = cuttout_array.sum()
+            over_thresh[i] = (cuttout_array > thresh_float).sum()
+            over_0p2_thresh[i] = (cuttout_array > thresh_0p2_float).sum()
+            
+            if i > 0:
+                sums_cumul [i] = sums[i] - sums[i-1]
+                over_thresh_cumul[i] = over_thresh[i] - over_thresh[i-1]
+                over_0p2_thresh_cumul[i] = over_0p2_thresh[i] - over_0p2_thresh[i-1]
+            else:
+                sums_cumul [i] = sums[i]
+                over_thresh_cumul[i] = over_thresh[i]
+                over_0p2_thresh_cumul[i] = over_0p2_thresh[i]
+
+            bbox_expand.grow(1)
+
+        means_cumul = sums_cumul/(npix_cumul*median)
+
+        for i in range(4):
+            fp_dict['ratio_%i' % i].append(means_cumul[i])
+            fp_dict['npix_%i' % i].append(over_thresh_cumul[i])
+            fp_dict['npix_0p2_%i' % i].append(over_0p2_thresh_cumul[i])
+
