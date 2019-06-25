@@ -22,14 +22,14 @@ class SlotAnalysisConfig(MetaConfig):
     slots = EOUtilOptions.clone_param('slots')
     plot = EOUtilOptions.clone_param('plot')
 
-SlotAnalysisConfig.add_task('_bias_fft', BiasFFTTask)
-SlotAnalysisConfig.add_task('_bias_struct', BiasStructTask)
-SlotAnalysisConfig.add_task('_correl_wrt_oscan', CorrelWRTOscanTask)
-SlotAnalysisConfig.add_task('_oscan_amp_stack', OscanAmpStackTask)
-SlotAnalysisConfig.add_task('_flat_overscan', FlatOverscanTask)
-SlotAnalysisConfig.add_task('_bf', BFTask)
-SlotAnalysisConfig.add_task('_flat_pair', FlatPairTask)
-SlotAnalysisConfig.add_task('_qe_median', QEMedianTask)
+SlotAnalysisConfig.add_task('_BiasFFT', BiasFFTTask)
+SlotAnalysisConfig.add_task('_BiasStruct', BiasStructTask)
+SlotAnalysisConfig.add_task('_CorrelWRTOscan', CorrelWRTOscanTask)
+SlotAnalysisConfig.add_task('_OscanAmpStackT', OscanAmpStackTask)
+SlotAnalysisConfig.add_task('_FlatOverscan', FlatOverscanTask)
+SlotAnalysisConfig.add_task('_BF', BFTask)
+SlotAnalysisConfig.add_task('_FlatPair', FlatPairTask)
+SlotAnalysisConfig.add_task('_QEMedian', QEMedianTask)
 
 
 class SlotAnalysisTask(MetaTask):

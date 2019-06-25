@@ -26,10 +26,10 @@ class DefectAnalysisConfig(MetaConfig):
     plot = EOUtilOptions.clone_param('plot')
     mosaic = EOUtilOptions.clone_param('mosaic')
 
-DefectAnalysisConfig.add_task('_superbias_raft', SuperbiasRaftTask)
-DefectAnalysisConfig.add_task('_superdark_raft', SuperdarkRaftTask)
-DefectAnalysisConfig.add_task('_superflat_raft', SuperflatRaftTask)
-DefectAnalysisConfig.add_task('_trap', TrapTask)
+DefectAnalysisConfig.add_task('_SuperbiasRaft', SuperbiasRaftTask)
+DefectAnalysisConfig.add_task('_SuperdarkRaft', SuperdarkRaftTask)
+DefectAnalysisConfig.add_task('_SuperflatRaft', SuperflatRaftTask)
+DefectAnalysisConfig.add_task('_Trap', TrapTask)
 
 class DefectAnalysisTask(MetaTask):
     """Analyze Superbias, Superdark and Superflat frames"""

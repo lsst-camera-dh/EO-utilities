@@ -22,11 +22,11 @@ class SlotTableAnalysisConfig(MetaConfig):
     plot = EOUtilOptions.clone_param('plot')
 
 
-SlotTableAnalysisConfig.add_task('_superbias_fft', SuperbiasFFTTask)
-SlotTableAnalysisConfig.add_task('_superbias_struct', SuperbiasStructTask)
-SlotTableAnalysisConfig.add_task('_cte', CTETask)
-SlotTableAnalysisConfig.add_task('_sflat_ratio', SflatRatioTask)
-SlotTableAnalysisConfig.add_task('_qe', QETask)
+SlotTableAnalysisConfig.add_task('_SuperbiasFFT', SuperbiasFFTTask)
+SlotTableAnalysisConfig.add_task('_ SuperbiasStruct', SuperbiasStructTask)
+SlotTableAnalysisConfig.add_task('_CTE', CTETask)
+SlotTableAnalysisConfig.add_task('_SflatRatio', SflatRatioTask)
+SlotTableAnalysisConfig.add_task('_QE', QETask)
 
 
 class SlotTableAnalysisTask(MetaTask):

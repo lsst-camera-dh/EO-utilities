@@ -23,12 +23,12 @@ class RaftAnalysisConfig(MetaConfig):
     plot = EOUtilOptions.clone_param('plot')
 
 
-RaftAnalysisConfig.add_task('_oscan_amp_stack_stats', OscanAmpStackStatsTask)
-RaftAnalysisConfig.add_task('_bias_fft_stats', BiasFFTStatsTask)
-RaftAnalysisConfig.add_task('_dark_current', DarkCurrentTask)
-RaftAnalysisConfig.add_task('_fe55_gain_stats', Fe55GainStatsTask)
-RaftAnalysisConfig.add_task('_flat_linearity', FlatLinearityTask)
-RaftAnalysisConfig.add_task('_ptc', PTCTask)
+RaftAnalysisConfig.add_task('_OscanAmpStackStats', OscanAmpStackStatsTask)
+RaftAnalysisConfig.add_task('_BiasFFTStats', BiasFFTStatsTask)
+RaftAnalysisConfig.add_task('_DarkCurrentT', DarkCurrentTask)
+RaftAnalysisConfig.add_task('_Fe55GainStats', Fe55GainStatsTask)
+RaftAnalysisConfig.add_task('_FlatLinearity', FlatLinearityTask)
+RaftAnalysisConfig.add_task('_PTC', PTCTask)
 
 
 class RaftAnalysisTask(MetaTask):
