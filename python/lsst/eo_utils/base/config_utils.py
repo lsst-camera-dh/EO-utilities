@@ -185,7 +185,6 @@ def add_pex_arguments(parser, pex_class, exclude=None, prefix=None):
             continue
         if prefix is not None:
             parser_key = "%s.%s" % (prefix, key)
-            print(parser, parser_key, val.default)
         else:
             parser_key = key
         if isinstance(val, pexConfig.listField.ListField):
