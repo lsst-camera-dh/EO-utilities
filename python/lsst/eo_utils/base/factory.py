@@ -75,6 +75,9 @@ class EOTaskFactory:
         -------
         parser : `ArgumentParser`
             The parser, filled with the options defined for the task in this dictionary
+
+        subparser_dict : `dict`
+            All the sub-parsers, keyed by name
         """
         if task_names is None:
             task_names = self._tasks.keys()
@@ -82,12 +85,14 @@ class EOTaskFactory:
         parser = setup_parser(**kwargs)
         supparsers = parser.add_subparsers(dest='task', help='sub-command help')
 
+        subparser_dict = {}
         for task_name in task_names:
             task = self._tasks[task_name]
             subparser = supparsers.add_parser(task_name, help=task.__doc__)
             task.add_parser_arguments(subparser)
+            subparser_dict[task_name] = subparser
 
-        return parser
+        return parser, subparser_dict
 
     def parse_and_run(self, **kwargs):
         """Run a task using the command line arguments
@@ -97,10 +102,9 @@ class EOTaskFactory:
         kwargs
             Used to override command line arguments
         """
-        parser = self.build_parser(usage="eo_task.py")
+        parser, subparser_dict = self.build_parser(usage="eo_task.py")
         args = parser.parse_args()
-
-        arg_dict = parse_args_to_dict(args)
+        arg_dict = parse_args_to_dict(args, parser, subparser_dict)
         arg_dict.update(**kwargs)
 
         self.run_task(args.task, **arg_dict)
