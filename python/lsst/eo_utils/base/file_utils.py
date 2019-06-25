@@ -78,6 +78,8 @@ def get_hardware_type_and_id(run):
     ex_run = exploreRun(db=db_)
     hsn = ex_run.hardware_sn(run=run)
     tokens = hsn.split('_')
+    if len(tokens) < 2:
+        raise ValueError("Did not find hardware type for run %s, does this run exist?" % run)
     htype = tokens[0]
     hid = tokens[1].replace('-Dev', '')
     return (htype, hid)
