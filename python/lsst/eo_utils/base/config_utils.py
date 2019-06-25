@@ -185,6 +185,7 @@ def add_pex_arguments(parser, pex_class, exclude=None, prefix=None):
             continue
         if prefix is not None:
             parser_key = "%s.%s" % (prefix, key)
+            print(parser, parser_key, val.default)
         else:
             parser_key = key
         if isinstance(val, pexConfig.listField.ListField):
@@ -366,7 +367,7 @@ def copy_pex_fields(field_names, target_class, library_class):
             raise TypeError("Field %s in class %s\n is not a pexConfig.Field" %
                             (fname, type(library_class)))
 
-def update_dict_from_string(o_dict, key, val):
+def update_dict_from_string(o_dict, key, val, subparser_dict=None):
     """Update a dictionary with sub-dictionaries
 
     Parameters
@@ -379,25 +380,50 @@ def update_dict_from_string(o_dict, key, val):
 
     val : `str`
         The value
+
+    subparser_dict : `dict` or `None`
+        The subparsers used to parser the command line
+
     """
     idx = key.find('.')
     use_key = key[0:idx]
     remain = key[idx+1:]
+    if subparser_dict is not None:        
+        try:
+            subparser = subparser_dict[use_key[1:]]
+        except KeyError:
+            subparser = None
+    else:
+        subparser = None
+
     if use_key not in o_dict:
         o_dict[use_key] = {}
+    
+    def_val = None
+    if subparser is not None:
+        def_val = subparser.get_default(remain)
+    if def_val == val:
+        return
+    
     if remain.find('.') < 0:
         o_dict[use_key][remain] = val
     else:
         update_dict_from_string(o_dict[use_key], remain, val)
 
 
-def parse_args_to_dict(args):
+def parse_args_to_dict(args, parser, subparser_dict):
     """Parse the output of argparse
 
     Parameters
     ----------
     args : `Namespace`
         The output of argparse
+
+    parser : `ArgumentParser`
+        The parser
+
+    subparser_dict : `dict` or `None`
+        The sub-parsers
 
     Returns
     -------
@@ -407,9 +433,11 @@ def parse_args_to_dict(args):
     o_dict = {}
     for key, val in args.__dict__.items():
         if key.find('.') < 0:
+            if parser.get_default(key) == val:
+                continue
             o_dict[key] = val
         else:
-            update_dict_from_string(o_dict, key, val)
+            update_dict_from_string(o_dict, key, val, subparser_dict)
     return o_dict
 
 
