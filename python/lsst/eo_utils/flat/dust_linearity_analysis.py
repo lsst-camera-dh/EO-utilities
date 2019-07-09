@@ -16,9 +16,9 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
-from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_amp_list,\
+from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
     get_exposure_time, get_mondiode_val,\
-    get_geom_regions, get_raw_image, unbias_amp
+    unbiased_ccd_image_dict
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
@@ -89,8 +89,10 @@ class DustLinearityAnalysisTask(FlatAnalysisTask):
         print(sflat_table_file)
 
         sflat_tables = TableDict(sflat_table_file)
-        bbox_dict = construct_bbox_dict(sflat_tables['defects']) # dictionary of dictionaries of lists of bounding
-                                                                 # boxes, keyed by slot, amp
+        # dictionary of dictionaries of lists of bounding
+        # boxes, keyed by slot, amp
+        bbox_dict = construct_bbox_dict(sflat_tables['defects'])
+
         slot_bbox_dict = bbox_dict[slot]
         slot_idx_dict = dict(S00=0, S01=1, S02=2, S10=3, S11=4, S12=5, S20=6, S21=7, S22=8)
 
@@ -124,43 +126,24 @@ class DustLinearityAnalysisTask(FlatAnalysisTask):
 
             ccd = get_ccd_from_id(butler, flat1_file, mask_files)
 
-            amps = get_amp_list(butler, ccd)
-
             # To be appended while looping over bounding boxes
             exptime = get_exposure_time(butler, ccd)
             mondiode_val = get_mondiode_val(butler, ccd)
             islot = slot_idx_dict[slot]
 
-            for iamp, amp in enumerate(amps):
+            unbiased_images = unbiased_ccd_image_dict(butler, ccd,
+                                                      bias=self.config.bias,
+                                                      superbias_frame=superbias_frame)
+
+            for iamp, (amp, image) in enumerate(unbiased_images.items()):
 
                 bbox_list = slot_bbox_dict[iamp]
-                regions = get_geom_regions(butler, ccd, amp)
-                serial_oscan = regions['serial_overscan']
-                imaging = regions['imaging']
-
-
-
-                img = get_raw_image(butler, ccd, amp)
-
-                if superbias_frame is not None:
-                    if butler is not None:
-                        superbias_im = get_raw_image(None, superbias_frame, amp+1)
-                    else:
-                        superbias_im = get_raw_image(None, superbias_frame, amp)
-                else:
-                    superbias_im = None
-
-                image = unbias_amp(img, serial_oscan, bias_type=self.config.bias,
-                                   superbias_im=superbias_im, region=imaging)
-
                 amp_median = np.median(image.array)
                 #fill fp_dict
                 frac_thresh = kwargs.get('frac_thresh', 0.9)
 
-
                 thresh_float = frac_thresh*amp_median
                 thresh_0p2_float = (1. - (1. - frac_thresh)*0.2)*amp_median
-
 
                 max_bbox = min(len(bbox_list), 10)
                 #print(i, amp, bbox_list[0:max_bbox])
@@ -169,7 +152,7 @@ class DustLinearityAnalysisTask(FlatAnalysisTask):
 
                     try:
                         cutout = image[bbox].array
-                    except:
+                    except Exception:
                         print("cutout failed", slot, amp, bbox)
                         continue
                     #print(ifile, bbox, cutout)
@@ -277,8 +260,9 @@ class DustLinearityAnalysisTask(FlatAnalysisTask):
 
         fp_table = dtables['footprints']
 
-        figs.setup_amp_plots_grid('dust_linearity', title="Median signal at dust spot by amp median",\
-            xlabel="amp flux", ylabel="dust flux")
+        figs.setup_amp_plots_grid('dust_linearity',
+                                  title="Median signal at dust spot by amp median",
+                                  xlabel="amp flux", ylabel="dust flux")
 
 
         for iax, axes in enumerate(figs['dust_linearity']['axs'].ravel()):

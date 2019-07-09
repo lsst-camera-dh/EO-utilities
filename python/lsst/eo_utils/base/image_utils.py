@@ -573,7 +573,7 @@ def extract_ccd_array_dict(butler, data_id, **kwargs):
 
     Returns
     -------
-    o_dict : `dict`
+     o_dict : `dict`
         Arrays keyed by amplifier index
     """
     kwcopy = kwargs.copy()
@@ -631,9 +631,10 @@ def extract_raft_unbiased_images(butler, data_id_dict, **kwargs):
             superbias_frame = None
         else:
             superbias_frame = superbias_dict[slot]
+            kwcopy['superbias_frame'] = superbias_frame
         ccd = get_ccd_from_id(None, data_id, mask_files)
         ccd_dict[slot] = ccd
-        o_dict[slot] = unbiased_ccd_image_dict(butler, ccd, **kwargs)
+        o_dict[slot] = unbiased_ccd_image_dict(butler, ccd, **kwcopy)
     return o_dict, ccd_dict
 
 
@@ -1012,32 +1013,32 @@ def fill_footprint_dict(image, fp_dict, amp, slot, **kwargs):
         Threshold as a fraction of the median
     """
     kwcopy = kwargs.copy()
-    frac_thresh = kwargs.get('frac_thresh', 0.9)
+    frac_thresh = kwcopy.get('frac_thresh', 0.9)
 
     median = np.median(image.array)
-    stdev = np.std(image.array)
+    #stdev = np.std(image.array)
 
     thresh_float = frac_thresh*median
     thresh_0p2_float = (1. - (1. - frac_thresh)*0.2)*median
 
     threshold = afwDetect.Threshold(thresh_float)
     fpset = afwDetect.FootprintSet(image, threshold)
-  
+
     for footprint in fpset.getFootprints():
         bbox = footprint.getBBox()
-        
+
         if bbox.getWidth() > 500:
             continue
 
         fp_dict['slot'].append(slot)
         fp_dict['amp'].append(amp)
-        
+
         fp_dict['x_corner'].append(bbox.getMinX())
         fp_dict['y_corner'].append(bbox.getMinY())
 
         fp_dict['x_size'].append(bbox.getWidth())
         fp_dict['y_size'].append(bbox.getHeight())
-        
+
         cutout = image[bbox].array
         peak_idx = cutout.argmax()
 
@@ -1045,22 +1046,21 @@ def fill_footprint_dict(image, fp_dict, amp, slot, **kwargs):
         peak_y = bbox.getMinY() + int(peak_idx / cutout.shape[1])
         fp_dict['x_peak'].append(peak_x)
         fp_dict['y_peak'].append(peak_y)
-        
+
         peak = afwGeom.Point2I(peak_x, peak_y)
         extent = afwGeom.Extent2I(1, 1)
         bbox_expand = afwGeom.Box2I(peak, extent)
-    
+
         fp_dict['ratio_full'].append(np.mean(cutout)/median)
 
-        npix = np.array([1, 9, 25, 49])
         npix_cumul = np.array([1, 8, 16, 24])
         sums = np.zeros((4))
         over_thresh = np.zeros((4), int)
         over_0p2_thresh = np.zeros((4), int)
 
         sums_cumul = np.zeros((4))
-        over_thresh_cumul  = np.zeros((4), int)
-        over_0p2_thresh_cumul  = np.zeros((4), int)        
+        over_thresh_cumul = np.zeros((4), int)
+        over_0p2_thresh_cumul = np.zeros((4), int)
 
         for i in range(4):
 
@@ -1068,17 +1068,17 @@ def fill_footprint_dict(image, fp_dict, amp, slot, **kwargs):
                 cuttout_array = image[bbox_expand].array
             except LengthError:
                 break
-                
+
             sums[i] = cuttout_array.sum()
             over_thresh[i] = (cuttout_array > thresh_float).sum()
             over_0p2_thresh[i] = (cuttout_array > thresh_0p2_float).sum()
-            
+
             if i > 0:
-                sums_cumul [i] = sums[i] - sums[i-1]
+                sums_cumul[i] = sums[i] - sums[i-1]
                 over_thresh_cumul[i] = over_thresh[i] - over_thresh[i-1]
                 over_0p2_thresh_cumul[i] = over_0p2_thresh[i] - over_0p2_thresh[i-1]
             else:
-                sums_cumul [i] = sums[i]
+                sums_cumul[i] = sums[i]
                 over_thresh_cumul[i] = over_thresh[i]
                 over_0p2_thresh_cumul[i] = over_0p2_thresh[i]
 
@@ -1090,4 +1090,3 @@ def fill_footprint_dict(image, fp_dict, amp, slot, **kwargs):
             fp_dict['ratio_%i' % i].append(means_cumul[i])
             fp_dict['npix_%i' % i].append(over_thresh_cumul[i])
             fp_dict['npix_0p2_%i' % i].append(over_0p2_thresh_cumul[i])
-

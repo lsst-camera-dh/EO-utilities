@@ -105,7 +105,7 @@ class AnalysisHandler(Configurable):
         self.add_parser_arguemnts(parser)
         print(parser)
         args = parser.parse_args()
-        arg_dict = parse_args_to_dict(args, parser)
+        arg_dict = parse_args_to_dict(args, parser, None)
         arg_dict.update(**kwargs)
 
         self.run_with_args(**arg_dict)
@@ -176,9 +176,9 @@ class SimpleAnalysisHandler(AnalysisHandler):
                         batch=self.config.batch,
                         dry_run=self.config.dry_run)
         try:
-            ret_dict[dataset] = self.config.dataset
+            ret_dict['dataset'] = self.config.dataset
         except AttributeError:
-            pass            
+            pass
         return ret_dict
 
     def run_with_args(self, **kwargs):
@@ -334,7 +334,7 @@ class AnalysisIterator(AnalysisHandler):
                         dry_run=self.config.dry_run,
                         run=run)
         try:
-            ret_dict[dataset] = self.config.dataset
+            ret_dict['dataset'] = self.config.dataset
         except AttributeError:
             pass
         return ret_dict

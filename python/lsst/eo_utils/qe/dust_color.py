@@ -2,8 +2,6 @@
 
 import sys
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS
-
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict, construct_bbox_dict
@@ -14,14 +12,11 @@ from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_amp_list,\
     get_exposure_time, get_mondiode_val, get_mono_wl,\
-    get_geom_regions, get_raw_image, unbias_amp
+    get_geom_regions, unbias_amp, get_raw_image
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from lsst.eo_utils.sflat.file_utils import RAFT_SFLAT_TABLE_FORMATTER
-
-from lsst.eo_utils.qe.file_utils import SLOT_QE_TABLE_FORMATTER,\
-    RAFT_QE_TABLE_FORMATTER, RAFT_QE_PLOT_FORMATTER
 
 from lsst.eo_utils.qe.analysis import QeAnalysisConfig, QeAnalysisTask
 
@@ -80,11 +75,10 @@ class DustColorTask(QeAnalysisTask):
         self.log_info_slot_msg(self.config, "%i files" % len(qe_files))
 
         sflat_table_file = self.get_filename_from_format(RAFT_SFLAT_TABLE_FORMATTER, "sflat.fits")
-        print(sflat_table_file)
 
         sflat_tables = TableDict(sflat_table_file)
         bbox_dict = construct_bbox_dict(sflat_tables['defects'])
-        slot_bbox_dict = bbox_dict[slot]        
+        slot_bbox_dict = bbox_dict[slot]
 
         # This is a dictionary of dictionaries to store all the
         # data you extract from the qe_files
@@ -111,14 +105,8 @@ class DustColorTask(QeAnalysisTask):
                 serial_oscan = regions['serial_overscan']
                 imaging = regions['imaging']
 
+                superbias_im = self.get_superbias_amp_image(butler, superbias_frame, amp)
                 img = get_raw_image(butler, ccd, amp)
-                if superbias_frame is not None:
-                    if butler is not None:
-                        superbias_im = get_raw_image(None, superbias_frame, amp+1)
-                    else:
-                        superbias_im = get_raw_image(None, superbias_frame, amp)
-                else:
-                    superbias_im = None
 
                 image = unbias_amp(img, serial_oscan, bias_type=self.config.bias,
                                    superbias_im=superbias_im, region=imaging)
@@ -127,8 +115,8 @@ class DustColorTask(QeAnalysisTask):
                 for bbox in bbox_list[0:max_bbox]:
                     try:
                         cutout = image[bbox]
-                    except:
-                        print ("cutout failed", slot, amp, bbox)
+                    except Exception:
+                        print("cutout failed", slot, amp, bbox)
                     print(ifile, bbox, cutout)
 
 
@@ -143,7 +131,7 @@ class DustColorTask(QeAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Make plots 
+        """Make plots
 
         Parameters
         ----------
@@ -153,7 +141,7 @@ class DustColorTask(QeAnalysisTask):
             The resulting figures
         kwargs
             Used to override default configuration
-        """        
+        """
         self.safe_update(**kwargs)
 
         # Analysis goes here.

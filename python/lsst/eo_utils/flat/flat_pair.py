@@ -15,7 +15,7 @@ from lsst.eo_utils.base.data_utils import TableDict
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_amp_list,\
-    get_exposure_time, get_mondiode_val, get_geom_regions, get_raw_image, unbias_amp
+    get_exposure_time, get_mondiode_val, unbiased_ccd_image_dict
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
@@ -138,26 +138,14 @@ class FlatPairTask(FlatAnalysisTask):
 
             data_dict['FLUX'].append(flux)
 
+            ccd_1_ims = unbiased_ccd_image_dict(butler, flat_1, bias=self.config.bias,
+                                                superbias_frame=superbias_frame)
+            ccd_2_ims = unbiased_ccd_image_dict(butler, flat_2, bias=self.config.bias,
+                                                superbias_frame=superbias_frame)
+
             for i, amp in enumerate(amps):
-                regions = get_geom_regions(butler, flat_1, amp)
-                serial_oscan = regions['serial_overscan']
-                imaging = regions['imaging']
-                #imaging.grow(-20)
-                im_1 = get_raw_image(butler, flat_1, amp)
-                im_2 = get_raw_image(butler, flat_2, amp)
-
-                if superbias_frame is not None:
-                    if butler is not None:
-                        superbias_im = get_raw_image(None, superbias_frame, amp+1)
-                    else:
-                        superbias_im = get_raw_image(None, superbias_frame, amp)
-                else:
-                    superbias_im = None
-
-                image_1 = unbias_amp(im_1, serial_oscan, bias_type=self.config.bias,
-                                     superbias_im=superbias_im, region=imaging)
-                image_2 = unbias_amp(im_2, serial_oscan, bias_type=self.config.bias,
-                                     superbias_im=superbias_im, region=imaging)
+                image_1 = ccd_1_ims[amp]
+                image_2 = ccd_2_ims[amp]
 
                 fstats = self.get_pair_stats(image_1, image_2)
                 signal = fstats[1]

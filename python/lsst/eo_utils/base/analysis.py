@@ -20,7 +20,7 @@ from .plot_utils import FigureDict
 
 from .iter_utils import SimpleAnalysisHandler
 
-from .image_utils import get_ccd_from_id
+from .image_utils import get_ccd_from_id, get_raw_image
 
 
 class BaseConfig(pexConfig.Config):
@@ -224,6 +224,34 @@ class BaseAnalysisTask(BaseTask):
         if self.get_config_param('stat', None) in [DEFAULT_STAT_TYPE, None]:
             format_vals['stat'] = 'superbias'
         return formatter(**format_vals)
+
+
+    @staticmethod
+    def get_superbias_amp_image(butler, superbias_frame, amp):
+        """Get the image for one amp for the superbias
+
+        Parameters
+        ----------
+        butler : `Butler` or `None`
+            Data Butler (or none)
+        superbias_frame : `MaskedCCD` or `None`
+            superbias image for the whole CCD
+        amp : `int`
+            Amplifier index
+
+        Returns
+        -------
+        superbias_im : `ImageF`
+            The image for the requested amplifier
+        """
+        if superbias_frame is not None:
+            if butler is not None:
+                superbias_im = get_raw_image(None, superbias_frame, amp+1)
+            else:
+                superbias_im = get_raw_image(None, superbias_frame, amp)
+        else:
+            superbias_im = None
+        return superbias_im
 
 
     def get_superbias_file(self, suffix, **kwargs):
@@ -484,7 +512,10 @@ class AnalysisTask(BaseAnalysisTask):
         output_data = tablebase + ".fits"
 
         if self.config.skip:
-            dtables = TableDict(output_data)
+            try:
+                dtables = TableDict(output_data)
+            except IOError:
+                dtables = None
         else:
             dtables = self.extract(butler, data)
             if dtables is not None:

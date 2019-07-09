@@ -142,14 +142,8 @@ class OscanCorrelTask(BiasAnalysisTask):
         superbias_frame = kwargs.get('superbias_frame', None)
         overscans = []
         for amp in amps:
-            if superbias_frame is not None:
-                if butler is not None:
-                    superbias_im = get_raw_image(None, superbias_frame, amp+1)
-                else:
-                    superbias_im = get_raw_image(None, superbias_frame, amp)
-            else:
-                superbias_im = None
 
+            superbias_im = self.get_superbias_amp_image(butler, superbias_frame, amp)
             regions = get_geom_regions(butler, ccd, amp)
             serial_oscan = regions['serial_overscan']
 

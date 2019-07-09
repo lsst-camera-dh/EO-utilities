@@ -13,7 +13,7 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_amp_list,\
-    get_geom_regions, get_raw_image, unbias_amp
+    get_geom_regions, unbias_amp, get_raw_image
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
@@ -101,13 +101,7 @@ class BFTask(FlatAnalysisTask):
                 im_1 = get_raw_image(butler, flat_1, amp)
                 im_2 = get_raw_image(butler, flat_2, amp)
 
-                if superbias_frame is not None:
-                    if butler is not None:
-                        superbias_im = get_raw_image(None, superbias_frame, amp+1)
-                    else:
-                        superbias_im = get_raw_image(None, superbias_frame, amp)
-                else:
-                    superbias_im = None
+                superbias_im = self.get_superbias_amp_image(butler, superbias_frame, amp)
 
                 image_1 = unbias_amp(im_1, serial_oscan, bias_type=self.config.bias,
                                      superbias_im=superbias_im, region=imaging)

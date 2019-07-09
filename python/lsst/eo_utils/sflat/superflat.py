@@ -16,8 +16,6 @@ from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.plot_utils import FigureDict
-
 from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
@@ -171,8 +169,6 @@ class SuperflatTask(SflatAnalysisTask):
         self._superflat_frame_l = get_ccd_from_id(None, output_file + '_l.fits', mask_files)
         self._superflat_frame_h = get_ccd_from_id(None, output_file + '_h.fits', mask_files)
         self._superflat_frame_r = get_ccd_from_id(None, output_file + '_ratio.fits', mask_files)
-        dtables = TableDict()
-        return dtables
 
 
     def plot(self, dtables, figs, **kwargs):
@@ -190,8 +186,8 @@ class SuperflatTask(SflatAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        if dtables.keys():
-            raise ValueError("dtables should not be set")
+        if dtables is not None:
+            raise ValueError("dtables should not be set in SuperflatTask.plot")
 
         if self.config.plot:
             figs.plot_sensor("img_l", None, self._superflat_frame_l)
@@ -217,34 +213,21 @@ class SuperflatTask(SflatAnalysisTask):
                                  subtract_mean=False, bins=100, range=(0.015, 0.025),
                                  **kwcopy)
 
-
-
-    def make_plots(self, dtables, **kwargs):
-        """Tie together the functions to make the figures
+    def plotfile_name(self, **kwargs):
+        """Get the basename for the plot files for a particular run, raft, ccd...
 
         Parameters
         ----------
-        dtables : `TableDict`
-            The data produced by this task
+        kwargs
+            Used to override default configuration
 
         Returns
         -------
-        figs : `FigureDict`
-            The resulting figures
+        ret_val : `str`
+            The name of the file
         """
         self.safe_update(**kwargs)
-
-        figs = FigureDict()
-        self.plot(dtables, figs)
-        if self.config.plot == 'display':
-            figs.save_all(None)
-            return figs
-
-        plotbase = self.get_superflat_file('').replace('.fits', '')
-
-        makedir_safe(plotbase)
-        figs.save_all(plotbase, self.config.plot)
-        return None
+        return self.get_superflat_file('').replace('.fits', '')
 
 
     def __call__(self, butler, data, **kwargs):
@@ -260,9 +243,9 @@ class SuperflatTask(SflatAnalysisTask):
             Used to override default configuration
         """
         self.safe_update(**kwargs)
-        dtables = self.make_superflats(butler, data)
+        self.make_superflats(butler, data)
         if self.config.plot is not None:
-            self.make_plots(dtables)
+            self.make_plots(None)
 
 
 
@@ -315,7 +298,7 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
             Used to override default configuration
 
         Returns
-        ------- 
+        -------
         out_dict : `dict`
             The output dictionary
         """
@@ -331,8 +314,8 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
         for i in range(4):
             fp_dict['ratio_%i' % i] = []
             fp_dict['npix_%i' % i] = []
-            fp_dict['npix_0p2_%i' % i]  = []
-       
+            fp_dict['npix_0p2_%i' % i] = []
+
         for islot, (_, slot_data) in enumerate(sorted(flat_array.items())):
             for iamp, (_, image) in enumerate(sorted(slot_data.items())):
                 image *= -1
@@ -374,7 +357,7 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
 
         self._sflat_images_h, ccd_dict = extract_raft_unbiased_images(None,
                                                                       self._sflat_file_dict_h,
-                                                                      mask_dict=self._mask_file_dict)        
+                                                                      mask_dict=self._mask_file_dict)
         self._sflat_array_l = extract_raft_array_dict(None, self._sflat_file_dict_l,
                                                       mask_dict=self._mask_file_dict)
         self._sflat_array_h = extract_raft_imaging_data(None,

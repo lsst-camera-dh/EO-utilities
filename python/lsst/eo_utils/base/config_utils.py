@@ -387,7 +387,7 @@ def update_dict_from_string(o_dict, key, val, subparser_dict=None):
     idx = key.find('.')
     use_key = key[0:idx]
     remain = key[idx+1:]
-    if subparser_dict is not None:        
+    if subparser_dict is not None:
         try:
             subparser = subparser_dict[use_key[1:]]
         except KeyError:
@@ -397,13 +397,13 @@ def update_dict_from_string(o_dict, key, val, subparser_dict=None):
 
     if use_key not in o_dict:
         o_dict[use_key] = {}
-    
+
     def_val = None
     if subparser is not None:
         def_val = subparser.get_default(remain)
     if def_val == val:
         return
-    
+
     if remain.find('.') < 0:
         o_dict[use_key][remain] = val
     else:

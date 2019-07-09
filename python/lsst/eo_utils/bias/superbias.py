@@ -12,8 +12,6 @@ from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.plot_utils import FigureDict
-
 from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
@@ -131,8 +129,6 @@ class SuperbiasTask(BiasAnalysisTask):
                 flip_data_in_place(output_file)
 
         self._superbias_frame = get_ccd_from_id(None, output_file, mask_files)
-        dtables = TableDict()
-        return dtables
 
 
     def plot(self, dtables, figs, **kwargs):
@@ -150,8 +146,8 @@ class SuperbiasTask(BiasAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        if dtables.keys():
-            raise ValueError("dtables should not be set")
+        if dtables is not None:
+            raise ValueError("dtables should not be set in SuperbiasTask.plot")
 
         subtract_mean = self.config.stat == DEFAULT_STAT_TYPE
         if self.config.vmin is None or self.config.vmax is None:
@@ -172,32 +168,21 @@ class SuperbiasTask(BiasAnalysisTask):
                                  range=hist_range, **kwcopy)
 
 
-    def make_plots(self, dtables, **kwargs):
-        """Tie together the functions to make the figures
+    def plotfile_name(self, **kwargs):
+        """Get the basename for the plot files for a particular run, raft, ccd...
 
         Parameters
         ----------
-        dtables : `TableDict`
-            The data produced by this task
+        kwargs
+            Used to override default configuration
 
         Returns
         -------
-        figs : `FigureDict`
-            The resulting figures
+        ret_val : `str`
+            The name of the file
         """
         self.safe_update(**kwargs)
-
-        figs = FigureDict()
-        self.plot(dtables, figs)
-        if self.config.plot == 'display':
-            figs.save_all(None)
-            return figs
-
-        plotbase = self.get_superbias_file('', superbias=self.config.bias)
-
-        makedir_safe(plotbase)
-        figs.save_all(plotbase, self.config.plot)
-        return None
+        return self.get_superbias_file('', superbias=self.config.bias)
 
     def __call__(self, butler, slot_data, **kwargs):
         """Tie together analysis functions
@@ -212,9 +197,9 @@ class SuperbiasTask(BiasAnalysisTask):
             Used to override default configuration
         """
         self.safe_update(**kwargs)
-        dtables = self.make_superbias(butler, slot_data)
+        self.make_superbias(butler, slot_data)
         if self.config.plot is not None:
-            self.make_plots(dtables)
+            self.make_plots(None)
 
 
 
