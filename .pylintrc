@@ -227,7 +227,7 @@ callbacks=cb_,_cb
 [SIMILARITIES]
 
 # Minimum lines number of a similarity.
-min-similarity-lines=6
+min-similarity-lines=8
 
 # Ignore comments when computing similarities.
 ignore-comments=yes
@@ -259,7 +259,8 @@ ignored-classes=
 # List of members which are set dynamically and missed by pylint inference
 # system, and so shouldn't trigger E1101 when accessed. Python regular
 # expressions are accepted.
-generated-members=StatisticsControl,makeStatistics,MEAN,MEDIAN,STDEVCLIP
+generated-members=StatisticsControl,makeStatistics,MEAN,MEDIAN,STDEVCLIP,Point2I,Extent2I,Box2I,Threshold,FootprintSet
+
 
 
 [LOGGING]
@@ -272,7 +273,7 @@ logging-modules=logging
 [FORMAT]
 
 # Maximum number of characters on a single line.
-max-line-length=100
+max-line-length=110
 
 # Regexp for a line that is allowed to be longer than the limit.
 ignore-long-lines=^\s*(# )?<?https?://\S+>?$
@@ -326,7 +327,7 @@ max-statements=70
 max-parents=9
 
 # Maximum number of attributes for a class (see R0902).
-max-attributes=7
+max-attributes=10
 
 # Minimum number of public methods for a class (see R0903).
 min-public-methods=2
