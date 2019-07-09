@@ -9,7 +9,7 @@ from .defaults import ALL_SLOTS
 
 from .config_utils import EOUtilOptions, Configurable,\
     setup_parser, add_pex_arguments,\
-    make_argstring
+    make_argstring, parse_args_to_dict
 
 from .file_utils import get_hardware_type_and_id, get_raft_names_dc, read_runlist
 
@@ -103,8 +103,9 @@ class AnalysisHandler(Configurable):
 
         parser = setup_parser()
         self.add_parser_arguemnts(parser)
+        print(parser)
         args = parser.parse_args()
-        arg_dict = args.__dict__.copy()
+        arg_dict = parse_args_to_dict(args, parser, None)
         arg_dict.update(**kwargs)
 
         self.run_with_args(**arg_dict)
@@ -173,8 +174,11 @@ class SimpleAnalysisHandler(AnalysisHandler):
         ret_dict = dict(optstring=make_argstring(**kwcopy),
                         batch_args=self.config.batch_args,
                         batch=self.config.batch,
-                        dataset=self.config.dataset,
                         dry_run=self.config.dry_run)
+        try:
+            ret_dict['dataset'] = self.config.dataset
+        except AttributeError:
+            pass
         return ret_dict
 
     def run_with_args(self, **kwargs):
@@ -327,9 +331,12 @@ class AnalysisIterator(AnalysisHandler):
         ret_dict = dict(optstring=optstring,
                         batch_args=self.config.batch_args,
                         batch=self.config.batch,
-                        dataset=self.config.dataset,
                         dry_run=self.config.dry_run,
                         run=run)
+        try:
+            ret_dict['dataset'] = self.config.dataset
+        except AttributeError:
+            pass
         return ret_dict
 
 
@@ -547,8 +554,10 @@ class AnalysisBySlot(AnalysisIterator):
         ------
         ValueError : If the hardware type (raft or focal plane) is not recognized
         """
+        kwdata = kwargs.copy()
+        kwdata['nfiles'] = self._task.config.toDict().get('nfiles', None)
         htype, hid = self.get_hardware(self._butler, run)
-        data_files = self.get_data(self._butler, run, **kwargs)
+        data_files = self.get_data(self._butler, run, **kwdata)
 
         kwargs['run'] = run
         if htype == "LCA-10134":
@@ -638,6 +647,59 @@ class AnalysisByRaft(AnalysisIterator):
             raise ValueError("Do not recognize hardware type for run %s: %s" % (run, htype))
 
 
+class TableAnalysisBySlot(AnalysisBySlot):
+    """Small class to iterate an analysis function over slots"""
+
+    def __init__(self, task, **kwargs):
+        """C'tor
+
+        Parameters
+        ----------
+        task : `AnalysisTask`
+            Task that this handler will run
+        kwargs
+            Used to override configuration defaults
+        """
+        AnalysisBySlot.__init__(self, task, **kwargs)
+
+    def get_data(self, butler, datakey, **kwargs):
+        """Get the data to analyze
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        datakey : `str`
+            Run number or other id that defines the data to analyze
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        retval : `dict`
+            Dictionary mapping input data by raft, slot and file type
+        """
+        kwcopy = kwargs.copy()
+        kwcopy['run'] = datakey
+
+        raft = AnalysisIterator.get_raft_list(butler, datakey)[0]
+        kwcopy['raft'] = raft
+
+        out_dict = {}
+
+        formatter = self._task.intablename_format
+        insuffix = self._task.get_config_param('insuffix', '')
+
+        slot_dict = {}
+        for slot in ALL_SLOTS:
+            kwcopy['slot'] = slot
+            datapath = self._task.get_filename_from_format(formatter, insuffix, **kwcopy)
+            slot_dict[slot] = [datapath + '.fits']
+
+        out_dict = {raft:slot_dict}
+        return out_dict
+
+
 class TableAnalysisByRaft(AnalysisByRaft):
     """Small class to iterate an analysis function over all the slots in a raft"""
 
@@ -682,14 +744,17 @@ class TableAnalysisByRaft(AnalysisByRaft):
         formatter = self._task.intablename_format
         insuffix = self._task.get_config_param('insuffix', '')
 
+        slot_list = kwcopy.get('slots', None)
+        if slot_list is None:
+            slot_list = ALL_SLOTS
+
         for raft in raft_list:
             kwcopy['raft'] = raft
             slot_dict = {}
-            for slot in ALL_SLOTS:
+            for slot in slot_list:
                 kwcopy['slot'] = slot
-                basename = self._task.get_filename_from_format(formatter, insuffix, **kwcopy)
-                datapath = basename + '.fits'
-                slot_dict[slot] = datapath
+                datapath = self._task.get_filename_from_format(formatter, insuffix, **kwcopy)
+                slot_dict[slot] = datapath + '.fits'
             out_dict[raft] = slot_dict
         return out_dict
 
@@ -733,7 +798,7 @@ class SummaryAnalysisIterator(AnalysisHandler):
             Dictionary mapping input data by run
         """
         if butler is not None:
-            sys.stdout.write("Ignoring butler in get_data for %s\n" % self._task.getName())
+            self.log.warn("Ignoring butler in get_data")
 
         kwcopy = self._task.safe_update(**kwargs)
 

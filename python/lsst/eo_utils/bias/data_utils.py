@@ -5,7 +5,7 @@ import numpy as np
 from lsst.eo_utils.base.defaults import DEFAULT_BIAS_TYPE
 
 from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES,\
-    get_geom_regions, get_raw_image, get_amp_list,\
+    raw_amp_image, get_geom_regions, get_raw_image, get_amp_list,\
     get_image_frames_2d, array_struct, unbias_amp
 
 
@@ -40,13 +40,7 @@ def stack_by_amps(stack_arrays, butler, ccd, **kwargs):
         regions = get_geom_regions(butler, ccd, amp)
         serial_oscan = regions['serial_overscan']
         img = get_raw_image(butler, ccd, amp)
-        if superbias_frame is not None:
-            if butler is not None:
-                superbias_im = get_raw_image(None, superbias_frame, amp+1)
-            else:
-                superbias_im = get_raw_image(None, superbias_frame, amp)
-        else:
-            superbias_im = None
+        superbias_im = raw_amp_image(butler, superbias_frame, amp)
         image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
         frames = get_image_frames_2d(image, regions)
 

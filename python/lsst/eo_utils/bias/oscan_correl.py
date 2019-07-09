@@ -1,5 +1,7 @@
 """Class to analyze the correlations between the overscans for all amplifiers on a raft"""
 
+import copy
+
 import itertools
 
 import numpy as np
@@ -45,16 +47,7 @@ class OscanCorrelTask(BiasAnalysisTask):
     tablename_format = RAFT_BIAS_TABLE_FORMATTER
     plotname_format = RAFT_BIAS_PLOT_FORMATTER
 
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        BiasAnalysisTask.__init__(self, **kwargs)
-        self.boundry = 10
+    boundry = 10
 
     def extract(self, butler, data, **kwargs):
         """Extract the correlations between the serial overscan for each amp on a raft
@@ -88,6 +81,7 @@ class OscanCorrelTask(BiasAnalysisTask):
             overscans += self.get_ccd_data(butler, ccd, superbias_frame=superbias_frame)
 
         namps = len(overscans)
+
         if self.config.covar:
             data = np.array([np.cov(overscans[i[0]].ravel(),
                                     overscans[i[1]].ravel())[0, 1]
@@ -148,20 +142,16 @@ class OscanCorrelTask(BiasAnalysisTask):
         superbias_frame = kwargs.get('superbias_frame', None)
         overscans = []
         for amp in amps:
-            if superbias_frame is not None:
-                if butler is not None:
-                    superbias_im = get_raw_image(None, superbias_frame, amp+1)
-                else:
-                    superbias_im = get_raw_image(None, superbias_frame, amp)
-            else:
-                superbias_im = None
 
+            superbias_im = self.get_superbias_amp_image(butler, superbias_frame, amp)
             regions = get_geom_regions(butler, ccd, amp)
             serial_oscan = regions['serial_overscan']
+
             img = get_raw_image(butler, ccd, amp)
             image = unbias_amp(img, serial_oscan, bias_type=None, superbias_im=superbias_im)
-            serial_oscan.grow(-self.boundry)
-            oscan_data = image[serial_oscan]
+            oscan_copy = copy.deepcopy(serial_oscan)
+            oscan_copy.grow(-self.boundry)
+            oscan_data = image[oscan_copy]
             step_x = regions['step_x']
             step_y = regions['step_y']
             overscans.append(oscan_data.getArray()[::step_x, ::step_y])

@@ -50,11 +50,13 @@ class EOUtilOptions(pexConfig.Config):
     rafts = pexConfig.ListField("Raft Slot(s)", str, default=None)
     nfiles = pexConfig.Field("Number of files to use", int, default=None)
     insuffix = pexConfig.Field("Suffix for input files", str, default="")
+    infile = pexConfig.Field("Input file name", str, default=None)
+    outfile = pexConfig.Field("Output file name", str, default=None)
 
     # Options for input data processing
-    bias = pexConfig.Field("Method to use for unbiasing", str, default=None)
+    bias = pexConfig.Field("Method to use for unbiasing", str, default='spline')
     superbias = pexConfig.Field("Version of superbias frame to use", str,
-                                default=None)
+                                default='spline')
     mask = pexConfig.Field("Use the mask files", bool, default=False)
 
     # Options for where to put output data and what to include
@@ -88,7 +90,7 @@ class EOUtilOptions(pexConfig.Config):
                             default=DEFAULT_NBINS)
     subtract_mean = pexConfig.Field("Subtract the mean from all images frames", bool,
                                     default=False)
-    mosaic = pexConfig.Field("Plot a raft-level mosaic", bool,
+    mosaic = pexConfig.Field("Plot a raft- or ccd-level mosaic", bool,
                              default=False)
 
     # Other output options
@@ -104,10 +106,27 @@ class EOUtilOptions(pexConfig.Config):
     num_oscan_pixels = pexConfig.Field("Number of overscan pixels used for model fit.",
                                        int, default=10)
 
+    # Options for BF Tasks
+    maxLag = pexConfig.Field("Max lag for BF analysis", int, default=1)
+    nSigmaClip = pexConfig.Field("Sigma clip for BF analysis", int, default=3)
+    backgroundBinSize = pexConfig.Field("Background bin size for BF analysis", int, default=128)
+
+    # Options for CTE Tasks
+    overscans = pexConfig.Field("Number of overscan rows/columns to use", int, default=2)
+    nframes = pexConfig.Field("Number of frames used to make superflat", int, default=5)
+
+    # Options for Trap Tasks
+    cycles = pexConfig.Field("Trap cycles", int, default=100)
+    threshold = pexConfig.Field("Trap threshold", float, default=200.)
+    C2_thresh = pexConfig.Field("C2 threshold", float, default=10.)
+    C3_thresh = pexConfig.Field("C3 threshold", float, default=1.)
+    bkg_nx = pexConfig.Field("Local background width (pixels)", int, default=10)
+    bkg_ny = pexConfig.Field("Local background height (pixels)", int, default=10)
+    edge_rolloff = pexConfig.Field("Edge rolloff width (pixels)", int, default=10)
 
     @classmethod
     def clone_param(cls, par_name, **kwargs):
-        """Close a parameter from the set defined in this class.
+        """Clone a parameter from the set defined in this class.
 
         Parameters
         ----------
@@ -126,9 +145,27 @@ class EOUtilOptions(pexConfig.Config):
             ret_val.default = kwargs['default']
         return ret_val
 
+    @staticmethod
+    def task_param(task_class):
+        """Build parameter from for a particular Task
+
+        Parameters
+        ----------
+        task_class : `class`
+            Class of task of build parameter for
+
+        Returns
+        -------
+        ret_val : `pexConfig.ConfigurableField`
+            Parameter connect to the task class
+        """
+        param = pexConfig.ConfigurableField(target=task_class,
+                                            doc=task_class.__doc__)
+        return param
 
 
-def add_pex_arguments(parser, pex_class, exclude=None):
+
+def add_pex_arguments(parser, pex_class, exclude=None, prefix=None):
     """Adds a set of arguments to the argument parser (or parser group)
 
     Parameters
@@ -142,22 +179,30 @@ def add_pex_arguments(parser, pex_class, exclude=None):
     """
     if exclude is None:
         exclude = []
+
     for key, val in pex_class._fields.items():
         if key in exclude:
             continue
+        if prefix is not None:
+            parser_key = "%s.%s" % (prefix, key)
+        else:
+            parser_key = key
         if isinstance(val, pexConfig.listField.ListField):
-            parser.add_argument("--%s" % key,
+            parser.add_argument("--%s" % parser_key,
                                 action='append',
                                 type=val.itemtype,
                                 default=val.default,
                                 help=val.doc)
+        elif isinstance(val, pexConfig.configurableField.ConfigurableField):
+            parser_group = parser.add_argument_group(val.name)
+            add_pex_arguments(parser_group, val.default, exclude, val.name)
         elif val.dtype in [bool]:
-            parser.add_argument("--%s" % key,
+            parser.add_argument("--%s" % parser_key,
                                 action='store_true',
                                 default=val.default,
                                 help=val.doc)
         else:
-            parser.add_argument("--%s" % key,
+            parser.add_argument("--%s" % parser_key,
                                 type=val.dtype,
                                 default=val.default,
                                 help=val.doc)
@@ -189,6 +234,9 @@ def make_argstring(**kwargs):
         elif isinstance(value, (list, pexConfig.listField.List)):
             for val2 in value:
                 ostring += " --%s %s" % (key, val2)
+        elif isinstance(value, (dict)):
+            for key2, val2 in value.items():
+                ostring += " --%s.%s %s" % (key, key2, val2)
         else:
             ostring += " --%s %s" % (key, value)
     return ostring
@@ -318,6 +366,79 @@ def copy_pex_fields(field_names, target_class, library_class):
             raise TypeError("Field %s in class %s\n is not a pexConfig.Field" %
                             (fname, type(library_class)))
 
+def update_dict_from_string(o_dict, key, val, subparser_dict=None):
+    """Update a dictionary with sub-dictionaries
+
+    Parameters
+    ----------
+    o_dict : dict
+        The output
+
+    key : `str`
+        The string we are parsing
+
+    val : `str`
+        The value
+
+    subparser_dict : `dict` or `None`
+        The subparsers used to parser the command line
+
+    """
+    idx = key.find('.')
+    use_key = key[0:idx]
+    remain = key[idx+1:]
+    if subparser_dict is not None:
+        try:
+            subparser = subparser_dict[use_key[1:]]
+        except KeyError:
+            subparser = None
+    else:
+        subparser = None
+
+    if use_key not in o_dict:
+        o_dict[use_key] = {}
+
+    def_val = None
+    if subparser is not None:
+        def_val = subparser.get_default(remain)
+    if def_val == val:
+        return
+
+    if remain.find('.') < 0:
+        o_dict[use_key][remain] = val
+    else:
+        update_dict_from_string(o_dict[use_key], remain, val)
+
+
+def parse_args_to_dict(args, parser, subparser_dict):
+    """Parse the output of argparse
+
+    Parameters
+    ----------
+    args : `Namespace`
+        The output of argparse
+
+    parser : `ArgumentParser`
+        The parser
+
+    subparser_dict : `dict` or `None`
+        The sub-parsers
+
+    Returns
+    -------
+    o_dict : dict
+         The output
+    """
+    o_dict = {}
+    for key, val in args.__dict__.items():
+        if key.find('.') < 0:
+            if parser.get_default(key) == val:
+                continue
+            o_dict[key] = val
+        else:
+            update_dict_from_string(o_dict, key, val, subparser_dict)
+    return o_dict
+
 
 
 class Configurable(pipeBase.Task):
@@ -354,12 +475,20 @@ class Configurable(pipeBase.Task):
         base_dict = self.config.toDict()
         update_dict = {}
         remain_dict = {}
+        dict_set = {}
         for key, val in kwargs.items():
             if key in base_dict:
-                update_dict[key] = val
+                if isinstance(val, dict):
+                    dict_set[key] = True
+                    getattr(self.config, key).update(**val)
+                else:
+                    update_dict[key] = val
             else:
                 remain_dict[key] = val
         self.config.update(**update_dict)
+        top_dict = self.config.toDict()
+        for key in dict_set:
+            getattr(self, key).config.update(**top_dict[key])
         return remain_dict
 
 

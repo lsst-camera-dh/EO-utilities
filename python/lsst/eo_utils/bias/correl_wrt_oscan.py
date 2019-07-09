@@ -1,7 +1,5 @@
 """Tasks to analyze the correlation between the overscan and the imaging region"""
 
-import sys
-
 import numpy as np
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
@@ -15,23 +13,21 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.image_utils import get_dims_from_ccd, get_ccd_from_id,\
     get_raw_image, get_geom_regions, get_amp_list, get_image_frames_2d
 
-from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft, AnalysisBySlot
+from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from .file_utils import SLOT_BIAS_TABLE_FORMATTER,\
-    RAFT_BIAS_TABLE_FORMATTER, RAFT_BIAS_PLOT_FORMATTER
-
 from .analysis import BiasAnalysisConfig, BiasAnalysisTask
 
-from .meta_analysis import BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask
+from .meta_analysis import BiasRaftTableAnalysisConfig, BiasRaftTableAnalysisTask,\
+    BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask
 
 
 
 class CorrelWRTOscanConfig(BiasAnalysisConfig):
     """Configuration for CorrelWRTOscanTask"""
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasoscorr')
-    bias = EOUtilOptions.clone_param('bias')
+    bias = EOUtilOptions.clone_param('bias', default=None)
     mask = EOUtilOptions.clone_param('mask')
 
 
@@ -43,16 +39,7 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
     _DefaultName = "CorrelWRTOscanTask"
     iteratorClass = AnalysisBySlot
 
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        BiasAnalysisTask.__init__(self, **kwargs)
-        self.clip_value = 50.
+    clip_value = 50.
 
     def extract(self, butler, data, **kwargs):
         """Extract the correlations between the imaging section
@@ -73,14 +60,12 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
             The resulting data
         """
         self.safe_update(**kwargs)
-        slot = self.config.slot
 
         bias_files = data['BIAS']
 
         mask_files = self.get_mask_files()
 
-        sys.stdout.write("Working on %s, %i files: " % (slot, len(bias_files)))
-        sys.stdout.flush()
+        self.log_info_slot_msg(self.config, "%i files" % len(bias_files))
 
         ref_frames = {}
 
@@ -90,8 +75,7 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
 
         for ifile, bias_file in enumerate(bias_files):
             if ifile % 10 == 0:
-                sys.stdout.write('.')
-                sys.stdout.flush()
+                self.log_progress("  %i" % ifile)
 
             ccd = get_ccd_from_id(butler, bias_file, mask_files)
             if ifile == 0:
@@ -108,8 +92,7 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
                               ifile=ifile, s_correl=s_correl, p_correl=p_correl,
                               nrow_i=nrow_i, ncol_i=ncol_i)
 
-        sys.stdout.write("!\n")
-        sys.stdout.flush()
+        self.log_progress("Done!")
 
         data = {}
         for i in range(16):
@@ -202,7 +185,7 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
                                                dd_p[mask_p])[0, 1]
 
 
-class CorrelWRTOscanStatsConfig(BiasAnalysisConfig):
+class CorrelWRTOscanStatsConfig(BiasRaftTableAnalysisConfig):
     """Configuration for CorrelWRTOscanStatsTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='biasoscorr')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasoscorr_stats')
@@ -210,28 +193,12 @@ class CorrelWRTOscanStatsConfig(BiasAnalysisConfig):
     superbias = EOUtilOptions.clone_param('superbias')
 
 
-class CorrelWRTOscanStatsTask(BiasAnalysisTask):
+class CorrelWRTOscanStatsTask(BiasRaftTableAnalysisTask):
     """Extract statistics about the correlation between
     the overscan and imaging regions in bias frames"""
 
     ConfigClass = CorrelWRTOscanStatsConfig
     _DefaultName = "CorrelWRTOscanStatsTask"
-    iteratorClass = TableAnalysisByRaft
-
-    intablename_format = SLOT_BIAS_TABLE_FORMATTER
-    tablename_format = RAFT_BIAS_TABLE_FORMATTER
-    plotname_format = RAFT_BIAS_PLOT_FORMATTER
-
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        BiasAnalysisTask.__init__(self, **kwargs)
-
 
     def extract(self, butler, data, **kwargs):
         """Extract the the summary statistics data
@@ -253,7 +220,7 @@ class CorrelWRTOscanStatsTask(BiasAnalysisTask):
         self.safe_update(**kwargs)
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in bias_fft_stats.extract\n")
+            self.log.warn("Ignoring butler.")
 
         datakey = 'correl'
 
@@ -270,14 +237,12 @@ class CorrelWRTOscanStatsTask(BiasAnalysisTask):
                          slot=[],
                          amp=[])
 
-        sys.stdout.write("Working on 9 slots: ")
-        sys.stdout.flush()
+
+        self.log_info_raft_msg(self.config, "")
 
         for islot, slot in enumerate(ALL_SLOTS):
 
-            sys.stdout.write(" %s" % slot)
-            sys.stdout.flush()
-
+            self.log_progress("  %s" % slot)
             basename = data[slot]
             datapath = basename.replace('biasoscorr_stats.fits', 'biasoscorr.fits')
 
@@ -285,7 +250,7 @@ class CorrelWRTOscanStatsTask(BiasAnalysisTask):
                 dtables = TableDict(datapath, [datakey])
                 table = dtables[datakey]
             except FileNotFoundError:
-                sys.stderr.write("Warning, could not open %s\n" % datapath)
+                self.log.error("Could not open %s\n" % datapath)
                 table = None
 
             for amp in range(16):
@@ -318,8 +283,7 @@ class CorrelWRTOscanStatsTask(BiasAnalysisTask):
                 data_dict['slot'].append(islot)
                 data_dict['amp'].append(amp)
 
-        sys.stdout.write(".\n")
-        sys.stdout.flush()
+        self.log_progress("Done!")
 
         outtables = TableDict()
         outtables.make_datatable("biasoscorr_stats", data_dict)
@@ -360,16 +324,6 @@ class CorrelWRTOscanSummaryTask(BiasSummaryAnalysisTask):
     ConfigClass = CorrelWRTOscanSummaryConfig
     _DefaultName = "CorrelWRTOscanSummaryTask"
 
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        BiasSummaryAnalysisTask.__init__(self, **kwargs)
-
     def extract(self, butler, data, **kwargs):
         """Make a summry table
 
@@ -390,7 +344,7 @@ class CorrelWRTOscanSummaryTask(BiasSummaryAnalysisTask):
         self.safe_update(**kwargs)
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in correl_wrt_oscan_summary.extract\n")
+            self.log.warn("Ignoring butler")
 
         for key, val in data.items():
             data[key] = val.replace('biasoscorr_sum.fits', 'biasoscorr_stats.fits')

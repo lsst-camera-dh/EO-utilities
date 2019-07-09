@@ -3,6 +3,8 @@
 This module contains base classes for analysis tasks.
 """
 
+import abc
+
 import lsst.pex.config as pexConfig
 
 from .defaults import DEFAULT_STAT_TYPE
@@ -18,14 +20,15 @@ from .plot_utils import FigureDict
 
 from .iter_utils import SimpleAnalysisHandler
 
-from .image_utils import get_ccd_from_id
+from .image_utils import get_ccd_from_id, get_raw_image
 
-class BaseAnalysisConfig(pexConfig.Config):
+
+class BaseConfig(pexConfig.Config):
     """Configuration for EO analysis tasks"""
 
 
-class BaseAnalysisTask(Configurable):
-    """Base class for EO testing analysis tasks
+class BaseTask(Configurable):
+    """Base class for EO testing tasks
 
     At minimum, sub-classes will need to implement the
     __call__ function to perform the data analysis.
@@ -43,9 +46,11 @@ class BaseAnalysisTask(Configurable):
     iteratorClass : this should be set to a `AnalysisHandler` sub-class that
                     can provide data for the sub-class
     """
+    __metaclass__ = abc.ABCMeta
+
     # These can overridden by the sub-class
-    ConfigClass = BaseAnalysisConfig
-    _DefaultName = "BaseAnalysisTask"
+    ConfigClass = BaseConfig
+    _DefaultName = "BaseTask"
     iteratorClass = SimpleAnalysisHandler
 
     def __init__(self, **kwargs):
@@ -58,7 +63,8 @@ class BaseAnalysisTask(Configurable):
         """
         Configurable.__init__(self, **kwargs)
 
-    def __call__(self, butler, data, **kwargs):
+    @abc.abstractmethod
+    def __call__(self, **kwargs):
         """Perform the data analysis
 
         It is up to the iteratorClass to construct the data object that is
@@ -66,14 +72,10 @@ class BaseAnalysisTask(Configurable):
 
         Parameters
         ----------
-        butler : `Butler`
-            The data butler
-        data : `dict`
-            Dictionary (or other structure) contain the input data
         kwargs
             Used to override default configuration
         """
-        raise NotImplementedError('BaseAnalysisTask.__call__')
+        raise NotImplementedError()
 
     def make_iterator(self):
         """Construct an object to iterate this task.
@@ -108,6 +110,94 @@ class BaseAnalysisTask(Configurable):
             return getattr(self.config, key)
         return default
 
+    @classmethod
+    def add_parser_arguments(cls, parser):
+        """Add parser arguments for this class
+
+        Parameters
+        ----------
+        parser : `ArgumentParser`
+            The parser to add arguments to
+        """
+        functor = cls()
+        handler = cls.iteratorClass(functor)
+        handler.add_parser_arguemnts(parser)
+
+    @classmethod
+    def parse_and_run(cls):
+        """Run the task using the command line arguments"""
+        functor = cls()
+        handler = cls.iteratorClass(functor)
+        handler.run_analysis()
+
+    @classmethod
+    def run(cls, **kwargs):
+        """Run the analysis using the keyword arguments
+
+        Parameters
+        ----------
+        kwargs
+            Used to override default configuration
+        """
+        functor = cls()
+        handler = cls.iteratorClass(functor)
+        handler.run_with_args(**kwargs)
+
+    def run_self(self, **kwargs):
+        """Run the analysis using the keyword arguments
+
+        Parameters
+        ----------
+        kwargs
+            Used to override default configuration
+        """
+        handler = self.iteratorClass(self)
+        handler.run_with_args(**kwargs)
+
+    def log_progress(self, msg):
+        """Make an info message that we are running a particular slot
+
+        Parameters
+        ----------
+        msg : `str`
+            The message
+        """
+        self.log.info(msg)
+
+
+class BaseAnalysisConfig(BaseConfig):
+    """Configuration for EO analysis tasks"""
+
+
+class BaseAnalysisTask(BaseTask):
+    """Sub-class for simple analyses
+
+    """
+    __metaclass__ = abc.ABCMeta
+
+    # These can overridden by the sub-class
+    ConfigClass = BaseAnalysisConfig
+    _DefaultName = "BaseAnalysisTask"
+    iteratorClass = SimpleAnalysisHandler
+
+    def __call__(self, butler, data, **kwargs):
+        """Perform the data analysis
+
+        It is up to the iteratorClass to construct the data object that is
+        passed to this function.
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+        """
+        raise NotImplementedError()
+
+
     def get_filename_from_format(self, formatter, suffix, **kwargs):
         """Use a `FilenameFormat` object to construct a filename for a
         specific set of input parameters.
@@ -134,6 +224,34 @@ class BaseAnalysisTask(Configurable):
         if self.get_config_param('stat', None) in [DEFAULT_STAT_TYPE, None]:
             format_vals['stat'] = 'superbias'
         return formatter(**format_vals)
+
+
+    @staticmethod
+    def get_superbias_amp_image(butler, superbias_frame, amp):
+        """Get the image for one amp for the superbias
+
+        Parameters
+        ----------
+        butler : `Butler` or `None`
+            Data Butler (or none)
+        superbias_frame : `MaskedCCD` or `None`
+            superbias image for the whole CCD
+        amp : `int`
+            Amplifier index
+
+        Returns
+        -------
+        superbias_im : `ImageF`
+            The image for the requested amplifier
+        """
+        if superbias_frame is not None:
+            if butler is not None:
+                superbias_im = get_raw_image(None, superbias_frame, amp+1)
+            else:
+                superbias_im = get_raw_image(None, superbias_frame, amp)
+        else:
+            superbias_im = None
+        return superbias_im
 
 
     def get_superbias_file(self, suffix, **kwargs):
@@ -177,39 +295,70 @@ class BaseAnalysisTask(Configurable):
             return [self.get_filename_from_format(MASK_FORMATTER, "_mask.fits")]
         return []
 
-    @classmethod
-    def add_parser_arguments(cls, parser):
-        """Add parser arguments for this class
+    def log_info_slot_msg(self, config, msg):
+        """Make an info message that we are running a particular slot
 
         Parameters
         ----------
-        parser : `ArgumentParser`
-            The parser to add arguments to
+        log : `lsst.log.log.log.Log`
+            The log to write to
+
+        config : `pexConfig`
+            The object with the configuration to get the run, raft, slot
+
+        msg : `str`
+            The rest of the message
         """
-        functor = cls()
-        handler = cls.iteratorClass(functor)
-        handler.add_parser_arguemnts(parser)
+        if hasattr(config, 'run'):
+            run = config.run
+        else:
+            run = 'xx'
+        if hasattr(config, 'raft'):
+            raft = config.raft
+        else:
+            raft = 'xx'
+        if hasattr(config, 'slot'):
+            slot = config.slot
+        else:
+            slot = 'xx'
+        self.log.info("Working on %s:%s:%s.  %s" % (run, raft, slot, msg))
 
-    @classmethod
-    def parse_and_run(cls):
-        """Run the task using the command line arguments"""
-        functor = cls()
-        handler = cls.iteratorClass(functor)
-        handler.run_analysis()
 
-    @classmethod
-    def run(cls, **kwargs):
-        """Run the analysis using the keyword arguments
+    def log_info_raft_msg(self, config, msg):
+        """Make an info message that we are running a particular raft
 
         Parameters
         ----------
-        kwargs
-            Used to override default configuration
-        """
-        functor = cls()
-        handler = cls.iteratorClass(functor)
-        handler.run_with_args(**kwargs)
+        log : `lsst.log.log.log.Log`
+            The log to write to
 
+        config : `pexConfig`
+            The object with the configuration to get the run, raft, slot
+
+        msg : `str`
+            The rest of the message
+        """
+        if hasattr(config, 'run'):
+            run = config.run
+        else:
+            run = 'xx'
+        if hasattr(config, 'raft'):
+            raft = config.raft
+        else:
+            raft = 'xx'
+
+        self.log.info("Working on %s:%s.  %s" % (run, raft, msg))
+
+
+    def log_progress(self, msg):
+        """Make an info message that we are running a particular slot
+
+        Parameters
+        ----------
+        msg : `str`
+            The message
+        """
+        self.log.info(msg)
 
 
 class AnalysisConfig(BaseAnalysisConfig):
@@ -327,10 +476,11 @@ class AnalysisTask(BaseAnalysisTask):
             The superbias frame
         """
         self.safe_update(**kwargs)
-        if self.config.superbias is None:
+        if self.config.superbias in [None, 'none', 'None']:
             return None
         superbias_file = self.get_superbias_file('.fits')
-        return get_ccd_from_id(None, superbias_file, mask_files)
+        ccd = get_ccd_from_id(None, superbias_file, mask_files)
+        return ccd
 
     def make_datatables(self, butler, data, **kwargs):
         """Construct or read back the `TableDict` object with the analysis results
@@ -362,12 +512,15 @@ class AnalysisTask(BaseAnalysisTask):
         output_data = tablebase + ".fits"
 
         if self.config.skip:
-            dtables = TableDict(output_data)
+            try:
+                dtables = TableDict(output_data)
+            except IOError:
+                dtables = None
         else:
             dtables = self.extract(butler, data)
             if dtables is not None:
                 dtables.save_datatables(output_data)
-                print("Writing %s" % output_data)
+                self.log.info("Writing %s" % output_data)
         return dtables
 
     def make_plots(self, dtables, **kwargs):
@@ -423,6 +576,7 @@ class AnalysisTask(BaseAnalysisTask):
         if self.config.plot is not None:
             self.make_plots(dtables)
 
+    @abc.abstractmethod
     def extract(self, butler, data, **kwargs):
         """This needs to be implemented by the sub-class
 
@@ -443,8 +597,9 @@ class AnalysisTask(BaseAnalysisTask):
         dtables : `TableDict`
             The resulting data
         """
-        raise NotImplementedError("AnalysisFunc.extract is not overridden.")
+        raise NotImplementedError()
 
+    @abc.abstractmethod
     def plot(self, dtables, figs, **kwargs):
         """This needs to be implemented by the sub-class
 
@@ -460,4 +615,4 @@ class AnalysisTask(BaseAnalysisTask):
         kwargs
             Used to override default configuration
         """
-        raise NotImplementedError("AnalysisFunc.plot is not overridden.")
+        raise NotImplementedError()

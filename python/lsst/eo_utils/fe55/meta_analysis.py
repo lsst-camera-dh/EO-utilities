@@ -2,12 +2,37 @@
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.iter_utils import SummaryAnalysisIterator
+from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft,\
+    SummaryAnalysisIterator
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
-from lsst.eo_utils.fe55.file_utils import RAFT_FE55_TABLE_FORMATTER,\
+from .file_utils import SLOT_FE55_TABLE_FORMATTER,\
+    RAFT_FE55_TABLE_FORMATTER, RAFT_FE55_PLOT_FORMATTER,\
     SUM_FE55_TABLE_FORMATTER, SUM_FE55_PLOT_FORMATTER
+
+
+class Fe55RaftTableAnalysisConfig(AnalysisConfig):
+    """Configuration for bias analyses"""
+    outdir = EOUtilOptions.clone_param('outdir')
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
+    insuffix = EOUtilOptions.clone_param('insuffix')
+    outsuffix = EOUtilOptions.clone_param('outsuffix')
+
+
+class Fe55RaftTableAnalysisTask(AnalysisTask):
+    """Simple functor class to tie together standard bias data analysis
+    """
+
+    # These can overridden by the sub-class
+    ConfigClass = Fe55RaftTableAnalysisConfig
+    _DefaultName = "Fe55RaftTableAnalysisTask"
+    iteratorClass = TableAnalysisByRaft
+
+    intablename_format = SLOT_FE55_TABLE_FORMATTER
+    tablename_format = RAFT_FE55_TABLE_FORMATTER
+    plotname_format = RAFT_FE55_PLOT_FORMATTER
 
 
 
@@ -31,52 +56,3 @@ class Fe55SummaryAnalysisTask(AnalysisTask):
     intablename_format = RAFT_FE55_TABLE_FORMATTER
     tablename_format = SUM_FE55_TABLE_FORMATTER
     plotname_format = SUM_FE55_PLOT_FORMATTER
-
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        AnalysisTask.__init__(self, **kwargs)
-
-    def extract(self, butler, data, **kwargs):
-        """This needs to be implemented by the sub-class
-
-        It should analyze the input data and create a set of tables
-        in a `TableDict` object
-
-        Parameters
-        ----------
-        butler : `Butler`
-            The data butler
-        data : `dict`
-            Dictionary (or other structure) contain the input data
-        kwargs
-            Used to override default configuration
-
-        Returns
-        -------
-        dtables : `TableDict`
-            The resulting data
-        """
-        raise NotImplementedError("Fe55SummaryAnalysisTask.extract is not overridden.")
-
-    def plot(self, dtables, figs, **kwargs):
-        """This needs to be implemented by the sub-class
-
-        It should use a `TableDict` object to create a set of
-        plots and fill a `FigureDict` object
-
-        Parameters
-        ----------
-        dtables : `TableDict`
-            The data produced by this task
-        figs : `FigureDict`
-            The resulting figures
-        kwargs
-            Used to override default configuration
-        """
-        raise NotImplementedError("Fe55SummaryAnalysisTask.plot is not overridden.")

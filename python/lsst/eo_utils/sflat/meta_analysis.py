@@ -2,12 +2,62 @@
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.iter_utils import SummaryAnalysisIterator
+from lsst.eo_utils.base.iter_utils import TableAnalysisBySlot,\
+    TableAnalysisByRaft, SummaryAnalysisIterator
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
-from lsst.eo_utils.sflat.file_utils import SUM_SFLAT_TABLE_FORMATTER,\
-    SUM_SFLAT_PLOT_FORMATTER, RAFT_SFLAT_TABLE_FORMATTER
+from .file_utils import SUM_SFLAT_TABLE_FORMATTER,\
+    SUM_SFLAT_PLOT_FORMATTER,\
+    SLOT_SFLAT_TABLE_FORMATTER, SLOT_SFLAT_PLOT_FORMATTER,\
+    RAFT_SFLAT_TABLE_FORMATTER, RAFT_SFLAT_PLOT_FORMATTER
+
+class SflatSlotTableAnalysisConfig(AnalysisConfig):
+    """Configuration for superflat analyses"""
+    outdir = EOUtilOptions.clone_param('outdir')
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
+    slot = EOUtilOptions.clone_param('slot')
+    insuffix = EOUtilOptions.clone_param('insuffix')
+    outsuffix = EOUtilOptions.clone_param('outsuffix')
+
+
+class SflatSlotTableAnalysisTask(AnalysisTask):
+    """Simple functor class to tie together standard superflat data analysis
+    """
+
+    # These can overridden by the sub-class
+    ConfigClass = SflatSlotTableAnalysisConfig
+    _DefaultName = "SflatSlotTableAnalysisTask"
+    iteratorClass = TableAnalysisBySlot
+
+    intablename_format = SLOT_SFLAT_TABLE_FORMATTER
+    tablename_format = SLOT_SFLAT_TABLE_FORMATTER
+    plotname_format = SLOT_SFLAT_PLOT_FORMATTER
+
+
+class SflatRaftTableAnalysisConfig(AnalysisConfig):
+    """Configuration for superflat analyses"""
+    insuffix = EOUtilOptions.clone_param('insuffix')
+    outsuffix = EOUtilOptions.clone_param('outsuffix')
+    outdir = EOUtilOptions.clone_param('outdir')
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
+    slots = EOUtilOptions.clone_param('slots')
+
+
+class SflatRaftTableAnalysisTask(AnalysisTask):
+    """Simple functor class to tie together standard superflat data analysis
+    """
+
+    # These can overridden by the sub-class
+    ConfigClass = SflatRaftTableAnalysisConfig
+    _DefaultName = "SflatRaftTableAnalysisTask"
+    iteratorClass = TableAnalysisByRaft
+
+    intablename_format = SLOT_SFLAT_TABLE_FORMATTER
+    tablename_format = RAFT_SFLAT_TABLE_FORMATTER
+    plotname_format = RAFT_SFLAT_PLOT_FORMATTER
 
 
 class SflatSummaryAnalysisConfig(AnalysisConfig):
@@ -29,52 +79,3 @@ class SflatSummaryAnalysisTask(AnalysisTask):
     intablename_format = RAFT_SFLAT_TABLE_FORMATTER
     tablename_format = SUM_SFLAT_TABLE_FORMATTER
     plotname_format = SUM_SFLAT_PLOT_FORMATTER
-
-    def __init__(self, **kwargs):
-        """ C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        AnalysisTask.__init__(self, **kwargs)
-
-    def extract(self, butler, data, **kwargs):
-        """This needs to be implemented by the sub-class
-
-        It should analyze the input data and create a set of tables
-        in a `TableDict` object
-
-        Parameters
-        ----------
-        butler : `Butler`
-            The data butler
-        data : `dict`
-            Dictionary (or other structure) contain the input data
-        kwargs
-            Used to override default configuration
-
-        Returns
-        -------
-        dtables : `TableDict`
-            The resulting data
-        """
-        raise NotImplementedError("SflatSummaryAnalysisTask.extract is not overridden.")
-
-    def plot(self, dtables, figs, **kwargs):
-        """This needs to be implemented by the sub-class
-
-        It should use a `TableDict` object to create a set of
-        plots and fill a `FigureDict` object
-
-        Parameters
-        ----------
-        dtables : `TableDict`
-            The data produced by this task
-        figs : `FigureDict`
-            The resulting figures
-        kwargs
-            Used to override default configuration
-        """
-        raise NotImplementedError("SflatSummaryAnalysisTask.plot is not overridden.")

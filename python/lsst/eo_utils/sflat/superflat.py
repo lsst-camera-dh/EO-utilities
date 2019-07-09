@@ -1,7 +1,5 @@
 """Class to construct superbias frames"""
 
-import sys
-
 import numpy as np
 
 import lsst.afw.math as afwMath
@@ -18,24 +16,24 @@ from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.plot_utils import FigureDict
-
 from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
     flip_data_in_place, sort_sflats, stack_images, extract_raft_array_dict,\
-    outlier_raft_dict
+    outlier_raft_dict, fill_footprint_dict, extract_raft_imaging_data,\
+    extract_raft_unbiased_images
 
-from lsst.eo_utils.base.iter_utils import AnalysisBySlot,\
-    AnalysisByRaft
+from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.sflat.file_utils import RAFT_SFLAT_TABLE_FORMATTER,\
-    RAFT_SFLAT_PLOT_FORMATTER
+from .file_utils import SUPERFLAT_FORMATTER
 
-from lsst.eo_utils.sflat.analysis import SflatAnalysisConfig,\
+from .analysis import SflatAnalysisConfig,\
     SflatAnalysisTask
+
+from .meta_analysis import SflatRaftTableAnalysisConfig,\
+    SflatRaftTableAnalysisTask
 
 
 class SuperflatConfig(SflatAnalysisConfig):
@@ -65,7 +63,7 @@ class SuperflatTask(SflatAnalysisTask):
         kwargs
             Used to override configruation
         """
-        SflatAnalysisTask.__init__(self, **kwargs)
+        super().__init__(**kwargs)
         self._superflat_frame_l = None
         self._superflat_frame_h = None
         self._superflat_frame_r = None
@@ -93,7 +91,6 @@ class SuperflatTask(SflatAnalysisTask):
             Dictionary keyed by amp of the low/high ratio images
         """
         self.safe_update(**kwargs)
-        slot = self.config.slot
         stat_type = self.config.stat
         if stat_type is None:
             stat_type = DEFAULT_STAT_TYPE
@@ -102,9 +99,12 @@ class SuperflatTask(SflatAnalysisTask):
         superbias_frame = self.get_superbias_frame(mask_files)
 
         sflat_files = data['SFLAT']
-        sys.stdout.write("Working on %s, %i files.\n" % (slot, len(sflat_files)))
 
         sflat_files_l, sflat_files_h = sort_sflats(butler, sflat_files)
+
+        self.log_info_slot_msg(self.config, "%i %i %i files" % (len(sflat_files),
+                                                                len(sflat_files_l),
+                                                                len(sflat_files_h)))
 
         if stat_type.upper() in afwMath.__dict__:
             statistic = afwMath.__dict__[stat_type.upper()]
@@ -123,7 +123,9 @@ class SuperflatTask(SflatAnalysisTask):
             ratio = im_l.array / im_h.array
             ratio_images[amp] = afwImage.ImageF(ratio)
 
+        self.log_progress("Done!")
         return (sflat_l, sflat_h, ratio_images)
+
 
     def make_superflats(self, butler, data, **kwargs):
         """Stack the input data to make superflat frames
@@ -167,8 +169,6 @@ class SuperflatTask(SflatAnalysisTask):
         self._superflat_frame_l = get_ccd_from_id(None, output_file + '_l.fits', mask_files)
         self._superflat_frame_h = get_ccd_from_id(None, output_file + '_h.fits', mask_files)
         self._superflat_frame_r = get_ccd_from_id(None, output_file + '_ratio.fits', mask_files)
-        dtables = TableDict()
-        return dtables
 
 
     def plot(self, dtables, figs, **kwargs):
@@ -186,8 +186,8 @@ class SuperflatTask(SflatAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        if dtables.keys():
-            raise ValueError("dtables should not be set")
+        if dtables is not None:
+            raise ValueError("dtables should not be set in SuperflatTask.plot")
 
         if self.config.plot:
             figs.plot_sensor("img_l", None, self._superflat_frame_l)
@@ -213,34 +213,21 @@ class SuperflatTask(SflatAnalysisTask):
                                  subtract_mean=False, bins=100, range=(0.015, 0.025),
                                  **kwcopy)
 
-
-
-    def make_plots(self, dtables, **kwargs):
-        """Tie together the functions to make the figures
+    def plotfile_name(self, **kwargs):
+        """Get the basename for the plot files for a particular run, raft, ccd...
 
         Parameters
         ----------
-        dtables : `TableDict`
-            The data produced by this task
+        kwargs
+            Used to override default configuration
 
         Returns
         -------
-        figs : `FigureDict`
-            The resulting figures
+        ret_val : `str`
+            The name of the file
         """
         self.safe_update(**kwargs)
-
-        figs = FigureDict()
-        self.plot(dtables, figs)
-        if self.config.plot == 'display':
-            figs.save_all(None)
-            return figs
-
-        plotbase = self.get_superflat_file('').replace('.fits', '')
-
-        makedir_safe(plotbase)
-        figs.save_all(plotbase, self.config.plot)
-        return None
+        return self.get_superflat_file('').replace('.fits', '')
 
 
     def __call__(self, butler, data, **kwargs):
@@ -256,15 +243,15 @@ class SuperflatTask(SflatAnalysisTask):
             Used to override default configuration
         """
         self.safe_update(**kwargs)
-        dtables = self.make_superflats(butler, data)
+        self.make_superflats(butler, data)
         if self.config.plot is not None:
-            self.make_plots(dtables)
+            self.make_plots(None)
 
 
 
-class SuperflatRaftConfig(SflatAnalysisConfig):
+class SuperflatRaftConfig(SflatRaftTableAnalysisConfig):
     """Configuration for FlatSuperflatRaftTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='raft')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='sflat')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
@@ -272,15 +259,13 @@ class SuperflatRaftConfig(SflatAnalysisConfig):
     mosaic = EOUtilOptions.clone_param('mosaic')
 
 
-class SuperflatRaftTask(SflatAnalysisTask):
+class SuperflatRaftTask(SflatRaftTableAnalysisTask):
     """Analyze the correlations between the overscans for all amplifiers on a raft"""
 
     ConfigClass = SuperflatRaftConfig
     _DefaultName = "SuperflatRaftTask"
-    iteratorClass = AnalysisByRaft
 
-    tablename_format = RAFT_SFLAT_TABLE_FORMATTER
-    plotname_format = RAFT_SFLAT_PLOT_FORMATTER
+    intablename_format = SUPERFLAT_FORMATTER
 
     def __init__(self, **kwargs):
         """C'tor
@@ -290,14 +275,52 @@ class SuperflatRaftTask(SflatAnalysisTask):
         kwargs
             Used to override configruation
         """
-        SflatAnalysisTask.__init__(self, **kwargs)
+        SflatRaftTableAnalysisTask.__init__(self, **kwargs)
         self._mask_file_dict = {}
         self._sflat_file_dict_l = {}
         self._sflat_file_dict_h = {}
         self._sflat_file_dict_r = {}
+        self._sflat_images_h = None
         self._sflat_array_l = None
         self._sflat_array_h = None
         self._sflat_array_r = None
+
+
+    @staticmethod
+    def build_defect_dict(flat_array, **kwargs):
+        """Extract information about the defects into a dictionary
+
+        Parameters
+        ----------
+        flat_array : `dict`
+            The images, keyed by slot, amp
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        out_dict : `dict`
+            The output dictionary
+        """
+        fp_dict = dict(slot=[],
+                       amp=[],
+                       x_corner=[],
+                       y_corner=[],
+                       x_peak=[],
+                       y_peak=[],
+                       x_size=[],
+                       y_size=[],
+                       ratio_full=[])
+        for i in range(4):
+            fp_dict['ratio_%i' % i] = []
+            fp_dict['npix_%i' % i] = []
+            fp_dict['npix_0p2_%i' % i] = []
+
+        for islot, (_, slot_data) in enumerate(sorted(flat_array.items())):
+            for iamp, (_, image) in enumerate(sorted(slot_data.items())):
+                image *= -1
+                fill_footprint_dict(image, fp_dict, iamp, islot, **kwargs)
+        return fp_dict
 
     def extract(self, butler, data, **kwargs):
         """Extract the outliers in the superflat frames for the raft
@@ -319,28 +342,37 @@ class SuperflatRaftTask(SflatAnalysisTask):
         self.safe_update(**kwargs)
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in extract_superflat_fft_slot\n")
-        if data is not None:
-            sys.stdout.write("Ignoring raft_data in extract_superflat_fft_raft\n")
+            self.log.warn("Ignoring butler")
 
-        for slot in ALL_SLOTS:
+        slots = self.config.slots
+        if slots is None:
+            slots = ALL_SLOTS
+
+        for slot in slots:
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
-            basename = self.get_superflat_file('', slot=slot).replace('.fits', '')
-            self._sflat_file_dict_l[slot] = basename + '_l.fits'
-            self._sflat_file_dict_h[slot] = basename + '_h.fits'
-            self._sflat_file_dict_r[slot] = basename + '_ratio.fits'
+            basename = data[slot]
+            self._sflat_file_dict_l[slot] = basename.replace('.fits.fits', '_l.fits')
+            self._sflat_file_dict_h[slot] = basename.replace('.fits.fits', '_h.fits')
+            self._sflat_file_dict_r[slot] = basename.replace('.fits.fits', '_ratio.fits')
 
+        self._sflat_images_h, ccd_dict = extract_raft_unbiased_images(None,
+                                                                      self._sflat_file_dict_h,
+                                                                      mask_dict=self._mask_file_dict)
         self._sflat_array_l = extract_raft_array_dict(None, self._sflat_file_dict_l,
                                                       mask_dict=self._mask_file_dict)
-        self._sflat_array_h = extract_raft_array_dict(None, self._sflat_file_dict_h,
-                                                      mask_dict=self._mask_file_dict)
+        self._sflat_array_h = extract_raft_imaging_data(None,
+                                                        self._sflat_images_h,
+                                                        ccd_dict)
         self._sflat_array_r = extract_raft_array_dict(None, self._sflat_file_dict_r,
                                                       mask_dict=self._mask_file_dict)
         out_data_l = outlier_raft_dict(self._sflat_array_l, 1000., 300.)
         out_data_h = outlier_raft_dict(self._sflat_array_h, 50000., 15000.)
         out_data_r = outlier_raft_dict(self._sflat_array_r, 0.019, 0.002)
 
+        fp_dict = SuperflatRaftTask.build_defect_dict(self._sflat_images_h, frac_thresh=0.9)
+
         dtables = TableDict()
+        dtables.make_datatable('defects', fp_dict)
         dtables.make_datatable('outliers_l', out_data_l)
         dtables.make_datatable('outliers_h', out_data_h)
         dtables.make_datatable('outliers_r', out_data_r)

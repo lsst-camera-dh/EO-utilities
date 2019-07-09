@@ -1,7 +1,5 @@
 """Class to analyze the gains from fe55 cluster fitting"""
 
-import sys
-
 import numpy as np
 
 from lsst.eotest.sensor import Fe55GainFitter
@@ -12,47 +10,27 @@ from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
-from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft
-
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.fe55.file_utils import SLOT_FE55_TABLE_FORMATTER,\
-    RAFT_FE55_TABLE_FORMATTER, RAFT_FE55_PLOT_FORMATTER
-
-from lsst.eo_utils.fe55.analysis import Fe55AnalysisConfig, Fe55AnalysisTask
-
-from lsst.eo_utils.fe55.meta_analysis import Fe55SummaryAnalysisConfig, Fe55SummaryAnalysisTask
+from lsst.eo_utils.fe55.meta_analysis import Fe55RaftTableAnalysisConfig,\
+    Fe55RaftTableAnalysisTask,\
+    Fe55SummaryAnalysisConfig, Fe55SummaryAnalysisTask
 
 
-class Fe55GainStatsConfig(Fe55AnalysisConfig):
+class Fe55GainStatsConfig(Fe55RaftTableAnalysisConfig):
     """Configuration for Fe55GainStatsTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='fe55_clusters')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='fe55_gain_stats')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
+    bias = EOUtilOptions.clone_param('bias', default='orig')
+    superbias = EOUtilOptions.clone_param('superbias', default='orig')
     use_all = EOUtilOptions.clone_param('use_all')
 
 
-class Fe55GainStatsTask(Fe55AnalysisTask):
+class Fe55GainStatsTask(Fe55RaftTableAnalysisTask):
     """Analyze the gains using the fe55 cluster fit results"""
 
     ConfigClass = Fe55GainStatsConfig
     _DefaultName = "Fe55GainStatsTask"
-    iteratorClass = TableAnalysisByRaft
-
-    intablename_format = SLOT_FE55_TABLE_FORMATTER
-    tablename_format = RAFT_FE55_TABLE_FORMATTER
-    plotname_format = RAFT_FE55_PLOT_FORMATTER
-
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        Fe55AnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
         """Extract the gains and widths from the f355 clusters
@@ -74,7 +52,7 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
         self.safe_update(**kwargs)
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in fe55_gain_stats.extract\n")
+            self.log.warn("Ignoring butler")
 
         use_all = self.config.use_all
 
@@ -93,13 +71,11 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
                          slot=[],
                          amp=[])
 
-        sys.stdout.write("Working on 9 slots: ")
-        sys.stdout.flush()
+        self.log_info_raft_msg(self.config, "")
 
         for islot, slot in enumerate(ALL_SLOTS):
 
-            sys.stdout.write(" %s" % slot)
-            sys.stdout.flush()
+            self.log_progress("  %s" % slot)
 
             basename = data[slot]
             datapath = basename.replace('fe55_gain_stats.fits', 'fe55_clusters.fits')
@@ -145,8 +121,7 @@ class Fe55GainStatsTask(Fe55AnalysisTask):
                 data_dict['slot'].append(islot)
                 data_dict['amp'].append(amp)
 
-        sys.stdout.write(".\n")
-        sys.stdout.flush()
+        self.log_progress("Done!")
 
         outtables = TableDict()
         outtables.make_datatable("fe55_gain_stats", data_dict)
@@ -178,8 +153,8 @@ class Fe55GainSummaryConfig(Fe55SummaryAnalysisConfig):
     """Configuration for Fe55GainSummaryTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='fe55_gain_stats')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='fe55_gain_sum')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
+    bias = EOUtilOptions.clone_param('bias', default='orig')
+    superbias = EOUtilOptions.clone_param('superbias', default='orig')
     use_all = EOUtilOptions.clone_param('use_all')
 
 
@@ -187,18 +162,7 @@ class Fe55GainSummaryTask(Fe55SummaryAnalysisTask):
     """Sumarize the results of the Fe55 gain analyses"""
 
     ConfigClass = Fe55GainSummaryConfig
-    _DefaultName = ""
-
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        Fe55SummaryAnalysisTask.__init__(self, **kwargs)
-
+    _DefaultName = "Fe55GainSummaryTask"
 
     def extract(self, butler, data, **kwargs):
         """Make a summry table of the fe55 data
@@ -220,7 +184,7 @@ class Fe55GainSummaryTask(Fe55SummaryAnalysisTask):
         self.safe_update(**kwargs)
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in fe55_gain_summary.extract\n")
+            self.log.warn("Ignoring butler")
 
         for key, val in data.items():
             data[key] = val.replace('_fe55_gain_sum.fits', '_fe55_gain_stats.fits')

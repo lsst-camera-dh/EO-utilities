@@ -9,11 +9,15 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 
 from lsst.eotest.raft import RaftMosaic
 
+from lsst.eotest.sensor import parse_geom_kwd
+
+import lsst.afw.image as afwImage
+
 from .config_utils import pop_values
 
-from .image_utils import get_raw_image,\
+from .image_utils import get_raw_image, raw_amp_image,\
     get_amp_list, unbias_amp, get_geom_regions,\
-    get_image_frames_2d
+    get_image_frames_2d, unbiased_ccd_image_dict
 
 from .defaults import TESTCOLORMAP
 
@@ -763,11 +767,11 @@ class FigureDict:
         """
         kwcopy = kwargs.copy()
         title = kwcopy.pop('title', None)
-        clabel = kwargs.pop('clabel', None)
-        figsize = kwargs.pop('figsize', (14, 8))
+        clabel = kwcopy.pop('clabel', None)
+        figsize = kwcopy.pop('figsize', (14, 8))
         fig, axes = plt.subplots(nrows=1, ncols=1, figsize=figsize)
-        axes.set_xlabel(kwargs.pop('xlabel', "Amp. Index"))
-        axes.set_ylabel(kwargs.pop('ylabel', "Slot Index"))
+        axes.set_xlabel(kwcopy.pop('xlabel', "Amp. Index"))
+        axes.set_ylabel(kwcopy.pop('ylabel', "Slot Index"))
         img = axes.imshow(data, interpolation='nearest', **kwcopy)
         if title is not None:
             axes.set_title(title)
@@ -895,23 +899,12 @@ class FigureDict:
         fig, axs = plt.subplots(2, 8, figsize=(15, 10))
         axs = axs.ravel()
 
+        unbiased_images = unbiased_ccd_image_dict(butler, ccd,
+                                                  superbias_frame=superbias_frame,
+                                                  bias_type=bias_type)
         amps = get_amp_list(butler, ccd)
         for idx, amp in enumerate(amps):
-
-            regions = get_geom_regions(butler, ccd, amp)
-            serial_oscan = regions['serial_overscan']
-
-            if superbias_frame is not None:
-                if butler is not None:
-                    superbias_im = get_raw_image(None, superbias_frame, amp+1)
-                else:
-                    superbias_im = get_raw_image(None, superbias_frame, amp)
-            else:
-                superbias_im = None
-
-            img = get_raw_image(butler, ccd, amp)
-            image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
-
+            image = unbiased_images[amp]
             darray = image.array
             if subtract_mean:
                 darray -= darray.mean()
@@ -956,38 +949,23 @@ class FigureDict:
             Dictionary of `matplotlib` object
         """
         kwcopy = kwargs.copy()
-        bias_type = kwcopy.pop('bias', None)
-        #mask_files = kwcopy.pop('mask_files', [])
-        superbias_frame = kwcopy.pop('superbias_frame', None)
 
         kwsetup = pop_values(kwcopy, ['title', 'xlabel', 'ylabel', 'figsize'])
-
         o_dict = self.setup_amp_plots_grid(key, **kwsetup)
 
         axs = o_dict['axs']
-        amps = get_amp_list(butler, ccd)
-        for idx, amp in enumerate(amps):
+        unbiased_images = unbiased_ccd_image_dict(butler, ccd, **kwcopy)
 
-            regions = get_geom_regions(butler, ccd, amp)
-            serial_oscan = regions['serial_overscan']
-            img = get_raw_image(butler, ccd, amp)
-            if superbias_frame is not None:
-                if butler is not None:
-                    superbias_im = get_raw_image(None, superbias_frame, amp+1)
-                else:
-                    superbias_im = get_raw_image(None, superbias_frame, amp)
-            else:
-                superbias_im = None
-
-            image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+        for amp, image in unbiased_images.items():
             regions = get_geom_regions(butler, ccd, amp)
             frames = get_image_frames_2d(image, regions)
-
             darray = frames[kwcopy.pop('region', 'imaging')]
-
             if kwcopy.pop('subtract_mean', False):
                 darray -= darray.mean()
-
+            if butler is None:
+                idx = amp - 1
+            else:
+                idx = amp
             axes = axs.flat[idx]
             axes.hist(darray.flat, **kwcopy)
 
@@ -1035,7 +1013,7 @@ class FigureDict:
                 try:
                     axes.hist(darray.flat, label="amp%02i" % (idx+1), **kwcopy)
                 except ValueError:
-                    sys.stdout.write("Plotting failed for %s %i\n" % (slot, idx))
+                    sys.stderr.write("Plotting failed for %s %i\n" % (slot, idx))
 
         plt.tight_layout()
 
@@ -1110,6 +1088,114 @@ class FigureDict:
         return o_dict
 
 
+    def plot_ccd_mosaic(self, key, ccd, **kwargs):
+        """Combine amplifier image arrays into a single mosaic CCD image image
+
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        ccd : `MaskedCCD`
+            The CCD we are plotting
+
+        Keywords
+        --------
+        bias : `str` or `None`
+            Method to subtract overscan
+        superbias_frame : `MaskedCCD` or `None`
+            Superbias image
+        gains : `array` or `None`
+            Gain values
+        figsize : `tuple`
+            Figure size (in inches)
+
+        Returns
+        -------
+        o_dict : `dict`
+            Dictionary of `matplotlib` object
+        """
+        kwcopy = kwargs.copy()
+        bias_type = kwcopy.pop('bias', None)
+        superbias_frame = kwcopy.pop('superbias_frame', None)
+        gains = kwcopy.pop('gains', None)
+        figsize = kwcopy.pop('figsize', (10, 10))
+        vmin = kwcopy.pop('vmin', None)
+        vmax = kwcopy.get('vmax', None)
+
+        datasec = parse_geom_kwd(ccd.amp_geom[1]['DATASEC'])
+        nx_segments = 8
+        ny_segments = 2
+        nx_pix = nx_segments*(datasec['xmax'] - datasec['xmin'] + 1)
+        ny_pix = ny_segments*(datasec['ymax'] - datasec['ymin'] + 1)
+
+        # this array has [0,0] in the upper right corner on LCA-13381 view of CCDs
+        # and [ny,nx] in the lower right
+        mosaic = np.zeros((ny_pix, nx_pix), dtype=np.float32)
+
+        for ypos in range(ny_segments):
+            for xpos in range(nx_segments):
+                amp = ypos*nx_segments + xpos + 1
+                regions = get_geom_regions(None, ccd, amp)
+                serial_oscan = regions['serial_overscan']
+                imaging = regions['imaging']
+
+                detsec = parse_geom_kwd(ccd.amp_geom[amp]['DETSEC'])
+                xmin = nx_pix - max(detsec['xmin'], detsec['xmax'])
+                xmax = nx_pix - min(detsec['xmin'], detsec['xmax']) + 1
+                ymin = ny_pix - max(detsec['ymin'], detsec['ymax'])
+                ymax = ny_pix - min(detsec['ymin'], detsec['ymax']) + 1
+                #
+                # Extract bias-subtracted image for this segment - overscan corrected here
+                #
+                superbias_im = raw_amp_image(None, superbias_frame, amp)
+                img = get_raw_image(None, ccd, amp)
+                segment_image = unbias_amp(img, serial_oscan,
+                                           bias_type=bias_type, superbias_im=superbias_im)
+                subarr = segment_image[imaging].array
+                #
+                # Determine flips in x- and y- direction
+                #
+                if detsec['xmax'] > detsec['xmin']: # flip in x-direction
+                    subarr = subarr[:, ::-1]
+                if detsec['ymax'] > detsec['ymin']: # flip in y-direction
+                    subarr = subarr[::-1, :]
+                #
+                # Convert from ADU to e-
+                #
+                if gains is not None:
+                    subarr *= gains[amp]
+                #
+                # Set sub-array to the mosaiced image
+                #
+                mosaic[ymin:ymax, xmin:xmax] = subarr
+
+        # transpose and rotate by -90 to get a mosaic ndarray that will
+        # look like the LCA-13381 view with matplotlib(origin='lower') rotated CW by 90 for DM view
+        mosaicprime = np.zeros((ny_pix, nx_pix), dtype=np.float32)
+        mosaicprime[:, :] = np.rot90(np.transpose(mosaic), k=-1)
+
+        if vmin is None or vmax is None:
+            interval = viz.PercentileInterval(98.)
+            vrange = interval.get_limits(mosaicprime.flatten())
+        else:
+            vrange = (vmin, vmax)
+        norm = ImageNormalize(vmin=vrange[0], vmax=vrange[1])
+
+        image = afwImage.ImageF(mosaicprime)
+
+        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+        axes.set_xlabel(kwcopy.pop('xlabel', "X [pix]"))
+        axes.set_ylabel(kwcopy.pop('ylabel', "Y [pix]"))
+        img = axes.imshow(image.array, interpolation='nearest', origin='lower', norm=norm, **kwcopy)
+        cbar = plt.colorbar(img)
+
+        plt.tight_layout()
+
+        o_dict = dict(fig=fig, axes=axes, img=img, image=image, cbar=cbar)
+        self._fig_dict[key] = o_dict
+        return o_dict
+
+
     def plot_raft_mosaic(self, key, file_dict, **kwargs):
         """Make a mosaic of all the CCDs in a raft
 
@@ -1131,6 +1217,8 @@ class FigureDict:
         kwcopy = kwargs.copy()
         kwctor = pop_values(kwcopy, ['gains',
                                      'bias_subtract',
+                                     'bias_frames',
+                                     'dark_currents',
                                      'segment_processor'])
 
         raft_mosaic = RaftMosaic(file_dict, **kwctor)

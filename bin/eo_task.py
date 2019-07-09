@@ -4,8 +4,9 @@
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils import base, bias, flat, fe55, sflat, dark
+from lsst.eo_utils import base, bias, flat, fe55, sflat, dark, qe, ppump, meta
 
+MODULE_LIST = [base, bias, flat, fe55, sflat, dark, qe, ppump, meta]
 
 def main():
     """Hook for setup.py"""

@@ -91,7 +91,7 @@ def get_fe55_files_run(run_id, **kwargs):
             testtypes = DATACAT_BOT_TEST_TYPES
 
     return get_files_for_run(run_id,
-                             imageType="FE55",
-                             testTypes=testtypes,
+                             imagetype="FE55",
+                             testtypes=testtypes,
                              outkey='FE55',
                              **kwargs)

@@ -11,13 +11,23 @@ from collections import OrderedDict
 
 
 def specialize_file(infile, outfile, trans_dict):
-    
+    """Perform a series of replacements to turn a template file into usable code
+
+    Parameters
+    ----------
+    infile : `str`
+        The input file
+    outfile : `str` or `None`
+        The output file, None for stdout
+    trans_dict : `dict`
+        The translation dictionary
+    """
     fin = open(infile)
     if outfile is None:
         fout = sys.stdout
     else:
         fout = open(outfile, 'w')
-    
+
     line = fin.readline()
 
     while line:
@@ -34,7 +44,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-l', "--level", type=str, default='slot',
-                        help="Level of analysis [slot, raft, summary]")
+                        help="Level of analysis [slot, table, raft, summary]")
 
     parser.add_argument('-t', "--type", type=str, default='bias',
                         help="Type of analysis [bias, flat, dark ...]")
@@ -50,7 +60,7 @@ def main():
 
     args = parser.parse_args()
 
-    tmpl_dir = __file__.replace('bin/specialize_code.py', 'templates')
+    tmpl_dir = __file__.replace('bin/eo_specialize_code.py', 'templates')
 
     tmpl_file = os.path.join(tmpl_dir, '%s_analysis.py' % args.level)
 

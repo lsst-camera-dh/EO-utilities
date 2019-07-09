@@ -9,4 +9,8 @@ from . import file_utils as ppump_file_utils
 
 from .analysis import PpumpAnalysisConfig, PpumpAnalysisTask
 
-from .meta_analysis import PpumpSummaryAnalysisConfig, PpumpSummaryAnalysisTask
+from .meta_analysis import PpumpRaftTableAnalysisConfig,\
+    PpumpRaftTableAnalysisTask,\
+    PpumpSummaryAnalysisConfig, PpumpSummaryAnalysisTask
+
+from .ppump_trap import TrapConfig, TrapTask

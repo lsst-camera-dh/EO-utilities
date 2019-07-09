@@ -1,7 +1,5 @@
 """Class to construct superdark frames"""
 
-import sys
-
 import lsst.afw.math as afwMath
 
 import lsst.eotest.image_utils as imutil
@@ -14,21 +12,21 @@ from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.plot_utils import FigureDict
-
 from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
     flip_data_in_place, stack_images, extract_raft_array_dict,\
     outlier_raft_dict
 
+from lsst.eo_utils.bias.analysis import AnalysisTask
+
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot,\
-    AnalysisByRaft
+    TableAnalysisByRaft
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.dark.file_utils import RAFT_DARK_TABLE_FORMATTER,\
-    RAFT_DARK_PLOT_FORMATTER
+from lsst.eo_utils.dark.file_utils import RAFT_SDARK_TABLE_FORMATTER,\
+    RAFT_SDARK_PLOT_FORMATTER, SUPERDARK_FORMATTER
 
 from lsst.eo_utils.dark.analysis import DarkAnalysisConfig,\
     DarkAnalysisTask
@@ -86,7 +84,6 @@ class SuperdarkTask(DarkAnalysisTask):
             Dictionary keyed by amp of the superdark
         """
         self.safe_update(**kwargs)
-        slot = self.config.slot
         stat_type = self.config.stat
         if stat_type is None:
             stat_type = DEFAULT_STAT_TYPE
@@ -95,7 +92,8 @@ class SuperdarkTask(DarkAnalysisTask):
         superbias_frame = self.get_superbias_frame(mask_files)
 
         dark_files = data['DARK']
-        sys.stdout.write("Working on %s, %i files." % (slot, len(dark_files)))
+
+        self.log_info_slot_msg(self.config, "%i files" % len(dark_files))
 
         if stat_type.upper() in afwMath.__dict__:
             statistic = afwMath.__dict__[stat_type.upper()]
@@ -104,7 +102,7 @@ class SuperdarkTask(DarkAnalysisTask):
 
         sdark = stack_images(butler, dark_files, statistic=statistic,
                              bias_type=self.config.bias, superbias_frame=superbias_frame)
-
+        self.log_progress("Done!")
         return sdark
 
     def make_superdark(self, butler, slot_data, **kwargs):
@@ -140,8 +138,6 @@ class SuperdarkTask(DarkAnalysisTask):
                 flip_data_in_place(output_file + '.fits')
 
         self._superdark_frame = get_ccd_from_id(None, output_file + '.fits', mask_files)
-        dtables = TableDict()
-        return dtables
 
 
     def plot(self, dtables, figs, **kwargs):
@@ -159,8 +155,8 @@ class SuperdarkTask(DarkAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        if dtables.keys():
-            raise ValueError("dtables should not be set")
+        if dtables is not None:
+            raise ValueError("dtables should not be set in SuperdarkTask.plot")
 
         if self.config.plot:
             figs.plot_sensor("img", None, self._superdark_frame)
@@ -174,34 +170,21 @@ class SuperdarkTask(DarkAnalysisTask):
                                  subtract_mean=False, bins=100, range=(0., 2000,),
                                  **kwcopy)
 
-
-
-    def make_plots(self, dtables, **kwargs):
-        """Tie together the functions to make the figures
+    def plotfile_name(self, **kwargs):
+        """Get the basename for the plot files for a particular run, raft, ccd...
 
         Parameters
         ----------
-        dtables : `TableDict`
-            The data produced by this task
+        kwargs
+            Used to override default configuration
 
         Returns
         -------
-        figs : `FigureDict`
-            The resulting figures
+        ret_val : `str`
+            The name of the file
         """
         self.safe_update(**kwargs)
-
-        figs = FigureDict()
-        self.plot(dtables, figs)
-        if self.config.plot == 'display':
-            figs.save_all(None)
-            return figs
-
-        plotbase = self.get_superdark_file('').replace('.fits', '')
-
-        makedir_safe(plotbase)
-        figs.save_all(plotbase, self.config.plot)
-        return None
+        return self.get_superdark_file('').replace('.fits', '')
 
 
     def __call__(self, butler, slot_data, **kwargs):
@@ -217,30 +200,32 @@ class SuperdarkTask(DarkAnalysisTask):
             Used to override default configuration
         """
         self.safe_update(**kwargs)
-        dtables = self.make_superdark(butler, slot_data)
+        self.make_superdark(butler, slot_data)
         if self.config.plot is not None:
-            self.make_plots(dtables)
+            self.make_plots(None)
 
 
 class SuperdarkRaftConfig(DarkAnalysisConfig):
     """Configuration for SuperdarkRaftTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='raft')
+    outsuffix = EOUtilOptions.clone_param('outsuffix', default='sdark')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
+    slots = EOUtilOptions.clone_param('slots')
     mask = EOUtilOptions.clone_param('mask')
     stats_hist = EOUtilOptions.clone_param('stats_hist')
     mosaic = EOUtilOptions.clone_param('mosaic')
 
 
-class SuperdarkRaftTask(DarkAnalysisTask):
+class SuperdarkRaftTask(AnalysisTask):
     """Analyze the outliers in the superdark frames for a raft"""
 
     ConfigClass = SuperdarkRaftConfig
     _DefaultName = "SuperdarkRaftTask"
-    iteratorClass = AnalysisByRaft
+    iteratorClass = TableAnalysisByRaft
 
-    tablename_format = RAFT_DARK_TABLE_FORMATTER
-    plotname_format = RAFT_DARK_PLOT_FORMATTER
+    intablename_format = SUPERDARK_FORMATTER
+    tablename_format = RAFT_SDARK_TABLE_FORMATTER
+    plotname_format = RAFT_SDARK_PLOT_FORMATTER
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -250,7 +235,7 @@ class SuperdarkRaftTask(DarkAnalysisTask):
         kwargs
             Used to override configruation
         """
-        DarkAnalysisTask.__init__(self, **kwargs)
+        AnalysisTask.__init__(self, **kwargs)
         self._mask_file_dict = {}
         self._sdark_file_dict = {}
         self._sdark_arrays = None
@@ -275,14 +260,16 @@ class SuperdarkRaftTask(DarkAnalysisTask):
         self.safe_update(**kwargs)
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in extract_superbias_fft_slot\n")
-        if data is not None:
-            sys.stdout.write("Ignoring raft_data in extract_superbias_fft_raft\n")
+            self.log.warn("Ignoring butler")
 
-        for slot in ALL_SLOTS:
+        slots = self.config.slots
+        if slots is None:
+            slots = ALL_SLOTS
+
+        for slot in slots:
             mask_files = self.get_mask_files(slot=slot)
             self._mask_file_dict[slot] = mask_files
-            self._sdark_file_dict[slot] = self.get_superdark_file('', slot=slot)
+            self._sdark_file_dict[slot] = data[slot].replace('.fits.fits', '.fits')
 
         self._sdark_arrays = extract_raft_array_dict(None, self._sdark_file_dict,
                                                      mask_dict=self._mask_file_dict)

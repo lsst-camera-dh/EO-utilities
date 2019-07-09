@@ -1,7 +1,5 @@
 """Functions to analyse dark and superbias frames"""
 
-import sys
-
 from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
@@ -40,16 +38,6 @@ class DarkAnalysisTask(AnalysisTask):
 
     tablename_format = SLOT_DARK_TABLE_FORMATTER
     plotname_format = SLOT_DARK_PLOT_FORMATTER
-
-    def __init__(self, **kwargs):
-        """ C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        AnalysisTask.__init__(self, **kwargs)
 
     def get_superdark_file(self, suffix, **kwargs):
         """Get the name of the superdark file for a particular run, raft, ccd...
@@ -118,7 +106,7 @@ class DarkAnalysisTask(AnalysisTask):
         else:
             retval = get_dark_files_butler(butler, run_num, **kwargs)
         if not retval:
-            sys.stdout.write("Warning, call to get_data for %s returned no data" % self.getName())
+            self.log.error("Call to get_data returned no data")
         return retval
 
     def extract(self, butler, data, **kwargs):

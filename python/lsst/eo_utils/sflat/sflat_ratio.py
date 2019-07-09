@@ -1,10 +1,6 @@
 """Tasks to analyze superflat low/high exposure ratios"""
 
-import sys
-
 import numpy as np
-
-from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
@@ -12,33 +8,37 @@ from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
-from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft, AnalysisBySlot
-
-from lsst.eo_utils.base.image_utils import get_dims_from_ccd,\
-    get_raw_image, get_geom_regions, get_amp_list
+from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
+    get_dims_from_ccd, get_raw_image, get_geom_regions, get_amp_list
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.sflat.file_utils import SLOT_SFLAT_TABLE_FORMATTER,\
-    RAFT_SFLAT_TABLE_FORMATTER, RAFT_SFLAT_PLOT_FORMATTER
+from lsst.eo_utils.sflat.file_utils import SUPERFLAT_FORMATTER
 
-from lsst.eo_utils.sflat.analysis import SflatAnalysisConfig, SflatAnalysisTask
+from .meta_analysis import SflatSlotTableAnalysisConfig,\
+    SflatSlotTableAnalysisTask
 
 
-class SflatRatioConfig(SflatAnalysisConfig):
+class SflatRatioConfig(SflatSlotTableAnalysisConfig):
     """Configuration for SflatSflatRatioTask"""
+    outdir = EOUtilOptions.clone_param('outdir')
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
+    slot = EOUtilOptions.clone_param('slot')
+    insuffix = EOUtilOptions.clone_param('insuffix', default='')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='sflatratio')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
     mask = EOUtilOptions.clone_param('mask')
 
 
-class SflatRatioTask(SflatAnalysisTask):
+class SflatRatioTask(SflatSlotTableAnalysisTask):
     """Analysis the ratio of low/high exposure superflats"""
 
     ConfigClass = SflatRatioConfig
     _DefaultName = "SflatRatio"
-    iteratorClass = AnalysisBySlot
+
+    intablename_format = SUPERFLAT_FORMATTER
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -48,7 +48,7 @@ class SflatRatioTask(SflatAnalysisTask):
         kwargs
             Used to override configruation
         """
-        SflatAnalysisTask.__init__(self, **kwargs)
+        SflatSlotTableAnalysisTask.__init__(self, **kwargs)
         self.low_images = {}
         self.high_images = {}
         self.ratio_images = {}
@@ -77,17 +77,21 @@ class SflatRatioTask(SflatAnalysisTask):
         slot = self.config.slot
 
         if butler is not None:
-            sys.stdout.write("Ignoring butler in extract_superbias_fft_slot\n")
-        if data is not None:
-            sys.stdout.write("Ignoring raft_data in extract_superbias_fft_raft\n")
+            self.log.warn("Ignoring butler")
 
         mask_files = self.get_mask_files()
         superbias_frame = self.get_superbias_frame(mask_files)
+        superflat_file = data[0]
 
-        superflat_frames = self.get_superflat_frames(mask_files)
-        l_frame = superflat_frames['l']
-        h_frame = superflat_frames['h']
-        ratio_frame = superflat_frames['ratio']
+        l_frame = get_ccd_from_id(None,
+                                  superflat_file.replace('.fits.fits', '_l.fits'),
+                                  mask_files)
+        h_frame = get_ccd_from_id(None,
+                                  superflat_file.replace('.fits.fits', '_h.fits'),
+                                  mask_files)
+        ratio_frame = get_ccd_from_id(None,
+                                      superflat_file.replace('.fits.fits', '_ratio.fits'),
+                                      mask_files)
 
         # This is a dictionary of dictionaries to store all the
         # data you extract from the sflat_files
@@ -191,110 +195,4 @@ class SflatRatioTask(SflatAnalysisTask):
                                        range=((-50, 50.), (0.018, 0.022)))
 
 
-
-class SflatRatioStatsConfig(SflatAnalysisConfig):
-    """Configuration for SflatSlotTempalteStatsTask"""
-    insuffix = EOUtilOptions.clone_param('insuffix', default='sflatratio')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='sflatratio_stats')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
-
-
-
-class SflatRatioStatsTask(SflatAnalysisTask):
-    """Extract summary statistics from the low/high exposure ratio analysis"""
-
-    ConfigClass = SflatRatioStatsConfig
-    _DefaultName = "SflatRatioStatsTask"
-    iteratorClass = TableAnalysisByRaft
-
-    intablename_format = SLOT_SFLAT_TABLE_FORMATTER
-    tablename_format = RAFT_SFLAT_TABLE_FORMATTER
-    plotname_format = RAFT_SFLAT_PLOT_FORMATTER
-
-    def __init__(self, **kwargs):
-        """ C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        SflatAnalysisTask.__init__(self, **kwargs)
-
-
-    def extract(self, butler, data, **kwargs):
-        """Extract the high-level statistics about the low/high
-        superflat ratios
-
-        Parameters
-        ----------
-        butler : `Butler`
-            The data butler
-        data : `dict`
-            Dictionary (or other structure) contain the input data
-        kwargs
-            Used to override default configuration
-
-        Returns
-        -------
-        dtables : `TableDict`
-            The resulting data
-        """
-        self.safe_update(**kwargs)
-
-        # You should expand this to include space for the data you want to extract
-        data_dict = dict(slot=[],
-                         amp=[])
-
-        sys.stdout.write("Working on 9 slots: ")
-        sys.stdout.flush()
-
-        for islot, slot in enumerate(ALL_SLOTS):
-
-            sys.stdout.write(" %s" % slot)
-            sys.stdout.flush()
-
-            basename = data[slot]
-            datapath = basename.replace(self.config.outsuffix, self.config.insuffix)
-
-            dtables = TableDict(datapath)
-
-            for amp in range(16):
-
-                # Here you can get the data out for each amp and append it to the
-                # data_dict
-
-                data_dict['slot'].append(islot)
-                data_dict['amp'].append(amp)
-
-        sys.stdout.write(".\n")
-        sys.stdout.flush()
-
-        outtables = TableDict()
-        outtables.make_datatable("sflatratio", data_dict)
-        return outtables
-
-
-    def plot(self, dtables, figs, **kwargs):
-        """Make plots about the low/high superflat ratios
-
-        Parameters
-        ----------
-        dtables : `TableDict`
-            The data produced by this task
-        figs : `FigureDict`
-            The resulting figures
-        kwargs
-            Used to override default configuration
-        """
-        self.safe_update(**kwargs)
-
-        # Analysis goes here.
-        # you should use the data in dtables to make a bunch of figures in figs
-
-
-
-
 EO_TASK_FACTORY.add_task_class('SflatRatio', SflatRatioTask)
-EO_TASK_FACTORY.add_task_class('SflatRatioStats', SflatRatioStatsTask)

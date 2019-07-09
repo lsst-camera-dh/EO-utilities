@@ -4,7 +4,8 @@
 
 """This module contains functions to find files of a particular type in the SLAC directory tree"""
 
-from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_for_run,\
+from lsst.eo_utils.base.file_utils import get_hardware_type_and_id,\
+    get_files_for_run, merge_file_dicts,\
     FILENAME_FORMATS, SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
 
 SLOT_QE_FORMAT_STRING =\
@@ -69,8 +70,15 @@ def get_qe_files_run(run_id, **kwargs):
         else:
             testtypes = ['QE']
 
-    return get_files_for_run(run_id,
-                             imagetype="QE",
-                             testtypes=testtypes,
-                             outkey='QE',
-                             **kwargs)
+    lambda_dict = get_files_for_run(run_id,
+                                    imagetype="flat",
+                                    testtypes=testtypes,
+                                    outkey='LAMBDA',
+                                    **kwargs)
+    bias_dict = get_files_for_run(run_id,
+                                  imagetype="bias",
+                                  testtypes=testtypes,
+                                  outkey='BIAS',
+                                  **kwargs)
+
+    return merge_file_dicts(lambda_dict, bias_dict)

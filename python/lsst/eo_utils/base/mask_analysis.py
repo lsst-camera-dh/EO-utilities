@@ -1,7 +1,5 @@
 """Class to merge together masks for a single run, raft, slot"""
 
-import sys
-
 from lsst.eotest.sensor import add_mask_files
 
 from .iter_utils import AnalysisBySlot
@@ -83,7 +81,7 @@ class MaskAddTask(BaseAnalysisTask):
 
         mask_files = data['MASK']
         if butler is not None:
-            sys.stdout.write("Ignoring Butler to get mask files\n")
+            self.log.warn("Ignoring butler")
 
         outfile = self.get_filename_from_format(MASK_FORMATTER, self.config.outsuffix)
         makedir_safe(outfile)

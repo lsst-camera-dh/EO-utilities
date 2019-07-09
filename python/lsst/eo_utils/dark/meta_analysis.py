@@ -2,12 +2,38 @@
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.iter_utils import SummaryAnalysisIterator
+from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft,\
+    SummaryAnalysisIterator
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
-from lsst.eo_utils.dark.file_utils import SUM_DARK_TABLE_FORMATTER,\
-    SUM_DARK_PLOT_FORMATTER, RAFT_DARK_TABLE_FORMATTER
+from lsst.eo_utils.dark.file_utils import SLOT_DARK_TABLE_FORMATTER,\
+    SUM_DARK_TABLE_FORMATTER, SUM_DARK_PLOT_FORMATTER,\
+    RAFT_DARK_TABLE_FORMATTER, RAFT_DARK_PLOT_FORMATTER
+
+
+class DarkRaftTableAnalysisConfig(AnalysisConfig):
+    """Configuration for bias analyses"""
+    outdir = EOUtilOptions.clone_param('outdir')
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
+    slots = EOUtilOptions.clone_param('slots')
+    insuffix = EOUtilOptions.clone_param('insuffix')
+    outsuffix = EOUtilOptions.clone_param('outsuffix')
+
+
+class DarkRaftTableAnalysisTask(AnalysisTask):
+    """Simple functor class to tie together standard bias data analysis
+    """
+
+    # These can overridden by the sub-class
+    ConfigClass = DarkRaftTableAnalysisConfig
+    _DefaultName = "DarkRaftTableAnalysisTask"
+    iteratorClass = TableAnalysisByRaft
+
+    intablename_format = SLOT_DARK_TABLE_FORMATTER
+    tablename_format = RAFT_DARK_TABLE_FORMATTER
+    plotname_format = RAFT_DARK_PLOT_FORMATTER
 
 
 class DarkSummaryAnalysisConfig(AnalysisConfig):
@@ -29,52 +55,3 @@ class DarkSummaryAnalysisTask(AnalysisTask):
     intablename_format = RAFT_DARK_TABLE_FORMATTER
     tablename_format = SUM_DARK_TABLE_FORMATTER
     plotname_format = SUM_DARK_PLOT_FORMATTER
-
-    def __init__(self, **kwargs):
-        """ C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        AnalysisTask.__init__(self, **kwargs)
-
-    def extract(self, butler, data, **kwargs):
-        """This needs to be implemented by the sub-class
-
-        It should analyze the input data and create a set of tables
-        in a `TableDict` object
-
-        Parameters
-        ----------
-        butler : `Butler`
-            The data butler
-        data : `dict`
-            Dictionary (or other structure) contain the input data
-        kwargs
-            Used to override default configuration
-
-        Returns
-        -------
-        dtables : `TableDict`
-            The resulting data
-        """
-        raise NotImplementedError("AnalysisFunc.extract is not overridden.")
-
-    def plot(self, dtables, figs, **kwargs):
-        """This needs to be implemented by the sub-class
-
-        It should use a `TableDict` object to create a set of
-        plots and fill a `FigureDict` object
-
-        Parameters
-        ----------
-        dtables : `TableDict`
-            The data produced by this task
-        figs : `FigureDict`
-            The resulting figures
-        kwargs
-            Used to override default configuration
-        """
-        raise NotImplementedError("AnalysisFunc.plot is not overridden.")

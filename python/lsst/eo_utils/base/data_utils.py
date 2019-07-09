@@ -2,6 +2,7 @@
 
 import os
 
+
 import sys
 
 import numpy as np
@@ -11,6 +12,10 @@ import h5py
 from astropy.io import fits
 from astropy.table import Table, Column
 from astropy.table import vstack as vstack_table
+
+import lsst.afw.geom as afwGeom
+
+from .defaults import ALL_SLOTS
 
 # Make sure we can recognize usual suffixes
 HDF5_SUFFIXS = ['.hdf', '.h5', '.hd5', '.hdf5']
@@ -177,7 +182,7 @@ class TableDict:
                 if tablelist is None or hdu.name.lower() in tablelist:
                     self._table_dict[hdu.name.lower()] = Table.read(filepath, hdu=hdu.name)
         else:
-            raise ValueError("Can only write pickle and hdf5 files for now, not %s" % extype)
+            raise ValueError("Can only read pickle and hdf5 files for now, not %s" % extype)
 
 
 def vstack_tables(filedict, **kwargs):
@@ -228,3 +233,39 @@ def vstack_tables(filedict, **kwargs):
 
     outtable = vstack_table(tables)
     return outtable
+
+
+def construct_bbox_dict(defect_table):
+    """Fill a dictionary with data about the footprints from an image
+
+    Parameters
+    ----------
+    defect_table : `Table`
+        Astropy table with the defects
+
+    Returns
+    -------
+    bbox_dict : `dict`
+        Dictionary with Bounding boxes, keyed by slot and amp
+    """
+    bbox_dict = {}
+    slots = defect_table['slot']
+    amps = defect_table['amp']
+    x_corners = defect_table['x_corner']
+    y_corners = defect_table['y_corner']
+    x_sizes = defect_table['x_size']
+    y_sizes = defect_table['y_size']
+    for islot, amp, x_corner, y_corner, x_size, y_size in\
+            zip(slots, amps, x_corners, y_corners, x_sizes, y_sizes):
+        slot = ALL_SLOTS[islot]
+        if slot not in bbox_dict:
+            bbox_dict[slot] = {}
+        slot_dict = bbox_dict[slot]
+        if amp not in slot_dict:
+            slot_dict[amp] = []
+        bbox_list = slot_dict[amp]
+        corner = afwGeom.Point2I(x_corner, y_corner)
+        extent = afwGeom.Extent2I(x_size, y_size)
+        bbox = afwGeom.Box2I(corner, extent)
+        bbox_list.append(bbox)
+    return bbox_dict
