@@ -160,7 +160,7 @@ class SuperflatTask(SflatAnalysisTask):
             if butler is None:
                 template_file = slot_data['SFLAT'][0]
             else:
-                template_file = get_filename_from_id(butler, slot_data['SFLAT'][0])[0])
+                template_file = get_filename_from_id(butler, slot_data['SFLAT'][0])
 
             
             imutil.writeFits(sflats[0], output_file + '_l.fits',

@@ -138,7 +138,7 @@ class SuperdarkTask(DarkAnalysisTask):
             if butler is None:
                 template_file = slot_data['DARK'][0]
             else:
-                template_file = get_filename_from_id(butler, slot_data['DARK'][0])[0])
+                template_file = get_filename_from_id(butler, slot_data['DARK'][0])
 
             imutil.writeFits(sdark, output_file + '.fits', template_file, self.config.bitpix)
             if butler is not None:
