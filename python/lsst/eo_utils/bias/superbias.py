@@ -127,7 +127,7 @@ class SuperbiasTask(BiasAnalysisTask):
             if butler is None:
                 template_file = slot_data['BIAS'][0]
             else:
-                template_file = butler.get("raw_filename", slot_data['BIAS'][0])
+                template_file = butler.get("raw_filename", slot_data['BIAS'][0])[0]
 
             imutil.writeFits(out_data, output_file, template_file, self.config.bitpix)
             if butler is not None:
