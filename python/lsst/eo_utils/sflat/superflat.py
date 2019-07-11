@@ -155,12 +155,18 @@ class SuperflatTask(SflatAnalysisTask):
 
         if not self.config.skip:
             sflats = self.extract(butler, data)
+            if butler is None:
+                template_file = slot_data['SFLAT'][0]
+            else:
+                template_file = butler.get("raw_filename", slot_data['SFLAT'][0])
+
+            
             imutil.writeFits(sflats[0], output_file + '_l.fits',
-                             data['SFLAT'][0], self.config.bitpix)
+                             template_file, self.config.bitpix)
             imutil.writeFits(sflats[1], output_file + '_h.fits',
-                             data['SFLAT'][0], self.config.bitpix)
+                             template_file, self.config.bitpix)
             imutil.writeFits(sflats[2], output_file + '_ratio.fits',
-                             data['SFLAT'][0], self.config.bitpix)
+                             template_file, self.config.bitpix)
             if butler is not None:
                 flip_data_in_place(output_file + '_l.fits')
                 flip_data_in_place(output_file + '_h.fits')

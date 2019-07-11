@@ -124,7 +124,12 @@ class SuperbiasTask(BiasAnalysisTask):
 
         if not self.config.skip:
             out_data = self.extract(butler, slot_data)
-            imutil.writeFits(out_data, output_file, slot_data['BIAS'][0], self.config.bitpix)
+            if butler is None:
+                template_file = slot_data['BIAS'][0]
+            else:
+                template_file = butler.get("raw_filename", slot_data['BIAS'][0])
+
+            imutil.writeFits(out_data, output_file, template_file, self.config.bitpix)
             if butler is not None:
                 flip_data_in_place(output_file)
 
