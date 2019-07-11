@@ -13,9 +13,40 @@ from __future__ import with_statement
 import os
 import sys
 
+from lsst.eo_utils.base.file_utils import makedir_safe
 #import pipes
 
 #from lsst.ctrl.pool import Batch, exportEnv, UMASK
+
+def write_slurm_batchfile(batchfile, logfile, jobname, batch_args, optstring):
+    """Dispatch a single job
+
+    Parameters
+    ----------
+    batchfile : `str`
+        The path to the batchfile
+    logfile : `str`
+        The path to the logfile
+    jobname : `str`
+        The command to run the job
+    batch_args : `str`
+        Arguments to pass to batch command
+    optsting : `str`
+        Arguments to pass to the underlying command
+    """
+    makedir_safe(batchfile)
+    fout = open(batchfile, 'w')
+    fout.write("#!/bin/bash -l\n")
+    tokens = batch_args.split()
+    for key, val in zip(tokens[0::2], tokens[1::2]):
+        fout.write("#SBATCH %s %s\n" % (key, val))
+    fout.write("\n")
+    fout.write("srun --output %s %s %s\n" % (logfile, jobname, optstring))
+    fout.close()
+
+
+  
+
 
 def dispatch_job(jobname, logfile, **kwargs):
     """Dispatch a single job
@@ -46,20 +77,29 @@ def dispatch_job(jobname, logfile, **kwargs):
     optstring = kwargs.get('optstring', None)
     dry_run = kwargs.get('dry_run', False)
 
-    if batch.find('bsub') >= 0:
+    if batch.find('bsub') == 0:
         sub_com = "bsub -o %s" % logfile
+        if batch_args is not None:
+            sub_com += " %s " % batch_args
+    elif batch.find('sbatch') == 0:
+        batchfile = os.path.join('sbatch', logfile.replace('.log', '.sl'))
+        write_slurm_batchfile(batchfile, logfile, jobname, batch_args, optstring)
+        sub_com = "sbatch %s" % batchfile
+    elif batch.find('srun') == 0:
+        sub_com = "srun --output %s" % logfile
         if batch_args is not None:
             sub_com += " %s " % batch_args
     else:
         sub_com = ""
 
-    if run is None:
-        sub_com += " %s" % jobname
-    else:
-        sub_com += " %s --run %s" % (jobname, run)
+    if batch.find('sbatch') < 0:
+        if run is None:
+            sub_com += " %s" % jobname
+        else:
+            sub_com += " %s --run %s" % (jobname, run)
 
-    if optstring is not None:
-        sub_com += " %s" % optstring
+        if optstring is not None:
+            sub_com += " %s" % optstring
 
     if dry_run:
         sys.stdout.write("%s\n" % sub_com)
