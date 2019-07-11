@@ -32,6 +32,24 @@ def get_butler_by_repo(repo, **kwargs):
     return butler
 
 
+def get_filename_from_id(butler, data_id):
+    """Return the hardware type and hardware id for a given run
+
+    Parameters
+    ----------
+    butler : `Bulter`
+        The data Butler
+    data_id : `dict`
+        The data id in question
+    
+    Returns
+    -------
+    filename : `str`
+        The filename for the assocated CCD data
+    """
+    return butler.get("raw_filename", data_id)[0][0:-3]
+
+
 def get_hardware_info(butler, run_num):
     """Return the hardware type and hardware id for a given run
 

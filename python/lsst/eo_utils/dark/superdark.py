@@ -8,6 +8,8 @@ from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.file_utils import makedir_safe
 
+from lsst.eo_utils.base.butler_utils import get_filename_from_id
+
 from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
@@ -136,7 +138,7 @@ class SuperdarkTask(DarkAnalysisTask):
             if butler is None:
                 template_file = slot_data['DARK'][0]
             else:
-                template_file = butler.get("raw_filename", slot_data['DARK'][0])[0]
+                template_file = get_filename_from_id(butler, slot_data['DARK'][0])[0])
 
             imutil.writeFits(sdark, output_file + '.fits', template_file, self.config.bitpix)
             if butler is not None:
