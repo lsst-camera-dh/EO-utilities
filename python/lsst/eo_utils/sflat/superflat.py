@@ -158,7 +158,7 @@ class SuperflatTask(SflatAnalysisTask):
         if not self.config.skip:
             sflats = self.extract(butler, data)
             if butler is None:
-                template_file = slot_data['SFLAT'][0]
+                template_file = data['SFLAT'][0]
             else:
                 template_file = get_filename_from_id(butler, slot_data['SFLAT'][0])
 
