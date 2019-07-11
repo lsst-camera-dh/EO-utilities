@@ -1,4 +1,4 @@
-"""Class to analyze the FFT of the bias frames"""
+"""Class to analyze tabular data for a given CCD"""
 
 import sys
 
