@@ -701,7 +701,7 @@ def get_exposure_time(butler, ccd):
     """
     if butler is None:
         return ccd.md.md.get('EXPTIME')
-    raise NotImplementedError("Can't get exposure time for butlerlized data")
+    return ccd.getInfo().getVisitInfo().getExposureTime()
 
 def get_mondiode_val(butler, ccd):
     """Return the monitoring diode value
@@ -720,7 +720,7 @@ def get_mondiode_val(butler, ccd):
     """
     if butler is None:
         return ccd.md.get('MONDIODE')
-    raise NotImplementedError("Can't get mondiode value for butlerlized data")
+    return ccd.getMetadata()['MONDIODE']
 
 
 def get_mono_wl(butler, ccd):
@@ -740,7 +740,7 @@ def get_mono_wl(butler, ccd):
     """
     if butler is None:
         return ccd.md.get('MONOWL')
-    raise NotImplementedError("Can't get monowl for butlerlized data")
+    return ccd.getMetadata()['MONOWL']
 
 
 def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
