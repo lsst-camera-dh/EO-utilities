@@ -36,6 +36,11 @@ def write_slurm_batchfile(jobname, logfile, **kwargs):
         Arguments to pass to batch command
     optstring : `str`
         Additional arguments to pass to the command
+
+    Returns
+    -------
+    batchfile : `str`
+        The name of the slurm submission script file
     """
     run = kwargs.get('run', None)
     batch_args = kwargs.get('batch_args', None)
@@ -59,6 +64,7 @@ def write_slurm_batchfile(jobname, logfile, **kwargs):
 
     fout.write("%s\n" % sub_com)
     fout.close()
+    return batchfile
   
 
 
@@ -96,7 +102,7 @@ def dispatch_job(jobname, logfile, **kwargs):
         if batch_args is not None:
             sub_com += " %s " % batch_args
     elif batch.find('sbatch') == 0:
-        write_slurm_batchfile(jobname, logfile, **kwargs)
+        batchfile = write_slurm_batchfile(jobname, logfile, **kwargs)
         sub_com = "sbatch %s" % batchfile
     elif batch.find('srun') == 0:
         sub_com = "srun --output %s" % logfile
