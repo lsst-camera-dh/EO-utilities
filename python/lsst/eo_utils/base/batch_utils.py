@@ -18,7 +18,7 @@ from lsst.eo_utils.base.file_utils import makedir_safe
 
 #from lsst.ctrl.pool import Batch, exportEnv, UMASK
 
-def write_slurm_batchfile(jobname, logfile, **kwargs)
+def write_slurm_batchfile(jobname, logfile, **kwargs):
     """Dispatch a single job
 
     Parameters
