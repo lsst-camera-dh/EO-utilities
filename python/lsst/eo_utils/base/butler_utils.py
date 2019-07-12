@@ -41,7 +41,7 @@ def get_filename_from_id(butler, data_id):
         The data Butler
     data_id : `dict`
         The data id in question
-    
+
     Returns
     -------
     filename : `str`

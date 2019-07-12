@@ -35,13 +35,11 @@ except AttributeError:
     AFWIMAGE_MASK = afwImage.Mask
 
 
-def get_dims_from_ccd(butler, ccd):
+def get_dims_from_ccd(ccd):
     """Get the CCD amp dimensions for a particular dataId or file
 
     Parameters
     ----------
-    butler : `Butler` or `None`
-        Data Butler
     ccd : `ExposureF` or `MaskedCCD`
         CCD data object
 
@@ -50,7 +48,7 @@ def get_dims_from_ccd(butler, ccd):
     odict : `dict`
         Dictionary with the dimensions
     """
-    if butler is None:
+    if isinstance(ccd, MaskedCCD):
         geom = ccd.amp_geom
         o_dict = dict(nrow_i=geom.imaging.getHeight(),
                       nrow_s=geom.serial_overscan.getHeight(),
@@ -71,13 +69,11 @@ def get_dims_from_ccd(butler, ccd):
     return o_dict
 
 
-def get_readout_freqs_from_ccd(butler, ccd):
+def get_readout_freqs_from_ccd(ccd):
     """Get the frequencies corresponding to the FFTs
 
     Parameters
     ----------
-    butler : `Butler` or `None`
-        Data Butler
     ccd : `ExposureF` or `MaskedCCD`
         CCD data object
 
@@ -87,7 +83,7 @@ def get_readout_freqs_from_ccd(butler, ccd):
         Dictionary with the frequencies
     """
 
-    if butler is None:
+    if isinstance(ccd, MaskedCCD):
         geom = ccd.amp_geom
         nrow_i = geom.imaging.getHeight()
         nrow_s = geom.serial_overscan.getHeight()
@@ -194,13 +190,11 @@ def flip_data_in_place(filepath):
     hdus.writeto(filepath, overwrite=True)
 
 
-def get_geom_regions(butler, ccd, amp):
+def get_geom_regions(ccd, amp):
     """Get the ccd amp bounding boxes for a particular dataId or file
 
     Parameters
     ----------
-    butler : `Butler` or `None`
-        Data Butler
     ccd : `ExposureF` or `MaskedCCD`
         CCD data object
     amp : `int`
@@ -211,7 +205,7 @@ def get_geom_regions(butler, ccd, amp):
     odict : `dict`
         Dictionary with the bounding boxes
     """
-    if butler is None:
+    if isinstance(ccd, MaskedCCD):
         geom = ccd.amp_geom
         o_dict = dict(imaging=geom.imaging,
                       serial_overscan=geom.serial_overscan,
@@ -233,13 +227,11 @@ def get_geom_regions(butler, ccd, amp):
     return o_dict
 
 
-def get_dimension_arrays_from_ccd(butler, ccd):
+def get_dimension_arrays_from_ccd(ccd):
     """Get the linear arrays with the indices for each direction and readout region
 
     Parameters
     ----------
-    butler : `Butler` or `None`
-        Data Butler
     ccd : `ExposureF` or `MaskedCCD`
         CCD data object
 
@@ -249,7 +241,7 @@ def get_dimension_arrays_from_ccd(butler, ccd):
         Dictionary with the arrays
     """
 
-    if butler is None:
+    if isinstance(ccd, MaskedCCD):
         geom = ccd.amp_geom
         nrow_i = geom.imaging.getHeight()
         nrow_s = geom.serial_overscan.getHeight()
@@ -275,13 +267,11 @@ def get_dimension_arrays_from_ccd(butler, ccd):
     return o_dict
 
 
-def get_raw_image(butler, ccd, amp):
+def get_raw_image(ccd, amp):
     """Get the raw image for a particular amp
 
     Parameters
     ----------
-    butler : `Butler` or `None`
-        Data Butler
     ccd : `ExposureF` or `MaskedCCD`
         CCD data object
     amp : `int`
@@ -292,7 +282,7 @@ def get_raw_image(butler, ccd, amp):
     odict : `ImageF`
         The image
     """
-    if butler is None:
+    if isinstance(ccd, MaskedCCD):
         img = ccd[amp].getImage()
     else:
         geom = ccd.getDetector()
@@ -300,7 +290,7 @@ def get_raw_image(butler, ccd, amp):
     return img
 
 
-def get_ccd_from_id(butler, data_id, mask_files, bias_frame=None):
+def get_ccd_from_id(butler, data_id, mask_files, **kwargs):
     """Get a CCD image from a data_id
 
     If we are using `Butler` then this will take a
@@ -317,16 +307,27 @@ def get_ccd_from_id(butler, data_id, mask_files, bias_frame=None):
         Data identier
     mask_files : `list`
         List of data_ids for the files to construct the pixel mask
+
+    Keywords
+    --------
     bias_frame : `ExposureF` or `MaskedCCD` or `None`
         Object with the bias data
+    masked_ccd : `bool`
+        Use bulter only to get filename, return as MaskedCCD object
 
     Returns
     -------
     ccd : `ExposureF` or `MaskedCCD`
         CCD data object
     """
+    bias_frame = kwargs.get('bias_frame', None)
     if butler is None:
         exposure = MaskedCCD(str(data_id),
+                             mask_files=mask_files,
+                             bias_frame=bias_frame)
+    elif kwargs.get('masked_ccd', False):
+        filepath = butler.get('raw_filename', data_id)
+        exposure = MaskedCCD(str(filepath),
                              mask_files=mask_files,
                              bias_frame=bias_frame)
     else:
@@ -335,13 +336,11 @@ def get_ccd_from_id(butler, data_id, mask_files, bias_frame=None):
     return exposure
 
 
-def get_amp_list(butler, ccd):
+def get_amp_list(ccd):
     """Get the Geometry for a particular dataId or file
 
     Parameters
     ----------
-    butler : `Butler` or `None`
-        Data Butler
     ccd : `ExposureF` or `MaskedCCD`
         CCD data object
 
@@ -350,7 +349,7 @@ def get_amp_list(butler, ccd):
     amplist : `list`
         List of amplifier indices
     """
-    if butler is None:
+    if isinstance(ccd, MaskedCCD):
         amplist = [amp for amp in ccd]
     else:
         amplist = [amp for amp in range(16)]
@@ -388,14 +387,12 @@ def get_image_frames_2d(img, regions, regionlist=None):
     return o_dict
 
 
-def get_data_as_read(butler, ccd, amp, regionlist=None):
+def get_data_as_read(ccd, amp, regionlist=None):
     """Split out the arrays for the serial_overscan, parallel_overscan, and imaging regions
     and return the data in the readout order.
 
     Parameters
     ----------
-    butler : `Butler` or `None`
-        Data Butler (or none)
     ccd : `ImageF` or `MaskedImageF`
         CCD image object
     amp : `int`
@@ -408,8 +405,8 @@ def get_data_as_read(butler, ccd, amp, regionlist=None):
     o_dict : `dict`
         Dictionary mapping name to data array for each region
     """
-    raw_image = get_raw_image(butler, ccd, amp)
-    regions = get_geom_regions(butler, ccd, amp)
+    raw_image = get_raw_image(ccd, amp)
+    regions = get_geom_regions(ccd, amp)
     frames = get_image_frames_2d(raw_image, regions, regionlist)
     return frames
 
@@ -486,13 +483,11 @@ def unbias_amp(img, serial_oscan, bias_type=None, superbias_im=None, region=None
 
     return image
 
-def raw_amp_image(butler, ccd, amp):
+def raw_amp_image(ccd, amp):
     """Get the image for a particular amp
 
     Parameters
     ----------
-    butler : `Butler` or `None
-        Data Butler
     ccd : `MaskedCCD` or `ImageF`
         CCD data object
     amp : `int`
@@ -503,22 +498,20 @@ def raw_amp_image(butler, ccd, amp):
         The image
     """
     if ccd is not None:
-        if butler is not None:
-            image = get_raw_image(None, ccd, amp+1)
+        if isinstance(ccd, MaskedCCD):
+            image = get_raw_image(ccd, amp+1)
         else:
-            image = get_raw_image(None, ccd, amp)
+            image = get_raw_image(ccd, amp)
     else:
         image = None
     return image
 
 
-def unbiased_ccd_image_dict(butler, ccd, **kwargs):
+def unbiased_ccd_image_dict(ccd, **kwargs):
     """Get the images keys by amp for a ccd
 
     Parameters
     ----------
-    butler : `Butler` or `None
-        Data Butler
     ccd : `MaskedCCD` or `ImageF`
         CCD data object
 
@@ -538,27 +531,25 @@ def unbiased_ccd_image_dict(butler, ccd, **kwargs):
     bias_type = kwcopy.pop('bias', None)
     superbias_frame = kwcopy.pop('superbias_frame', None)
 
-    amps = get_amp_list(butler, ccd)
+    amps = get_amp_list(ccd)
 
     o_dict = {}
     for amp in amps:
-        regions = get_geom_regions(butler, ccd, amp)
+        regions = get_geom_regions(ccd, amp)
         serial_oscan = regions['serial_overscan']
-        img = get_raw_image(butler, ccd, amp)
-        superbias_im = raw_amp_image(butler, superbias_frame, amp)
+        img = get_raw_image(ccd, amp)
+        superbias_im = raw_amp_image(superbias_frame, amp)
         image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
         o_dict[amp] = image
 
     return o_dict
 
 
-def extract_ccd_array_dict(butler, data_id, **kwargs):
+def extract_ccd_array_dict(data_id, **kwargs):
     """Get the Geometry for a particular dataId or file
 
     Parameters
     ----------
-    butler : `Butler` or `None
-        Data Butler
     data_id : `dict` or `str`
         Data identifier or filename
 
@@ -579,18 +570,18 @@ def extract_ccd_array_dict(butler, data_id, **kwargs):
     kwcopy = kwargs.copy()
     mask_files = kwcopy.pop('mask_files', [])
     ccd = get_ccd_from_id(None, data_id, mask_files)
-    unbiased_images = unbiased_ccd_image_dict(butler, ccd, **kwargs)
+    unbiased_images = unbiased_ccd_image_dict(ccd, **kwargs)
 
     o_dict = {}
     for amp, image in unbiased_images.items():
-        regions = get_geom_regions(butler, ccd, amp)
+        regions = get_geom_regions(ccd, amp)
         frames = get_image_frames_2d(image, regions)
         o_dict[amp] = frames[kwcopy.pop('region', 'imaging')]
 
     return o_dict
 
 
-def extract_raft_unbiased_images(butler, data_id_dict, **kwargs):
+def extract_raft_unbiased_images(data_id_dict, **kwargs):
     """Get the unbiased raft-level images
 
     Parameters
@@ -634,7 +625,7 @@ def extract_raft_unbiased_images(butler, data_id_dict, **kwargs):
             kwcopy['superbias_frame'] = superbias_frame
         ccd = get_ccd_from_id(None, data_id, mask_files)
         ccd_dict[slot] = ccd
-        o_dict[slot] = unbiased_ccd_image_dict(butler, ccd, **kwcopy)
+        o_dict[slot] = unbiased_ccd_image_dict(ccd, **kwcopy)
     return o_dict, ccd_dict
 
 
@@ -684,7 +675,7 @@ def extract_raft_array_dict(butler, data_id_dict, **kwargs):
     return o_dict
 
 
-def get_exposure_time(butler, ccd):
+def get_exposure_time(ccd):
     """Return the exposure time
 
     Parameters
@@ -699,11 +690,11 @@ def get_exposure_time(butler, ccd):
     exptime : `float`
         The exposure time in seconds
     """
-    if butler is None:
+    if isinstance(ccd, MaskedCCD):
         return ccd.md.md.get('EXPTIME')
     return ccd.getInfo().getVisitInfo().getExposureTime()
 
-def get_mondiode_val(butler, ccd):
+def get_mondiode_val(ccd):
     """Return the monitoring diode value
 
     Parameters
@@ -718,12 +709,12 @@ def get_mondiode_val(butler, ccd):
     val : `float`
         The value
     """
-    if butler is None:
+    if isinstance(ccd, MaskedCCD):
         return ccd.md.get('MONDIODE')
     return ccd.getMetadata()['MONDIODE']
 
 
-def get_mono_wl(butler, ccd):
+def get_mono_wl(ccd):
     """Return the monochromatic wavelength
 
     Parameters
@@ -738,7 +729,7 @@ def get_mono_wl(butler, ccd):
     val : `float`
         The value
     """
-    if butler is None:
+    if isinstance(ccd, MaskedCCD):
         return ccd.md.get('MONOWL')
     return ccd.getMetadata()['MONOWL']
 
@@ -785,14 +776,14 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
                 log.info("  %i" % ifile)
 
         ccd = get_ccd_from_id(butler, in_file, mask_files=[])
-        exp_time += get_exposure_time(butler, ccd)
-        amps = get_amp_list(butler, ccd)
+        exp_time += get_exposure_time(ccd)
+        amps = get_amp_list(ccd)
 
         for amp in amps:
-            regions = get_geom_regions(butler, ccd, amp)
+            regions = get_geom_regions(ccd, amp)
             serial_oscan = regions['serial_overscan']
-            img = get_raw_image(butler, ccd, amp)
-            superbias_im = raw_amp_image(butler, superbias_frame, amp)
+            img = get_raw_image(ccd, amp)
+            superbias_im = raw_amp_image(superbias_frame, amp)
 
             if ifile == 0:
                 amp_stack_dict[amp] = [unbias_amp(img, serial_oscan,
@@ -925,13 +916,11 @@ def outlier_stats(data_array, mean_val, max_offset):
     return o_dict
 
 
-def extract_raft_imaging_data(butler, image_dict, ccd_dict, **kwargs):
+def extract_raft_imaging_data(image_dict, ccd_dict, **kwargs):
     """Get data from the imaging regions
 
     Parameters
     ----------
-    butler : `Butler` or `None
-        Data Butler
     image_dict : `dict`
         Dictionary, keyed by slot, amp of images
     ccd_dict : `dict`
@@ -948,7 +937,7 @@ def extract_raft_imaging_data(butler, image_dict, ccd_dict, **kwargs):
         ccd = ccd_dict[slot]
         o_dict[slot] = {}
         for amp, image in slot_data.items():
-            regions = get_geom_regions(butler, ccd, amp)
+            regions = get_geom_regions(ccd, amp)
             frames = get_image_frames_2d(image, regions)
             o_dict[slot][amp] = frames[kwcopy.pop('region', 'imaging')]
 

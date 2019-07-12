@@ -80,11 +80,11 @@ class OscanAmpStackTask(BiasAnalysisTask):
             ccd = get_ccd_from_id(butler, bias_file, mask_files)
 
             if ifile == 0:
-                dim_array_dict = get_dimension_arrays_from_ccd(butler, ccd)
+                dim_array_dict = get_dimension_arrays_from_ccd(ccd)
                 for key, val in dim_array_dict.items():
                     stack_arrays[key] = np.zeros((nfiles, 16, len(val)))
 
-            stack_by_amps(stack_arrays, butler, ccd,
+            stack_by_amps(stack_arrays, ccd,
                           ifile=ifile, bias_type=self.config.bias,
                           superbias_frame=superbias_frame)
 

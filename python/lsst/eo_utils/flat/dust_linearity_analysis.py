@@ -86,7 +86,6 @@ class DustLinearityAnalysisTask(FlatAnalysisTask):
         self.log_info_slot_msg(self.config, "%i files" % len(flat1_files))
 
         sflat_table_file = self.get_filename_from_format(RAFT_SFLAT_TABLE_FORMATTER, "sflat.fits")
-        print(sflat_table_file)
 
         sflat_tables = TableDict(sflat_table_file)
         # dictionary of dictionaries of lists of bounding
@@ -127,11 +126,11 @@ class DustLinearityAnalysisTask(FlatAnalysisTask):
             ccd = get_ccd_from_id(butler, flat1_file, mask_files)
 
             # To be appended while looping over bounding boxes
-            exptime = get_exposure_time(butler, ccd)
-            mondiode_val = get_mondiode_val(butler, ccd)
+            exptime = get_exposure_time(ccd)
+            mondiode_val = get_mondiode_val(ccd)
             islot = slot_idx_dict[slot]
 
-            unbiased_images = unbiased_ccd_image_dict(butler, ccd,
+            unbiased_images = unbiased_ccd_image_dict(ccd,
                                                       bias=self.config.bias,
                                                       superbias_frame=superbias_frame)
 

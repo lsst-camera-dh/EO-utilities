@@ -65,7 +65,7 @@ def write_slurm_batchfile(jobname, logfile, **kwargs):
     fout.write("%s\n" % sub_com)
     fout.close()
     return batchfile
-  
+
 
 
 def dispatch_job(jobname, logfile, **kwargs):

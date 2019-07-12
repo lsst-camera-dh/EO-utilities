@@ -246,9 +246,9 @@ class BaseAnalysisTask(BaseTask):
         """
         if superbias_frame is not None:
             if butler is not None:
-                superbias_im = get_raw_image(None, superbias_frame, amp+1)
+                superbias_im = get_raw_image(superbias_frame, amp+1)
             else:
-                superbias_im = get_raw_image(None, superbias_frame, amp)
+                superbias_im = get_raw_image(superbias_frame, amp)
         else:
             superbias_im = None
         return superbias_im

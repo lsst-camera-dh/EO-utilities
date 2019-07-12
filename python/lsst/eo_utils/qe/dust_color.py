@@ -93,20 +93,20 @@ class DustColorTask(QeAnalysisTask):
 
             ccd = get_ccd_from_id(butler, qe_file, mask_files)
 
-            data_dict['WL'].append(get_mono_wl(butler, ccd))
-            data_dict['EXPTIME'].append(get_exposure_time(butler, ccd))
-            data_dict['MONDIODE'].append(get_mondiode_val(butler, ccd))
+            data_dict['WL'].append(get_mono_wl(ccd))
+            data_dict['EXPTIME'].append(get_exposure_time(ccd))
+            data_dict['MONDIODE'].append(get_mondiode_val(ccd))
 
-            amps = get_amp_list(butler, ccd)
+            amps = get_amp_list(ccd)
             for i, amp in enumerate(amps):
 
                 bbox_list = slot_bbox_dict[i]
-                regions = get_geom_regions(butler, ccd, amp)
+                regions = get_geom_regions(ccd, amp)
                 serial_oscan = regions['serial_overscan']
                 imaging = regions['imaging']
 
                 superbias_im = self.get_superbias_amp_image(butler, superbias_frame, amp)
-                img = get_raw_image(butler, ccd, amp)
+                img = get_raw_image(ccd, amp)
 
                 image = unbias_amp(img, serial_oscan, bias_type=self.config.bias,
                                    superbias_im=superbias_im, region=imaging)

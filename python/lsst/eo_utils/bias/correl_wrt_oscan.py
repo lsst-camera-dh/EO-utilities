@@ -79,16 +79,16 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
 
             ccd = get_ccd_from_id(butler, bias_file, mask_files)
             if ifile == 0:
-                dims = get_dims_from_ccd(butler, ccd)
+                dims = get_dims_from_ccd(ccd)
                 nrow_i = dims['nrow_i']
                 ncol_i = dims['ncol_i']
-                amps = get_amp_list(butler, ccd)
+                amps = get_amp_list(ccd)
                 for i, amp in enumerate(amps):
-                    regions = get_geom_regions(butler, ccd, amp)
-                    image = get_raw_image(butler, ccd, amp)
+                    regions = get_geom_regions(ccd, amp)
+                    image = get_raw_image(ccd, amp)
                     ref_frames[i] = get_image_frames_2d(image, regions)
                     continue
-            self.get_ccd_data(butler, ccd, ref_frames,
+            self.get_ccd_data(ccd, ref_frames,
                               ifile=ifile, s_correl=s_correl, p_correl=p_correl,
                               nrow_i=nrow_i, ncol_i=ncol_i)
 
@@ -136,13 +136,11 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
             figs.get_obj('oscorr-col', 'axs').flat[i].hist(p_correl, bins=100, range=(-1., 1.))
 
 
-    def get_ccd_data(self, butler, ccd, ref_frames, **kwargs):
+    def get_ccd_data(self, ccd, ref_frames, **kwargs):
         """Get the bias values and update the data dictionary
 
         Parameters
         ----------
-        butler : `Butler`
-            The data butler
         ccd : `MaskedCCD`
             The ccd we are getting data from
         data : `dict`
@@ -163,11 +161,11 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
         nrow_i = kwargs['nrow_i']
         ncol_i = kwargs['ncol_i']
 
-        amps = get_amp_list(butler, ccd)
+        amps = get_amp_list(ccd)
         for i, amp in enumerate(amps):
 
-            regions = get_geom_regions(butler, ccd, amp)
-            image = get_raw_image(butler, ccd, amp)
+            regions = get_geom_regions(ccd, amp)
+            image = get_raw_image(ccd, amp)
             frames = get_image_frames_2d(image, regions)
 
             del_i_array = frames['imaging'] - ref_frames[i]['imaging']

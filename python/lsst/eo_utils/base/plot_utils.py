@@ -9,7 +9,7 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 
 from lsst.eotest.raft import RaftMosaic
 
-from lsst.eotest.sensor import parse_geom_kwd
+from lsst.eotest.sensor import MaskedCCD, parse_geom_kwd
 
 import lsst.afw.image as afwImage
 
@@ -860,15 +860,13 @@ class FigureDict:
         return o_dict
 
 
-    def plot_sensor(self, key, butler, ccd, **kwargs):
+    def plot_sensor(self, key, ccd, **kwargs):
         """Plot the data from all 16 amps on a sensor in a single figure
 
         Parameters
         ----------
         key : `str`
             Key for the figure.
-        butler : `Butler`
-            The data butler
         ccd : `MaskedCCD` or `AFWImage`
             Object with the image data
 
@@ -899,10 +897,10 @@ class FigureDict:
         fig, axs = plt.subplots(2, 8, figsize=(15, 10))
         axs = axs.ravel()
 
-        unbiased_images = unbiased_ccd_image_dict(butler, ccd,
+        unbiased_images = unbiased_ccd_image_dict(ccd,
                                                   superbias_frame=superbias_frame,
                                                   bias_type=bias_type)
-        amps = get_amp_list(butler, ccd)
+        amps = get_amp_list(ccd)
         for idx, amp in enumerate(amps):
             image = unbiased_images[amp]
             darray = image.array
@@ -918,15 +916,13 @@ class FigureDict:
         return o_dict
 
 
-    def histogram_array(self, key, butler, ccd, **kwargs):
+    def histogram_array(self, key, ccd, **kwargs):
         """Plot the data from all 16 amps on a sensor in a single figure
 
         Parameters
         ----------
         key : `str`
             Key for the figure.
-        butler : `Butler`
-            The data butler
         ccd : `MaskedCCD` or `AFWImage`
             Object with the image data
 
@@ -954,15 +950,15 @@ class FigureDict:
         o_dict = self.setup_amp_plots_grid(key, **kwsetup)
 
         axs = o_dict['axs']
-        unbiased_images = unbiased_ccd_image_dict(butler, ccd, **kwcopy)
+        unbiased_images = unbiased_ccd_image_dict(ccd, **kwcopy)
 
         for amp, image in unbiased_images.items():
-            regions = get_geom_regions(butler, ccd, amp)
+            regions = get_geom_regions(ccd, amp)
             frames = get_image_frames_2d(image, regions)
             darray = frames[kwcopy.pop('region', 'imaging')]
             if kwcopy.pop('subtract_mean', False):
                 darray -= darray.mean()
-            if butler is None:
+            if isinstance(ccd, MaskedCCD):
                 idx = amp - 1
             else:
                 idx = amp
@@ -1135,7 +1131,7 @@ class FigureDict:
         for ypos in range(ny_segments):
             for xpos in range(nx_segments):
                 amp = ypos*nx_segments + xpos + 1
-                regions = get_geom_regions(None, ccd, amp)
+                regions = get_geom_regions(ccd, amp)
                 serial_oscan = regions['serial_overscan']
                 imaging = regions['imaging']
 
@@ -1147,8 +1143,8 @@ class FigureDict:
                 #
                 # Extract bias-subtracted image for this segment - overscan corrected here
                 #
-                superbias_im = raw_amp_image(None, superbias_frame, amp)
-                img = get_raw_image(None, ccd, amp)
+                superbias_im = raw_amp_image(superbias_frame, amp)
+                img = get_raw_image(ccd, amp)
                 segment_image = unbias_amp(img, serial_oscan,
                                            bias_type=bias_type, superbias_im=superbias_im)
                 subarr = segment_image[imaging].array

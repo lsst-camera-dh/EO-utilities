@@ -160,9 +160,8 @@ class SuperflatTask(SflatAnalysisTask):
             if butler is None:
                 template_file = data['SFLAT'][0]
             else:
-                template_file = get_filename_from_id(butler, slot_data['SFLAT'][0])
+                template_file = get_filename_from_id(butler, data['SFLAT'][0])
 
-            
             imutil.writeFits(sflats[0], output_file + '_l.fits',
                              template_file, self.config.bitpix)
             imutil.writeFits(sflats[1], output_file + '_h.fits',
@@ -363,13 +362,11 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
             self._sflat_file_dict_h[slot] = basename.replace('.fits.fits', '_h.fits')
             self._sflat_file_dict_r[slot] = basename.replace('.fits.fits', '_ratio.fits')
 
-        self._sflat_images_h, ccd_dict = extract_raft_unbiased_images(None,
-                                                                      self._sflat_file_dict_h,
+        self._sflat_images_h, ccd_dict = extract_raft_unbiased_images(self._sflat_file_dict_h,
                                                                       mask_dict=self._mask_file_dict)
         self._sflat_array_l = extract_raft_array_dict(None, self._sflat_file_dict_l,
                                                       mask_dict=self._mask_file_dict)
-        self._sflat_array_h = extract_raft_imaging_data(None,
-                                                        self._sflat_images_h,
+        self._sflat_array_h = extract_raft_imaging_data(self._sflat_images_h,
                                                         ccd_dict)
         self._sflat_array_r = extract_raft_array_dict(None, self._sflat_file_dict_r,
                                                       mask_dict=self._mask_file_dict)

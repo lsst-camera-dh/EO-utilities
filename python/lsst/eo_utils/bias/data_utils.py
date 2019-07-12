@@ -9,7 +9,7 @@ from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES,\
     get_image_frames_2d, array_struct, unbias_amp
 
 
-def stack_by_amps(stack_arrays, butler, ccd, **kwargs):
+def stack_by_amps(stack_arrays, ccd, **kwargs):
     """Stack arrays for all the amps to look for coherent noise
 
     Parameters
@@ -34,13 +34,13 @@ def stack_by_amps(stack_arrays, butler, ccd, **kwargs):
     ifile = kwargs['ifile']
     superbias_frame = kwargs.get('superbias_frame', None)
 
-    amps = get_amp_list(butler, ccd)
+    amps = get_amp_list(ccd)
     for i, amp in enumerate(amps):
 
-        regions = get_geom_regions(butler, ccd, amp)
+        regions = get_geom_regions(ccd, amp)
         serial_oscan = regions['serial_overscan']
-        img = get_raw_image(butler, ccd, amp)
-        superbias_im = raw_amp_image(butler, superbias_frame, amp)
+        img = get_raw_image(ccd, amp)
+        superbias_im = raw_amp_image(superbias_frame, amp)
         image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
         frames = get_image_frames_2d(image, regions)
 

@@ -111,18 +111,18 @@ class FlatPairTask(FlatAnalysisTask):
             flat_1 = get_ccd_from_id(butler, id_1, [])
             flat_2 = get_ccd_from_id(butler, id_2, [])
 
-            amps = get_amp_list(butler, flat_1)
+            amps = get_amp_list(flat_1)
 
-            flux_1 = get_exposure_time(butler, flat_1)
-            flux_2 = get_exposure_time(butler, flat_2)
+            flux_1 = get_exposure_time(flat_1)
+            flux_2 = get_exposure_time(flat_2)
 
             if flux_1 != flux_2:
                 raise RuntimeError("Exposure times do not match for:\n%s\n%s\n"
                                    % (id_1, id_1))
             data_dict['EXPTIME'].append(flux_1)
 
-            mondiode_1 = get_mondiode_val(butler, flat_1)
-            mondiode_2 = get_mondiode_val(butler, flat_2)
+            mondiode_1 = get_mondiode_val(flat_1)
+            mondiode_2 = get_mondiode_val(flat_2)
 
             if mondiode_1 is not None:
                 flux_1 *= mondiode_1
@@ -138,9 +138,9 @@ class FlatPairTask(FlatAnalysisTask):
 
             data_dict['FLUX'].append(flux)
 
-            ccd_1_ims = unbiased_ccd_image_dict(butler, flat_1, bias=self.config.bias,
+            ccd_1_ims = unbiased_ccd_image_dict(flat_1, bias=self.config.bias,
                                                 superbias_frame=superbias_frame)
-            ccd_2_ims = unbiased_ccd_image_dict(butler, flat_2, bias=self.config.bias,
+            ccd_2_ims = unbiased_ccd_image_dict(flat_2, bias=self.config.bias,
                                                 superbias_frame=superbias_frame)
 
             for i, amp in enumerate(amps):
