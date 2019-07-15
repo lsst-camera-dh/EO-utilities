@@ -74,11 +74,11 @@ class BiasStructTask(BiasAnalysisTask):
 
             ccd = get_ccd_from_id(butler, bias_file, mask_files)
             if ifile == 0:
-                dim_array_dict = get_dimension_arrays_from_ccd(butler, ccd)
+                dim_array_dict = get_dimension_arrays_from_ccd(ccd)
                 for key, val in dim_array_dict.items():
                     biasstruct_data[key] = {key:val}
 
-            self.get_ccd_data(butler, ccd, biasstruct_data,
+            self.get_ccd_data(ccd, biasstruct_data,
                               slot=slot, ifile=ifile,
                               nfiles_used=len(bias_files),
                               superbias_frame=superbias_frame)
@@ -111,13 +111,11 @@ class BiasStructTask(BiasAnalysisTask):
                                                  x_name="%s_%s" % (dkey, rkey), y_name="biasst")
 
 
-    def get_ccd_data(self, butler, ccd, data, **kwargs):
+    def get_ccd_data(self, ccd, data, **kwargs):
         """Get the bias values and update the data dictionary
 
         Parameters
         ----------
-        butler : `Butler`
-            The data butler
         ccd : `MaskedCCD`
             The ccd we are getting data from
         data : `dict`
@@ -143,13 +141,13 @@ class BiasStructTask(BiasAnalysisTask):
         slot = kwargs.get('slot')
         superbias_frame = kwargs.get('superbias_frame', None)
 
-        amps = get_amp_list(butler, ccd)
+        amps = get_amp_list(ccd)
         for i, amp in enumerate(amps):
-            regions = get_geom_regions(butler, ccd, amp)
+            regions = get_geom_regions(ccd, amp)
             serial_oscan = regions['serial_overscan']
-            img = get_raw_image(butler, ccd, amp)
+            img = get_raw_image(ccd, amp)
             if superbias_frame is not None:
-                superbias_im = get_raw_image(butler, superbias_frame, amp)
+                superbias_im = get_raw_image(superbias_frame, amp)
             else:
                 superbias_im = None
             image = unbias_amp(img, serial_oscan,
@@ -225,11 +223,11 @@ class SuperbiasStructTask(BiasStructTask):
 
         biasstruct_data = {}
 
-        dim_array_dict = get_dimension_arrays_from_ccd(None, superbias)
+        dim_array_dict = get_dimension_arrays_from_ccd(superbias)
         for key, val in dim_array_dict.items():
             biasstruct_data[key] = {key:val}
 
-        self.get_ccd_data(None, superbias, biasstruct_data,
+        self.get_ccd_data(superbias, biasstruct_data,
                           slot=slot, bias_type=None,
                           std=self.config.std, superbias_frame=None)
 

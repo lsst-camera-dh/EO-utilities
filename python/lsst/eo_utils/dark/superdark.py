@@ -8,6 +8,8 @@ from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.file_utils import makedir_safe
 
+from lsst.eo_utils.base.butler_utils import get_filename_from_id
+
 from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
@@ -133,7 +135,12 @@ class SuperdarkTask(DarkAnalysisTask):
 
         if not self.config.skip:
             sdark = self.extract(butler, slot_data)
-            imutil.writeFits(sdark, output_file + '.fits', slot_data['DARK'][0], self.config.bitpix)
+            if butler is None:
+                template_file = slot_data['DARK'][0]
+            else:
+                template_file = get_filename_from_id(butler, slot_data['DARK'][0])
+
+            imutil.writeFits(sdark, output_file + '.fits', template_file, self.config.bitpix)
             if butler is not None:
                 flip_data_in_place(output_file + '.fits')
 
@@ -159,7 +166,7 @@ class SuperdarkTask(DarkAnalysisTask):
             raise ValueError("dtables should not be set in SuperdarkTask.plot")
 
         if self.config.plot:
-            figs.plot_sensor("img", None, self._superdark_frame)
+            figs.plot_sensor("img", self._superdark_frame)
 
         default_array_kw = {}
         if self.config.stats_hist:
@@ -271,7 +278,7 @@ class SuperdarkRaftTask(AnalysisTask):
             self._mask_file_dict[slot] = mask_files
             self._sdark_file_dict[slot] = data[slot].replace('.fits.fits', '.fits')
 
-        self._sdark_arrays = extract_raft_array_dict(None, self._sdark_file_dict,
+        self._sdark_arrays = extract_raft_array_dict(self._sdark_file_dict,
                                                      mask_dict=self._mask_file_dict)
 
         out_data = outlier_raft_dict(self._sdark_arrays, 0., 25.)

@@ -1,20 +1,26 @@
 """This module manage the default settings for eo_utils module"""
 
+import os
 
-# Location of various butler Repos
-BUTLER_TS8_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/ts8'
-BUTLER_BOT_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/bot'
-BUTLER_TS8_NCSA_REPO = '/datasets/ts8/repo'
-BUTLER_BOT_NCSA_REPO = '/datasets/bot/repo'
+# SITE DEPENDENT STUFF
+SITE = os.environ.get('EO_UTILS_SITE', 'slac')
 
-# Location of slac archive
-ARCHIVE_SLAC = '/gpfs/slac/lsst/fs*/g/data/jobHarness/jh_archive*'
+if SITE == 'slac':
+    BUTLER_TS8_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/ts8'
+    BUTLER_BOT_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/bot'
+    ARCHIVE_DIR = '/gpfs/slac/lsst/fs*/g/data/jobHarness/jh_archive*'
+    DEFAULT_BATCH_ARGS = '-W 1200 -R bullet'
+    BATCH_SYSTEM = 'lsf'
+elif SITE == 'ncsa':
+    BUTLER_TS8_REPO = '/datasets/ts8/repo'
+    BUTLER_BOT_REPO = '/datasets/bot/repo'
+    ARCHIVE_DIR = None
+    DEFAULT_BATCH_ARGS = ""
+    BATCH_SYSTEM = 'slurm'
 
 # Map the Butler repos to simple names
 BUTLER_REPO_DICT = dict(TS8=BUTLER_TS8_REPO,
-                        BOT=BUTLER_BOT_REPO,
-                        TS8_NCSA=BUTLER_TS8_NCSA_REPO,
-                        BOT_NCSA=BUTLER_BOT_NCSA_REPO)
+                        BOT=BUTLER_BOT_REPO)
 
 # The slots
 ALL_SLOTS = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
@@ -56,12 +62,6 @@ TESTCOLORMAP = dict(DARK="black",
                     FE55="cyan")
 
 
-# Template to make superbias files
-SBIAS_TEMPLATE = 'analysis/superbias/templates/sbias_template.fits'
-SFLAT_TEMPLATE = 'analysis/superflat/templates/sflat_template.fits'
-SDARK_TEMPLATE = 'analysis/superdark/templates/sdark_template.fits'
-
-
 # Some default values
 DEFAULT_OUTDIR = 'analysis/ts8'
 DEFAULT_STAT_TYPE = 'median'
@@ -70,4 +70,3 @@ DEFAULT_BIAS_TYPE = 'spline'
 DEFAULT_SUPERBIAS_TYPE = None
 DEFAULT_LOGFILE = 'temp.log'
 DEFAULT_NBINS = 100
-DEFAULT_BATCH_ARGS = "-W 1200 -R bullet"

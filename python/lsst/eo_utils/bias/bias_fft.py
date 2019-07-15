@@ -79,13 +79,13 @@ class BiasFFTTask(BiasAnalysisTask):
 
             ccd = get_ccd_from_id(butler, bias_file, mask_files)
             if ifile == 0:
-                freqs_dict = get_readout_freqs_from_ccd(butler, ccd)
+                freqs_dict = get_readout_freqs_from_ccd(ccd)
             for key in REGION_KEYS:
                 freqs = freqs_dict['freqs_%s' % key]
                 nfreqs = len(freqs)
                 fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
 
-            BiasFFTTask.get_ccd_data(self, butler, ccd, fft_data,
+            BiasFFTTask.get_ccd_data(self, ccd, fft_data,
                                      ifile=ifile, nfiles_used=len(bias_files),
                                      slot=slot, superbias_frame=superbias_frame)
 
@@ -123,15 +123,13 @@ class BiasFFTTask(BiasAnalysisTask):
                                              ymin=0., ymax=3.)
 
     @staticmethod
-    def get_ccd_data(for_whom, butler, ccd, data, **kwargs):
+    def get_ccd_data(for_whom, ccd, data, **kwargs):
         """Get the fft of the overscan values and update the data dictionary
 
         Parameters
         ----------
         for_whom : `Task`
             Task this is being run for
-        butler : `Butler`
-            The data butler
         ccd : `MaskedCCD`
             The ccd we are getting data from
         data : `dict`
@@ -159,12 +157,12 @@ class BiasFFTTask(BiasAnalysisTask):
         nfiles_used = kwargs.get('nfiles_used', 1)
         superbias_frame = kwargs.get('superbias_frame', None)
 
-        amps = get_amp_list(butler, ccd)
+        amps = get_amp_list(ccd)
         for i, amp in enumerate(amps):
-            regions = get_geom_regions(butler, ccd, amp)
+            regions = get_geom_regions(ccd, amp)
             serial_oscan = regions['serial_overscan']
-            img = get_raw_image(butler, ccd, amp)
-            superbias_im = raw_amp_image(butler, superbias_frame, amp)
+            img = get_raw_image(ccd, amp)
+            superbias_im = raw_amp_image(superbias_frame, amp)
             image = unbias_amp(img, serial_oscan,
                                bias_type=for_whom.get_config_param('bias', None),
                                superbias_im=superbias_im)
@@ -229,13 +227,13 @@ class SuperbiasFFTTask(SuperbiasSlotTableAnalysisTask):
 
         self.log_info_slot_msg(self.config, "")
 
-        freqs_dict = get_readout_freqs_from_ccd(None, superbias)
+        freqs_dict = get_readout_freqs_from_ccd(superbias)
         for key in REGION_KEYS:
             freqs = freqs_dict['freqs_%s' % key]
             nfreqs = len(freqs)
             fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
 
-        BiasFFTTask.get_ccd_data(self, None, superbias, fft_data,
+        BiasFFTTask.get_ccd_data(self, superbias, fft_data,
                                  slot=slot, superbias_frame=None)
 
 

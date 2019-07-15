@@ -138,16 +138,16 @@ class OscanCorrelTask(BiasAnalysisTask):
         overscans : `list`
             The overscan data
         """
-        amps = get_amp_list(butler, ccd)
+        amps = get_amp_list(ccd)
         superbias_frame = kwargs.get('superbias_frame', None)
         overscans = []
         for amp in amps:
 
             superbias_im = self.get_superbias_amp_image(butler, superbias_frame, amp)
-            regions = get_geom_regions(butler, ccd, amp)
+            regions = get_geom_regions(ccd, amp)
             serial_oscan = regions['serial_overscan']
 
-            img = get_raw_image(butler, ccd, amp)
+            img = get_raw_image(ccd, amp)
             image = unbias_amp(img, serial_oscan, bias_type=None, superbias_im=superbias_im)
             oscan_copy = copy.deepcopy(serial_oscan)
             oscan_copy.grow(-self.boundry)

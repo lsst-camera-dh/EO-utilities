@@ -1,4 +1,4 @@
-"""Class to analyze the FFT of the bias frames"""
+"""Class to summarize data from multiple runs"""
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 

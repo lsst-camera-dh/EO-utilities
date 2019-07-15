@@ -18,7 +18,7 @@ except ImportError:
     print("Warning, no datacat-utilities")
 
 
-from .defaults import ALL_RAFTS, ALL_SLOTS, ARCHIVE_SLAC
+from .defaults import ALL_RAFTS, ALL_SLOTS, ARCHIVE_DIR
 
 
 # These are the standard input filenames
@@ -289,10 +289,10 @@ SUPERBIAS_STAT_FORMATTER = FILENAME_FORMATS.add_format('superbias_stat',
                                                        bias=None, suffix='')
 TS8_FORMATTER = FILENAME_FORMATS.add_format('ts8_images',
                                             TS8_GLOB_STRING,
-                                            archive=ARCHIVE_SLAC)
+                                            archive=ARCHIVE_DIR)
 BOT_FORMATTER = FILENAME_FORMATS.add_format('bot_images',
                                             BOT_GLOB_STRING,
-                                            archive=ARCHIVE_SLAC)
+                                            archive=ARCHIVE_DIR)
 
 TS8_EORESULTSIN_FORMATTER = FILENAME_FORMATS.add_format('ts8_eoresults_in',
                                                         SLOT_FORMAT_STRING,

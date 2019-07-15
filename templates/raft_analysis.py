@@ -1,4 +1,4 @@
-"""Class to analyze the correlations between the overscans for all amplifiers on a raft"""
+"""Class to analyze data for all ccds on a raft"""
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 

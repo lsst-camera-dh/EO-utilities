@@ -83,11 +83,11 @@ class QEMedianTask(QeAnalysisTask):
 
             ccd = get_ccd_from_id(butler, qe_file, mask_files)
 
-            data_dict['WL'].append(get_mono_wl(butler, ccd))
-            data_dict['EXPTIME'].append(get_exposure_time(butler, ccd))
-            data_dict['MONDIODE'].append(get_mondiode_val(butler, ccd))
+            data_dict['WL'].append(get_mono_wl(ccd))
+            data_dict['EXPTIME'].append(get_exposure_time(ccd))
+            data_dict['MONDIODE'].append(get_mondiode_val(ccd))
 
-            unbiased_images = unbiased_ccd_image_dict(butler, ccd,
+            unbiased_images = unbiased_ccd_image_dict(ccd,
                                                       bias=self.config.bias,
                                                       superbias_frame=superbias_frame)
 

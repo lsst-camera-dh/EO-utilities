@@ -91,15 +91,15 @@ class BFTask(FlatAnalysisTask):
             flat_1 = get_ccd_from_id(butler, id_1, [])
             flat_2 = get_ccd_from_id(butler, id_2, [])
 
-            amps = get_amp_list(butler, flat_1)
+            amps = get_amp_list(flat_1)
 
             for i, amp in enumerate(amps):
-                regions = get_geom_regions(butler, flat_1, amp)
+                regions = get_geom_regions(flat_1, amp)
                 serial_oscan = regions['serial_overscan']
                 imaging = regions['imaging']
                 #imaging.grow(-20)
-                im_1 = get_raw_image(butler, flat_1, amp)
-                im_2 = get_raw_image(butler, flat_2, amp)
+                im_1 = get_raw_image(flat_1, amp)
+                im_2 = get_raw_image(flat_2, amp)
 
                 superbias_im = self.get_superbias_amp_image(butler, superbias_frame, amp)
 

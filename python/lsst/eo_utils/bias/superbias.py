@@ -8,6 +8,8 @@ from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.file_utils import makedir_safe
 
+from lsst.eo_utils.base.butler_utils import get_filename_from_id
+
 from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
@@ -124,7 +126,12 @@ class SuperbiasTask(BiasAnalysisTask):
 
         if not self.config.skip:
             out_data = self.extract(butler, slot_data)
-            imutil.writeFits(out_data, output_file, slot_data['BIAS'][0], self.config.bitpix)
+            if butler is None:
+                template_file = slot_data['BIAS'][0]
+            else:
+                template_file = get_filename_from_id(butler, slot_data['BIAS'][0])
+
+            imutil.writeFits(out_data, output_file, template_file, self.config.bitpix)
             if butler is not None:
                 flip_data_in_place(output_file)
 
@@ -156,7 +163,7 @@ class SuperbiasTask(BiasAnalysisTask):
             hist_range = (self.config.vmin, self.config.vmax)
 
         if self.config.plot:
-            figs.plot_sensor("img", None, self._superbias_frame)
+            figs.plot_sensor("img", self._superbias_frame)
 
         default_array_kw = {}
         if self.config.stats_hist:
@@ -261,7 +268,7 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
             self._sbias_file_dict[slot] = data[slot]
 
-        self._sbias_arrays = extract_raft_array_dict(None, self._sbias_file_dict,
+        self._sbias_arrays = extract_raft_array_dict(self._sbias_file_dict,
                                                      mask_dict=self._mask_file_dict)
 
         out_data = outlier_raft_dict(self._sbias_arrays, 0., 10.)

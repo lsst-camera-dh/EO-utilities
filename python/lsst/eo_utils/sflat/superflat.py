@@ -12,6 +12,8 @@ from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.file_utils import makedir_safe
 
+from lsst.eo_utils.base.butler_utils import get_filename_from_id
+
 from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
@@ -155,12 +157,17 @@ class SuperflatTask(SflatAnalysisTask):
 
         if not self.config.skip:
             sflats = self.extract(butler, data)
+            if butler is None:
+                template_file = data['SFLAT'][0]
+            else:
+                template_file = get_filename_from_id(butler, data['SFLAT'][0])
+
             imutil.writeFits(sflats[0], output_file + '_l.fits',
-                             data['SFLAT'][0], self.config.bitpix)
+                             template_file, self.config.bitpix)
             imutil.writeFits(sflats[1], output_file + '_h.fits',
-                             data['SFLAT'][0], self.config.bitpix)
+                             template_file, self.config.bitpix)
             imutil.writeFits(sflats[2], output_file + '_ratio.fits',
-                             data['SFLAT'][0], self.config.bitpix)
+                             template_file, self.config.bitpix)
             if butler is not None:
                 flip_data_in_place(output_file + '_l.fits')
                 flip_data_in_place(output_file + '_h.fits')
@@ -190,9 +197,9 @@ class SuperflatTask(SflatAnalysisTask):
             raise ValueError("dtables should not be set in SuperflatTask.plot")
 
         if self.config.plot:
-            figs.plot_sensor("img_l", None, self._superflat_frame_l)
-            figs.plot_sensor("img_h", None, self._superflat_frame_h)
-            figs.plot_sensor("ratio", None, self._superflat_frame_r)
+            figs.plot_sensor("img_l", self._superflat_frame_l)
+            figs.plot_sensor("img_h", self._superflat_frame_h)
+            figs.plot_sensor("ratio", self._superflat_frame_r)
 
         default_array_kw = {}
         if self.config.stats_hist:
@@ -355,15 +362,13 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
             self._sflat_file_dict_h[slot] = basename.replace('.fits.fits', '_h.fits')
             self._sflat_file_dict_r[slot] = basename.replace('.fits.fits', '_ratio.fits')
 
-        self._sflat_images_h, ccd_dict = extract_raft_unbiased_images(None,
-                                                                      self._sflat_file_dict_h,
+        self._sflat_images_h, ccd_dict = extract_raft_unbiased_images(self._sflat_file_dict_h,
                                                                       mask_dict=self._mask_file_dict)
-        self._sflat_array_l = extract_raft_array_dict(None, self._sflat_file_dict_l,
+        self._sflat_array_l = extract_raft_array_dict(self._sflat_file_dict_l,
                                                       mask_dict=self._mask_file_dict)
-        self._sflat_array_h = extract_raft_imaging_data(None,
-                                                        self._sflat_images_h,
+        self._sflat_array_h = extract_raft_imaging_data(self._sflat_images_h,
                                                         ccd_dict)
-        self._sflat_array_r = extract_raft_array_dict(None, self._sflat_file_dict_r,
+        self._sflat_array_r = extract_raft_array_dict(self._sflat_file_dict_r,
                                                       mask_dict=self._mask_file_dict)
         out_data_l = outlier_raft_dict(self._sflat_array_l, 1000., 300.)
         out_data_h = outlier_raft_dict(self._sflat_array_h, 50000., 15000.)

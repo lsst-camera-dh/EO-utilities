@@ -63,10 +63,10 @@ class BiasVRowTask(BiasAnalysisTask):
 
             ccd = get_ccd_from_id(butler, bias_file, [])
             if ifile == 0:
-                dims = get_dims_from_ccd(butler, ccd)
+                dims = get_dims_from_ccd(ccd)
                 xrow_s = np.linspace(0, dims['nrow_s']-1, dims['nrow_s'])
 
-            self.get_ccd_data(butler, ccd, biasval_data,
+            self.get_ccd_data(ccd, biasval_data,
                               ifile=ifile, nfiles=len(bias_files))
 
             #Need to truncate the row array to match the data
@@ -103,13 +103,11 @@ class BiasVRowTask(BiasAnalysisTask):
                                          x_name='row_s', y_name='biasval')
 
 
-    def get_ccd_data(self, butler, ccd, data, **kwargs):
+    def get_ccd_data(self, ccd, data, **kwargs):
         """Get the bias values and update the data dictionary
 
         Parameters
         ----------
-        butler : `Butler`
-            The data butler
         ccd : `MaskedCCD`
             The ccd we are getting data from
         data : `dict`
@@ -129,11 +127,11 @@ class BiasVRowTask(BiasAnalysisTask):
         ifile = kwargs['ifile']
         nfiles = kwargs['nfiles']
 
-        amps = get_amp_list(butler, ccd)
+        amps = get_amp_list(ccd)
         for i, amp in enumerate(amps):
-            regions = get_geom_regions(butler, ccd, amp)
+            regions = get_geom_regions(ccd, amp)
             serial_oscan = regions['serial_overscan']
-            img = get_raw_image(butler, ccd, amp)
+            img = get_raw_image(ccd, amp)
             bimg = imutil.bias_image(img, serial_oscan, bias_method=bias_type)
             bimg_row_mean = bimg[serial_oscan].getArray().mean(1)
             key_str = "biasval_%s_a%02i" % (slot, i)

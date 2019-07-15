@@ -48,13 +48,13 @@ def main():
                              superbias_frame=superbias_frame,
                              vmin=args.vmin, vmax=args.vmax)
     else:
-        figs.plot_sensor("img", None, ccd,
+        figs.plot_sensor("img", ccd,
                          vmin=args.vmin, vmax=args.vmax,
                          bias=args.bias, superbias_frame=superbias_frame,
                          subtract_mean=args.subtract_mean)
 
     if args.stats_hist:
-        figs.histogram_array("hist", None, ccd,
+        figs.histogram_array("hist", ccd,
                              bias=args.bias, superbias_frame=superbias_frame,
                              xlabel="Counts", ylabel="Pixels / bin",
                              vmin=args.vmin, vmax=args.vmax,
