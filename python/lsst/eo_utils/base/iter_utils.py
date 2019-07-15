@@ -154,6 +154,9 @@ class SimpleAnalysisHandler(AnalysisHandler):
             Data `Butler` that is being used to access data
         """
         kwargs.setdefault('butler', self._butler)
+        if kwargs.get('dry_run', False):
+            self._task.info("Skipping %s" % (kwargs))
+            return None
         return self._task(**kwargs)
 
     def get_dispatch_args(self, **kwargs):
@@ -200,7 +203,7 @@ class SimpleAnalysisHandler(AnalysisHandler):
             Used to update both the handler and `Task` configurations
         """
         kwremain = self.safe_update(**kwargs)
-        if self.config.batch is None:
+        if self.config.batch in ['None', 'none', None]:
             self.call_analysis_task(**kwremain)
         else:
             jobname = os.path.basename(sys.argv[0])
@@ -350,15 +353,17 @@ class AnalysisIterator(AnalysisHandler):
         kwargs
             Used to update `Task` configuration
         """
-        if self.config.batch is None:
+
+        taskname = self._task.getName().replace('Task', '')
+        if self.config.batch in ['None', 'none', None]:
             self.call_analysis_task(run, **kwargs)
         elif 'slot' in self.config.batch:
-            jobname = "eo_task.py %s" % self._task.getName().replace('Task', '')
+            jobname = "eo_task.py %s" % taskname
             slots = kwargs.pop('slots')
             if slots is None:
                 slots = ALL_SLOTS
             for slot in slots:
-                logfile_slot = self.config.logfile.replace('.log', '%s_%s.log' % (run, slot))
+                logfile_slot = self.config.logfile.replace('.log', '%s_%s_%s.log' % (taskname, run, slot))
                 kwargs['slots'] = slot
                 kw_remain = self.get_dispatch_args(run, **kwargs)
                 dispatch_job(jobname, logfile_slot, **kw_remain)
@@ -366,7 +371,7 @@ class AnalysisIterator(AnalysisHandler):
             jobname = "eo_task.py %s" % self._task.getName().replace('Task', '')
             kw_remain = self.get_dispatch_args(run, **kwargs)
             dispatch_job(jobname,
-                         self.config.logfile.replace('.log', '_%s.log' % (run)),
+                         self.config.logfile.replace('.log', '_%s_%s.log' % (taskname, run)),
                          **kw_remain)
 
 
@@ -388,6 +393,7 @@ class AnalysisIterator(AnalysisHandler):
         kw_remain = self.safe_update(**kwargs)
         kw_remain['slots'] = kwargs.get('slots', None)
         kw_remain['rafts'] = kwargs.get('rafts', None)
+        kw_remain['dry_run'] = kwargs.get('dry_run', False)
 
         if self.config.dataset is not None and self.config.runs is not None:
             raise ValueError("Either runs or dataset should be set, not both")
@@ -430,6 +436,9 @@ def iterate_over_slots(analysis_task, butler, data_files, **kwargs):
     for slot in slot_list:
         slot_data = data_files[slot]
         kwargs['slot'] = slot
+        if kwargs.get('dry_run', False):
+            analysis_task.log.info("Skipping {run}:{raft}:{slot}".format(**kwargs))
+            continue
         analysis_task(butler, slot_data, **kwargs)
 
 
@@ -830,6 +839,9 @@ class SummaryAnalysisIterator(AnalysisHandler):
         kwargs
             Passed to get_data() and to the analysis function
         """
+        if kwargs.get('dry_run', False):
+            self._task.info("Skipping %s" % (kwargs))
+            return
         data_files = self.get_data(None, **kwargs)
         self._task(None, data_files, **kwargs)
 
@@ -875,7 +887,7 @@ class SummaryAnalysisIterator(AnalysisHandler):
         """
         kw_remain = self.safe_update(**kwargs)
 
-        if self.config.batch is None:
+        if self.config.batch in ['None', 'none', None]:
             self.call_analysis_task(**kw_remain)
         else:
             jobname = os.path.basename(sys.argv[0])

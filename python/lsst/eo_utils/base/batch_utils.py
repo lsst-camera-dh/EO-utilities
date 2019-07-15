@@ -13,10 +13,11 @@ from __future__ import with_statement
 import os
 import sys
 
-from lsst.eo_utils.base.file_utils import makedir_safe
-#import pipes
 
-#from lsst.ctrl.pool import Batch, exportEnv, UMASK
+from lsst.eo_utils.base.defaults import BATCH_SYSTEM
+from lsst.eo_utils.base.file_utils import makedir_safe
+
+
 
 def write_slurm_batchfile(jobname, logfile, **kwargs):
     """Dispatch a single job
@@ -83,7 +84,7 @@ def dispatch_job(jobname, logfile, **kwargs):
     run : `str`
         The run number
     batch : `str`
-        Where to send the jobs
+        Send jobs to batch farm
     batch_args : `str`
         Arguments to pass to batch command
     optstring : `str`
@@ -92,26 +93,25 @@ def dispatch_job(jobname, logfile, **kwargs):
         Print command but do not run it
     """
     run = kwargs.get('run', None)
-    batch = kwargs.get('batch', 'native')
     batch_args = kwargs.get('batch_args', None)
     optstring = kwargs.get('optstring', None)
     dry_run = kwargs.get('dry_run', False)
 
-    if batch.find('bsub') == 0:
+    disptach = 'native'
+    if kwargs.get('batch', False):
+        disptach = BATCH_SYSTEM
+
+    if disptach.find('lsf') == 0:
         sub_com = "bsub -o %s" % logfile
         if batch_args is not None:
             sub_com += " %s " % batch_args
-    elif batch.find('sbatch') == 0:
+    elif disptach.find('slurm') == 0:
         batchfile = write_slurm_batchfile(jobname, logfile, **kwargs)
         sub_com = "sbatch %s" % batchfile
-    elif batch.find('srun') == 0:
-        sub_com = "srun --output %s" % logfile
-        if batch_args is not None:
-            sub_com += " %s " % batch_args
     else:
         sub_com = ""
 
-    if batch.find('sbatch') < 0:
+    if disptach.find('slurm') < 0:
         if run is None:
             sub_com += " %s" % jobname
         else:

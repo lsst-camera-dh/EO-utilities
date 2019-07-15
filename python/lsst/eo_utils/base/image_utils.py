@@ -498,7 +498,7 @@ def raw_amp_image(ccd, amp):
         The image
     """
     if ccd is not None:
-        if isinstance(ccd, MaskedCCD):
+        if not isinstance(ccd, MaskedCCD):
             image = get_raw_image(ccd, amp+1)
         else:
             image = get_raw_image(ccd, amp)
@@ -629,13 +629,11 @@ def extract_raft_unbiased_images(data_id_dict, **kwargs):
     return o_dict, ccd_dict
 
 
-def extract_raft_array_dict(butler, data_id_dict, **kwargs):
+def extract_raft_array_dict(data_id_dict, **kwargs):
     """Get raft level data
 
     Parameters
     ----------
-    butler : `Butler` or `None
-        Data Butler
     data_id_dict : `dict`
         Dictionary, keyed by slot, of data identifiers or filenames
 
@@ -668,7 +666,7 @@ def extract_raft_array_dict(butler, data_id_dict, **kwargs):
         else:
             superbias_frame = superbias_dict[slot]
 
-        o_dict[slot] = extract_ccd_array_dict(butler, data_id,
+        o_dict[slot] = extract_ccd_array_dict(data_id,
                                               mask_files=mask_files,
                                               superbias_frame=superbias_frame,
                                               **kwcopy)
