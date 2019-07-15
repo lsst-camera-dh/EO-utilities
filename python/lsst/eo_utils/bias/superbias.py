@@ -163,7 +163,7 @@ class SuperbiasTask(BiasAnalysisTask):
             hist_range = (self.config.vmin, self.config.vmax)
 
         if self.config.plot:
-            figs.plot_sensor("img", None, self._superbias_frame)
+            figs.plot_sensor("img", self._superbias_frame)
 
         default_array_kw = {}
         if self.config.stats_hist:
@@ -268,7 +268,7 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
             self._sbias_file_dict[slot] = data[slot]
 
-        self._sbias_arrays = extract_raft_array_dict(None, self._sbias_file_dict,
+        self._sbias_arrays = extract_raft_array_dict(self._sbias_file_dict,
                                                      mask_dict=self._mask_file_dict)
 
         out_data = outlier_raft_dict(self._sbias_arrays, 0., 10.)

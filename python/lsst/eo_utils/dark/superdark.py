@@ -166,7 +166,7 @@ class SuperdarkTask(DarkAnalysisTask):
             raise ValueError("dtables should not be set in SuperdarkTask.plot")
 
         if self.config.plot:
-            figs.plot_sensor("img", None, self._superdark_frame)
+            figs.plot_sensor("img", self._superdark_frame)
 
         default_array_kw = {}
         if self.config.stats_hist:
@@ -278,7 +278,7 @@ class SuperdarkRaftTask(AnalysisTask):
             self._mask_file_dict[slot] = mask_files
             self._sdark_file_dict[slot] = data[slot].replace('.fits.fits', '.fits')
 
-        self._sdark_arrays = extract_raft_array_dict(None, self._sdark_file_dict,
+        self._sdark_arrays = extract_raft_array_dict(self._sdark_file_dict,
                                                      mask_dict=self._mask_file_dict)
 
         out_data = outlier_raft_dict(self._sdark_arrays, 0., 25.)

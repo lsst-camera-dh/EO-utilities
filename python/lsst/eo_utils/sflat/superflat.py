@@ -197,9 +197,9 @@ class SuperflatTask(SflatAnalysisTask):
             raise ValueError("dtables should not be set in SuperflatTask.plot")
 
         if self.config.plot:
-            figs.plot_sensor("img_l", None, self._superflat_frame_l)
-            figs.plot_sensor("img_h", None, self._superflat_frame_h)
-            figs.plot_sensor("ratio", None, self._superflat_frame_r)
+            figs.plot_sensor("img_l", self._superflat_frame_l)
+            figs.plot_sensor("img_h", self._superflat_frame_h)
+            figs.plot_sensor("ratio", self._superflat_frame_r)
 
         default_array_kw = {}
         if self.config.stats_hist:
@@ -364,11 +364,11 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
 
         self._sflat_images_h, ccd_dict = extract_raft_unbiased_images(self._sflat_file_dict_h,
                                                                       mask_dict=self._mask_file_dict)
-        self._sflat_array_l = extract_raft_array_dict(None, self._sflat_file_dict_l,
+        self._sflat_array_l = extract_raft_array_dict(self._sflat_file_dict_l,
                                                       mask_dict=self._mask_file_dict)
         self._sflat_array_h = extract_raft_imaging_data(self._sflat_images_h,
                                                         ccd_dict)
-        self._sflat_array_r = extract_raft_array_dict(None, self._sflat_file_dict_r,
+        self._sflat_array_r = extract_raft_array_dict(self._sflat_file_dict_r,
                                                       mask_dict=self._mask_file_dict)
         out_data_l = outlier_raft_dict(self._sflat_array_l, 1000., 300.)
         out_data_h = outlier_raft_dict(self._sflat_array_h, 50000., 15000.)
