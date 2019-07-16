@@ -11,6 +11,8 @@ from lsst.eo_utils.base.file_utils import makedir_safe,\
 
 from lsst.eo_utils.base.butler_utils import get_filename_from_id
 
+from lsst.eo_utils.base.butler_utils import get_filename_from_id
+
 from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
