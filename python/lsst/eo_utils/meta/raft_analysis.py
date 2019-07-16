@@ -6,7 +6,8 @@ from lsst.eo_utils.base.pipeline import MetaConfig, MetaTask
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.bias import OscanAmpStackStatsTask, BiasFFTStatsTask
+from lsst.eo_utils.bias import OscanAmpStackStatsTask, BiasFFTStatsTask,\
+    SuperbiasStatsTask, OscanCorrelTask
 
 from lsst.eo_utils.dark import DarkCurrentTask
 
@@ -23,9 +24,11 @@ class RaftAnalysisConfig(MetaConfig):
     plot = EOUtilOptions.clone_param('plot')
 
 
+RaftAnalysisConfig.add_task('_OscanCorrel', OscanCorrelTask)
+RaftAnalysisConfig.add_task('_SuperbiasStats', SuperbiasStatsTask)
 RaftAnalysisConfig.add_task('_OscanAmpStackStats', OscanAmpStackStatsTask)
 RaftAnalysisConfig.add_task('_BiasFFTStats', BiasFFTStatsTask)
-RaftAnalysisConfig.add_task('_DarkCurrentT', DarkCurrentTask)
+RaftAnalysisConfig.add_task('_DarkCurrent', DarkCurrentTask)
 RaftAnalysisConfig.add_task('_Fe55GainStats', Fe55GainStatsTask)
 RaftAnalysisConfig.add_task('_FlatLinearity', FlatLinearityTask)
 RaftAnalysisConfig.add_task('_PTC', PTCTask)

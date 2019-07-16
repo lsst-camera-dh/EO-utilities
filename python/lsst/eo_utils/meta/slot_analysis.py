@@ -20,6 +20,7 @@ class SlotAnalysisConfig(MetaConfig):
     runs = EOUtilOptions.clone_param('runs')
     rafts = EOUtilOptions.clone_param('rafts')
     slots = EOUtilOptions.clone_param('slots')
+    skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
 
 SlotAnalysisConfig.add_task('_BiasFFT', BiasFFTTask)

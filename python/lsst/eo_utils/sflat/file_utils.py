@@ -8,9 +8,9 @@ from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_fo
     FILENAME_FORMATS, SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
 
 SUPERFLAT_FORMAT_STRING =\
-    '{outdir}/superflat/{raft}/{raft}-{run}-{slot}_superflat_b-{bias}_s-{superbias}{suffix}.fits'
+    '{outdir}/superflat/{raft}/{raft}-{run}-{slot}_superflat_b-{bias}_s-{superbias}{suffix}_l'
 SUPERFLAT_STAT_FORMAT_STRING =\
-    '{outdir}/superflat/{raft}/{raft}-{run}-{slot}_{stat}_b-{bias}_s-{superbias}{suffix}.fits'
+    '{outdir}/superflat/{raft}/{raft}-{run}-{slot}_{stat}_b-{bias}_s-{superbias}{suffix}_l'
 
 SLOT_SFLAT_FORMAT_STRING =\
     SLOT_FORMAT_STRING.replace('{suffix}', '_b-{bias}_s-{superbias}_{suffix}')

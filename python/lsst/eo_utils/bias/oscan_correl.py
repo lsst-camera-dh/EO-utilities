@@ -30,8 +30,8 @@ from .analysis import BiasAnalysisTask, BiasAnalysisConfig
 class OscanCorrelConfig(BiasAnalysisConfig):
     """Configuration for OscanCorrelTask"""
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='oscorr')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
+    bias = EOUtilOptions.clone_param('bias', default=None)
+    superbias = EOUtilOptions.clone_param('superbias', default=None)
     mask = EOUtilOptions.clone_param('mask')
     std = EOUtilOptions.clone_param('std')
     covar = EOUtilOptions.clone_param('covar')

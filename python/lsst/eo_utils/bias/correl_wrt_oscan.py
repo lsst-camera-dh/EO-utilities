@@ -187,9 +187,7 @@ class CorrelWRTOscanStatsConfig(BiasRaftTableAnalysisConfig):
     """Configuration for CorrelWRTOscanStatsTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='biasoscorr')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasoscorr_stats')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
-
+    bias = EOUtilOptions.clone_param('bias', default=None)
 
 class CorrelWRTOscanStatsTask(BiasRaftTableAnalysisTask):
     """Extract statistics about the correlation between
@@ -311,8 +309,7 @@ class CorrelWRTOscanSummaryConfig(BiasSummaryAnalysisConfig):
     """Configuration for CorrelWRTOscanSummaryTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='biasoscorr_stats')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasoscorr_sum')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
+    bias = EOUtilOptions.clone_param('bias', default=None)
 
 
 class CorrelWRTOscanSummaryTask(BiasSummaryAnalysisTask):

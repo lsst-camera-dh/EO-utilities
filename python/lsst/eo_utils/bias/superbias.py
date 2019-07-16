@@ -6,7 +6,8 @@ import lsst.eotest.image_utils as imutil
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
-from lsst.eo_utils.base.file_utils import makedir_safe
+from lsst.eo_utils.base.file_utils import makedir_safe,\
+    SUPERBIAS_FORMATTER
 
 from lsst.eo_utils.base.butler_utils import get_filename_from_id
 
@@ -39,7 +40,7 @@ class SuperbiasConfig(BiasAnalysisConfig):
     skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
     stats_hist = EOUtilOptions.clone_param('stats_hist')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='.fits')
+    outsuffix = EOUtilOptions.clone_param('outsuffix')
     vmin = EOUtilOptions.clone_param('vmin')
     vmax = EOUtilOptions.clone_param('vmax')
     nbins = EOUtilOptions.clone_param('nbins')
@@ -51,6 +52,8 @@ class SuperbiasTask(BiasAnalysisTask):
     ConfigClass = SuperbiasConfig
     _DefaultName = "SuperbiasTask"
     iteratorClass = AnalysisBySlot
+
+    tablename_format = SUPERBIAS_FORMATTER
 
     def __init__(self, **kwargs):
         """C'tor
@@ -121,7 +124,7 @@ class SuperbiasTask(BiasAnalysisTask):
         self.safe_update(**kwargs)
 
         mask_files = self.get_mask_files()
-        output_file = self.get_superbias_file('.fits', superbias=self.config.bias)
+        output_file = self.tablefile_name() + '.fits'
         makedir_safe(output_file)
 
         if not self.config.skip:
@@ -168,7 +171,7 @@ class SuperbiasTask(BiasAnalysisTask):
         default_array_kw = {}
         if self.config.stats_hist:
             kwcopy = self.extract_config_vals(default_array_kw)
-            figs.histogram_array("hist", None, self._superbias_frame,
+            figs.histogram_array("hist", self._superbias_frame,
                                  title="Historam of RMS of bias-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
                                  subtract_mean=subtract_mean, bins=self.config.nbins,

@@ -8,9 +8,12 @@ import numpy as np
 
 import lsst.pex.config as pexConfig
 
+from lsst.eo_utils.base.defaults import ALL_SLOTS
+
 from lsst.eo_utils.base.config_utils import Configurable, EOUtilOptions
 
-from lsst.eo_utils.base.file_utils import FILENAME_FORMATS
+from lsst.eo_utils.base.file_utils import read_runlist, get_raft_names_dc,\
+    test_files_exist, FILENAME_FORMATS
 
 from lsst.eo_utils.base.data_utils import TableDict
 
@@ -75,8 +78,72 @@ class EOUtils(Configurable):
         """
         return self._task_factory.run_task(key, **kwargs)
 
-    def get_task_tablefile(self, key, **kwargs):
+    def check_task_files(self, key, dataset, **kwargs):
+        """Check to see if the files produced by a task exists
+
+        Parameters
+        ----------
+        key : `str`
+            Name associated to that `Task`
+        dataset : `str`
+            Name of the dataset
+        kwargs
+            Passed to the class file name formatting function
+
+        Returns
+        -------
+        found : `list`
+            The files that exist
+        missing : `list`
+            The files that do not exist
+        """
+        flist = self.get_task_tablefiles(key, dataset, **kwargs)
+        return test_files_exist(flist)
+
+    def get_task_tablefiles(self, key, dataset, **kwargs):
         """Get the filenames associated to the tables producted by a particular task
+
+        Parameters
+        ----------
+        key : `str`
+            Name associated to that `Task`
+        dataset : `str`
+            Name of the dataset
+        kwargs
+            Passed to the class file name formatting function
+
+        Returns
+        -------
+        filenames: `list`
+            The filename
+        """
+        task = self.get_task(key)
+        task_defs = self.get_task_defaults(key)
+        task_defs.update(**kwargs)
+        outlist = []
+        if not hasattr(task, 'tablefile_name'):
+            return outlist
+        if hasattr(task.config, 'run'):
+            run_list = read_runlist("%s_runs.txt" % dataset)
+            for _, run in run_list:
+                task_defs['run'] = run
+                rafts = get_raft_names_dc(run)
+                if hasattr(task.iteratorClass.ConfigClass, 'slots'):
+                    slots = ALL_SLOTS
+                else:
+                    slots = ['RFT']
+                for raft in rafts:
+                    task_defs['raft'] = raft
+                    for slot in slots:
+                        task_defs['slot'] = slot
+                        outlist.append(task.tablefile_name(**task_defs) + '.fits')
+        else:
+            task_defs['dataset'] = dataset
+            outlist.append(task.tablefile_name(**task_defs) + '.fits')
+        return outlist
+
+    def get_task_tablefile(self, key, **kwargs):
+        """Get the filename associated to the tables producted by a particular task
 
         Parameters
         ----------

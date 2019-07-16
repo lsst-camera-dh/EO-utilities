@@ -670,16 +670,38 @@ def link_eo_results(ccd_map, fdict, outformat, **kwargs):
     KeyError : If missing values in fdict
     """
     raft = kwargs.pop('raft')
-    slot_map = ccd_map[raft]
+    try:
+        slot_map = ccd_map[raft]
+    except KeyError:
+        raise KeyError("No mapping for %s" % raft)
+    use_orig = False
     for slot, val in slot_map.items():
         try:
             fname = fdict[val]
         except KeyError as msg:
-            print(fdict.keys())
-            raise KeyError(msg)
+            use_orig = True
+            break
         outpath = outformat.format(raft=raft, slot=slot, **kwargs)
         makedir_safe(outpath)
-        os.system("ln -s %s %s" % (fname, outpath))
+        if not os.path.exists(outpath):
+            os.system("ln -s %s %s" % (fname, outpath))
+
+    if not use_orig:
+        return
+    try:
+        slot_map = ccd_map[raft + '_orig']
+    except KeyError:
+        raise KeyError("Failed to find ccd and no orig mapping for %s" % raft)
+    for slot, val in slot_map.items():
+        try:
+            fname = fdict[val]
+        except KeyError as msg:
+            raise KeyError("Failed to find ccd in either mapping for %s" % raft)
+        outpath = outformat.format(raft=raft, slot=slot, **kwargs)
+        makedir_safe(outpath)
+        if not os.path.exists(outpath):
+            os.system("ln -s %s %s" % (fname, outpath))
+
 
 def link_eo_calib(fname, outformat, **kwargs):
     """Link eo results to the analysis area
@@ -700,7 +722,8 @@ def link_eo_calib(fname, outformat, **kwargs):
     raft = kwargs.pop('raft')
     outpath = outformat.format(raft=raft, **kwargs)
     makedir_safe(outpath)
-    os.system("ln -s %s %s" % (fname, outpath))
+    if not os.path.exists(outpath):
+        os.system("ln -s %s %s" % (fname, outpath))
 
 
 def link_eo_calib_runlist(args, glob_format, paths, outformat, **kwargs):
@@ -771,8 +794,11 @@ def link_eo_results_runlist(args, glob_format, paths, outformat, **kwargs):
                              % (run_num, hid, glob_format))
             continue
 
-        link_eo_results(ccd_map, fdict, outformat, run=run_num,
-                        raft=hid, outdir=args['outdir'], **kwargs)
+        try:
+            link_eo_results(ccd_map, fdict, outformat, run=run_num,
+                            raft=hid, outdir=args['outdir'], **kwargs)
+        except KeyError as msg:
+            sys.stderr.write("Failed to link files for %s %s, bad mapping %s\n" % (run_num, hid, msg))
 
 
 def find_eo_bot_results(glob_format, paths, **kwargs):
@@ -829,7 +855,8 @@ def link_eo_bot_results(fdict, outformat, **kwargs):
         for slot, fname in raft_dict.items():
             outpath = outformat.format(raft=raft, slot=slot, **kwargs)
             makedir_safe(outpath)
-            os.system("ln -s %s %s" % (fname, outpath))
+            if not os.path.exists(outpath):
+                os.system("ln -s %s %s" % (fname, outpath))
 
 
 def link_eo_bot_results_runlist(args, glob_format, paths, outformat, **kwargs):
@@ -860,3 +887,29 @@ def link_eo_bot_results_runlist(args, glob_format, paths, outformat, **kwargs):
             continue
 
         link_eo_bot_results(fdict, outformat, run=run_num, outdir=args['outdir'], **kwargs)
+
+
+def test_files_exist(flist):
+    """Test to see if files exits"
+
+    Parameters
+    ----------
+    flist : `list`
+        List of files to test
+
+    Returns
+    -------
+    found : `list`
+        List of found files
+
+    missing : `list`
+        List of missing files
+    """
+    found = []
+    missing = []
+    for fname in flist:
+        if os.path.exists(fname):
+            found.append(fname)
+        else:
+            missing.append(fname)
+    return found, missing
