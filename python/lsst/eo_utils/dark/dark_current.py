@@ -84,7 +84,7 @@ class DarkCurrentTask(DarkRaftTableAnalysisTask):
             self.log_progress("  %s" % slot)
 
             mask_files = self.get_mask_files(slot=slot)
-            superdark_file = data[slot].replace('.fits.fits', '.fits')
+            superdark_file = data[slot]
             superdark_frame = get_ccd_from_id(None, superdark_file, mask_files)
             exptime = get_exposure_time(superdark_frame)
 

@@ -84,13 +84,13 @@ class SflatRatioTask(SflatSlotTableAnalysisTask):
         superflat_file = data[0]
 
         l_frame = get_ccd_from_id(None,
-                                  superflat_file.replace('.fits.fits', '_l.fits'),
+                                  superflat_file.replace('_l.fits', '_l.fits'),
                                   mask_files)
         h_frame = get_ccd_from_id(None,
-                                  superflat_file.replace('.fits.fits', '_h.fits'),
+                                  superflat_file.replace('_l.fits', '_h.fits'),
                                   mask_files)
         ratio_frame = get_ccd_from_id(None,
-                                      superflat_file.replace('.fits.fits', '_ratio.fits'),
+                                      superflat_file.replace('_l.fits', '_ratio.fits'),
                                       mask_files)
 
         # This is a dictionary of dictionaries to store all the

@@ -24,6 +24,7 @@ class DefectAnalysisConfig(MetaConfig):
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
     plot = EOUtilOptions.clone_param('plot')
+    skip = EOUtilOptions.clone_param('skip')
     mosaic = EOUtilOptions.clone_param('mosaic')
 
 DefectAnalysisConfig.add_task('_SuperbiasRaft', SuperbiasRaftTask)

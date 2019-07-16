@@ -48,6 +48,7 @@ class SuperflatConfig(SflatAnalysisConfig):
     skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
     stats_hist = EOUtilOptions.clone_param('stats_hist')
+    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class SuperflatTask(SflatAnalysisTask):
@@ -56,6 +57,8 @@ class SuperflatTask(SflatAnalysisTask):
     ConfigClass = SuperflatConfig
     _DefaultName = "SuperflatTask"
     iteratorClass = AnalysisBySlot
+
+    tablename_format = SUPERFLAT_FORMATTER
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -152,7 +155,8 @@ class SuperflatTask(SflatAnalysisTask):
 
         mask_files = self.get_mask_files()
 
-        output_file = self.get_superflat_file('').replace('.fits', '')
+        output_file = self.tablefile_name().replace('_l', '')
+        #output_file = self.get_superflat_file('').replace('.fits', '')
         makedir_safe(output_file)
 
         if not self.config.skip:
@@ -358,9 +362,9 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
         for slot in slots:
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
             basename = data[slot]
-            self._sflat_file_dict_l[slot] = basename.replace('.fits.fits', '_l.fits')
-            self._sflat_file_dict_h[slot] = basename.replace('.fits.fits', '_h.fits')
-            self._sflat_file_dict_r[slot] = basename.replace('.fits.fits', '_ratio.fits')
+            self._sflat_file_dict_l[slot] = basename.replace('_l.fits', '_l.fits')
+            self._sflat_file_dict_h[slot] = basename.replace('_l.fits', '_h.fits')
+            self._sflat_file_dict_r[slot] = basename.replace('_l.fits', '_ratio.fits')
 
         self._sflat_images_h, ccd_dict = extract_raft_unbiased_images(self._sflat_file_dict_h,
                                                                       mask_dict=self._mask_file_dict)

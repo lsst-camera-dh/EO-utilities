@@ -552,6 +552,7 @@ class AnalysisTask(BaseAnalysisTask):
 
         plotbase = self.plotfile_name()
         makedir_safe(plotbase)
+        self.log.info("Saving plots to %s" % plotbase)
         figs.save_all(plotbase, self.config.plot)
         return None
 

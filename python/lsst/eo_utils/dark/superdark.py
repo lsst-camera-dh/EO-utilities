@@ -45,7 +45,7 @@ class SuperdarkConfig(DarkAnalysisConfig):
     skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
     stats_hist = EOUtilOptions.clone_param('stats_hist')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='.fits')
+    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class SuperdarkTask(DarkAnalysisTask):
@@ -55,6 +55,7 @@ class SuperdarkTask(DarkAnalysisTask):
     _DefaultName = "SuperdarkTask"
     iteratorClass = AnalysisBySlot
 
+    tablename_format = SUPERDARK_FORMATTER
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -130,7 +131,7 @@ class SuperdarkTask(DarkAnalysisTask):
 
         mask_files = self.get_mask_files()
 
-        output_file = self.get_superdark_file('').replace('.fits', '')
+        output_file = self.tablefile_name() + '.fits'
         makedir_safe(output_file)
 
         if not self.config.skip:
@@ -140,11 +141,11 @@ class SuperdarkTask(DarkAnalysisTask):
             else:
                 template_file = get_filename_from_id(butler, slot_data['DARK'][0])
 
-            imutil.writeFits(sdark, output_file + '.fits', template_file, self.config.bitpix)
+            imutil.writeFits(sdark, output_file, template_file, self.config.bitpix)
             if butler is not None:
-                flip_data_in_place(output_file + '.fits')
+                flip_data_in_place(output_file)
 
-        self._superdark_frame = get_ccd_from_id(None, output_file + '.fits', mask_files)
+        self._superdark_frame = get_ccd_from_id(None, output_file, mask_files)
 
 
     def plot(self, dtables, figs, **kwargs):
@@ -276,7 +277,7 @@ class SuperdarkRaftTask(AnalysisTask):
         for slot in slots:
             mask_files = self.get_mask_files(slot=slot)
             self._mask_file_dict[slot] = mask_files
-            self._sdark_file_dict[slot] = data[slot].replace('.fits.fits', '.fits')
+            self._sdark_file_dict[slot] = data[slot]
 
         self._sdark_arrays = extract_raft_array_dict(self._sdark_file_dict,
                                                      mask_dict=self._mask_file_dict)

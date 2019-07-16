@@ -31,6 +31,8 @@ class EOUtilOptions(pexConfig.Config):
                               default=DEFAULT_LOGFILE)
     batch = pexConfig.Field("Dispatch job to batch", str,
                             default=None)
+    nofail = pexConfig.Field("Continue if a job fails", bool,
+                             default=False)
     dry_run = pexConfig.Field("Print batch command, do not send job", bool,
                               default=False)
     batch_args = pexConfig.Field("Arguments to pass to batch command", str,
@@ -208,11 +210,14 @@ def add_pex_arguments(parser, pex_class, exclude=None, prefix=None):
                                 help=val.doc)
 
 
-def make_argstring(**kwargs):
+def make_argstring(config, **kwargs):
     """Turns a dictionary of arguments into string with command line options
 
     Parameters
     ----------
+    config
+        The configuration (used to get defaults)
+
     kwargs
         The dictionary mapping argument name to value
 
@@ -224,7 +229,11 @@ def make_argstring(**kwargs):
     """
     ostring = ""
     for key, value in kwargs.items():
-        if value is None:
+        try:
+            def_value = config._fields[key].default
+        except KeyError:
+            def_value = None
+        if value in [def_value, None]:
             continue
         elif isinstance(value, bool):
             if not value:

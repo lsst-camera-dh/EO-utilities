@@ -23,7 +23,7 @@ class SlotTableAnalysisConfig(MetaConfig):
 
 
 SlotTableAnalysisConfig.add_task('_SuperbiasFFT', SuperbiasFFTTask)
-SlotTableAnalysisConfig.add_task('_ SuperbiasStruct', SuperbiasStructTask)
+SlotTableAnalysisConfig.add_task('_SuperbiasStruct', SuperbiasStructTask)
 SlotTableAnalysisConfig.add_task('_CTE', CTETask)
 SlotTableAnalysisConfig.add_task('_SflatRatio', SflatRatioTask)
 SlotTableAnalysisConfig.add_task('_QE', QETask)

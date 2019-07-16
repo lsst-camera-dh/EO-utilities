@@ -21,6 +21,7 @@ class CalibStackConfig(MetaConfig):
     slots = EOUtilOptions.clone_param('slots')
     outdir = EOUtilOptions.clone_param('outdir')
     mask = EOUtilOptions.clone_param('mask')
+    skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
     stats_hist = EOUtilOptions.clone_param('stats_hist')
 

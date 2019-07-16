@@ -25,6 +25,7 @@ class AnalysisHandlerConfig(pexConfig.Config):
     sending the job to the batch farm.
     """
     batch = EOUtilOptions.clone_param('batch')
+    nofail = EOUtilOptions.clone_param('nofail')
     dry_run = EOUtilOptions.clone_param('dry_run')
     logfile = EOUtilOptions.clone_param('logfile')
     batch_args = EOUtilOptions.clone_param('batch_args')
@@ -165,7 +166,7 @@ class SimpleAnalysisHandler(AnalysisHandler):
         Parameters
         ----------
         kwargs
-            Passed make_argstring()
+            Passed to make_argstring()
 
         Returns
         -------
@@ -174,7 +175,7 @@ class SimpleAnalysisHandler(AnalysisHandler):
         """
         kwcopy = kwargs.copy()
         kwcopy.pop('task', None)
-        ret_dict = dict(optstring=make_argstring(**kwcopy),
+        ret_dict = dict(optstring=make_argstring(self._task.config, **kwcopy),
                         batch_args=self.config.batch_args,
                         batch=self.config.batch,
                         dry_run=self.config.dry_run)
@@ -318,7 +319,7 @@ class AnalysisIterator(AnalysisHandler):
         run : `str`
             The ID of the run we will analyze
         kwargs
-            Passed make_argstring()
+            Passed to make_argstring()
 
         Returns
         -------
@@ -328,9 +329,11 @@ class AnalysisIterator(AnalysisHandler):
         kwcopy = kwargs.copy()
         kwcopy.pop('task', None)
         if self.config.butler_repo is None:
-            optstring = make_argstring(**kwcopy)
+            optstring = make_argstring(self._task.config, **kwcopy)
         else:
-            optstring = make_argstring(butler_repo=self.config.butler_repo, **kwcopy)
+            optstring = make_argstring(self._task.config,
+                                       butler_repo=self.config.butler_repo,
+                                       **kwcopy)
         ret_dict = dict(optstring=optstring,
                         batch_args=self.config.batch_args,
                         batch=self.config.batch,
@@ -408,7 +411,13 @@ class AnalysisIterator(AnalysisHandler):
         self.get_butler()
 
         for run in runs:
-            self.dispatch_single_run(run, **kw_remain)
+            if self.config.nofail:
+                try:
+                    self.dispatch_single_run(run, **kw_remain)
+                except Exception:
+                    self._task.log.warn("Run %s failed, continue to next run" % run)
+            else:
+                self.dispatch_single_run(run, **kw_remain)
 
 
 def iterate_over_slots(analysis_task, butler, data_files, **kwargs):
@@ -851,7 +860,7 @@ class SummaryAnalysisIterator(AnalysisHandler):
         Parameters
         ----------
         kwargs
-            Passed make_argstring()
+            Passed to make_argstring()
 
         Returns
         -------
@@ -860,7 +869,7 @@ class SummaryAnalysisIterator(AnalysisHandler):
         """
         kwcopy = kwargs.copy()
         kwcopy.pop('task', None)
-        ret_dict = dict(optstring=make_argstring(**kwcopy),
+        ret_dict = dict(optstring=make_argstring(self._task.config, **kwcopy),
                         batch_args=self.config.batch_args,
                         batch=self.config.batch,
                         dry_run=self.config.dry_run)
