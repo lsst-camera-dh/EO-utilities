@@ -45,4 +45,3 @@ from .report_task import ReportConfig, ReportTask,\
     ReportRaftConfig, ReportRaftTask,\
     ReportRunConfig, ReportRunTask,\
     ReportSummaryConfig, ReportSummaryTask
-

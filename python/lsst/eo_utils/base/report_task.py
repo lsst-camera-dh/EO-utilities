@@ -5,8 +5,7 @@ import abc
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.iter_utils import SimpleAnalysisHandler,\
-    AnalysisBySlot, AnalysisByRaft, AnalysisByRun, AnalysisByDataset,\
-    SummaryAnalysisIterator
+    AnalysisBySlot, AnalysisByRaft, AnalysisByRun, AnalysisByDataset
 
 from .analysis import BaseAnalysisConfig, BaseAnalysisTask
 
@@ -74,7 +73,7 @@ class ReportTask(BaseAnalysisTask):
 
     @abc.abstractmethod
     def write_report(self, data):
-        """Write a report 
+        """Write a report
 
         Parameters
         ----------
@@ -124,7 +123,7 @@ class ReportSlotTask(ReportTask):
     tablename_format = SLOT_REPORT_FORMATTER
 
     def write_report(self, data):
-        """Write a report 
+        """Write a report
 
         Parameters
         ----------
@@ -134,7 +133,7 @@ class ReportSlotTask(ReportTask):
         config_kw = self.extract_config_vals(dict(template_file=None,
                                                   css_file=None))
         write_slot_report(data, self.config.indir, self.config.htmldir, **config_kw)
- 
+
 
 class ReportRaftConfig(ReportConfig):
     """Configuration for report analyses"""
@@ -154,7 +153,7 @@ class ReportRaftTask(ReportTask):
     tablename_format = RAFT_REPORT_FORMATTER
 
     def write_report(self, data):
-        """Write a report 
+        """Write a report
 
         Parameters
         ----------
@@ -166,7 +165,7 @@ class ReportRaftTask(ReportTask):
         config_kw = self.extract_config_vals(dict(template_file=None,
                                                   css_file=None))
         write_raft_report(dataid, self.config.indir, self.config.htmldir, **config_kw)
- 
+
 
 class ReportRunConfig(ReportConfig):
     """Configuration for report analyses"""
@@ -206,7 +205,7 @@ class ReportRunTask(ReportTask):
         return datakey
 
     def write_report(self, data):
-        """Write a report 
+        """Write a report
 
         Parameters
         ----------
@@ -216,7 +215,7 @@ class ReportRunTask(ReportTask):
         config_kw = self.extract_config_vals(dict(template_file=None,
                                                   css_file=None))
         write_run_report(data, self.config.indir, self.config.htmldir, **config_kw)
- 
+
 
 class ReportSummaryConfig(ReportConfig):
     """Configuration for report analyses"""
@@ -234,7 +233,7 @@ class ReportSummaryTask(ReportTask):
     tablename_format = SUMMARY_REPORT_FORMATTER
 
     def write_report(self, data):
-        """Write a report 
+        """Write a report
 
         Parameters
         ----------

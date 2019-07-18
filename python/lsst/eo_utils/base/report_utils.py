@@ -8,11 +8,11 @@ import os
 
 import shutil
 
-import yaml
-
 import xml.etree.ElementTree as ET
 
 from xml.dom import minidom
+
+import yaml
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
@@ -23,7 +23,7 @@ from lsst.eo_utils.base.file_utils import makedir_safe,\
 
 def handle_file(file_name, outdir, action):
     """Move, copy or link a file to an output directory
-    
+
     Parameters
     ----------
     file_name : `str`
@@ -32,10 +32,10 @@ def handle_file(file_name, outdir, action):
         The output directory
     action : `str`
         What to do with the file, of `copy`, `move`, or `link`
-    
+
     Returns
     -------
-    basename : `str` 
+    basename : `str`
         The basename of the file
     """
     basename = os.path.basename(file_name)
@@ -48,7 +48,7 @@ def handle_file(file_name, outdir, action):
         os.unlink(outname)
     except FileNotFoundError:
         pass
-        
+
     if action in ['copy', 'cp']:
         shutil.copyfile(inname, outname)
     elif action in ['move', 'mv']:
@@ -64,7 +64,7 @@ def handle_file(file_name, outdir, action):
 
 def create_report_header(root, **kwargs):
     """Make the header node for the report
-    
+
     Parameters
     ----------
     root : `xml.etree.ElementTree.Element`
@@ -87,10 +87,10 @@ def create_report_header(root, **kwargs):
     stylesheet = kwargs.get('stylesheet', None)
 
     head = ET.SubElement(root, 'head')
-       
+
     if title is not None:
-        title_node = make_child_node(head, 'title', text=title)
-    
+        make_child_node(head, 'title', text=title)
+
     if stylesheet is not None:
         link = make_child_node(head, 'link',
                                href=stylesheet,
@@ -99,13 +99,13 @@ def create_report_header(root, **kwargs):
         link.set('type', "text/css")
 
     return head
-        
+
 
 
 
 def make_child_node(parent_node, child_name, **kwargs):
     """Create a row in a table with a description and a plot
-    
+
     Parameters
     ----------
     parent_node : `xml.etree.ElementTree.SubElement`
@@ -121,7 +121,7 @@ def make_child_node(parent_node, child_name, **kwargs):
         The css class to use for this node
 
     Remaining kwargs are set as attributes in the node
-     
+
     Returns
     -------
     child_node : `xml.etree.ElementTree.SubElement`
@@ -142,7 +142,7 @@ def make_child_node(parent_node, child_name, **kwargs):
 
 def create_plot_table_row(tbody_node, desc, plot_file, outdir, **kwargs):
     """Create a row in a table with a description and a plot
-    
+
     Parameters
     ----------
     tbody_node : `xml.etree.ElementTree.SubElement`
@@ -179,27 +179,27 @@ def create_plot_table_row(tbody_node, desc, plot_file, outdir, **kwargs):
     basename = handle_file(plot_file, outdir, kwargs.get('plot_report_action', 'link'))
 
     row_node = make_child_node(tbody_node, 'tr', node_class=kwargs.get('row_class', None))
-    col_desc_node = make_child_node(row_node, 'td',
-                                    node_class=kwargs.get('col_desc_class', None),
-                                    text=desc)
+    make_child_node(row_node, 'td',
+                    node_class=kwargs.get('col_desc_class', None),
+                    text=desc)
     col_fig_node = make_child_node(row_node, 'td',
                                    node_class=kwargs.get('col_fig_class', None))
- 
+
     col_fig_ref = make_child_node(col_fig_node, 'a', href=basename)
-    col_fig_img = make_child_node(col_fig_ref, 'img', 
-                                  node_class=kwargs.get('col_img_class', None),
-                                  src=basename)
+    make_child_node(col_fig_ref, 'img',
+                    node_class=kwargs.get('col_img_class', None),
+                    src=basename)
 
     return row_node
 
 
 def create_slot_table(parent_node, **kwargs):
     """Create table with descriptions and a plots
-    
+
     Parameters
     ----------
     parent_node : `xml.etree.ElementTree.SubElement`
-        The parent node 
+        The parent node
 
     Keywords
     --------
@@ -219,26 +219,26 @@ def create_slot_table(parent_node, **kwargs):
     """
     kwcopy = kwargs.copy()
 
-    h3_node = make_child_node(parent_node, 'h3', text="List of CCDs")
+    make_child_node(parent_node, 'h3', text="List of CCDs")
 
     table_node = make_child_node(parent_node, 'table')
     tbody_node = make_child_node(table_node, 'tbody')
 
     header_row_node = make_child_node(tbody_node, 'tr',
                                       node_class=kwcopy.get('header_row_class', None))
-    header_desc_col_node = make_child_node(header_row_node, 'td',
-                                           node_class=kwcopy.get('header_col_class', None),
-                                           text='SLOT')
-    
+    make_child_node(header_row_node, 'td',
+                    node_class=kwcopy.get('header_col_class', None),
+                    text='SLOT')
+
 
     for slot in ALL_SLOTS:
         row_node = make_child_node(tbody_node, 'tr',
                                    node_class=kwcopy.get('table_row_class', None))
         col_node = make_child_node(row_node, 'td',
                                    node_class=kwcopy.get('table_col_class', None))
-        col_ref = make_child_node(col_node, 'a',
-                                  text=slot,
-                                  href="%s.html" % slot)
+        make_child_node(col_node, 'a',
+                        text=slot,
+                        href="%s.html" % slot)
 
     return table_node
 
@@ -246,7 +246,7 @@ def create_slot_table(parent_node, **kwargs):
 
 def create_plot_table(parent_node, table_desc, inputdir, outdir, **kwargs):
     """Create table with descriptions and a plots
-    
+
     Parameters
     ----------
     parent_node : `xml.etree.ElementTree.SubElement`
@@ -272,31 +272,30 @@ def create_plot_table(parent_node, table_desc, inputdir, outdir, **kwargs):
 
     table_node = make_child_node(parent_node, 'table')
     tbody_node = make_child_node(table_node, 'tbody')
-  
+
     header_col_class = kwcopy.get('header_col_class', None)
-    
+
     header_row_node = make_child_node(tbody_node, 'tr',
                                       node_class=kwcopy.get('header_row_class', None))
-    header_desc_col_node = make_child_node(header_row_node, 'td',
-                                           text="Description",
-                                           node_class=header_col_class)
-    header_plot_col_node = make_child_node(header_row_node, 'td',
-                                           text="Plot",
-                                           node_class=header_col_class)
+    make_child_node(header_row_node, 'td',
+                    text="Description",
+                    node_class=header_col_class)
+    make_child_node(header_row_node, 'td',
+                    text="Plot",
+                    node_class=header_col_class)
 
     rowlist = table_desc['rows']
     for row_desc in rowlist:
-        row_text = row_desc['text']
-        plotfile = os.path.join(inputdir, row_desc['figure'].format(**dataid))        
-        row_node = create_plot_table_row(tbody_node, row_desc['text'],
-                                         plotfile, outdir, **kwcopy)
-    
+        plotfile = os.path.join(inputdir, row_desc['figure'].format(**dataid))
+        create_plot_table_row(tbody_node, row_desc['text'],
+                              plotfile, outdir, **kwcopy)
+
     return table_node
 
 
 def create_plot_tables(parent_node, table_dict, inputdir, outdir, **kwargs):
     """Create table with descriptions and a plots
-    
+
     Parameters
     ----------
     parent_node : `xml.etree.ElementTree.SubElement`
@@ -318,13 +317,13 @@ def create_plot_tables(parent_node, table_dict, inputdir, outdir, **kwargs):
         The table node
     """
     for _, tdesc in table_dict.items():
-        header_node = make_child_node(parent_node, 'h3', text=tdesc.get('header_text', None))
+        make_child_node(parent_node, 'h3', text=tdesc.get('header_text', None))
         create_plot_table(parent_node, tdesc, inputdir, outdir, **kwargs)
 
 
 def create_run_table(parent_node, dataset, **kwargs):
     """Create table with descriptions and a plots
-    
+
     Parameters
     ----------
     parent_node : `xml.etree.ElementTree.SubElement`
@@ -341,41 +340,41 @@ def create_run_table(parent_node, dataset, **kwargs):
 
     runlist = read_runlist("%s_runs.txt" % dataset)
 
-    h3_node = make_child_node(parent_node, 'h3', text="List of runs")
+    make_child_node(parent_node, 'h3', text="List of runs")
 
     table_node = make_child_node(parent_node, 'table')
     tbody_node = make_child_node(table_node, 'tbody')
-  
+
     header_row_node = make_child_node(tbody_node, 'tr',
                                       node_class=kwcopy.get('header_row_class', None))
-    header_col_run_node = make_child_node(header_row_node, 'td',
-                                          text="RUN",
-                                          node_class=kwcopy.get('header_col_class', None))
-    header_col_raft_node = make_child_node(header_row_node, 'td',
-                                           text="RAFT",
-                                           node_class=kwcopy.get('header_col_class', None))
+    make_child_node(header_row_node, 'td',
+                    text="RUN",
+                    node_class=kwcopy.get('header_col_class', None))
+    make_child_node(header_row_node, 'td',
+                    text="RAFT",
+                    node_class=kwcopy.get('header_col_class', None))
 
     for run_info in runlist:
-        row_node = make_child_node(tbody_node, 'tr', 
+        row_node = make_child_node(tbody_node, 'tr',
                                    node_class=kwcopy.get('table_row_class', None))
         col_run_node = make_child_node(row_node, 'td',
                                        node_class=kwcopy.get('table_col_class', None))
         raft = run_info[0].replace('-Dev', '')
         run_url = os.path.join(raft, run_info[1], 'index.html')
 
-        col_run_ref = make_child_node(col_run_node, 'a',
-                                      href=run_url,
-                                      text=run_info[1])
-        col_raft_node = make_child_node(row_node, 'td',
-                                        text=raft,
-                                        node_class=kwcopy.get('table_col_class', None))
-    
+        make_child_node(col_run_node, 'a',
+                        href=run_url,
+                        text=run_info[1])
+        make_child_node(row_node, 'td',
+                        text=raft,
+                        node_class=kwcopy.get('table_col_class', None))
+
     return table_node
 
 
 def write_tree_to_html(tree, filepath=None):
     """Write a html file from an element tree
-    
+
     Parameters
     ----------
     tree : `xml.etree.ElementTree.Element`
@@ -401,7 +400,7 @@ def write_tree_to_html(tree, filepath=None):
 
 def write_slot_report(dataid, inputbase, outbase, **kwargs):
     """Create table with descriptions and a plots
-    
+
     Parameters
     ----------
     dataid : `dict`
@@ -421,7 +420,7 @@ def write_slot_report(dataid, inputbase, outbase, **kwargs):
     yamlfile = kwcopy.pop('template_file', 'html_report.yaml')
     cssfile_in = kwcopy.pop('css_file', 'style.css')
     template_dict = yaml.safe_load(open(yamlfile))
-    table_desc = template_dict['slot_plot_tables']    
+    table_desc = template_dict['slot_plot_tables']
     kwcopy.update(template_dict['defaults'])
     kwcopy['dataid'] = dataid
 
@@ -434,20 +433,20 @@ def write_slot_report(dataid, inputbase, outbase, **kwargs):
         makedir_safe(html_file)
         handle_file(cssfile_in, outdir, action='copy')
 
-    html_node = ET.Element('html')    
-    header_node = create_report_header(html_node, 
-                                       title="TS8 Results for {run}:{raft}:{slot}".format(**dataid),
-                                       stylesheet=kwcopy.pop('stylesheet', 'style.css'))    
-                         
+    html_node = ET.Element('html')
+    create_report_header(html_node,
+                         title="TS8 Results for {run}:{raft}:{slot}".format(**dataid),
+                         stylesheet=kwcopy.pop('stylesheet', 'style.css'))
+
     body_node = make_child_node(html_node, 'body')
-    
+
     create_plot_tables(body_node, table_desc, inputbase, outdir, **kwcopy)
     write_tree_to_html(html_node, html_file)
 
-        
+
 def write_raft_report(dataid, inputbase, outbase, **kwargs):
     """Create table with descriptions and a plots
-    
+
     Parameters
     ----------
     dataid : `dict`
@@ -467,10 +466,10 @@ def write_raft_report(dataid, inputbase, outbase, **kwargs):
     yamlfile = kwcopy.pop('template_file', 'html_report.yaml')
     cssfile_in = kwcopy.pop('css_file', 'style.css')
     template_dict = yaml.safe_load(open(yamlfile))
-    table_desc = template_dict['raft_plot_tables']    
+    table_desc = template_dict['raft_plot_tables']
     kwcopy.update(template_dict['defaults'])
     kwcopy['dataid'] = dataid
-    
+
     if outbase is None:
         outdir = None
         html_file = None
@@ -481,16 +480,16 @@ def write_raft_report(dataid, inputbase, outbase, **kwargs):
         handle_file(cssfile_in, outdir, action='copy')
 
 
-    html_node = ET.Element('html')    
-    header_node = create_report_header(html_node, 
-                                       title="TS8 Results for {run}:{raft}".format(**dataid),
-                                       stylesheet=kwcopy.pop('stylesheet', 'style.css'))    
-                         
+    html_node = ET.Element('html')
+    create_report_header(html_node,
+                         title="TS8 Results for {run}:{raft}".format(**dataid),
+                         stylesheet=kwcopy.pop('stylesheet', 'style.css'))
+
     body_node = make_child_node(html_node, 'body')
-    
+
     create_plot_tables(body_node, table_desc, inputbase, outdir, **kwcopy)
 
-    slot_table = create_slot_table(body_node, **kwcopy)
+    create_slot_table(body_node, **kwcopy)
 
     write_tree_to_html(html_node, html_file)
 
@@ -498,7 +497,7 @@ def write_raft_report(dataid, inputbase, outbase, **kwargs):
 
 def write_run_report(run, inputbase, outbase, **kwargs):
     """Create table with descriptions and a plots
-    
+
     Parameters
     ----------
     run : `str`
@@ -511,10 +510,8 @@ def write_run_report(run, inputbase, outbase, **kwargs):
     Keywords
     --------
     """
-    kwcopy = kwargs.copy()
-
     sys.stdout.write("Writing report for %s\n" % run)
- 
+
     rafts = get_raft_names_dc(run)
 
     for raft in rafts:
@@ -527,7 +524,7 @@ def write_run_report(run, inputbase, outbase, **kwargs):
 
 def write_summary_report(dataset, inputbase, outbase, **kwargs):
     """Create table with descriptions and a plots
-    
+
     Parameters
     ----------
     dataset : `str`
@@ -545,7 +542,7 @@ def write_summary_report(dataset, inputbase, outbase, **kwargs):
     yamlfile = kwcopy.pop('template_file', 'html_report.yaml')
     cssfile_in = kwcopy.pop('css_file', 'style.css')
     template_dict = yaml.safe_load(open(yamlfile))
-    table_desc = template_dict['summary_plot_tables']    
+    table_desc = template_dict['summary_plot_tables']
     kwcopy.update(template_dict['defaults'])
     kwcopy['dataid'] = dict(dataset=dataset)
 
@@ -558,24 +555,24 @@ def write_summary_report(dataset, inputbase, outbase, **kwargs):
         makedir_safe(html_file)
         handle_file(cssfile_in, outdir, action='copy')
 
-    html_node = ET.Element('html')    
-    header_node = create_report_header(html_node, 
-                                       title="%s results" % dataset, 
-                                       stylesheet=kwcopy.pop('stylesheet', 'style.css'))    
-                         
+    html_node = ET.Element('html')
+    create_report_header(html_node,
+                         title="%s results" % dataset,
+                         stylesheet=kwcopy.pop('stylesheet', 'style.css'))
+
     body_node = make_child_node(html_node, 'body')
-    
+
     create_plot_tables(body_node, table_desc, inputbase, outdir, **kwcopy)
-    
-    run_table = create_run_table(body_node, dataset, **kwcopy)
+
+    create_run_table(body_node, dataset, **kwcopy)
 
     write_tree_to_html(html_node, html_file)
-  
+
 
 
 def write_dataset_reports(dataset, inputbase, outbase, **kwargs):
     """Create table with descriptions and a plots
-    
+
     Parameters
     ----------
     dataset : `str`
@@ -597,6 +594,5 @@ def write_dataset_reports(dataset, inputbase, outbase, **kwargs):
 
 
 if __name__ == '__main__':
-    
+
     write_dataset_reports('ts8', 'analysis/ts8/plots', 'analysis/ts8/html')
-                          

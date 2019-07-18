@@ -892,7 +892,7 @@ class AnalysisByDataset(SimpleAnalysisHandler):
         """
         if kwargs.get('dry_run', False):
             self._task.info("Skipping %s" % (kwargs))
-            return None
+            return
         if self._task is not None:
             self._task(None, self.config.dataset, **kwargs)
 

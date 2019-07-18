@@ -729,7 +729,7 @@ def link_eo_results(ccd_map, fdict, outformat, **kwargs):
     for slot, val in slot_map.items():
         try:
             fname = fdict[val]
-        except KeyError as msg:
+        except KeyError:
             use_orig = True
             break
         outpath = outformat.format(raft=raft, slot=slot, **kwargs)
@@ -746,7 +746,7 @@ def link_eo_results(ccd_map, fdict, outformat, **kwargs):
     for slot, val in slot_map.items():
         try:
             fname = fdict[val]
-        except KeyError as msg:
+        except KeyError:
             raise KeyError("Failed to find ccd in either mapping for %s" % raft)
         outpath = outformat.format(raft=raft, slot=slot, **kwargs)
         makedir_safe(outpath)
