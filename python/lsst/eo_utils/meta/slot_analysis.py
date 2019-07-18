@@ -7,7 +7,7 @@ from lsst.eo_utils.base.pipeline import MetaConfig, MetaTask
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from lsst.eo_utils.bias import BiasFFTTask, BiasStructTask,\
-    CorrelWRTOscanTask, OscanAmpStackTask
+    CorrelWRTOscanTask, OscanAmpStackTask, BiasVRowTask
 
 from lsst.eo_utils.flat import FlatOverscanTask, BFTask, FlatPairTask
 
@@ -15,7 +15,8 @@ from lsst.eo_utils.qe import QEMedianTask
 
 
 class SlotAnalysisConfig(MetaConfig):
-    """Configuration for SlotAnalysisTask"""
+    """Configuration for SlotAna
+lysisTask"""
     dataset = EOUtilOptions.clone_param('dataset')
     runs = EOUtilOptions.clone_param('runs')
     rafts = EOUtilOptions.clone_param('rafts')
@@ -25,8 +26,9 @@ class SlotAnalysisConfig(MetaConfig):
 
 SlotAnalysisConfig.add_task('_BiasFFT', BiasFFTTask)
 SlotAnalysisConfig.add_task('_BiasStruct', BiasStructTask)
+SlotAnalysisConfig.add_task('_BiasVRow', BiasVRowTask)
 SlotAnalysisConfig.add_task('_CorrelWRTOscan', CorrelWRTOscanTask)
-SlotAnalysisConfig.add_task('_OscanAmpStackT', OscanAmpStackTask)
+SlotAnalysisConfig.add_task('_OscanAmpStack', OscanAmpStackTask)
 SlotAnalysisConfig.add_task('_FlatOverscan', FlatOverscanTask)
 SlotAnalysisConfig.add_task('_BF', BFTask)
 SlotAnalysisConfig.add_task('_FlatPair', FlatPairTask)

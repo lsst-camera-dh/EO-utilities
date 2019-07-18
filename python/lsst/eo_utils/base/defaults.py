@@ -13,7 +13,7 @@ if SITE == 'slac':
     BATCH_SYSTEM = 'lsf'
 elif SITE == 'ncsa':
     BUTLER_TS8_REPO = '/datasets/ts8/repo'
-    BUTLER_BOT_REPO = '/datasets/bot/repo'
+    BUTLER_BOT_REPO = '/project/production/tmpdataloc/BOT/gen2repo'
     ARCHIVE_DIR = None
     DEFAULT_BATCH_ARGS = ""
     BATCH_SYSTEM = 'slurm'

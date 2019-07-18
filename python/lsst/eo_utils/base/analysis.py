@@ -216,6 +216,8 @@ class BaseAnalysisTask(BaseTask):
         ret_val : `str`
             The resulting filename
         """
+        if formatter is None:
+            return None
         format_key_dict = formatter.key_dict()
         format_vals = self.extract_config_vals(format_key_dict)
         format_vals.update(**kwargs)
