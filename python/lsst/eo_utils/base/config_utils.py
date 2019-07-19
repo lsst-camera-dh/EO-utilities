@@ -128,12 +128,12 @@ class EOUtilOptions(pexConfig.Config):
     edge_rolloff = pexConfig.Field("Edge rolloff width (pixels)", int, default=10)
 
     # Options for html reports
-    template_file = pexConfig.Field("HTML report template file", str,
-                                    default='html_report.yaml')
+    template_file = pexConfig.Field("HTML report template file", str, default=None)
     htmldir = pexConfig.Field("HTML report directory", str,
                               default=os.path.join(DEFAULT_OUTDIR, 'html'))
-    css_file = pexConfig.Field("HTML report style file", str,
-                               default='style.css')
+    css_file = pexConfig.Field("HTML report style file", str, default=None)
+    plot_report_action = pexConfig.Field("How to deal with figures in repots", str,
+                                         default='link')
 
     @classmethod
     def clone_param(cls, par_name, **kwargs):

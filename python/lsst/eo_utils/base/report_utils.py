@@ -14,11 +14,49 @@ from xml.dom import minidom
 
 import yaml
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS
+from .defaults import EO_PACKAGE_BASE, ALL_SLOTS
 
-from lsst.eo_utils.base.file_utils import makedir_safe,\
+from .file_utils import makedir_safe,\
     get_raft_names_dc, read_runlist
 
+
+def get_report_config_info(table_tag, **kwargs):
+    """Get information about how to configure a report
+
+    Parameters
+    ----------
+    table_tag : `str`
+        The yaml tag to use for the table information
+
+    Keywords
+    --------
+    template_file : `str` or `None`
+        Path to the yaml template file
+    css_file : `str` or `None`
+        Path to the css style file
+
+    Returns
+    -------
+    o_dict : `dict`
+      cssfile : `str`
+        Path to the css style file
+      table_desc : `dict`
+        Table description
+      defaults : `dict`
+        CSS style defaults
+    """
+    yamlfile = kwargs.get('template_file', None)
+    if yamlfile is None:
+        yamlfile = os.path.join(EO_PACKAGE_BASE, 'templates', 'html_report.yaml')
+    cssfile = kwargs.get('css_file', None)
+    if cssfile is None:
+        cssfile = os.path.join(EO_PACKAGE_BASE, 'templates', 'style.css')
+
+    template_dict = yaml.safe_load(open(yamlfile))
+
+    return dict(cssfile=cssfile,
+                table_desc=template_dict[table_tag],
+                defaults=template_dict['defaults'])
 
 
 def handle_file(file_name, outdir, action):
@@ -175,6 +213,7 @@ def create_plot_table_row(tbody_node, desc, plot_file, outdir, **kwargs):
 
     if not os.path.exists(plot_file):
         sys.stdout.write("Warning, skipping missing plot %s\n" % plot_file)
+        return None
 
     basename = handle_file(plot_file, outdir, kwargs.get('plot_report_action', 'link'))
 
@@ -234,6 +273,8 @@ def create_slot_table(parent_node, **kwargs):
     for slot in ALL_SLOTS:
         row_node = make_child_node(tbody_node, 'tr',
                                    node_class=kwcopy.get('table_row_class', None))
+        if row_node is None:
+            continue
         col_node = make_child_node(row_node, 'td',
                                    node_class=kwcopy.get('table_col_class', None))
         make_child_node(col_node, 'a',
@@ -417,11 +458,9 @@ def write_slot_report(dataid, inputbase, outbase, **kwargs):
 
     sys.stdout.write("Writing report for {run}:{raft}:{slot}\n".format(**dataid))
 
-    yamlfile = kwcopy.pop('template_file', 'html_report.yaml')
-    cssfile_in = kwcopy.pop('css_file', 'style.css')
-    template_dict = yaml.safe_load(open(yamlfile))
-    table_desc = template_dict['slot_plot_tables']
-    kwcopy.update(template_dict['defaults'])
+    config_info = get_report_config_info('slot_plot_tables', **kwcopy)
+
+    kwcopy.update(config_info['defaults'])
     kwcopy['dataid'] = dataid
 
     if outbase is None:
@@ -431,16 +470,16 @@ def write_slot_report(dataid, inputbase, outbase, **kwargs):
         outdir = os.path.join(outbase, dataid['raft'], dataid['run'])
         html_file = os.path.join(outdir, '%s.html' % dataid['slot'])
         makedir_safe(html_file)
-        handle_file(cssfile_in, outdir, action='copy')
+        ccsfile_out = handle_file(config_info['cssfile'], outdir, action='copy')
 
     html_node = ET.Element('html')
     create_report_header(html_node,
                          title="TS8 Results for {run}:{raft}:{slot}".format(**dataid),
-                         stylesheet=kwcopy.pop('stylesheet', 'style.css'))
+                         stylesheet=kwcopy.pop('stylesheet', ccsfile_out))
 
     body_node = make_child_node(html_node, 'body')
 
-    create_plot_tables(body_node, table_desc, inputbase, outdir, **kwcopy)
+    create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
     write_tree_to_html(html_node, html_file)
 
 
@@ -463,11 +502,9 @@ def write_raft_report(dataid, inputbase, outbase, **kwargs):
 
     sys.stdout.write("Writing report for {run}:{raft}\n".format(**dataid))
 
-    yamlfile = kwcopy.pop('template_file', 'html_report.yaml')
-    cssfile_in = kwcopy.pop('css_file', 'style.css')
-    template_dict = yaml.safe_load(open(yamlfile))
-    table_desc = template_dict['raft_plot_tables']
-    kwcopy.update(template_dict['defaults'])
+    config_info = get_report_config_info('raft_plot_tables', **kwcopy)
+
+    kwcopy.update(config_info['defaults'])
     kwcopy['dataid'] = dataid
 
     if outbase is None:
@@ -477,17 +514,16 @@ def write_raft_report(dataid, inputbase, outbase, **kwargs):
         outdir = os.path.join(outbase, dataid['raft'], dataid['run'])
         html_file = os.path.join(outdir, 'index.html')
         makedir_safe(html_file)
-        handle_file(cssfile_in, outdir, action='copy')
-
+        ccsfile_out = handle_file(config_info['cssfile'], outdir, action='copy')
 
     html_node = ET.Element('html')
     create_report_header(html_node,
                          title="TS8 Results for {run}:{raft}".format(**dataid),
-                         stylesheet=kwcopy.pop('stylesheet', 'style.css'))
+                         stylesheet=kwcopy.pop('stylesheet', ccsfile_out))
 
     body_node = make_child_node(html_node, 'body')
 
-    create_plot_tables(body_node, table_desc, inputbase, outdir, **kwcopy)
+    create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
 
     create_slot_table(body_node, **kwcopy)
 
@@ -539,11 +575,9 @@ def write_summary_report(dataset, inputbase, outbase, **kwargs):
 
     sys.stdout.write("Writing report for %s\n" % dataset)
 
-    yamlfile = kwcopy.pop('template_file', 'html_report.yaml')
-    cssfile_in = kwcopy.pop('css_file', 'style.css')
-    template_dict = yaml.safe_load(open(yamlfile))
-    table_desc = template_dict['summary_plot_tables']
-    kwcopy.update(template_dict['defaults'])
+    config_info = get_report_config_info('summary_plot_tables', **kwcopy)
+
+    kwcopy.update(config_info['defaults'])
     kwcopy['dataid'] = dict(dataset=dataset)
 
     if outbase is None:
@@ -553,16 +587,16 @@ def write_summary_report(dataset, inputbase, outbase, **kwargs):
         outdir = os.path.join(outbase)
         html_file = os.path.join(outdir, '%s.html' % dataset)
         makedir_safe(html_file)
-        handle_file(cssfile_in, outdir, action='copy')
+        ccsfile_out = handle_file(config_info['cssfile'], outdir, action='copy')
 
     html_node = ET.Element('html')
     create_report_header(html_node,
                          title="%s results" % dataset,
-                         stylesheet=kwcopy.pop('stylesheet', 'style.css'))
+                         stylesheet=kwcopy.pop('stylesheet', ccsfile_out))
 
     body_node = make_child_node(html_node, 'body')
 
-    create_plot_tables(body_node, table_desc, inputbase, outdir, **kwcopy)
+    create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
 
     create_run_table(body_node, dataset, **kwcopy)
 

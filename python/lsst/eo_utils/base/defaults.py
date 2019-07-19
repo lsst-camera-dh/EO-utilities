@@ -2,6 +2,9 @@
 
 import os
 
+# Package location
+EO_PACKAGE_BASE = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..', '..'))
+
 # SITE DEPENDENT STUFF
 SITE = os.environ.get('EO_UTILS_SITE', 'slac')
 

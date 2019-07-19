@@ -25,6 +25,7 @@ class ReportConfig(BaseAnalysisConfig):
     htmldir = EOUtilOptions.clone_param('htmldir')
     template_file = EOUtilOptions.clone_param('template_file')
     css_file = EOUtilOptions.clone_param('css_file')
+    plot_report_action = EOUtilOptions.clone_param('plot_report_action')
 
 class ReportTask(BaseAnalysisTask):
     """Simple functor class to tie together standard report data analysis
@@ -131,7 +132,8 @@ class ReportSlotTask(ReportTask):
             Dictionary (or other structure) contain the input data
         """
         config_kw = self.extract_config_vals(dict(template_file=None,
-                                                  css_file=None))
+                                                  css_file=None,
+                                                  plot_report_action=None))
         write_slot_report(data, self.config.indir, self.config.htmldir, **config_kw)
 
 
@@ -163,7 +165,8 @@ class ReportRaftTask(ReportTask):
         dataid = data['S00']
         dataid.pop('slot')
         config_kw = self.extract_config_vals(dict(template_file=None,
-                                                  css_file=None))
+                                                  css_file=None,
+                                                  plot_report_action=None))
         write_raft_report(dataid, self.config.indir, self.config.htmldir, **config_kw)
 
 
@@ -213,7 +216,8 @@ class ReportRunTask(ReportTask):
             Dictionary (or other structure) contain the input data
         """
         config_kw = self.extract_config_vals(dict(template_file=None,
-                                                  css_file=None))
+                                                  css_file=None,
+                                                  plot_report_action=None))
         write_run_report(data, self.config.indir, self.config.htmldir, **config_kw)
 
 
@@ -241,7 +245,9 @@ class ReportSummaryTask(ReportTask):
             Dictionary (or other structure) contain the input data
         """
         config_kw = self.extract_config_vals(dict(template_file=None,
-                                                  css_file=None))
+                                                  css_file=None,
+                                                  plot_report_action=None))
+
         write_summary_report(data, self.config.indir, self.config.htmldir, **config_kw)
 
 
