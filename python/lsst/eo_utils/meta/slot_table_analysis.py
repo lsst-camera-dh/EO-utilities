@@ -20,6 +20,7 @@ class SlotTableAnalysisConfig(MetaConfig):
     rafts = EOUtilOptions.clone_param('rafts')
     slots = EOUtilOptions.clone_param('slots')
     plot = EOUtilOptions.clone_param('plot')
+    skip = EOUtilOptions.clone_param('skip')
 
 
 SlotTableAnalysisConfig.add_task('_SuperbiasFFT', SuperbiasFFTTask)

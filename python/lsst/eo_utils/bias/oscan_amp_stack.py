@@ -127,7 +127,8 @@ class OscanAmpStackTask(BiasAnalysisTask):
                     xkey = "%s_%s" % (dkey, rkey)
                     datakey = "stack-%s" % xkey
                     figs.plot_xy_axs_from_tabledict(dtables, datakey, idx, figkey,
-                                                    x_name=xkey, y_name=y_name)
+                                                    x_name=xkey, y_name=y_name,
+                                                    ymin=-10., ymax=10.)
                     idx += 1
 
 
