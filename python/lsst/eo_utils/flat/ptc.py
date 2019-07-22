@@ -150,12 +150,16 @@ class PTCTask(FlatRaftTableAnalysisTask):
         log_xmaxs = np.log10(ptc_means[:, -1])
 
         idx = 0
+        xlo = np.power(10, 1.5)
+        xhi = np.power(10, 5.5)
         for slot in ALL_SLOTS:
             figs.setup_amp_plots_grid(slot, xlabel="Mean [ADU]", ylabel="Var [ADU**2]")
             for amp in range(16):
                 axes = figs.get_amp_axes(slot, amp)
                 axes.set_xscale('log')
                 axes.set_yscale('log')
+                axes.set_xlim(xlo, xhi)
+                axes.set_ylim(1e1, 1e7)
                 axes.scatter(ptc_means[idx], ptc_vars[idx])
                 xvals = np.logspace(log_xmins[idx], log_xmaxs[idx], 100)
                 ptc_pars = (a00s[idx], gains[idx], alphas[idx])

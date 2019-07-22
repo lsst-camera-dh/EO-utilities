@@ -53,6 +53,7 @@ class EOUtilOptions(pexConfig.Config):
     nfiles = pexConfig.Field("Number of files to use", int, default=None)
     insuffix = pexConfig.Field("Suffix for input files", str, default="")
     infile = pexConfig.Field("Input file name", str, default=None)
+    indir = pexConfig.Field("Input directory name", str, default=DEFAULT_OUTDIR)
     outfile = pexConfig.Field("Output file name", str, default=None)
 
     # Options for input data processing
@@ -125,6 +126,14 @@ class EOUtilOptions(pexConfig.Config):
     bkg_nx = pexConfig.Field("Local background width (pixels)", int, default=10)
     bkg_ny = pexConfig.Field("Local background height (pixels)", int, default=10)
     edge_rolloff = pexConfig.Field("Edge rolloff width (pixels)", int, default=10)
+
+    # Options for html reports
+    template_file = pexConfig.Field("HTML report template file", str, default=None)
+    htmldir = pexConfig.Field("HTML report directory", str,
+                              default=os.path.join(DEFAULT_OUTDIR, 'html'))
+    css_file = pexConfig.Field("HTML report style file", str, default=None)
+    plot_report_action = pexConfig.Field("How to deal with figures in repots", str,
+                                         default='link')
 
     @classmethod
     def clone_param(cls, par_name, **kwargs):

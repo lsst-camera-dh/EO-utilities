@@ -187,10 +187,10 @@ class SflatRatioTask(SflatSlotTableAnalysisTask):
 
         figs.plot_amp_arrays("mask", self.quality_masks, vmin=0, vmax=3)
 
-        for i in range(16):
+        for i, (amp, sbias_image) in enumerate(sorted(self.superbias_images)):
             figs.plot_two_image_hist2d('scatter', i,
-                                       self.superbias_images[i],
-                                       self.ratio_images[i],
+                                       sbias_image,
+                                       self.ratio_images[amp],
                                        bins=(200, 200),
                                        range=((-50, 50.), (0.018, 0.022)))
 

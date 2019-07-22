@@ -28,18 +28,23 @@ BOT_GLOB_STRING =\
     '{archive}/LCA-10134_Cryostat/LCA-10134_Cryostat-0001/{run}/' +\
     'BOT_acq/v0/*/{testName}*{imgtype}*/MC_C*{raft}_{slot}.fits'
 
-
 # These strings define the standard output filenames
 PD_CALIB_FORMAT_STRING = '{outdir}/pd_calib/{raft}/{raft}-{run}-pd_calib.dat'
 SLOT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}{suffix}'
 RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-RFT{suffix}'
+RUN_FORMAT_STRING = '{outdir}/{fileType}/{run}'
+
 SUMMARY_FORMAT_STRING = '{outdir}/{fileType}/summary/{testType}/{dataset}{suffix}'
 SUPERBIAS_FORMAT_STRING =\
     '{outdir}/superbias/{raft}/{raft}-{run}-{slot}_superbias_b-{bias}{suffix}'
 SUPERBIAS_STAT_FORMAT_STRING =\
     '{outdir}/superbias/{raft}/{raft}-{run}-{slot}_{stat}_b-{bias}{suffix}'
 
-
+# These string define the report output filename
+SLOT_REPORT_FORMAT_STRING = '{outdir}/html/{run}/{raft}/{slot}.html'
+RAFT_REPORT_FORMAT_STRING = '{outdir}/html/{run}/{raft}/index.html'
+RUN_REPORT_FORMAT_STRING = '{outdir}/html/{run}/index.html'
+SUMMARY_REPORT_FORMAT_STRING = '{outdir}/html/{dataset}.html'
 
 
 def makedir_safe(filepath):
@@ -172,7 +177,7 @@ class FilenameFormat:
 
     @staticmethod
     def _findall(string, sep):
-        """Find all the values of sep in string
+        """Find all the values of sep in strin
 
         Returns
         -------
@@ -319,6 +324,18 @@ EORESULTS_SUMMARY_PLOT_FORMATTER = FILENAME_FORMATS.add_format('eoresults_sum_pl
                                                                fileType='plots',
                                                                testType='eotest_results',
                                                                suffix='_eotest_results')
+
+
+SLOT_REPORT_FORMATTER = FILENAME_FORMATS.add_format('slot_report',
+                                                    SLOT_REPORT_FORMAT_STRING)
+RAFT_REPORT_FORMATTER = FILENAME_FORMATS.add_format('raft_report',
+                                                    RAFT_REPORT_FORMAT_STRING)
+RUN_REPORT_FORMATTER = FILENAME_FORMATS.add_format('run_report',
+                                                   RUN_REPORT_FORMAT_STRING)
+SUMMARY_REPORT_FORMATTER = FILENAME_FORMATS.add_format('summary_report',
+                                                       SUMMARY_REPORT_FORMAT_STRING)
+
+
 
 def get_ts8_files_glob(**kwargs):
     """Returns a `list` with the matching file names using the format string for TS8 data """
@@ -482,7 +499,7 @@ def get_run_files_from_formatter(run_id, formatter, **kwargs):
 
     kwcopy = kwargs.copy()
     outdict = {}
-    rafts = kwcopy.pop('rafts')
+    rafts = kwcopy.pop('rafts', None)
     if rafts is None:
         raft = kwcopy.get('raft', None)
         if raft is None:
@@ -497,6 +514,40 @@ def get_run_files_from_formatter(run_id, formatter, **kwargs):
         for slot in ALL_SLOTS:
             glob_string = formatter(slot=slot, run=run_id, **kwcopy)
             slotdict[slot] = dict(MASK=sorted(glob.glob(glob_string)))
+    return outdict
+
+
+def make_dataids_for_run(run_id, **kwargs):
+    """Get a set of files for a particular run
+
+    Parameters
+    ----------
+    run_id : `str`
+        The number number we are reading
+
+    Returns
+    -------
+    retval : `dict`
+        Dictionary mapping slot to dataids
+    """
+    hinfo = get_hardware_type_and_id(run_id)
+
+    kwcopy = kwargs.copy()
+    outdict = {}
+    rafts = kwcopy.pop('rafts', None)
+    if rafts is None:
+        raft = kwcopy.get('raft', None)
+        if raft is None:
+            rafts = [hinfo[1]]
+        else:
+            rafts = [raft]
+
+    for raft in rafts:
+        kwcopy['raft'] = raft
+        slotdict = {}
+        outdict[raft] = slotdict
+        for slot in ALL_SLOTS:
+            slotdict[slot] = dict(run=run_id, raft=raft, slot=slot)
     return outdict
 
 
@@ -678,7 +729,7 @@ def link_eo_results(ccd_map, fdict, outformat, **kwargs):
     for slot, val in slot_map.items():
         try:
             fname = fdict[val]
-        except KeyError as msg:
+        except KeyError:
             use_orig = True
             break
         outpath = outformat.format(raft=raft, slot=slot, **kwargs)
@@ -695,7 +746,7 @@ def link_eo_results(ccd_map, fdict, outformat, **kwargs):
     for slot, val in slot_map.items():
         try:
             fname = fdict[val]
-        except KeyError as msg:
+        except KeyError:
             raise KeyError("Failed to find ccd in either mapping for %s" % raft)
         outpath = outformat.format(raft=raft, slot=slot, **kwargs)
         makedir_safe(outpath)

@@ -104,7 +104,6 @@ class AnalysisHandler(Configurable):
 
         parser = setup_parser()
         self.add_parser_arguemnts(parser)
-        print(parser)
         args = parser.parse_args()
         arg_dict = parse_args_to_dict(args, parser, None)
         arg_dict.update(**kwargs)
@@ -775,6 +774,127 @@ class TableAnalysisByRaft(AnalysisByRaft):
                 slot_dict[slot] = datapath + '.fits'
             out_dict[raft] = slot_dict
         return out_dict
+
+
+class AnalysisByRunConfig(AnalysisIteratorConfig):
+    """Additional configuration for EO analysis iterator for raft-based analysis
+    """
+
+
+class AnalysisByRun(AnalysisIterator):
+    """Small class to iterate an analysis task over all the rafts
+
+    Sub-classes will need to specify a get_data function to
+    get the data to analyze for a particular run.
+
+    This class will call get_data to get the available data for a particular
+    run and then call self._task() for each raft availble in that run
+    """
+    ConfigClass = AnalysisByRunConfig
+    _DefaultName = "AnalysisByRun"
+    exclude_pars = ['run']
+
+    def __init__(self, task, **kwargs):
+        """C'tor
+
+        Parameters
+        ----------
+        task : `AnalysisTask`
+            Task that this handler will run
+        kwargs
+            Used to override configuration defaults
+        """
+        AnalysisIterator.__init__(self, task, **kwargs)
+
+    def get_data(self, butler, datakey, **kwargs):
+        """Function to get the data to analyze
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        datakey : `str`
+            Run number or other id that defines the data to analyze
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        retval : `dict`
+            Dictionary mapping input data by raft, slot and file type
+        """
+        return self._task.get_data(butler, datakey, **kwargs)
+
+    def call_analysis_task(self, run, **kwargs):
+        """Call the analysis function for one run
+
+        Parameters
+        ----------
+        run : `str`
+`           The run identifier
+        kwargs
+            Passed to get_data() and to the analysis function
+
+        Raises
+        ------
+        ValueError : If the hardware type (raft or focal plane) is not recognized
+        """
+        data_files = self.get_data(self._butler, run, **kwargs)
+        kwargs['run'] = run
+        if self._task is not None:
+            self._task(self._butler, data_files, **kwargs)
+
+
+
+class AnalysisByDatasetConfig(AnalysisHandlerConfig):
+    """Additional configuration for EO analysis iterator for raft-based analysis
+    """
+    dataset = EOUtilOptions.clone_param('dataset')
+
+
+class AnalysisByDataset(SimpleAnalysisHandler):
+    """Small class to iterate an analysis task over all the rafts
+
+    Sub-classes will need to specify a get_data function to
+    get the data to analyze for a particular run.
+
+    This class will call get_data to get the available data for a particular
+    run and then call self._task() for each raft availble in that run
+    """
+    ConfigClass = AnalysisByDatasetConfig
+    _DefaultName = "AnalysisByDataset"
+
+    def __init__(self, task, **kwargs):
+        """C'tor
+
+        Parameters
+        ----------
+        task : `AnalysisTask`
+            Task that this handler will run
+        kwargs
+            Used to override configuration defaults
+        """
+        SimpleAnalysisHandler.__init__(self, task, **kwargs)
+
+    def call_analysis_task(self, **kwargs):
+        """Call the analysis function for one run
+
+        Parameters
+        ----------
+        run : `str`
+`           The run identifier
+        kwargs
+            Passed to get_data() and to the analysis function
+
+        Raises
+        ------
+        ValueError : If the hardware type (raft or focal plane) is not recognized
+        """
+        if kwargs.get('dry_run', False):
+            self._task.info("Skipping %s" % (kwargs))
+            return
+        if self._task is not None:
+            self._task(None, self.config.dataset, **kwargs)
 
 
 class SummaryAnalysisIterator(AnalysisHandler):

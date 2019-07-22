@@ -28,6 +28,7 @@ from .iter_utils import AnalysisHandlerConfig, AnalysisHandler,\
     AnalysisBySlotConfig, AnalysisBySlot,\
     AnalysisByRaftConfig, AnalysisByRaft,\
     TableAnalysisBySlot, TableAnalysisByRaft,\
+    AnalysisByRunConfig, AnalysisByRun,\
     SummaryAnalysisIterator
 
 from .pipeline import MetaConfig, MetaTask
@@ -38,3 +39,9 @@ from .mask_analysis import MaskAddConfig, MaskAddTask
 
 from .eo_results import EOResultsRaftConfig, EOResultsRaftTask,\
     EOResultsSummaryConfig, EOResultsSummaryTask
+
+from .report_task import ReportConfig, ReportTask,\
+    ReportSlotConfig, ReportSlotTask,\
+    ReportRaftConfig, ReportRaftTask,\
+    ReportRunConfig, ReportRunTask,\
+    ReportSummaryConfig, ReportSummaryTask

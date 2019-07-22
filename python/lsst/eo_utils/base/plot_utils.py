@@ -220,7 +220,7 @@ class FigureDict:
 
 
     def setup_region_plots_grid(self, key, **kwargs):
-        """Set up a 3x2 grid of plots with requested labeling
+        """Set up a 2x3 grid of plots with requested labeling
 
         Parameters
         ----------
@@ -250,26 +250,26 @@ class FigureDict:
             The axes objects
         """
         title = kwargs.get('title', None)
-        xlabel = kwargs.get('xlabel', None)
-        ylabel = kwargs.get('ylabel', None)
+        xlabel = kwargs.get('xlabel', "")
+        ylabel = kwargs.get('ylabel', "")
         figsize = kwargs.get('figsize', (15, 10))
 
-        fig_nrow = 2
-        fig_ncol = 3
+        regions = [" Imaging", " Serial", " Parallel"]
+        directions = [" Row", " Column"]
+        fig_nrow = len(regions)
+        fig_ncol = len(directions)
         fig, axs = plt.subplots(nrows=fig_nrow, ncols=fig_ncol, figsize=figsize)
 
         if title is not None:
             fig.suptitle(title)
 
-        if ylabel is not None:
-            for i_row in range(fig_nrow):
-                ax_row = axs[i_row, 0]
-                ax_row.set_ylabel(ylabel)
+        for i_row, region in enumerate(regions):
+            ax_row = axs[i_row, 0]
+            ax_row.set_ylabel(ylabel + region)
 
-        if xlabel is not None:
-            for i_col in range(fig_ncol):
-                ax_col = axs[1, i_col]
-                ax_col.set_xlabel(xlabel)
+        for i_col, direction in enumerate(directions):
+            ax_col = axs[fig_nrow-1, i_col]
+            ax_col.set_xlabel(xlabel + direction)
 
         o_dict = dict(fig=fig, axs=axs)
         self._fig_dict[key] = o_dict
@@ -399,7 +399,13 @@ class FigureDict:
         kwargs
             Passed to matplotlib
         """
-        self._fig_dict[key]['axs'].flat[iamp].plot(xdata, ydata, **kwargs)
+        kwcopy = kwargs.copy()
+        ymin = kwcopy.pop('ymin', None)
+        ymax = kwcopy.pop('ymax', None)
+        axs = self._fig_dict[key]['axs'].flat[iamp]
+        axs.plot(xdata, ydata, **kwcopy)
+        if ymin is not None and ymax is not None:
+            axs.set_ylim(ymin, ymax)
 
 
     def plot_stats_band_amp(self, key, iamp, xvals, **kwargs):
@@ -506,10 +512,9 @@ class FigureDict:
         ymax : `float`
             Y-axis max
         """
-        x_name = kwargs.get('x_name', 'x')
-        y_name = kwargs.get('y_name', 'y')
-        ymin = kwargs.get('ymin', -np.inf)
-        ymax = kwargs.get('ymax', np.inf)
+        kwcopy = kwargs.copy()
+        x_name = kwcopy.pop('x_name', 'x')
+        y_name = kwcopy.pop('y_name', 'y')
 
         file_data = dtables['files']
         dtab = dtables[key]
@@ -519,8 +524,9 @@ class FigureDict:
                 continue
             valarray = dtab[col]
             for row, test_type in zip(valarray.T, file_data['testtype']):
-                self.plot(plotkey, idx, xcol, row.clip(ymin, ymax),
-                          color=TESTCOLORMAP.get(test_type, 'gray'))
+                self.plot(plotkey, idx, xcol, row,
+                          color=TESTCOLORMAP.get(test_type, 'gray'),
+                          **kwcopy)
 
 
     def plot_xy_from_tabledict(self, dtables, key, plotkey, **kwargs):
@@ -582,10 +588,9 @@ class FigureDict:
         ymax : `float`
             Y-axis max
         """
-        x_name = kwargs.get('x_name', 'x')
-        y_name = kwargs.get('y_name', 'y')
-        ymin = kwargs.get('ymin', -np.inf)
-        ymax = kwargs.get('ymax', np.inf)
+        kwcopy = kwargs.copy()
+        x_name = kwcopy.pop('x_name', 'x')
+        y_name = kwcopy.pop('y_name', 'y')
 
         file_data = dtables['files']
         dtab = dtables[key]
@@ -607,7 +612,7 @@ class FigureDict:
                 except KeyError:
                     color = "gray"
 
-                self.plot(plotkey, amp, xcol, row.clip(ymin, ymax), color=color)
+                self.plot(plotkey, amp, xcol, row, color=color, **kwcopy)
 
 
     def plot_raft_correl_matrix(self, key, data, **kwargs):
@@ -849,8 +854,7 @@ class FigureDict:
         fig, axs = plt.subplots(2, 8, figsize=(15, 10))
         axs = axs.ravel()
 
-        for idx in range(16):
-            darray = array_dict[idx]
+        for idx, (_, darray) in enumerate(sorted(array_dict)):
             axs[idx].imshow(darray, origin='low', interpolation='none', **kwargs)
             axs[idx].set_title('Amp {}'.format(idx + 1))
 
