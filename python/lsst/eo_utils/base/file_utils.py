@@ -394,9 +394,9 @@ def get_files_for_run(run_id, **kwargs):
 
     Keywords
     --------
-    testTypes : `list`
+    testtypes : `list`
         The types of acquistions we want to include
-    imageType : `str`
+    imagetype : `str`
         The image type we want
     outkey : `str`
         Where to put the output file
