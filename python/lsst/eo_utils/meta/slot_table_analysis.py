@@ -31,7 +31,7 @@ SlotTableAnalysisConfig.add_task('_QE', QETask)
 
 
 class SlotTableAnalysisTask(MetaTask):
-    """Analyze Superbias, Superdark and Superflat frames"""
+    """Chain together all the slot-based table analyses"""
 
     ConfigClass = SlotTableAnalysisConfig
     _DefaultName = "SlotTableAnalysis"

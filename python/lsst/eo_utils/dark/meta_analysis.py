@@ -35,6 +35,8 @@ class DarkRaftTableAnalysisTask(AnalysisTask):
     tablename_format = RAFT_DARK_TABLE_FORMATTER
     plotname_format = RAFT_DARK_PLOT_FORMATTER
 
+    datatype = 'dark table'
+
 
 class DarkSummaryAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
@@ -55,3 +57,5 @@ class DarkSummaryAnalysisTask(AnalysisTask):
     intablename_format = RAFT_DARK_TABLE_FORMATTER
     tablename_format = SUM_DARK_TABLE_FORMATTER
     plotname_format = SUM_DARK_PLOT_FORMATTER
+
+    datatype = 'dark table'

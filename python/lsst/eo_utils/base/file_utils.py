@@ -394,9 +394,9 @@ def get_files_for_run(run_id, **kwargs):
 
     Keywords
     --------
-    testTypes : `list`
+    testtypes : `list`
         The types of acquistions we want to include
-    imageType : `str`
+    imagetype : `str`
         The image type we want
     outkey : `str`
         Where to put the output file
@@ -964,3 +964,29 @@ def test_files_exist(flist):
         else:
             missing.append(fname)
     return found, missing
+
+
+def make_links(basedir, outdir):
+    """Make links for an analysis directory
+
+    Parameters
+    ----------
+    basedir : `str`
+        Area we are pointing to
+    outdir : `str`
+        Area we are writing to
+    """
+    print("Linking directories in %s to %s" % (basedir, outdir))
+
+    topdirs = glob.glob(os.path.join(basedir, '*'))
+    for topdir in topdirs:
+        if os.path.basename(topdir) in ['test']:
+            continue
+        dir_glob = glob.glob(os.path.join(topdir, '*'))
+        for link_from in dir_glob:
+            if os.path.basename(link_from) in ['plots', 'tables']:
+                continue
+            link_to = link_from.replace(basedir, outdir)
+            comm = 'ln -s %s %s' % (link_from, link_to)
+            makedir_safe(link_to)
+            os.system(comm)

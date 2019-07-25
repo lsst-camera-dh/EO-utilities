@@ -33,6 +33,7 @@ class FlatRaftTableAnalysisTask(AnalysisTask):
     intablename_format = SLOT_FLAT_TABLE_FORMATTER
     tablename_format = RAFT_FLAT_TABLE_FORMATTER
     plotname_format = RAFT_FLAT_PLOT_FORMATTER
+    datatype = 'flat table'
 
 
 class FlatSummaryAnalysisConfig(AnalysisConfig):
@@ -54,3 +55,5 @@ class FlatSummaryAnalysisTask(AnalysisTask):
     intablename_format = RAFT_FLAT_TABLE_FORMATTER
     tablename_format = SUM_FLAT_TABLE_FORMATTER
     plotname_format = SUM_FLAT_PLOT_FORMATTER
+
+    datatype = 'flat table'

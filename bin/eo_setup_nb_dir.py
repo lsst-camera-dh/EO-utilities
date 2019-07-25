@@ -1,7 +1,15 @@
 #!/usr/bin/env python
-"""Set up a directory to run EO analysis and link to a base output area"""
+"""Set up a directory to run notebook analysis and copy over the examples"""
+
+import os
+
+import shutil
+
+import glob
 
 import argparse
+
+from lsst.eo_utils.base.defaults import EO_PACKAGE_BASE
 
 from lsst.eo_utils.base.file_utils import make_links
 
@@ -17,6 +25,12 @@ def main():
 
     args = parser.parse_args()
     make_links(args.basedir, args.outdir)
+
+    nb_files = glob.glob(os.path.join(EO_PACKAGE_BASE, 'nb', '*.ipynb'))
+    for nb_file in nb_files:
+        outpath = os.path.basename(nb_file)
+        shutil.copyfile(nb_file, outpath)
+
 
 if __name__ == '__main__':
     main()

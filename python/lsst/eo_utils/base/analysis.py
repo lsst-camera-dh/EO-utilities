@@ -52,6 +52,8 @@ class BaseTask(Configurable):
     ConfigClass = BaseConfig
     _DefaultName = "BaseTask"
     iteratorClass = SimpleAnalysisHandler
+    datatype = 'None'
+
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -163,6 +165,21 @@ class BaseTask(Configurable):
             The message
         """
         self.log.info(msg)
+
+    def csv_line(self, taskname, stream):
+        """Write a line of comma-seperated values, used to build a table of task types"""
+        stream.write("%s, %s, %s, %s\n" % (taskname,
+                                           self.iteratorClass.level,
+                                           self.datatype,
+                                           self.__doc__.replace(',', '').replace('\n', '')))
+
+    def markdown_line(self, taskname, stream):
+        """Write a line of markdown, used to build a table of task types"""
+        stream.write("| %s | %s | %s | %s |\n" % (taskname,
+                                                  self.iteratorClass.level,
+                                                  self.datatype,
+                                                  self.__doc__.replace('\n', '')))
+
 
 
 class BaseAnalysisConfig(BaseConfig):

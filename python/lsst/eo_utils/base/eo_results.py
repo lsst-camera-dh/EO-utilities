@@ -31,7 +31,7 @@ class EOResultsRaftConfig(AnalysisConfig):
 
 
 class EOResultsRaftTask(AnalysisTask):
-    """Analyze some base data"""
+    """Collect results from the production eotest suite"""
 
     ConfigClass = EOResultsRaftConfig
     _DefaultName = "EOResultsRaftTask"

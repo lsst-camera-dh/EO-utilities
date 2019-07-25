@@ -37,6 +37,7 @@ class QeAnalysisTask(AnalysisTask):
 
     tablename_format = SLOT_QE_TABLE_FORMATTER
     plotname_format = SLOT_QE_PLOT_FORMATTER
+    datatype = 'lambda'
 
     def __init__(self, **kwargs):
         """C'tor

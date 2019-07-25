@@ -23,7 +23,7 @@ class FlatLinearityConfig(FlatRaftTableAnalysisConfig):
 
 
 class FlatLinearityTask(FlatRaftTableAnalysisTask):
-    """Extract summary statistics from the data"""
+    """Measue the linearity using data extracted from the flat-pair data"""
 
     ConfigClass = FlatLinearityConfig
     _DefaultName = "FlatLinearityTask"

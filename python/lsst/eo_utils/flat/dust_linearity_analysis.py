@@ -41,7 +41,7 @@ class DustLinearityAnalysisConfig(FlatAnalysisConfig):
 
 
 class DustLinearityAnalysisTask(FlatAnalysisTask):
-    """Analyze some linearity data"""
+    """Analyze some flat pairs data to measure the linearity of the effect of defects and dust spots"""
 
     ConfigClass = DustLinearityAnalysisConfig
     _DefaultName = "dustLinearityAnalysisTask"

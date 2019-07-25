@@ -33,6 +33,7 @@ class PpumpAnalysisTask(AnalysisTask):
 
     tablename_format = SLOT_PPUMP_TABLE_FORMATTER
     plotname_format = SLOT_PPUMP_PLOT_FORMATTER
+    datatype = 'ppump'
 
     def get_data(self, butler, run_num, **kwargs):
         """Get a set of ppump and mask files out of a folder

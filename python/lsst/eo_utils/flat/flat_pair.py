@@ -1,4 +1,4 @@
-"""Class to analyze the FFT of the bias frames"""
+"""Analyze the flat pairs data"""
 
 import operator
 
@@ -33,7 +33,7 @@ class FlatPairConfig(FlatAnalysisConfig):
 
 
 class FlatPairTask(FlatAnalysisTask):
-    """Analyze some flat data"""
+    """Analyze some flat pair data to extract means and variances"""
 
     ConfigClass = FlatPairConfig
     _DefaultName = "FlatPairTask"

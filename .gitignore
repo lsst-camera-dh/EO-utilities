@@ -45,6 +45,8 @@ coverage.xml
 pytest_session.txt
 .pytest_cache/
 test_out
+test_tmpl
+
 
 # Translations
 *.mo

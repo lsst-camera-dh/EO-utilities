@@ -40,7 +40,7 @@ RaftAnalysisConfig.add_task('_EOResultsRaft', EOResultsRaftTask)
 
 
 class RaftAnalysisTask(MetaTask):
-    """Analyze Superbias, Superdark and Superflat frames"""
+    """Chain together all the raft-based analyses"""
 
     ConfigClass = RaftAnalysisConfig
     _DefaultName = "RaftAnalysis"

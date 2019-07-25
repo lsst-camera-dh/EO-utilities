@@ -31,7 +31,7 @@ CalibStackConfig.add_task('_Superflat', SuperflatTask)
 
 
 class CalibStackTask(MetaTask):
-    """Construct Superbias, Superdark and Superflat frames"""
+    """Construct Superbias Superdark and Superflat frames"""
 
     ConfigClass = CalibStackConfig
     _DefaultName = "CalibStack"

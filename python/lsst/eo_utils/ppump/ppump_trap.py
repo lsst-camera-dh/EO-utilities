@@ -35,7 +35,7 @@ class TrapConfig(PpumpAnalysisConfig):
 
 
 class TrapTask(PpumpAnalysisTask):
-    """Analyze some ppump data"""
+    """Analyze some pocket-pumped data to find traps"""
 
     ConfigClass = TrapConfig
     _DefaultName = "TrapTask"

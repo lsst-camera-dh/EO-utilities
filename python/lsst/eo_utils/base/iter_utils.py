@@ -43,6 +43,7 @@ class AnalysisHandler(Configurable):
     ConfigClass = AnalysisHandlerConfig
     _DefaultName = "AnalysisHandler"
     exclude_pars = []
+    level = 'None'
 
     def __init__(self, task, **kwargs):
         """C'tor
@@ -525,6 +526,7 @@ class AnalysisBySlot(AnalysisIterator):
     _DefaultName = "AnalysisBySlot"
 
     exclude_pars = ['run', 'slot']
+    level = 'Slot'
 
     def __init__(self, task, **kwargs):
         """C'tor
@@ -604,6 +606,7 @@ class AnalysisByRaft(AnalysisIterator):
     ConfigClass = AnalysisByRaftConfig
     _DefaultName = "AnalysisByRaft"
     exclude_pars = ['run', 'raft']
+    level = 'Raft'
 
     def __init__(self, task, **kwargs):
         """C'tor
@@ -793,6 +796,7 @@ class AnalysisByRun(AnalysisIterator):
     ConfigClass = AnalysisByRunConfig
     _DefaultName = "AnalysisByRun"
     exclude_pars = ['run']
+    level = 'Run'
 
     def __init__(self, task, **kwargs):
         """C'tor
@@ -863,6 +867,7 @@ class AnalysisByDataset(SimpleAnalysisHandler):
     """
     ConfigClass = AnalysisByDatasetConfig
     _DefaultName = "AnalysisByDataset"
+    level = 'Dataset'
 
     def __init__(self, task, **kwargs):
         """C'tor
@@ -907,6 +912,7 @@ class SummaryAnalysisIterator(AnalysisHandler):
 
     Sub-classes will be give a function to call,which they will call with the data to analyze
     """
+    level = 'Dataset'
 
     def __init__(self, task, **kwargs):
         """C'tor

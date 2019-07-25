@@ -34,6 +34,8 @@ class TemplateTask(TmplAnalysisTask):
     tablename_format = RAFT_TMPL_TABLE_FORMATTER
     plotname_format = RAFT_TMPL_PLOT_FORMATTER
 
+    datatype = 'tmpl'
+
     def __init__(self, **kwargs):
         """C'tor
 

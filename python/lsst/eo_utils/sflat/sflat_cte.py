@@ -25,7 +25,7 @@ class CTEConfig(SflatSlotTableAnalysisConfig):
     nframes = EOUtilOptions.clone_param('nframes')
 
 class CTETask(SflatSlotTableAnalysisTask):
-    """Analyze some sflat data"""
+    """Analyze overscans in superflat data to measure the CTE"""
 
     ConfigClass = CTEConfig
     _DefaultName = "CTETask"

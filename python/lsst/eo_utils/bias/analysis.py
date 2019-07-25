@@ -33,6 +33,8 @@ class BiasAnalysisTask(AnalysisTask):
     tablename_format = SLOT_BIAS_TABLE_FORMATTER
     plotname_format = SLOT_BIAS_PLOT_FORMATTER
 
+    datatype = 'bias'
+
     def get_data(self, butler, run_num, **kwargs):
         """Get a set of bias and mask files out of a folder
 

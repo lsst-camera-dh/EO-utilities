@@ -30,7 +30,7 @@ class DustColorConfig(QeAnalysisConfig):
 
 
 class DustColorTask(QeAnalysisTask):
-    """Analyze some qe data"""
+    """Analyze some monochromatic data to extract the wavelength dependence of defects and dusk spots"""
 
     ConfigClass = DustColorConfig
     _DefaultName = "DustColorTask"
