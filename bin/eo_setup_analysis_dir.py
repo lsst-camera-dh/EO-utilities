@@ -1,41 +1,11 @@
 #!/usr/bin/env python
-"""Specialize template code for a particular task"""
-
-import os
-
-import glob
+"""Set up a directory to run EO analysis and link to a base output area"""
 
 import argparse
 
-from lsst.eo_utils.base.file_utils import makedir_safe
+from lsst.eo_utils.base.file_utils import make_links
 
 DEFAULT_BASEDIR = '/gpfs/slac/lsst/fs1/u/echarles/DATA/analysis'
-
-def make_links(basedir, outdir):
-    """Make links for an analysis directory
-
-    Parameters
-    ----------
-    basedir : `str`
-        Area we are pointing to
-    outdir : `str`
-        Area we are writing to
-    """
-    print("Linking directories in %s to %s" % (basedir, outdir))
-
-    topdirs = glob.glob(os.path.join(basedir, '*'))
-    for topdir in topdirs:
-        if os.path.basename(topdir) in ['test']:
-            continue
-        dir_glob = glob.glob(os.path.join(topdir, '*'))
-        for link_from in dir_glob:
-            if os.path.basename(link_from) in ['plots', 'tables']:
-                continue
-            link_to = link_from.replace(basedir, outdir)
-            comm = 'ln -s %s %s' % (link_from, link_to)
-            makedir_safe(link_to)
-            os.system(comm)
-
 
 def main():
     """Hook for setup.py"""
@@ -47,7 +17,6 @@ def main():
 
     args = parser.parse_args()
     make_links(args.basedir, args.outdir)
-
 
 if __name__ == '__main__':
     main()
