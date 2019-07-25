@@ -30,7 +30,7 @@ class QEMedianConfig(QeAnalysisConfig):
 
 
 class QEMedianTask(QeAnalysisTask):
-    """Analyze some qe data"""
+    """Analyze some monochromatic data to extract medians """
 
     ConfigClass = QEMedianConfig
     _DefaultName = "QEMedianTask"

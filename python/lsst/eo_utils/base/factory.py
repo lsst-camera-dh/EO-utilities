@@ -109,5 +109,39 @@ class EOTaskFactory:
 
         self.run_task(args.task, **arg_dict)
 
+    def sort_tasks(self):
+        """Generate dictionary of tasks sorted by level and datatype"""
+        level_dict = {}
+        for task_name, task in self.items():
+            level = task.iteratorClass.level
+            if level not in level_dict:
+                level_dict[level] = {}
+            datatype_dict = level_dict[level]
+            if task.datatype not in datatype_dict:
+                datatype_dict[task.datatype] = {}
+            task_dict = datatype_dict[task.datatype]
+            task_dict[task_name] = task
+        return level_dict
+
+    def make_csv(self, stream):
+        """Generate a markdown table describing all the tasks"""
+        stream.write("Task, Level, Dataype, Description\n")
+        level_dict = self.sort_tasks()
+
+        for _, datatype_dict in level_dict.items():
+            for _, task_dict in datatype_dict.items():
+                for task_name, task in task_dict.items():
+                    task.csv_line(task_name, stream)
+
+
+    def make_markdown(self, stream):
+        """Generate a markdown table describing all the tasks"""
+        stream.write("|| Task || Level || Datatype || Description ||\n")
+        level_dict = self.sort_tasks()
+        for _, datatype_dict in level_dict.items():
+            for _, task_dict in datatype_dict.items():
+                for task_name, task in task_dict.items():
+                    task.markdown_line(task_name, stream)
+
 
 EO_TASK_FACTORY = EOTaskFactory()

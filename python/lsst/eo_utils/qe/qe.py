@@ -23,7 +23,7 @@ class QEConfig(QeSlotTableAnalysisConfig):
 
 
 class QETask(QeSlotTableAnalysisTask):
-    """Analyze some qe data"""
+    """Analyze some monochromatic data to extract the wavelength dependence of the QE"""
 
     ConfigClass = QEConfig
     _DefaultName = "QETask"

@@ -33,6 +33,7 @@ class Fe55AnalysisTask(AnalysisTask):
 
     tablename_format = SLOT_FE55_TABLE_FORMATTER
     plotname_format = SLOT_FE55_PLOT_FORMATTER
+    datatype = 'fe55'
 
     def get_data(self, butler, run_num, **kwargs):
         """Get a set of fe55 and mask files out of a folder

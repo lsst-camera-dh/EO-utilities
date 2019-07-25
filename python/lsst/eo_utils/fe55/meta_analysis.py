@@ -34,6 +34,7 @@ class Fe55RaftTableAnalysisTask(AnalysisTask):
     tablename_format = RAFT_FE55_TABLE_FORMATTER
     plotname_format = RAFT_FE55_PLOT_FORMATTER
 
+    datatype = 'fe55 table'
 
 
 class Fe55SummaryAnalysisConfig(AnalysisConfig):
@@ -56,3 +57,5 @@ class Fe55SummaryAnalysisTask(AnalysisTask):
     intablename_format = RAFT_FE55_TABLE_FORMATTER
     tablename_format = SUM_FE55_TABLE_FORMATTER
     plotname_format = SUM_FE55_PLOT_FORMATTER
+
+    datatype = 'fe55 table'

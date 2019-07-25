@@ -38,6 +38,7 @@ class DarkAnalysisTask(AnalysisTask):
 
     tablename_format = SLOT_DARK_TABLE_FORMATTER
     plotname_format = SLOT_DARK_PLOT_FORMATTER
+    datatype = 'dark'
 
     def get_superdark_file(self, suffix, **kwargs):
         """Get the name of the superdark file for a particular run, raft, ccd...

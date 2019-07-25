@@ -37,7 +37,7 @@ SummaryAnalysisConfig.add_task('_CorrelWRTOscanSummary', CorrelWRTOscanSummaryTa
 
 
 class SummaryAnalysisTask(MetaTask):
-    """Analyze Superbias, Superdark and Superflat frames"""
+    """Chain together all the summary-level analyses"""
 
     ConfigClass = SummaryAnalysisConfig
     _DefaultName = "SummaryAnalysis"

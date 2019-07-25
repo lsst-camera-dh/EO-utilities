@@ -36,7 +36,7 @@ SlotAnalysisConfig.add_task('_QEMedian', QEMedianTask)
 
 
 class SlotAnalysisTask(MetaTask):
-    """Analyze Superbias, Superdark and Superflat frames"""
+    """Chain together all the slot-based image analyses"""
 
     ConfigClass = SlotAnalysisConfig
     _DefaultName = "SlotAnalysis"

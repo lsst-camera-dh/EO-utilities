@@ -28,7 +28,7 @@ class ReportConfig(BaseAnalysisConfig):
     plot_report_action = EOUtilOptions.clone_param('plot_report_action')
 
 class ReportTask(BaseAnalysisTask):
-    """Simple functor class to tie together standard report data analysis
+    """Produce a static html report
     """
 
     # These can overridden by the sub-class
@@ -113,7 +113,7 @@ class ReportSlotConfig(ReportConfig):
 
 
 class ReportSlotTask(ReportTask):
-    """Simple functor class to tie together standard report data analysis
+    """Produce a static html report for one CCD for one run
     """
 
     # These can overridden by the sub-class
@@ -144,7 +144,7 @@ class ReportRaftConfig(ReportConfig):
 
 
 class ReportRaftTask(ReportTask):
-    """Simple functor class to tie together standard report data analysis
+    """Produce a static html report for one raft for one run
     """
 
     # These can overridden by the sub-class
@@ -176,7 +176,7 @@ class ReportRunConfig(ReportConfig):
 
 
 class ReportRunTask(ReportTask):
-    """Simple functor class to tie together standard report data analysis
+    """Produce a static html report for one run
     """
 
     # These can overridden by the sub-class
@@ -226,7 +226,7 @@ class ReportSummaryConfig(ReportConfig):
 
 
 class ReportSummaryTask(ReportTask):
-    """Simple functor class to tie together standard report data analysis
+    """Produce a static html report for all the summaries of a dataset
     """
 
     # These can overridden by the sub-class

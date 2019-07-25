@@ -38,6 +38,7 @@ class SflatAnalysisTask(AnalysisTask):
 
     tablename_format = SLOT_SFLAT_TABLE_FORMATTER
     plotname_format = SLOT_SFLAT_PLOT_FORMATTER
+    datatype = 'sflat'
 
     def get_superflat_file(self, suffix, **kwargs):
         """Get the name of the superbias file for a particular run, raft, ccd...

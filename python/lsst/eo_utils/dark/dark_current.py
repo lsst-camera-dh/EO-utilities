@@ -32,7 +32,7 @@ class DarkCurrentConfig(DarkRaftTableAnalysisConfig):
 
 
 class DarkCurrentTask(DarkRaftTableAnalysisTask):
-    """Analyze some dark data"""
+    """Measure the dark currents using data from the superdark frames"""
 
     ConfigClass = DarkCurrentConfig
     _DefaultName = "DarkCurrentTask"

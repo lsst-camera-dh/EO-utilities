@@ -33,7 +33,7 @@ DefectAnalysisConfig.add_task('_SuperflatRaft', SuperflatRaftTask)
 DefectAnalysisConfig.add_task('_Trap', TrapTask)
 
 class DefectAnalysisTask(MetaTask):
-    """Analyze Superbias, Superdark and Superflat frames"""
+    """Analyze Superbias Superdark and Superflat frames to identify defects and outliers"""
 
     ConfigClass = DefectAnalysisConfig
     _DefaultName = "DefectAnalysis"

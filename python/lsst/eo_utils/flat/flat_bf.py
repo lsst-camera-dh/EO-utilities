@@ -32,7 +32,7 @@ class BFConfig(FlatAnalysisConfig):
 
 
 class BFTask(FlatAnalysisTask):
-    """Analyze some flat data"""
+    """Analyze some flat data to extract the brighter-fatter kernal"""
 
     ConfigClass = BFConfig
     _DefaultName = "BFTask"

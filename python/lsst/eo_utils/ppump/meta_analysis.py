@@ -30,6 +30,7 @@ class PpumpRaftTableAnalysisTask(AnalysisTask):
     intablename_format = SLOT_PPUMP_TABLE_FORMATTER
     tablename_format = RAFT_PPUMP_TABLE_FORMATTER
     plotname_format = RAFT_PPUMP_PLOT_FORMATTER
+    datatype = 'ppump table'
 
 
 class PpumpSummaryAnalysisConfig(AnalysisConfig):
@@ -51,3 +52,5 @@ class PpumpSummaryAnalysisTask(AnalysisTask):
     intablename_format = RAFT_PPUMP_TABLE_FORMATTER
     tablename_format = SUM_PPUMP_TABLE_FORMATTER
     plotname_format = SUM_PPUMP_PLOT_FORMATTER
+
+    datatype = 'ppump table'

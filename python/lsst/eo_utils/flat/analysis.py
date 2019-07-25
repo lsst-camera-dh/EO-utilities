@@ -36,6 +36,7 @@ class FlatAnalysisTask(AnalysisTask):
 
     tablename_format = SLOT_FLAT_TABLE_FORMATTER
     plotname_format = SLOT_FLAT_PLOT_FORMATTER
+    datatype = 'flat'
 
     def __init__(self, **kwargs):
         """ C'tor
