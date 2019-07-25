@@ -29,6 +29,8 @@ class TemplateTask(TmplAnalysisTask):
     _DefaultName = "TemplateTask"
     iteratorClass = AnalysisBySlot
 
+    datatype = 'tmpl'
+
     def __init__(self, **kwargs):
         """C'tor
 
