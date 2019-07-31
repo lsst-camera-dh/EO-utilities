@@ -17,12 +17,10 @@ from .file_utils import SLOT_QE_TABLE_FORMATTER,\
 
 class QeSlotTableAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
     insuffix = EOUtilOptions.clone_param('insuffix')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class QeSlotTableAnalysisTask(AnalysisTask):
@@ -58,8 +56,9 @@ class QeSlotTableAnalysisTask(AnalysisTask):
 
 class QeRaftTableAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
     insuffix = EOUtilOptions.clone_param('insuffix')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class QeRaftTableAnalysisTask(AnalysisTask):
@@ -79,9 +78,7 @@ class QeRaftTableAnalysisTask(AnalysisTask):
 
 class QeSummaryAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     dataset = EOUtilOptions.clone_param('dataset')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class QeSummaryAnalysisTask(AnalysisTask):

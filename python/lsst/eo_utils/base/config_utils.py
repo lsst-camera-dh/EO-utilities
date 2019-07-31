@@ -12,7 +12,9 @@ import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
 
 from .defaults import DEFAULT_OUTDIR, DEFAULT_LOGFILE,\
-    DEFAULT_NBINS, DEFAULT_BATCH_ARGS, DEFAULT_BITPIX
+    DEFAULT_NBINS, DEFAULT_BATCH_ARGS, DEFAULT_BITPIX,\
+    DEFAULT_DATA_SOURCE, DEFAULT_TESTSTAND
+
 
 
 
@@ -39,8 +41,10 @@ class EOUtilOptions(pexConfig.Config):
                                  default=DEFAULT_BATCH_ARGS)
 
     # Options for the data source
-    butler_repo = pexConfig.Field("Butler repository", str, default=None)
-    datacat = pexConfig.Field("Use data catalog", bool, default=False)
+    data_source = pexConfig.Field("Data Source (glob | datacat | butler | butler_file)", str,
+                                  default=DEFAULT_DATA_SOURCE)
+    teststand = pexConfig.Field("Teststand name (ts8 | bot | bot_etu)", str,
+                                default=DEFAULT_TESTSTAND)
 
     # Options for selecing input data
     dataset = pexConfig.Field("dataset", str, default=None)

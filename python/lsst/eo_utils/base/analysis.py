@@ -22,6 +22,8 @@ from .iter_utils import SimpleAnalysisHandler
 
 from .image_utils import get_ccd_from_id, get_raw_image
 
+from .data_access import get_data_for_run
+
 
 class BaseConfig(pexConfig.Config):
     """Configuration for EO analysis tasks"""
@@ -382,6 +384,8 @@ class BaseAnalysisTask(BaseTask):
 
 class AnalysisConfig(BaseAnalysisConfig):
     """Configuration for EO analysis tasks"""
+    outdir = EOUtilOptions.clone_param('outdir')
+    teststand = EOUtilOptions.clone_param('teststand')    
     skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
     outsuffix = EOUtilOptions.clone_param('outsuffix')
@@ -417,6 +421,9 @@ class AnalysisTask(BaseAnalysisTask):
 
     tablename_format = SLOT_BASE_FORMATTER
     plotname_format = SLOT_BASE_FORMATTER
+
+    datatype = 'none'
+    testtypes = None
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -636,3 +643,30 @@ class AnalysisTask(BaseAnalysisTask):
             Used to override default configuration
         """
         raise NotImplementedError()
+
+
+    @classmethod
+    def get_data(cls, butler, run_num, **kwargs):
+        """Get a set of bias and mask files out of a folder
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        datakey : `str`
+            Run number or other id that defines the data to analyze
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        retval : `dict`
+            Dictionary mapping input data by raft, slot and file type
+        """
+        kwargs.pop('run', None)
+
+        return get_data_for_run(butler, run_num,
+                                testtypes=cls.testtypes,
+                                imagetype=cls.datatype.upper(),
+                                outkey=cls.datatype.upper(),
+                                **kwargs)

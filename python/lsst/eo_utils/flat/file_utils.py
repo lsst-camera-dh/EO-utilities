@@ -4,9 +4,8 @@
 
 """This module contains functions to find files of a particular type in the SLAC directory tree"""
 
-from lsst.eo_utils.base.file_utils import get_hardware_type_and_id,\
-    get_files_for_run, merge_file_dicts, FILENAME_FORMATS, SLOT_FORMAT_STRING,\
-    RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
+from lsst.eo_utils.base.file_utils import FILENAME_FORMATS,\
+    SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
 
 
 
@@ -47,40 +46,3 @@ SUM_FLAT_PLOT_FORMATTER = FILENAME_FORMATS.add_format('sum_flat_plot',
                                                       SUMMARY_FLAT_FORMAT_STRING,
                                                       fileType='plots',
                                                       **FLAT_DEFAULT_FIELDS)
-
-
-def get_flat_files_run(run_id, **kwargs):
-    """Get a set of flat and mask files out of a folder
-
-    Parameters
-    ----------
-    run_id : `str`
-        The number number we are reading
-    kwargs
-        Passed along to the underlying get_files_for_run function
-
-    Returns
-    -------
-    outdict : `dict`
-        Dictionary mapping slot to file names
-    """
-    testtypes = kwargs.get('testtypes', None)
-    hinfo = get_hardware_type_and_id(run_id)
-
-    if testtypes is None:
-        if hinfo[0] == 'LCA-11021':
-            testtypes = ['flat_pair_raft_acq']
-        else:
-            testtypes = ['FLAT']
-
-    flat1_dict = get_files_for_run(run_id,
-                                   imagetype="FLAT1",
-                                   testtypes=testtypes,
-                                   outkey='FLAT1',
-                                   **kwargs)
-    flat2_dict = get_files_for_run(run_id,
-                                   imagetype="FLAT2",
-                                   testtypes=testtypes,
-                                   outkey='FLAT2',
-                                   **kwargs)
-    return merge_file_dicts(flat1_dict, flat2_dict)

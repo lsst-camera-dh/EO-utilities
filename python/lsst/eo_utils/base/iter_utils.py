@@ -29,7 +29,9 @@ class AnalysisHandlerConfig(pexConfig.Config):
     dry_run = EOUtilOptions.clone_param('dry_run')
     logfile = EOUtilOptions.clone_param('logfile')
     batch_args = EOUtilOptions.clone_param('batch_args')
-    butler_repo = EOUtilOptions.clone_param('butler_repo')
+    data_source = EOUtilOptions.clone_param('data_source')
+    teststand = EOUtilOptions.clone_param('teststand')
+
 
 
 class AnalysisHandler(Configurable):
@@ -62,18 +64,18 @@ class AnalysisHandler(Configurable):
     def get_butler(self):
         """Return a data Butler
 
-        This uses the config.butler_repo parameter to pick the correct `Butler`
-        If that parameter is not set this will return None
+        This uses the config.data_surce and config.teststand parameters
+        to pick the correct `Butler` or `None` if not using butler
 
         Returns
         -------
         butler : `Butler`
             The requested data Butler
         """
-        if self.config.butler_repo is None:
+        if self.config.data_source not in ['butler', 'butler_file']:
             self._butler = None
         else:
-            self._butler = get_butler_by_repo(self.config.butler_repo)
+            self._butler = get_butler_by_repo(self.config.teststand)
         return self._butler
 
 
@@ -328,12 +330,8 @@ class AnalysisIterator(AnalysisHandler):
         """
         kwcopy = kwargs.copy()
         kwcopy.pop('task', None)
-        if self.config.butler_repo is None:
-            optstring = make_argstring(self._task.config, **kwcopy)
-        else:
-            optstring = make_argstring(self._task.config,
-                                       butler_repo=self.config.butler_repo,
-                                       **kwcopy)
+        optstring = make_argstring(self._task.config, **kwcopy)
+
         ret_dict = dict(optstring=optstring,
                         batch_args=self.config.batch_args,
                         batch=self.config.batch,
@@ -637,7 +635,9 @@ class AnalysisByRaft(AnalysisIterator):
         retval : `dict`
             Dictionary mapping input data by raft, slot and file type
         """
-        return self._task.get_data(butler, datakey, **kwargs)
+        kwcopy = kwargs.copy()
+        kwcopy['logger'] = self._task.log
+        return self._task.get_data(butler, datakey, **kwcopy)
 
     def call_analysis_task(self, run, **kwargs):
         """Call the analysis function for one run

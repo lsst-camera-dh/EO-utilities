@@ -8,20 +8,19 @@ from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
-from lsst.eo_utils.flat.file_utils import get_flat_files_run,\
-    SLOT_FLAT_TABLE_FORMATTER, SLOT_FLAT_PLOT_FORMATTER
+from lsst.eo_utils.base.file_utils import merge_file_dicts
 
-from lsst.eo_utils.flat.butler_utils import get_flat_files_butler
+from lsst.eo_utils.base.data_access import get_data_for_run
 
+from .file_utils import SLOT_FLAT_TABLE_FORMATTER,\
+    SLOT_FLAT_PLOT_FORMATTER
 
 
 class FlatAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
     nfiles = EOUtilOptions.clone_param('nfiles')
 
 
@@ -37,6 +36,7 @@ class FlatAnalysisTask(AnalysisTask):
     tablename_format = SLOT_FLAT_TABLE_FORMATTER
     plotname_format = SLOT_FLAT_PLOT_FORMATTER
     datatype = 'flat'
+    testtypes = ['FLAT']
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -49,7 +49,8 @@ class FlatAnalysisTask(AnalysisTask):
         AnalysisTask.__init__(self, **kwargs)
         self.stat_ctrl = afwMath.StatisticsControl()
 
-    def get_data(self, butler, run_num, **kwargs):
+    @classmethod
+    def get_data(cls, butler, run_num, **kwargs):
         """Get a set of flat and mask files out of a folder
 
         Parameters
@@ -66,12 +67,15 @@ class FlatAnalysisTask(AnalysisTask):
         retval : `dict`
             Dictionary mapping input data by raft, slot and file type
         """
-        kwargs.pop('run_num', None)
-
-        if butler is None:
-            retval = get_flat_files_run(run_num, **kwargs)
-        else:
-            retval = get_flat_files_butler(butler, run_num, **kwargs)
-        if not retval:
-            self.log.error("Call to get_data returned no data")
-        return retval
+        kwargs.pop('run', None)
+        flat1_dict = get_data_for_run(butler, run_num,
+                                      testtypes=['FLAT'],
+                                      imagetype="FLAT1",
+                                      outkey='FLAT1',
+                                      **kwargs)
+        flat2_dict = get_data_for_run(butler, run_num,
+                                      testtypes=['FLAT'],
+                                      imagetype="FLAT2",
+                                      outkey='FLAT2',
+                                      **kwargs)
+        return merge_file_dicts(flat1_dict, flat2_dict)

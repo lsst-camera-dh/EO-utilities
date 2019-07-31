@@ -14,8 +14,9 @@ from lsst.eo_utils.ppump.file_utils import SLOT_PPUMP_TABLE_FORMATTER,\
 
 class PpumpRaftTableAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
     insuffix = EOUtilOptions.clone_param('insuffix')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class PpumpRaftTableAnalysisTask(AnalysisTask):
@@ -35,9 +36,7 @@ class PpumpRaftTableAnalysisTask(AnalysisTask):
 
 class PpumpSummaryAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     dataset = EOUtilOptions.clone_param('dataset')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class PpumpSummaryAnalysisTask(AnalysisTask):

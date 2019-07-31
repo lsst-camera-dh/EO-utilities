@@ -8,6 +8,11 @@ from astropy.tests.helper import pytest
 
 __all__ = ['requires_file', 'RUN_TASKS']
 
+DATA_OPTIONS_TS8_GLOB = dict(teststand='ts8', data_source='glob')
+DATA_OPTIONS_BOT_GLOB = dict(teststand='bot_etu', data_source='glob')
+DATA_OPTIONS_TS8_BUTLER = dict(teststand='ts8', data_source='butler')
+DATA_OPTIONS_BOT_BUTLER = dict(teststand='bot_etu', data_source='butler')
+
 RUN_TASKS = True
 RUN_OPTIONS = dict(runs=['6106D'], outdir='test_out', plot='png')
 RUN_OPTIONS_NOPLOT = dict(runs=['6106D'], outdir='test_out')

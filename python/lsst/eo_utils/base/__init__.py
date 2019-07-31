@@ -3,7 +3,7 @@
 This module contains base classes and other general utilities.
 """
 
-# from .defaults import *
+#from .defaults import *
 # from .config_utils import EOUtilOptions, Configurable
 
 # from . import mpl_utils
@@ -11,9 +11,13 @@ This module contains base classes and other general utilities.
 # from .batch_utils import dispatch_job
 # from . import butler_utils
 
+# from . import defautls
+
 from . import image_utils
 
 from . import file_utils
+
+from . import data_access
 
 from .data_utils import TableDict, vstack_tables
 

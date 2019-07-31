@@ -4,10 +4,8 @@
 
 """This module contains functions to find files of a particular type in the SLAC directory tree"""
 
-from lsst.eo_utils.base.defaults import DATACAT_TS8_TEST_TYPES, DATACAT_BOT_TEST_TYPES
-
-from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_for_run,\
-    FILENAME_FORMATS, SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
+from lsst.eo_utils.base.file_utils import FILENAME_FORMATS,\
+    SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
 
 SLOT_BIAS_FORMAT_STRING =\
     SLOT_FORMAT_STRING.replace('{suffix}', '_b-{bias}_s-{superbias}_{suffix}')
@@ -149,33 +147,3 @@ def get_superbias_suffix(**kwargs):
     if kwsuffix is not None:
         suffix += "_%s" % kwsuffix
     return suffix
-
-
-def get_bias_files_run(run_id, **kwargs):
-    """Get a set of bias and mask files out of a folder
-
-    Parameters
-    ----------
-    run_id : `str`
-        The number number we are reading
-    kwargs
-        Passed along to the underlying get_files_for_run function
-
-    Returns
-    -------
-    outdict : `dict`
-        Dictionary mapping slot to file names
-    """
-    testtypes = kwargs.get('testtypes', None)
-    hinfo = get_hardware_type_and_id(run_id)
-    if testtypes is None:
-        if hinfo[0] == 'LCA-11021':
-            testtypes = DATACAT_TS8_TEST_TYPES
-        else:
-            testtypes = DATACAT_BOT_TEST_TYPES
-
-    return get_files_for_run(run_id,
-                             imagetype="BIAS",
-                             testtypes=testtypes,
-                             outkey='BIAS',
-                             **kwargs)

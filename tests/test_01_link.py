@@ -12,7 +12,8 @@ from lsst.eo_utils.base.eo_results import EOResultsRaftTask, EOResultsSummaryTas
 from .utils import RUN_TASKS, RUN_OPTIONS, SUMMARY_OPTIONS
 
 LINK_OPTIONS = dict(run='6106D', raft='RTM-004',
-                    outdir='test_out', mapping='tests/test_ts8_mapping.yaml')
+                    outdir='test_out', teststand='ts8', 
+                    mapping='tests/test_ts8_mapping.yaml')
 
 def test_link_ts8():
     """Test linking input ts8 files"""

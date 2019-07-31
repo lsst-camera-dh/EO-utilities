@@ -14,11 +14,9 @@ from .file_utils import SLOT_FE55_TABLE_FORMATTER,\
 
 class Fe55RaftTableAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     insuffix = EOUtilOptions.clone_param('insuffix')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class Fe55RaftTableAnalysisTask(AnalysisTask):
@@ -39,9 +37,7 @@ class Fe55RaftTableAnalysisTask(AnalysisTask):
 
 class Fe55SummaryAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     dataset = EOUtilOptions.clone_param('dataset')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class Fe55SummaryAnalysisTask(AnalysisTask):
@@ -52,7 +48,6 @@ class Fe55SummaryAnalysisTask(AnalysisTask):
     ConfigClass = Fe55SummaryAnalysisConfig
     _DefaultName = "Fe55SummaryAnalysisTask"
     iteratorClass = SummaryAnalysisIterator
-    argnames = ['dataset', 'butler_repo']
 
     intablename_format = RAFT_FE55_TABLE_FORMATTER
     tablename_format = SUM_FE55_TABLE_FORMATTER

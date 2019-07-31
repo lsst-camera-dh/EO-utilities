@@ -12,6 +12,7 @@ if SITE == 'slac':
     BUTLER_TS8_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/ts8'
     BUTLER_BOT_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/bot'
     ARCHIVE_DIR = '/gpfs/slac/lsst/fs*/g/data/jobHarness/jh_archive*'
+    DEFAULT_DATA_SOURCE = os.environ.get('EO_DATA_SOURCE', 'glob')
     DEFAULT_BATCH_ARGS = '-W 1200 -R bullet'
     BATCH_SYSTEM = 'lsf'
 elif SITE == 'ncsa':
@@ -19,16 +20,32 @@ elif SITE == 'ncsa':
     BUTLER_BOT_REPO = '/project/production/tmpdataloc/BOT/gen2repo'
     ARCHIVE_DIR = None
     DEFAULT_BATCH_ARGS = ""
+    DEFAULT_DATA_SOURCE = os.environ.get('EO_DATA_SOURCE', 'butler')
     BATCH_SYSTEM = 'slurm'
+else:
+    raise ValueError("Unknown site %s" % SITE)
+
+
+# TEST
+DEFAULT_TESTSTAND = os.environ.get('EO_TESTSTSAND', 'ts8')
+
+if True:
+    print("SITE = %s" % SITE)
+    print("DEFAULT_TESTSTAND = %s" % DEFAULT_TESTSTAND)
+    print("DEFAULT_DATA_SOURCE = %s" % DEFAULT_DATA_SOURCE)
+
+
 
 # Map the Butler repos to simple names
-BUTLER_REPO_DICT = dict(TS8=BUTLER_TS8_REPO,
-                        BOT=BUTLER_BOT_REPO)
+BUTLER_REPO_DICT = dict(ts8=BUTLER_TS8_REPO,
+                        bot=BUTLER_BOT_REPO)
 
 # The slots
 ALL_SLOTS = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
+
 # The rafts
-ALL_RAFTS = ["R10", "R22"]
+ALL_RAFTS_BOT_ETU = ["R10", "R22"]
+
 
 
 # Various types of tests
@@ -38,17 +55,6 @@ TS8_MASK_TEST_TYPES = ['bright_pixel_mask',
                        'traps_mask']
 BOT_MASK_TEST_TYPES = ['fe55_analysis_BOT',
                        'pixel_defects_BOT']
-
-
-BUTLER_TEST_TYPES = ['DARK', 'FLAT', 'FE55', 'PPUMP', 'SFLAT', 'LAMBDA', 'TRAP']
-DATACAT_TS8_TEST_TYPES = ['fe55_raft_acq',
-                          'flat_pair_raft_acq',
-                          'sflat_raft_acq',
-                          'qe_raft_acq',
-                          'dark_raft_acq']
-DATACAT_BOT_TEST_TYPES = ['DARK', 'FLAT', 'FE55', 'PPUMP', 'SFLAT', 'LAMBDA', 'TRAP']
-
-
 
 
 # These readout times, in seconds
@@ -66,7 +72,7 @@ TESTCOLORMAP = dict(DARK="black",
 
 
 # Some default values
-DEFAULT_OUTDIR = 'analysis/ts8'
+DEFAULT_OUTDIR = 'analysis'
 DEFAULT_STAT_TYPE = 'median'
 DEFAULT_BITPIX = -32
 DEFAULT_BIAS_TYPE = 'spline'
