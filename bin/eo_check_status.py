@@ -29,7 +29,7 @@ def main():
     manager = EOUtils()
 
     if args.task is None:
-        tasks = manager._task_factory.keys()
+        tasks = manager.get_task_names()
     else:
         tasks = [args.task]
 

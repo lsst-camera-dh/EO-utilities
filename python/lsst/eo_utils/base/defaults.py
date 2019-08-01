@@ -2,6 +2,8 @@
 
 import os
 
+import sys
+
 # Package location
 EO_PACKAGE_BASE = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..', '..'))
 
@@ -29,10 +31,10 @@ else:
 # TEST
 DEFAULT_TESTSTAND = os.environ.get('EO_TESTSTSAND', 'ts8')
 
-if True:
-    print("SITE = %s" % SITE)
-    print("DEFAULT_TESTSTAND = %s" % DEFAULT_TESTSTAND)
-    print("DEFAULT_DATA_SOURCE = %s" % DEFAULT_DATA_SOURCE)
+if os.environ.get('EO_PRINT_OPTS', False):
+    sys.stdout.write("SITE=%s\n" % SITE)
+    sys.stdout.write("DEFAULT_TESTSTAND=%s\n" % DEFAULT_TESTSTAND)
+    sys.stdout.write("DEFAULT_DATA_SOURCE=%s\n" % DEFAULT_DATA_SOURCE)
 
 
 

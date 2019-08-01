@@ -8,7 +8,7 @@ from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
-from lsst.eo_utils.base.file_utils import merge_file_dicts
+from lsst.eo_utils.base.file_utils import merge_file_dicts, split_flat_pair_dict
 
 from lsst.eo_utils.base.data_access import get_data_for_run
 
@@ -68,14 +68,22 @@ class FlatAnalysisTask(AnalysisTask):
             Dictionary mapping input data by raft, slot and file type
         """
         kwargs.pop('run', None)
-        flat1_dict = get_data_for_run(butler, run_num,
-                                      testtypes=['FLAT'],
-                                      imagetype="FLAT1",
-                                      outkey='FLAT1',
-                                      **kwargs)
-        flat2_dict = get_data_for_run(butler, run_num,
-                                      testtypes=['FLAT'],
-                                      imagetype="FLAT2",
-                                      outkey='FLAT2',
-                                      **kwargs)
-        return merge_file_dicts(flat1_dict, flat2_dict)
+        if kwargs.get('data_source', 'glob') in ['glob']:
+            flat1_dict = get_data_for_run(butler, run_num,
+                                          testtypes=['FLAT'],
+                                          imagetype="FLAT1",
+                                          outkey='FLAT1',
+                                          **kwargs)
+            flat2_dict = get_data_for_run(butler, run_num,
+                                          testtypes=['FLAT'],
+                                          imagetype="FLAT2",
+                                          outkey='FLAT2',
+                                          **kwargs)
+            return merge_file_dicts(flat1_dict, flat2_dict)
+
+        flat_dict = get_data_for_run(butler, run_num,
+                                     testtypes=['FLAT'],
+                                     imagetype="FLAT",
+                                     outkey='FLAT',
+                                     **kwargs)
+        return split_flat_pair_dict(flat_dict)

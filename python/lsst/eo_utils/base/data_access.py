@@ -14,8 +14,8 @@ TEST_TYPES = ['DARK', 'FLAT', 'FE55', 'PPUMP', 'SFLAT', 'LAMBDA']
 TS8_BUTLER_NAMES = dict(DARK='DARK',
                         FLAT='FLAT',
                         FE55='FE55',
-                        PPUMP='PPUMP',
-                        SFLAT='SFLAT',
+                        PPUMP='TRAP',
+                        SFLAT='SFLAT_500',
                         LAMBDA='LAMBDA')
 TS8_DATACAT_NAMES = dict(DARK='DARK',
                          FLAT='FLAT',
@@ -32,8 +32,8 @@ TS8_GLOB_NAMES = dict(DARK='dark_raft_acq',
 
 BOT_BUTLER_NAMES = dict(DARK='DARK',
                         FLAT='FLAT',
-                        FE55='FE55',
-                        PPUMP='PPUMP',
+                        FE55='FE55_FLAT',
+                        PPUMP='TRAP',
                         SFLAT='SFLAT',
                         LAMBDA='LAMBDA')
 BOT_DATACAT_NAMES = dict(DARK='DARK',
@@ -113,16 +113,16 @@ def get_data_for_run(butler, run_id, **kwargs):
     if testtypes is None:
         testtypes = TEST_TYPES
 
-    testtypes = [test_name_dict[key] for key in testtypes]
+    testtypes_use = [test_name_dict[key] for key in testtypes]
 
     retval = None
     if data_source in ['butler', 'butler_file']:
         retval = get_files_butler(butler, run_id,
-                                  testtypes=testtypes,
+                                  testtypes=testtypes_use,
                                   **kwcopy)
     elif data_source in ['glob', 'datacat']:
         retval = get_files_for_run(run_id,
-                                   testtypes=testtypes,
+                                   testtypes=testtypes_use,
                                    **kwcopy)
     else:
         raise ValueError("Unknown data_source (%s)" % data_source)

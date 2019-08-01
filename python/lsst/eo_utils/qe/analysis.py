@@ -84,10 +84,10 @@ class QeAnalysisTask(AnalysisTask):
         kwargs.pop('run', None)
         lambda_dict = get_data_for_run(butler, run_num,
                                        testtypes=['LAMBDA'],
-                                       imagetype='flat',
+                                       imagetype='FLAT',
                                        outkey='LAMBDA', **kwargs)
         bias_dict = get_data_for_run(butler, run_num,
                                      testtypes=['LAMBDA'],
-                                     imagetype='bias',
+                                     imagetype='BIAS',
                                      outkey='BIAS', **kwargs)
         return merge_file_dicts(lambda_dict, bias_dict)

@@ -385,7 +385,7 @@ class BaseAnalysisTask(BaseTask):
 class AnalysisConfig(BaseAnalysisConfig):
     """Configuration for EO analysis tasks"""
     outdir = EOUtilOptions.clone_param('outdir')
-    teststand = EOUtilOptions.clone_param('teststand')    
+    teststand = EOUtilOptions.clone_param('teststand')
     skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
     outsuffix = EOUtilOptions.clone_param('outsuffix')

@@ -342,7 +342,6 @@ def get_ts8_files_glob(**kwargs):
     outdict = {}
     for slot in ALL_SLOTS:
         glob_string = TS8_FORMATTER(slot=slot, **kwargs)
-        print(glob_string)
         outdict[slot] = sorted(glob.glob(glob_string))
     return outdict
 
@@ -387,6 +386,28 @@ def merge_file_dicts(dict_1, dict_2):
             out_dict[key] = val
     return out_dict
 
+def split_flat_pair_dict(the_dict):
+    """Combine a pair of file dictionaries
+
+    Parameters
+    ----------
+    the_dict : `dict`
+        A dictionary of data_ids or filenames keyed by raft, slot, filetype
+
+    Returns
+    -------
+    out_dict : `dict`
+        A dictionary of data_ids or filenames keyed by raft, slot, filetype
+    """
+    out_dict = {}
+    for key, val in the_dict.items():
+        if isinstance(val, dict):
+            out_dict[key] = split_flat_pair_dict(the_dict[key])
+        elif key == 'FLAT':
+            full_list = the_dict[key]
+            out_dict['FLAT1'] = full_list[0:-1:2]
+            out_dict['FLAT2'] = full_list[1::2]
+    return out_dict
 
 def get_files_for_run(run_id, **kwargs):
     """Get a set of data files of a particular type for a particular run
@@ -813,7 +834,7 @@ def link_eo_calib_runlist(args, glob_format, paths, outformat, **kwargs):
             continue
 
         link_eo_calib(fname, outformat, run=run_num,
-                      raft=hid, outdir=args['outdir'], 
+                      raft=hid, outdir=args['outdir'],
                       teststand=args['teststand'], **kwargs)
 
 
@@ -852,7 +873,7 @@ def link_eo_results_runlist(args, glob_format, paths, outformat, **kwargs):
 
         try:
             link_eo_results(ccd_map, fdict, outformat, run=run_num,
-                            raft=hid, outdir=args['outdir'], 
+                            raft=hid, outdir=args['outdir'],
                             teststand=args['teststand'], **kwargs)
         except KeyError as msg:
             sys.stderr.write("Failed to link files for %s %s, bad mapping %s\n" % (run_num, hid, msg))
@@ -943,7 +964,9 @@ def link_eo_bot_results_runlist(args, glob_format, paths, outformat, **kwargs):
             sys.stderr.write("Could not find eotest_results for %s %s\n" % (run_num, glob_format))
             continue
 
-        link_eo_bot_results(fdict, outformat, run=run_num, outdir=args['outdir'], **kwargs)
+        link_eo_bot_results(fdict, outformat, run=run_num,
+                            outdir=args['outdir'], teststand=args['teststand'],
+                            **kwargs)
 
 
 def test_files_exist(flist):

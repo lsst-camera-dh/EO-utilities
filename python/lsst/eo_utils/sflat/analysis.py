@@ -114,10 +114,16 @@ class SflatAnalysisTask(AnalysisTask):
 
         kwcopy.pop('run', None)
 
-        if teststand in ['bot', 'bot_etu'] and data_source in ['glob']:
-            imagetype = 'flat'
+        if teststand in ['bot', 'bot_etu']:
+            if data_source in ['glob']:
+                imagetype = 'FLAT'
+            else:
+                imagetype = 'FLAT'
         else:
-            imagetype = cls.datatype.upper()
+            if data_source in ['glob']:
+                imagetype = cls.datatype.upper()
+            else:
+                imagetype = 'FLAT'
 
         return get_data_for_run(butler, run_num,
                                 testtypes=cls.testtypes,

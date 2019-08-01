@@ -30,8 +30,6 @@ class AnalysisHandlerConfig(pexConfig.Config):
     logfile = EOUtilOptions.clone_param('logfile')
     batch_args = EOUtilOptions.clone_param('batch_args')
     data_source = EOUtilOptions.clone_param('data_source')
-    teststand = EOUtilOptions.clone_param('teststand')
-
 
 
 class AnalysisHandler(Configurable):
@@ -75,7 +73,7 @@ class AnalysisHandler(Configurable):
         if self.config.data_source not in ['butler', 'butler_file']:
             self._butler = None
         else:
-            self._butler = get_butler_by_repo(self.config.teststand)
+            self._butler = get_butler_by_repo(self._task.config.teststand)
         return self._butler
 
 
