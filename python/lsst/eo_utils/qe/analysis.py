@@ -4,25 +4,23 @@ import lsst.afw.math as afwMath
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.file_utils import PD_CALIB_FORMATTER
+from lsst.eo_utils.base.file_utils import merge_file_dicts, PD_CALIB_FORMATTER
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
-from lsst.eo_utils.qe.file_utils import get_qe_files_run,\
-    SLOT_QE_TABLE_FORMATTER, SLOT_QE_PLOT_FORMATTER
+from lsst.eo_utils.base.data_access import get_data_for_run
 
-from lsst.eo_utils.qe.butler_utils import get_qe_files_butler
+from lsst.eo_utils.qe.file_utils import SLOT_QE_TABLE_FORMATTER,\
+    SLOT_QE_PLOT_FORMATTER
 
 
 class QeAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
     nfiles = EOUtilOptions.clone_param('nfiles')
 
 
@@ -65,7 +63,8 @@ class QeAnalysisTask(AnalysisTask):
         """
         return self.get_filename_from_format(PD_CALIB_FORMATTER, '.dat', **kwargs)
 
-    def get_data(self, butler, run_num, **kwargs):
+    @classmethod
+    def get_data(cls, butler, run_num, **kwargs):
         """Get a set of qe and mask files out of a folder
 
         Parameters
@@ -82,12 +81,13 @@ class QeAnalysisTask(AnalysisTask):
         retval : `dict`
             Dictionary mapping input data by raft, slot and file type
         """
-        kwargs.pop('run_num', None)
-
-        if butler is None:
-            retval = get_qe_files_run(run_num, **kwargs)
-        else:
-            retval = get_qe_files_butler(butler, run_num, **kwargs)
-        if not retval:
-            self.log.error("Call to get_data returned no data")
-        return retval
+        kwargs.pop('run', None)
+        lambda_dict = get_data_for_run(butler, run_num,
+                                       testtypes=['LAMBDA'],
+                                       imagetype='FLAT',
+                                       outkey='LAMBDA', **kwargs)
+        bias_dict = get_data_for_run(butler, run_num,
+                                     testtypes=['LAMBDA'],
+                                     imagetype='BIAS',
+                                     outkey='BIAS', **kwargs)
+        return merge_file_dicts(lambda_dict, bias_dict)

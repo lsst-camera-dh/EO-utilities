@@ -6,19 +6,17 @@ from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
-from lsst.eo_utils.fe55.file_utils import get_fe55_files_run,\
-    SLOT_FE55_TABLE_FORMATTER, SLOT_FE55_PLOT_FORMATTER
+from lsst.eo_utils.base.data_access import get_data_for_run
 
-from lsst.eo_utils.fe55.butler_utils import get_fe55_files_butler
+from .file_utils import SLOT_FE55_TABLE_FORMATTER,\
+    SLOT_FE55_PLOT_FORMATTER
 
 
 class Fe55AnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
     nfiles = EOUtilOptions.clone_param('nfiles')
 
 
@@ -34,9 +32,11 @@ class Fe55AnalysisTask(AnalysisTask):
     tablename_format = SLOT_FE55_TABLE_FORMATTER
     plotname_format = SLOT_FE55_PLOT_FORMATTER
     datatype = 'fe55'
+    testtypes = ['FE55']
 
-    def get_data(self, butler, run_num, **kwargs):
-        """Get a set of fe55 and mask files out of a folder
+    @classmethod
+    def get_data(cls, butler, run_num, **kwargs):
+        """Get a set of qe and mask files out of a folder
 
         Parameters
         ----------
@@ -52,12 +52,16 @@ class Fe55AnalysisTask(AnalysisTask):
         retval : `dict`
             Dictionary mapping input data by raft, slot and file type
         """
-        kwargs.pop('run_num', None)
-        if butler is None:
-            retval = get_fe55_files_run(run_num, **kwargs)
+        kwargs.pop('run', None)
+        if kwargs.get('teststand', 'ts8') in ['ts8']:
+            imagetype = cls.datatype.upper()
         else:
-            retval = get_fe55_files_butler(butler, run_num, **kwargs)
-        if not retval:
-            self.log.error("Call to get_data returned no data")
+            if kwargs.get('data_source', 'glob') in ['glob']:
+                imagetype = 'flat_*_flat'
+            else:
+                imagetype = 'FE55'
 
-        return retval
+        return get_data_for_run(butler, run_num,
+                                testtypes=cls.testtypes,
+                                imagetype=imagetype,
+                                outkey=cls.datatype.upper(), **kwargs)

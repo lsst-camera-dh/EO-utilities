@@ -17,8 +17,10 @@ def main():
                         help="Run id")
     parser.add_argument("--raft", default=None,
                         help="Raft id")
-    parser.add_argument("-o", "--outdir", default='analysis/ts8',
+    parser.add_argument("-o", "--outdir", default='analysis',
                         help="Output directory")
+    parser.add_argument("--teststand", default='ts8',
+                        help='Teststand')
     parser.add_argument("-m", "--mapping", default=None,
                         help="Yaml file with raft to ccd mapping")
 

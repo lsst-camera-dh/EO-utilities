@@ -3,8 +3,6 @@
 This module contains tasks to analyze fe55 runs.
 """
 
-from .butler_utils import get_fe55_files_butler
-
 from . import file_utils as fe55_file_utils
 
 from .analysis import Fe55AnalysisConfig, Fe55AnalysisTask

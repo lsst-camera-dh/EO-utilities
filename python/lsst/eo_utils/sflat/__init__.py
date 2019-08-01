@@ -3,8 +3,6 @@
 This module contains tasks to analyze sflat exposures
 """
 
-from .butler_utils import get_sflat_files_butler
-
 from . import file_utils as sflat_file_utils
 
 from .analysis import SflatAnalysisConfig, SflatAnalysisTask

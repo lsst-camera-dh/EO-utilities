@@ -3,8 +3,6 @@
 This module contains tasks to analyze flat exposures
 """
 
-from .butler_utils import get_flat_files_butler
-
 from . import file_utils as flat_file_utils
 
 from .analysis import FlatAnalysisConfig, FlatAnalysisTask

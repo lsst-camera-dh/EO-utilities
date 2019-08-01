@@ -19,12 +19,10 @@ from .file_utils import SLOT_BIAS_TABLE_FORMATTER,\
 
 class BiasRaftTableAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slots = EOUtilOptions.clone_param('slots')
     insuffix = EOUtilOptions.clone_param('insuffix')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class BiasRaftTableAnalysisTask(AnalysisTask):
@@ -45,9 +43,7 @@ class BiasRaftTableAnalysisTask(AnalysisTask):
 
 class BiasSummaryAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     dataset = EOUtilOptions.clone_param('dataset')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class BiasSummaryAnalysisTask(AnalysisTask):
@@ -67,12 +63,10 @@ class BiasSummaryAnalysisTask(AnalysisTask):
 
 class SuperbiasSlotTableAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
     insuffix = EOUtilOptions.clone_param('insuffix')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class SuperbiasSlotTableAnalysisTask(AnalysisTask):
@@ -93,12 +87,10 @@ class SuperbiasSlotTableAnalysisTask(AnalysisTask):
 
 class SuperbiasRaftTableAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slots = EOUtilOptions.clone_param('slots')
     insuffix = EOUtilOptions.clone_param('insuffix')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class SuperbiasRaftTableAnalysisTask(AnalysisTask):
@@ -119,9 +111,7 @@ class SuperbiasRaftTableAnalysisTask(AnalysisTask):
 
 class SuperbiasSummaryAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     dataset = EOUtilOptions.clone_param('dataset')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class SuperbiasSummaryAnalysisTask(AnalysisTask):

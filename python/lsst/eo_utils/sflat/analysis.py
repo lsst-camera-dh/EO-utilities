@@ -1,6 +1,7 @@
 """Tasks to analyse sflat and superbias frames"""
 
-from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
+from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE,\
+    DEFAULT_DATA_SOURCE, DEFAULT_TESTSTAND
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
@@ -10,20 +11,18 @@ from lsst.eo_utils.base.image_utils import get_ccd_from_id
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
-from lsst.eo_utils.sflat.file_utils import get_sflat_files_run,\
-    SLOT_SFLAT_TABLE_FORMATTER, SLOT_SFLAT_PLOT_FORMATTER,\
-    SUPERFLAT_FORMATTER, SUPERFLAT_STAT_FORMATTER
+from lsst.eo_utils.base.data_access import get_data_for_run
 
-from lsst.eo_utils.sflat.butler_utils import get_sflat_files_butler
+from lsst.eo_utils.sflat.file_utils import SLOT_SFLAT_TABLE_FORMATTER,\
+    SLOT_SFLAT_PLOT_FORMATTER,\
+    SUPERFLAT_FORMATTER, SUPERFLAT_STAT_FORMATTER
 
 
 class SflatAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
     nfiles = EOUtilOptions.clone_param('nfiles')
 
 
@@ -39,6 +38,7 @@ class SflatAnalysisTask(AnalysisTask):
     tablename_format = SLOT_SFLAT_TABLE_FORMATTER
     plotname_format = SLOT_SFLAT_PLOT_FORMATTER
     datatype = 'sflat'
+    testtypes = ['SFLAT']
 
     def get_superflat_file(self, suffix, **kwargs):
         """Get the name of the superbias file for a particular run, raft, ccd...
@@ -89,8 +89,10 @@ class SflatAnalysisTask(AnalysisTask):
                   for key in types}
         return o_dict
 
-    def get_data(self, butler, run_num, **kwargs):
-        """Get a set of sflat and mask files out of a folder
+
+    @classmethod
+    def get_data(cls, butler, run_num, **kwargs):
+        """Get a set of bias and mask files out of a folder
 
         Parameters
         ----------
@@ -106,12 +108,25 @@ class SflatAnalysisTask(AnalysisTask):
         retval : `dict`
             Dictionary mapping input data by raft, slot and file type
         """
-        kwargs.pop('run_num', None)
+        kwcopy = kwargs.copy()
+        teststand = kwcopy.get('teststand', DEFAULT_TESTSTAND)
+        data_source = kwcopy.get('data_source', DEFAULT_DATA_SOURCE)
 
-        if butler is None:
-            retval = get_sflat_files_run(run_num, **kwargs)
+        kwcopy.pop('run', None)
+
+        if teststand in ['bot', 'bot_etu']:
+            if data_source in ['glob']:
+                imagetype = 'FLAT'
+            else:
+                imagetype = 'FLAT'
         else:
-            retval = get_sflat_files_butler(butler, run_num, **kwargs)
-        if not retval:
-            self.log.error("Call to get_data returned no data")
-        return retval
+            if data_source in ['glob']:
+                imagetype = cls.datatype.upper()
+            else:
+                imagetype = 'FLAT'
+
+        return get_data_for_run(butler, run_num,
+                                testtypes=cls.testtypes,
+                                imagetype=imagetype,
+                                outkey=cls.datatype.upper(),
+                                **kwcopy)

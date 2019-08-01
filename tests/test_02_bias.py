@@ -3,33 +3,38 @@
 
 from __future__ import absolute_import, division, print_function
 
+from lsst.eo_utils.base.butler_utils import get_butler_by_repo
 from lsst.eo_utils import bias
-from lsst.eo_utils.bias.file_utils import get_bias_files_run
 
-from .utils import RUN_TASKS, RUN_OPTIONS, RUN_OPTIONS_NOPLOT, SUMMARY_OPTIONS
+from .utils import assert_data_dict,\
+    DATA_OPTIONS_TS8_GLOB, DATA_OPTIONS_BOT_GLOB,\
+    DATA_OPTIONS_TS8_BUTLER, DATA_OPTIONS_BOT_BUTLER,\
+    RUN_TASKS, RUN_OPTIONS, RUN_OPTIONS_NOPLOT, SUMMARY_OPTIONS
 
 def test_bias_file_utils():
     """Test the bias.file_utils module"""
-    bias_files_6106 = get_bias_files_run('6106D')
-    assert len(bias_files_6106) == 1
-    assert 'RTM-004' in bias_files_6106
-    assert len(bias_files_6106['RTM-004']) == 9
-    assert len(bias_files_6106['RTM-004']['S00']) == 1
-    assert 'BIAS' in bias_files_6106['RTM-004']['S00']
-    assert len(bias_files_6106['RTM-004']['S00']['BIAS']) == 124
+    bias_files_6106 = bias.BiasAnalysisTask.get_data(None, '6106D',
+                                                     **DATA_OPTIONS_TS8_GLOB)
+    assert_data_dict(bias_files_6106, 'RTM-004', 'BIAS', (1, 9, 1, 126))
 
-    bias_files_6545 = get_bias_files_run('6545D')
-    assert len(bias_files_6545) == 2
-    assert 'R10' in bias_files_6545
-    assert len(bias_files_6545['R10']) == 9
-    assert len(bias_files_6545['R10']['S00']) == 1
-    assert 'BIAS' in bias_files_6545['R10']['S00']
-    assert len(bias_files_6545['R10']['S00']['BIAS']) == 159
+    bias_files_6545 = bias.BiasAnalysisTask.get_data(None, '6545D',
+                                                     **DATA_OPTIONS_BOT_GLOB)
+    assert_data_dict(bias_files_6545, 'R10', 'BIAS', (2, 9, 1, 159))
 
 
 def test_bias_butler_utils():
     """Test the bias.butler_utils module"""
-    return
+    ts8_butler = get_butler_by_repo('ts8')
+    bot_butler = get_butler_by_repo('bot')
+
+    bias_files_6106 = bias.BiasAnalysisTask.get_data(ts8_butler, '6106D',
+                                                     **DATA_OPTIONS_TS8_BUTLER)
+    assert_data_dict(bias_files_6106, 'RTM-004', 'BIAS', (1, 9, 1, 91))
+
+    bias_files_6545 = bias.BiasAnalysisTask.get_data(bot_butler, '6545D',
+                                                     **DATA_OPTIONS_BOT_BUTLER)
+    assert_data_dict(bias_files_6545, 'R10', 'BIAS', (2, 9, 1, 159))
+
 
 def test_superbias():
     """Test the SuperbiasTask"""

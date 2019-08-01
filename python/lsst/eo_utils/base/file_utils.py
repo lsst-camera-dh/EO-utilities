@@ -18,7 +18,7 @@ except ImportError:
     print("Warning, no datacat-utilities")
 
 
-from .defaults import ALL_RAFTS, ALL_SLOTS, ARCHIVE_DIR
+from .defaults import ALL_RAFTS_BOT_ETU, ALL_SLOTS, ARCHIVE_DIR
 
 
 # These are the standard input filenames
@@ -29,22 +29,22 @@ BOT_GLOB_STRING =\
     'BOT_acq/v0/*/{testName}*{imgtype}*/MC_C*{raft}_{slot}.fits'
 
 # These strings define the standard output filenames
-PD_CALIB_FORMAT_STRING = '{outdir}/pd_calib/{raft}/{raft}-{run}-pd_calib.dat'
-SLOT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}{suffix}'
-RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-RFT{suffix}'
-RUN_FORMAT_STRING = '{outdir}/{fileType}/{run}'
+PD_CALIB_FORMAT_STRING = '{outdir}/{teststand}/pd_calib/{raft}/{raft}-{run}-pd_calib.dat'
+SLOT_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}{suffix}'
+RAFT_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{raft}/{testType}/{raft}-{run}-RFT{suffix}'
+RUN_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{run}'
 
-SUMMARY_FORMAT_STRING = '{outdir}/{fileType}/summary/{testType}/{dataset}{suffix}'
+SUMMARY_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/summary/{testType}/{dataset}{suffix}'
 SUPERBIAS_FORMAT_STRING =\
-    '{outdir}/superbias/{raft}/{raft}-{run}-{slot}_superbias_b-{bias}{suffix}'
+    '{outdir}/{teststand}/superbias/{raft}/{raft}-{run}-{slot}_superbias_b-{bias}{suffix}'
 SUPERBIAS_STAT_FORMAT_STRING =\
-    '{outdir}/superbias/{raft}/{raft}-{run}-{slot}_{stat}_b-{bias}{suffix}'
+    '{outdir}/{teststand}/superbias/{raft}/{raft}-{run}-{slot}_{stat}_b-{bias}{suffix}'
 
 # These string define the report output filename
-SLOT_REPORT_FORMAT_STRING = '{outdir}/html/{run}/{raft}/{slot}.html'
-RAFT_REPORT_FORMAT_STRING = '{outdir}/html/{run}/{raft}/index.html'
-RUN_REPORT_FORMAT_STRING = '{outdir}/html/{run}/index.html'
-SUMMARY_REPORT_FORMAT_STRING = '{outdir}/html/{dataset}.html'
+SLOT_REPORT_FORMAT_STRING = '{outdir}/{teststand}/html/{run}/{raft}/{slot}.html'
+RAFT_REPORT_FORMAT_STRING = '{outdir}/{teststand}/html/{run}/{raft}/index.html'
+RUN_REPORT_FORMAT_STRING = '{outdir}/{teststand}/html/{run}/index.html'
+SUMMARY_REPORT_FORMAT_STRING = '{outdir}/{teststand}/html/{dataset}.html'
 
 
 def makedir_safe(filepath):
@@ -282,7 +282,7 @@ RAFT_BASE_FORMATTER = FILENAME_FORMATS.add_format('raft_basename', RAFT_FORMAT_S
 SUM_BASE_FORMATTER = FILENAME_FORMATS.add_format('summary_basename', SUMMARY_FORMAT_STRING)
 TS8_MASKIN_FORMATTER = FILENAME_FORMATS.add_format('ts8_mask_in', SLOT_FORMAT_STRING,
                                                    fileType='masks_in', testType='',
-                                                   suffix='_mask.fits')
+                                                   suffix='_mask.fits', teststand='ts8')
 MASK_FORMATTER = FILENAME_FORMATS.add_format('mask', SLOT_FORMAT_STRING,
                                              fileType='masks', testType='',
                                              suffix='_mask.fits')
@@ -352,10 +352,13 @@ def get_bot_files_glob(**kwargs):
     outdict = {}
     kwcopy = kwargs.copy()
     test_name = kwcopy.pop('testName').lower()
-    for raft in ALL_RAFTS:
+    rafts = get_raft_names_dc(kwcopy['run'])
+
+    for raft in rafts:
         raftdict = {}
         for slot in ALL_SLOTS:
             glob_string = BOT_FORMATTER(raft=raft, slot=slot, testName=test_name, **kwcopy)
+            print(glob_string)
             raftdict[slot] = sorted(glob.glob(glob_string))
         outdict[raft] = raftdict
     return outdict
@@ -383,6 +386,28 @@ def merge_file_dicts(dict_1, dict_2):
             out_dict[key] = val
     return out_dict
 
+def split_flat_pair_dict(the_dict):
+    """Combine a pair of file dictionaries
+
+    Parameters
+    ----------
+    the_dict : `dict`
+        A dictionary of data_ids or filenames keyed by raft, slot, filetype
+
+    Returns
+    -------
+    out_dict : `dict`
+        A dictionary of data_ids or filenames keyed by raft, slot, filetype
+    """
+    out_dict = {}
+    for key, val in the_dict.items():
+        if isinstance(val, dict):
+            out_dict[key] = split_flat_pair_dict(the_dict[key])
+        elif key == 'FLAT':
+            full_list = the_dict[key]
+            out_dict['FLAT1'] = full_list[0:-1:2]
+            out_dict['FLAT2'] = full_list[1::2]
+    return out_dict
 
 def get_files_for_run(run_id, **kwargs):
     """Get a set of data files of a particular type for a particular run
@@ -625,7 +650,7 @@ def get_raft_names_dc(run):
     if htype == 'LCA-11021':
         return [hid]
     if htype == 'LCA-10134':
-        return ALL_RAFTS
+        return ALL_RAFTS_BOT_ETU
     raise ValueError("Unrecognized hardware type %s" % htype)
 
 
@@ -809,7 +834,8 @@ def link_eo_calib_runlist(args, glob_format, paths, outformat, **kwargs):
             continue
 
         link_eo_calib(fname, outformat, run=run_num,
-                      raft=hid, outdir=args['outdir'], **kwargs)
+                      raft=hid, outdir=args['outdir'],
+                      teststand=args['teststand'], **kwargs)
 
 
 def link_eo_results_runlist(args, glob_format, paths, outformat, **kwargs):
@@ -847,7 +873,8 @@ def link_eo_results_runlist(args, glob_format, paths, outformat, **kwargs):
 
         try:
             link_eo_results(ccd_map, fdict, outformat, run=run_num,
-                            raft=hid, outdir=args['outdir'], **kwargs)
+                            raft=hid, outdir=args['outdir'],
+                            teststand=args['teststand'], **kwargs)
         except KeyError as msg:
             sys.stderr.write("Failed to link files for %s %s, bad mapping %s\n" % (run_num, hid, msg))
 
@@ -937,7 +964,9 @@ def link_eo_bot_results_runlist(args, glob_format, paths, outformat, **kwargs):
             sys.stderr.write("Could not find eotest_results for %s %s\n" % (run_num, glob_format))
             continue
 
-        link_eo_bot_results(fdict, outformat, run=run_num, outdir=args['outdir'], **kwargs)
+        link_eo_bot_results(fdict, outformat, run=run_num,
+                            outdir=args['outdir'], teststand=args['teststand'],
+                            **kwargs)
 
 
 def test_files_exist(flist):

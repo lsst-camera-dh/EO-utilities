@@ -24,6 +24,7 @@ from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft, SummaryAnalysisIt
 class EOResultsRaftConfig(AnalysisConfig):
     """Configuration for EOResultsRaftTask"""
     outdir = EOUtilOptions.clone_param('outdir')
+    teststand = EOUtilOptions.clone_param('teststand')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     insuffix = EOUtilOptions.clone_param('insuffix', default='_eotest_results')
@@ -173,6 +174,7 @@ class EOResultsRaftTask(AnalysisTask):
 class EOResultsSummaryConfig(AnalysisConfig):
     """Configuration for EOResultsTask"""
     outdir = EOUtilOptions.clone_param('outdir')
+    teststand = EOUtilOptions.clone_param('teststand')
     dataset = EOUtilOptions.clone_param('dataset')
     insuffix = EOUtilOptions.clone_param('insuffix', default='_eotest_results')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='_eotest_results_sum')

@@ -43,11 +43,13 @@ class EOUtils(Configurable):
         """
         Configurable.__init__(self, **kwargs)
 
+    def get_task_names(self):
+        """Return the set of task names"""
+        return self._task_factory.keys()
 
     def get_task(self, key):
         """Return a particular `Task` by name"""
         return self._task_factory[key]
-
 
     def get_task_defaults(self, key):
         """Get the default config values associated to a particular class

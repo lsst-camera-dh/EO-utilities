@@ -3,8 +3,6 @@
 This module contains tasks to analyze dark exposures
 """
 
-from .butler_utils import get_dark_files_butler
-
 from . import file_utils as dark_file_utils
 
 from .analysis import DarkAnalysisConfig, DarkAnalysisTask

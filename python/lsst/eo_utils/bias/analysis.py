@@ -6,19 +6,15 @@ from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
-from .file_utils import get_bias_files_run,\
-    SLOT_BIAS_TABLE_FORMATTER, SLOT_BIAS_PLOT_FORMATTER
+from .file_utils import SLOT_BIAS_TABLE_FORMATTER, SLOT_BIAS_PLOT_FORMATTER
 
-from .butler_utils import get_bias_files_butler
 
 
 class BiasAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
     nfiles = EOUtilOptions.clone_param('nfiles', default=10)
 
 
@@ -34,6 +30,7 @@ class BiasAnalysisTask(AnalysisTask):
     plotname_format = SLOT_BIAS_PLOT_FORMATTER
 
     datatype = 'bias'
+    testtypes = None
 
     def get_data(self, butler, run_num, **kwargs):
         """Get a set of bias and mask files out of a folder

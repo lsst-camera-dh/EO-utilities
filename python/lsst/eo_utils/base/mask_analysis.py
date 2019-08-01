@@ -17,6 +17,7 @@ from .file_utils import makedir_safe, get_mask_files_run,\
 class MaskAddConfig(BaseAnalysisConfig):
     """Configuration for MaskAddTask"""
     outdir = EOUtilOptions.clone_param('outdir')
+    teststand = EOUtilOptions.clone_param('teststand')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')

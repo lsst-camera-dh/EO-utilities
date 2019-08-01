@@ -14,12 +14,10 @@ from .file_utils import SUM_SFLAT_TABLE_FORMATTER,\
 
 class SflatSlotTableAnalysisConfig(AnalysisConfig):
     """Configuration for superflat analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
     insuffix = EOUtilOptions.clone_param('insuffix')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class SflatSlotTableAnalysisTask(AnalysisTask):
@@ -40,8 +38,6 @@ class SflatSlotTableAnalysisTask(AnalysisTask):
 class SflatRaftTableAnalysisConfig(AnalysisConfig):
     """Configuration for superflat analyses"""
     insuffix = EOUtilOptions.clone_param('insuffix')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slots = EOUtilOptions.clone_param('slots')
@@ -64,9 +60,7 @@ class SflatRaftTableAnalysisTask(AnalysisTask):
 
 class SflatSummaryAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     dataset = EOUtilOptions.clone_param('dataset')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class SflatSummaryAnalysisTask(AnalysisTask):
