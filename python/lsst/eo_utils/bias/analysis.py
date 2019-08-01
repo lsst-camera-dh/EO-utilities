@@ -58,4 +58,3 @@ class BiasAnalysisTask(AnalysisTask):
         if not retval:
             self.log.error("Call to get_data returned no data")
         return retval
->>>>>>> master
