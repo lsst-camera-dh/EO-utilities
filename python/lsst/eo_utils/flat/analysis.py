@@ -1,4 +1,4 @@
-"""Functions to analyse flat and superbias frames"""
+"""Base classes to analyze flat pairs"""
 
 import lsst.afw.math as afwMath
 
@@ -17,7 +17,7 @@ from .file_utils import SLOT_FLAT_TABLE_FORMATTER,\
 
 
 class FlatAnalysisConfig(AnalysisConfig):
-    """Configurate for bias analyses"""
+    """Configuratioon for flat pair analyses"""
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
@@ -25,7 +25,7 @@ class FlatAnalysisConfig(AnalysisConfig):
 
 
 class FlatAnalysisTask(AnalysisTask):
-    """Simple functor class to tie together standard flat data analysis
+    """Simple functor class to tie together standard flat pair data analysis
     """
 
     # These can overridden by the sub-class
@@ -51,7 +51,7 @@ class FlatAnalysisTask(AnalysisTask):
 
     @classmethod
     def get_data(cls, butler, run_num, **kwargs):
-        """Get a set of flat and mask files out of a folder
+        """Get a set of flat and mask files for a run
 
         Parameters
         ----------

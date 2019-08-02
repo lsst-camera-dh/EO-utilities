@@ -1,4 +1,4 @@
-"""Functions to analyse fe55 and superbias frames"""
+"""Base classes for tasks to analyze fe55 runs"""
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
@@ -6,14 +6,12 @@ from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
-from lsst.eo_utils.base.data_access import get_data_for_run
-
 from .file_utils import SLOT_FE55_TABLE_FORMATTER,\
     SLOT_FE55_PLOT_FORMATTER
 
 
 class Fe55AnalysisConfig(AnalysisConfig):
-    """Configurate for bias analyses"""
+    """Configuration for fe55 analyses"""
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')

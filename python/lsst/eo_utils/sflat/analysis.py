@@ -1,7 +1,6 @@
 """Tasks to analyse sflat and superbias frames"""
 
-from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE,\
-    DEFAULT_DATA_SOURCE, DEFAULT_TESTSTAND
+from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 

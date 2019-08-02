@@ -1,4 +1,4 @@
-"""Functions to analyse bias and superbias frames"""
+"""Base classes for tasks to analyze bias and superbias frames"""
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 

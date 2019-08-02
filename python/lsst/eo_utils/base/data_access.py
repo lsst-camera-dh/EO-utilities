@@ -9,7 +9,6 @@ from .butler_utils import get_files_butler
 from .file_utils import get_files_for_run
 
 
-TEST_TYPES = ['DARK', 'FLAT', 'FE55', 'PPUMP', 'SFLAT', 'QE']
 
 class DataLocationInfo:
     """Object to collect information about were to find data for a particular test
@@ -27,7 +26,7 @@ class DataLocationInfo:
         All keywords are used to override particular locations
 
         For example:
-        if test_name is 'Flat' and ts8_butler_testtype='SFlat'
+        if test_name is 'Flat' and the keyword ts8_butler_testtype='SFlat'
         This will return 'Flat' for all names except `ts8_butler_testtype`
         """
         self._imagetype = imagetype
@@ -43,7 +42,8 @@ class DataLocationInfo:
         return self._name_dict.get(key, self._imagetype)
 
     def get_trait(self, traitname, **kwargs):
-        """Returns the name trait
+        """Returns the name of an particular trait for a
+        given data access method and teststand
 
         Parameters
         ----------
@@ -74,7 +74,8 @@ class DataLocationInfo:
 
 
     def get_testname(self, **kwargs):
-        """Returns the name of the test
+        """Returns the string used as a key for this test type
+        given data access method and teststand
 
         Keywords
         --------
@@ -91,7 +92,8 @@ class DataLocationInfo:
         return self.get_trait('testname', **kwargs)
 
     def get_imagetype(self, **kwargs):
-        """Returns the image type
+        """Returns the string used as a key for this image type
+        given data access method and teststand
 
         Keywords
         --------
@@ -142,9 +144,12 @@ LOCATION_INFO_DICT = dict(DARK=DARK_LOCATION_INFO,
                           SFLAT=SFLAT_LOCATION_INFO,
                           QE=QE_LOCATION_INFO)
 
+TEST_TYPES = ['DARK', 'FLAT', 'FE55', 'PPUMP', 'SFLAT', 'QE']
+
 
 def get_data_for_run(butler, run_id, **kwargs):
-    """Get a set of bias and mask files out of a folder
+    """Builds a dictionary of filenames or butler dataids for
+    a particular run and test type, given a data access method, teststand
 
     Parameters
     ----------
@@ -168,7 +173,7 @@ def get_data_for_run(butler, run_id, **kwargs):
     Returns
     -------
     outdict : `dict`
-        Dictionary mapping slot to file names
+        Dictionary mapping raft:slot:imagetype to lists of filenames
     """
     kwcopy = kwargs.copy()
     teststand = kwcopy.get('teststand', DEFAULT_TESTSTAND)

@@ -4,7 +4,7 @@ import lsst.afw.math as afwMath
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.file_utils import merge_file_dicts, PD_CALIB_FORMATTER
+from lsst.eo_utils.base.file_utils import PD_CALIB_FORMATTER
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
