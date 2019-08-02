@@ -7,14 +7,13 @@ from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
-from lsst.eo_utils.base.iter_utils import AnalysisBySlot
-
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.tmpl.analysis import TmplAnalysisConfig, TmplAnalysisTask
+from lsst.eo_utils.tmpl.meta_analysis import TmplSlotTableAnalysisConfig,\
+    TmplSlotTableAnalysisTask
 
 
-class TemplateConfig(TmplAnalysisConfig):
+class TemplateConfig(TmplSlotTableAnalysisConfig):
     """Configuration for TemplateTask"""
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='tmplsuffix')
     bias = EOUtilOptions.clone_param('bias')
@@ -22,22 +21,11 @@ class TemplateConfig(TmplAnalysisConfig):
     mask = EOUtilOptions.clone_param('mask')
 
 
-class TemplateTask(TmplAnalysisTask):
+class TemplateTask(TmplSlotTableAnalysisTask):
     """Analyze some tmpl data"""
 
     ConfigClass = TemplateConfig
     _DefaultName = "TemplateTask"
-    iteratorClass = AnalysisBySlot
-
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        TmplAnalysisTask.__init__(self, **kwargs)
 
     def extract(self, butler, data, **kwargs):
         """Extract data
@@ -60,8 +48,7 @@ class TemplateTask(TmplAnalysisTask):
 
         # Get the slot, if needed
         #slot = self.config.slot
-
-        tmpl_files = data['TMPL']
+        tmpl_files = data
 
         # Get the superbias frame, if needed
         #mask_files = self.get_mask_files()

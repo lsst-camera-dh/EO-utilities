@@ -23,8 +23,6 @@ class TemplateTask(TmplSummaryAnalysisTask):
     ConfigClass = TemplateConfig
     _DefaultName = "TemplateTask"
 
-    datatype = 'tmpl table'
-
     def __init__(self, **kwargs):
         """C'tor
 

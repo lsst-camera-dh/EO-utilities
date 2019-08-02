@@ -11,11 +11,12 @@ from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 from lsst.eo_utils.tmpl.file_utils import SLOT_TMPL_TABLE_FORMATTER,\
     RAFT_TMPL_TABLE_FORMATTER, RAFT_TMPL_PLOT_FORMATTER
 
-from lsst.eo_utils.tmpl.analysis import TmplAnalysisConfig, TmplAnalysisTask
+from lsst.eo_utils.tmpl.meta_analysis import TmplRaftTableAnalysisConfig,\
+    TmplRaftTableAnalysisTask
 
 
-class TemplateStatsConfig(TmplAnalysisConfig):
-    """Configuration for TempalteStatsTask"""
+class TemplateConfig(TmplRaftTableAnalysisConfig):
+    """Configuration for TempalteTask"""
     insuffix = EOUtilOptions.clone_param('insuffix', default='tmplsuffix')
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='tmplsuffix_stats')
     bias = EOUtilOptions.clone_param('bias')
@@ -23,29 +24,17 @@ class TemplateStatsConfig(TmplAnalysisConfig):
 
 
 
-class TemplateStatsTask(TmplAnalysisTask):
+class TemplateTask(TmplRaftTableAnalysisTask):
     """Extract summary statistics from the data"""
 
-    ConfigClass = TemplateStatsConfig
-    _DefaultName = "TemplateStatsTask"
-    iteratorClass = TableAnalysisByRaft
+    ConfigClass = TemplateConfig
+    _DefaultName = "TemplateTask"
 
     intablename_format = SLOT_TMPL_TABLE_FORMATTER
     tablename_format = RAFT_TMPL_TABLE_FORMATTER
     plotname_format = RAFT_TMPL_PLOT_FORMATTER
 
     datatype = 'tmpl table'
-
-    def __init__(self, **kwargs):
-        """C'tor
-
-        Parameters
-        ----------
-        kwargs
-            Used to override configruation
-        """
-        TmplAnalysisTask.__init__(self, **kwargs)
-
 
     def extract(self, butler, data, **kwargs):
         """Extract data
@@ -76,10 +65,10 @@ class TemplateStatsTask(TmplAnalysisTask):
 
             self.log_progress("  %s" % slot)
 
-            basename = data[slot]
-            datapath = basename.replace(self.config.outsuffix, self.config.insuffix)
-
-            dtables = TableDict(datapath)
+            # get the data from the input table
+            #basename = data[slot]
+            #datapath = basename.replace(self.config.outsuffix, self.config.insuffix)
+            #dtables = TableDict(datapath)
 
             for amp in range(16):
 
@@ -113,4 +102,4 @@ class TemplateStatsTask(TmplAnalysisTask):
         # Analysis goes here.
         # you should use the data in dtables to make a bunch of figures in figs
 
-EO_TASK_FACTORY.add_task_class('TemplateStats', TemplateStatsTask)
+EO_TASK_FACTORY.add_task_class('Template', TemplateTask)
