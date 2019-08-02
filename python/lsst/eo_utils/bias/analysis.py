@@ -9,7 +9,6 @@ from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 from .file_utils import SLOT_BIAS_TABLE_FORMATTER, SLOT_BIAS_PLOT_FORMATTER
 
 
-
 class BiasAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
     run = EOUtilOptions.clone_param('run')

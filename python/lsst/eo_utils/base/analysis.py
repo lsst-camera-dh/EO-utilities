@@ -423,12 +423,17 @@ class AnalysisTask(BaseAnalysisTask):
     tablename_format = SLOT_BASE_FORMATTER
     plotname_format = SLOT_BASE_FORMATTER
 
+<<<<<<< HEAD
     # This is to organize the tasks by the type of data they run on
     datatype = 'none'
     # This is use to define the types of tests to get data for
     testtypes = None
     # This is used to override the default image type
     imagetype = None
+=======
+    datatype = 'none'
+    testtypes = None
+>>>>>>> master
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -670,6 +675,7 @@ class AnalysisTask(BaseAnalysisTask):
         """
         kwargs.pop('run', None)
 
+<<<<<<< HEAD
         imagetype = cls.imagetype
         if imagetype is None:
             imagetype = LOCATION_INFO_DICT[cls.testtypes[0]].get_imagetype(**kwargs)
@@ -677,5 +683,10 @@ class AnalysisTask(BaseAnalysisTask):
         return get_data_for_run(butler, run_num,
                                 testtypes=cls.testtypes,
                                 imagetype=imagetype,
+=======
+        return get_data_for_run(butler, run_num,
+                                testtypes=cls.testtypes,
+                                imagetype=cls.datatype.upper(),
+>>>>>>> master
                                 outkey=cls.datatype.upper(),
                                 **kwargs)

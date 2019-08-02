@@ -6,6 +6,8 @@ from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
+from lsst.eo_utils.base.data_access import get_data_for_run
+
 from .file_utils import SLOT_FE55_TABLE_FORMATTER,\
     SLOT_FE55_PLOT_FORMATTER
 

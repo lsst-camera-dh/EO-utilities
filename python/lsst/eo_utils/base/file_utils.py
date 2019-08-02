@@ -358,6 +358,7 @@ def get_bot_files_glob(**kwargs):
         raftdict = {}
         for slot in ALL_SLOTS:
             glob_string = BOT_FORMATTER(raft=raft, slot=slot, testName=test_name, **kwcopy)
+            print(glob_string)
             raftdict[slot] = sorted(glob.glob(glob_string))
         outdict[raft] = raftdict
     return outdict
