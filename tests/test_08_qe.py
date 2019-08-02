@@ -16,11 +16,11 @@ def test_qe_file_utils():
     """Test the qe.file_utils module"""
     qe_files_6106 = qe.QeAnalysisTask.get_data(None, '6106D',
                                                **DATA_OPTIONS_TS8_GLOB)
-    assert_data_dict(qe_files_6106, 'RTM-004', 'LAMBDA', (1, 9, 2, 36))
+    assert_data_dict(qe_files_6106, 'RTM-004', 'LAMBDA', (1, 9, 1, 36))
 
     qe_files_6545 = qe.QeAnalysisTask.get_data(None, '6545D',
                                                **DATA_OPTIONS_BOT_GLOB)
-    assert_data_dict(qe_files_6545, 'R10', 'LAMBDA', (2, 9, 2, 12))
+    assert_data_dict(qe_files_6545, 'R10', 'LAMBDA', (2, 9, 1, 12))
 
 
 def test_qe_butler_utils():
@@ -30,11 +30,11 @@ def test_qe_butler_utils():
 
     qe_files_6106 = qe.QeAnalysisTask.get_data(ts8_butler, '6106D',
                                                **DATA_OPTIONS_TS8_BUTLER)
-    assert_data_dict(qe_files_6106, 'RTM-004', 'LAMBDA', (1, 9, 2, 36))
+    assert_data_dict(qe_files_6106, 'RTM-004', 'LAMBDA', (1, 9, 1, 36))
 
     qe_files_6545 = qe.QeAnalysisTask.get_data(bot_butler, '6545D',
                                                **DATA_OPTIONS_BOT_BUTLER)
-    assert_data_dict(qe_files_6545, 'R10', 'LAMBDA', (2, 9, 2, 12))
+    assert_data_dict(qe_files_6545, 'R10', 'LAMBDA', (2, 9, 1, 12))
 
 
 def test_qe_median():

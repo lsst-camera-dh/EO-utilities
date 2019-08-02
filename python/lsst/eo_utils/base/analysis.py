@@ -9,8 +9,9 @@ import lsst.pex.config as pexConfig
 
 from .defaults import DEFAULT_STAT_TYPE
 
-from .file_utils import makedir_safe, SLOT_BASE_FORMATTER,\
-    MASK_FORMATTER, SUPERBIAS_FORMATTER, SUPERBIAS_STAT_FORMATTER
+from .file_utils import makedir_safe,\
+    SLOT_BASE_FORMATTER, MASK_FORMATTER,\
+    SUPERBIAS_FORMATTER, SUPERBIAS_STAT_FORMATTER
 
 from .config_utils import EOUtilOptions, Configurable
 
@@ -22,7 +23,7 @@ from .iter_utils import SimpleAnalysisHandler
 
 from .image_utils import get_ccd_from_id, get_raw_image
 
-from .data_access import get_data_for_run
+from .data_access import get_data_for_run, LOCATION_INFO_DICT
 
 
 class BaseConfig(pexConfig.Config):
@@ -422,8 +423,12 @@ class AnalysisTask(BaseAnalysisTask):
     tablename_format = SLOT_BASE_FORMATTER
     plotname_format = SLOT_BASE_FORMATTER
 
+    # This is to organize the tasks by the type of data they run on
     datatype = 'none'
+    # This is use to define the types of tests to get data for
     testtypes = None
+    # This is used to override the default image type
+    imagetype = None
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -665,8 +670,12 @@ class AnalysisTask(BaseAnalysisTask):
         """
         kwargs.pop('run', None)
 
+        imagetype = cls.imagetype
+        if imagetype is None:
+            imagetype = LOCATION_INFO_DICT[cls.testtypes[0]].get_imagetype(**kwargs)
+
         return get_data_for_run(butler, run_num,
                                 testtypes=cls.testtypes,
-                                imagetype=cls.datatype.upper(),
+                                imagetype=imagetype,
                                 outkey=cls.datatype.upper(),
                                 **kwargs)

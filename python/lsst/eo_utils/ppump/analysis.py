@@ -30,30 +30,3 @@ class PpumpAnalysisTask(AnalysisTask):
     plotname_format = SLOT_PPUMP_PLOT_FORMATTER
     datatype = 'ppump'
     testtypes = ['PPUMP']
-
-    def get_data(self, butler, run_num, **kwargs):
-        """Get a set of ppump and mask files out of a folder
-
-        Parameters
-        ----------
-        butler : `Butler`
-            The data butler
-        datakey : `str`
-            Run number or other id that defines the data to analyze
-        kwargs
-            Used to override default configuration
-
-        Returns
-        -------
-        retval : `dict`
-            Dictionary mapping input data by raft, slot and file type
-        """
-        kwargs.pop('run_num', None)
-
-        if butler is None:
-            retval = get_ppump_files_run(run_num, **kwargs)
-        else:
-            retval = get_ppump_files_butler(butler, run_num, **kwargs)
-        if not retval:
-            self.log.error("Call to get_data returned no data")
-        return retval

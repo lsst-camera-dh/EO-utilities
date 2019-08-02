@@ -186,7 +186,7 @@ def get_data_ref_list(butler, run, **kwargs):
 
     data_ref_list = []
     for testtype in testtypes:
-        data_id['testtype'] = testtype
+        data_id['testtype'] = testtype.upper()
         subset = butler.subset("raw", '', data_id)
         if nfiles is None:
             data_ref_list += subset.cache
@@ -269,7 +269,7 @@ def get_files_butler(butler, run_id, **kwargs):
     imagetype = kwargs.get('imagetype')
     nfiles = kwargs.get('nfiles', None)
     rafts = kwargs.get('rafts', None)
-    slots = kwargs.get('rafts', None)
+    slots = kwargs.get('slots', None)
     outkey = kwargs.get('outkey', imagetype)
 
     outdict = {}

@@ -10,7 +10,7 @@ from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
 from lsst.eo_utils.base.file_utils import merge_file_dicts, split_flat_pair_dict
 
-from lsst.eo_utils.base.data_access import get_data_for_run
+from lsst.eo_utils.base.data_access import get_data_for_run, LOCATION_INFO_DICT
 
 from .file_utils import SLOT_FLAT_TABLE_FORMATTER,\
     SLOT_FLAT_PLOT_FORMATTER
@@ -68,22 +68,23 @@ class FlatAnalysisTask(AnalysisTask):
             Dictionary mapping input data by raft, slot and file type
         """
         kwargs.pop('run', None)
-        if kwargs.get('data_source', 'glob') in ['glob']:
-            flat1_dict = get_data_for_run(butler, run_num,
-                                          testtypes=['FLAT'],
-                                          imagetype="FLAT1",
-                                          outkey='FLAT1',
-                                          **kwargs)
-            flat2_dict = get_data_for_run(butler, run_num,
-                                          testtypes=['FLAT'],
-                                          imagetype="FLAT2",
-                                          outkey='FLAT2',
-                                          **kwargs)
-            return merge_file_dicts(flat1_dict, flat2_dict)
 
-        flat_dict = get_data_for_run(butler, run_num,
-                                     testtypes=['FLAT'],
-                                     imagetype="FLAT",
-                                     outkey='FLAT',
-                                     **kwargs)
-        return split_flat_pair_dict(flat_dict)
+        imagetype = LOCATION_INFO_DICT[cls.testtypes[0]].get_imagetype(**kwargs)
+        ret_val = {}
+
+        if isinstance(imagetype, list):
+            for imgtype in imagetype:
+                image_data = get_data_for_run(butler, run_num,
+                                              testtypes=cls.testtypes,
+                                              imagetype=imgtype,
+                                              outkey=imgtype.upper(),
+                                              **kwargs)
+                ret_val = merge_file_dicts(image_data, ret_val)
+        else:
+            flat_dict = get_data_for_run(butler, run_num,
+                                         testtypes=cls.testtypes,
+                                         imagetype=imagetype,
+                                         outkey=imagetype.upper(),
+                                         **kwargs)
+            ret_val = split_flat_pair_dict(flat_dict)
+        return ret_val
