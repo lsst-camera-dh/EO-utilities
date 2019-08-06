@@ -17,7 +17,7 @@ from .config_utils import pop_values
 
 from .image_utils import get_raw_image, raw_amp_image,\
     get_amp_list, unbias_amp, get_geom_regions,\
-    get_image_frames_2d, unbiased_ccd_image_dict
+    get_image_frames_2d, unbiased_ccd_image_dict, get_amp_offset
 
 from .defaults import TESTCOLORMAP
 
@@ -1132,6 +1132,8 @@ class FigureDict:
         # and [ny,nx] in the lower right
         mosaic = np.zeros((ny_pix, nx_pix), dtype=np.float32)
 
+        offset = get_amp_offset(ccd, superbias_frame)
+
         for ypos in range(ny_segments):
             for xpos in range(nx_segments):
                 amp = ypos*nx_segments + xpos + 1
@@ -1147,7 +1149,7 @@ class FigureDict:
                 #
                 # Extract bias-subtracted image for this segment - overscan corrected here
                 #
-                superbias_im = raw_amp_image(superbias_frame, amp)
+                superbias_im = raw_amp_image(superbias_frame, amp + offset)
                 img = get_raw_image(ccd, amp)
                 segment_image = unbias_amp(img, serial_oscan,
                                            bias_type=bias_type, superbias_im=superbias_im)
