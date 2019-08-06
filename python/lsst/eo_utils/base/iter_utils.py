@@ -571,6 +571,7 @@ class AnalysisBySlot(AnalysisIterator):
         """
         kwdata = kwargs.copy()
         kwdata['nfiles'] = self._task.config.toDict().get('nfiles', None)
+        kwdata['data_source'] = self.config.data_source
         htype, hid = self.get_hardware(self._butler, run)
         data_files = self.get_data(self._butler, run, **kwdata)
 
@@ -652,7 +653,9 @@ class AnalysisByRaft(AnalysisIterator):
         ValueError : If the hardware type (raft or focal plane) is not recognized
         """
         htype, hid = self.get_hardware(self._butler, run)
-        data_files = self.get_data(self._butler, run, **kwargs)
+        kwdata = kwargs.copy()
+        kwdata['data_source'] = self.config.data_source
+        data_files = self.get_data(self._butler, run, **kwdata)
 
         kwargs['run'] = run
         if htype == "LCA-10134":
