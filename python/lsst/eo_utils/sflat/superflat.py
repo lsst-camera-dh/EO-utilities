@@ -12,11 +12,11 @@ from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.file_utils import makedir_safe
 
+from lsst.eo_utils.base.butler_utils import get_filename_from_id
+
 from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
-
-from lsst.eo_utils.base.plot_utils import FigureDict
 
 from lsst.eo_utils.base.data_utils import TableDict
 
@@ -48,6 +48,7 @@ class SuperflatConfig(SflatAnalysisConfig):
     skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
     stats_hist = EOUtilOptions.clone_param('stats_hist')
+    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class SuperflatTask(SflatAnalysisTask):
@@ -56,6 +57,8 @@ class SuperflatTask(SflatAnalysisTask):
     ConfigClass = SuperflatConfig
     _DefaultName = "SuperflatTask"
     iteratorClass = AnalysisBySlot
+
+    tablename_format = SUPERFLAT_FORMATTER
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -152,17 +155,23 @@ class SuperflatTask(SflatAnalysisTask):
 
         mask_files = self.get_mask_files()
 
-        output_file = self.get_superflat_file('').replace('.fits', '')
+        output_file = self.tablefile_name().replace('_l', '')
+        #output_file = self.get_superflat_file('').replace('.fits', '')
         makedir_safe(output_file)
 
         if not self.config.skip:
             sflats = self.extract(butler, data)
+            if butler is None:
+                template_file = data['SFLAT'][0]
+            else:
+                template_file = get_filename_from_id(butler, data['SFLAT'][0])
+
             imutil.writeFits(sflats[0], output_file + '_l.fits',
-                             data['SFLAT'][0], self.config.bitpix)
+                             template_file, self.config.bitpix)
             imutil.writeFits(sflats[1], output_file + '_h.fits',
-                             data['SFLAT'][0], self.config.bitpix)
+                             template_file, self.config.bitpix)
             imutil.writeFits(sflats[2], output_file + '_ratio.fits',
-                             data['SFLAT'][0], self.config.bitpix)
+                             template_file, self.config.bitpix)
             if butler is not None:
                 flip_data_in_place(output_file + '_l.fits')
                 flip_data_in_place(output_file + '_h.fits')
@@ -171,8 +180,6 @@ class SuperflatTask(SflatAnalysisTask):
         self._superflat_frame_l = get_ccd_from_id(None, output_file + '_l.fits', mask_files)
         self._superflat_frame_h = get_ccd_from_id(None, output_file + '_h.fits', mask_files)
         self._superflat_frame_r = get_ccd_from_id(None, output_file + '_ratio.fits', mask_files)
-        dtables = TableDict()
-        return dtables
 
 
     def plot(self, dtables, figs, **kwargs):
@@ -190,13 +197,13 @@ class SuperflatTask(SflatAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        if dtables.keys():
-            raise ValueError("dtables should not be set")
+        if dtables is not None:
+            raise ValueError("dtables should not be set in SuperflatTask.plot")
 
         if self.config.plot:
-            figs.plot_sensor("img_l", None, self._superflat_frame_l)
-            figs.plot_sensor("img_h", None, self._superflat_frame_h)
-            figs.plot_sensor("ratio", None, self._superflat_frame_r)
+            figs.plot_sensor("img_l", self._superflat_frame_l)
+            figs.plot_sensor("img_h", self._superflat_frame_h)
+            figs.plot_sensor("ratio", self._superflat_frame_r)
 
         default_array_kw = {}
         if self.config.stats_hist:
@@ -217,34 +224,21 @@ class SuperflatTask(SflatAnalysisTask):
                                  subtract_mean=False, bins=100, range=(0.015, 0.025),
                                  **kwcopy)
 
-
-
-    def make_plots(self, dtables, **kwargs):
-        """Tie together the functions to make the figures
+    def plotfile_name(self, **kwargs):
+        """Get the basename for the plot files for a particular run, raft, ccd...
 
         Parameters
         ----------
-        dtables : `TableDict`
-            The data produced by this task
+        kwargs
+            Used to override default configuration
 
         Returns
         -------
-        figs : `FigureDict`
-            The resulting figures
+        ret_val : `str`
+            The name of the file
         """
         self.safe_update(**kwargs)
-
-        figs = FigureDict()
-        self.plot(dtables, figs)
-        if self.config.plot == 'display':
-            figs.save_all(None)
-            return figs
-
-        plotbase = self.get_superflat_file('').replace('.fits', '')
-
-        makedir_safe(plotbase)
-        figs.save_all(plotbase, self.config.plot)
-        return None
+        return self.get_superflat_file('').replace('.fits', '')
 
 
     def __call__(self, butler, data, **kwargs):
@@ -260,9 +254,9 @@ class SuperflatTask(SflatAnalysisTask):
             Used to override default configuration
         """
         self.safe_update(**kwargs)
-        dtables = self.make_superflats(butler, data)
+        self.make_superflats(butler, data)
         if self.config.plot is not None:
-            self.make_plots(dtables)
+            self.make_plots(None)
 
 
 
@@ -315,7 +309,7 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
             Used to override default configuration
 
         Returns
-        ------- 
+        -------
         out_dict : `dict`
             The output dictionary
         """
@@ -331,8 +325,8 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
         for i in range(4):
             fp_dict['ratio_%i' % i] = []
             fp_dict['npix_%i' % i] = []
-            fp_dict['npix_0p2_%i' % i]  = []
-       
+            fp_dict['npix_0p2_%i' % i] = []
+
         for islot, (_, slot_data) in enumerate(sorted(flat_array.items())):
             for iamp, (_, image) in enumerate(sorted(slot_data.items())):
                 image *= -1
@@ -368,19 +362,17 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
         for slot in slots:
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
             basename = data[slot]
-            self._sflat_file_dict_l[slot] = basename.replace('.fits.fits', '_l.fits')
-            self._sflat_file_dict_h[slot] = basename.replace('.fits.fits', '_h.fits')
-            self._sflat_file_dict_r[slot] = basename.replace('.fits.fits', '_ratio.fits')
+            self._sflat_file_dict_l[slot] = basename.replace('_l.fits', '_l.fits')
+            self._sflat_file_dict_h[slot] = basename.replace('_l.fits', '_h.fits')
+            self._sflat_file_dict_r[slot] = basename.replace('_l.fits', '_ratio.fits')
 
-        self._sflat_images_h, ccd_dict = extract_raft_unbiased_images(None,
-                                                                      self._sflat_file_dict_h,
-                                                                      mask_dict=self._mask_file_dict)        
-        self._sflat_array_l = extract_raft_array_dict(None, self._sflat_file_dict_l,
+        self._sflat_images_h, ccd_dict = extract_raft_unbiased_images(self._sflat_file_dict_h,
+                                                                      mask_dict=self._mask_file_dict)
+        self._sflat_array_l = extract_raft_array_dict(self._sflat_file_dict_l,
                                                       mask_dict=self._mask_file_dict)
-        self._sflat_array_h = extract_raft_imaging_data(None,
-                                                        self._sflat_images_h,
+        self._sflat_array_h = extract_raft_imaging_data(self._sflat_images_h,
                                                         ccd_dict)
-        self._sflat_array_r = extract_raft_array_dict(None, self._sflat_file_dict_r,
+        self._sflat_array_r = extract_raft_array_dict(self._sflat_file_dict_r,
                                                       mask_dict=self._mask_file_dict)
         out_data_l = outlier_raft_dict(self._sflat_array_l, 1000., 300.)
         out_data_h = outlier_raft_dict(self._sflat_array_h, 50000., 15000.)

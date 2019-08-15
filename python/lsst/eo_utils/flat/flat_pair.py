@@ -1,4 +1,4 @@
-"""Class to analyze the FFT of the bias frames"""
+"""Analyze the flat pairs data"""
 
 import operator
 
@@ -15,7 +15,7 @@ from lsst.eo_utils.base.data_utils import TableDict
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_amp_list,\
-    get_exposure_time, get_mondiode_val, get_geom_regions, get_raw_image, unbias_amp
+    get_exposure_time, get_mondiode_val, unbiased_ccd_image_dict
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
@@ -33,7 +33,7 @@ class FlatPairConfig(FlatAnalysisConfig):
 
 
 class FlatPairTask(FlatAnalysisTask):
-    """Analyze some flat data"""
+    """Analyze some flat pair data to extract means and variances"""
 
     ConfigClass = FlatPairConfig
     _DefaultName = "FlatPairTask"
@@ -111,18 +111,18 @@ class FlatPairTask(FlatAnalysisTask):
             flat_1 = get_ccd_from_id(butler, id_1, [])
             flat_2 = get_ccd_from_id(butler, id_2, [])
 
-            amps = get_amp_list(butler, flat_1)
+            amps = get_amp_list(flat_1)
 
-            flux_1 = get_exposure_time(butler, flat_1)
-            flux_2 = get_exposure_time(butler, flat_2)
+            flux_1 = get_exposure_time(flat_1)
+            flux_2 = get_exposure_time(flat_2)
 
             if flux_1 != flux_2:
                 raise RuntimeError("Exposure times do not match for:\n%s\n%s\n"
                                    % (id_1, id_1))
             data_dict['EXPTIME'].append(flux_1)
 
-            mondiode_1 = get_mondiode_val(butler, flat_1)
-            mondiode_2 = get_mondiode_val(butler, flat_2)
+            mondiode_1 = get_mondiode_val(flat_1)
+            mondiode_2 = get_mondiode_val(flat_2)
 
             if mondiode_1 is not None:
                 flux_1 *= mondiode_1
@@ -138,26 +138,14 @@ class FlatPairTask(FlatAnalysisTask):
 
             data_dict['FLUX'].append(flux)
 
+            ccd_1_ims = unbiased_ccd_image_dict(flat_1, bias=self.config.bias,
+                                                superbias_frame=superbias_frame)
+            ccd_2_ims = unbiased_ccd_image_dict(flat_2, bias=self.config.bias,
+                                                superbias_frame=superbias_frame)
+
             for i, amp in enumerate(amps):
-                regions = get_geom_regions(butler, flat_1, amp)
-                serial_oscan = regions['serial_overscan']
-                imaging = regions['imaging']
-                #imaging.grow(-20)
-                im_1 = get_raw_image(butler, flat_1, amp)
-                im_2 = get_raw_image(butler, flat_2, amp)
-
-                if superbias_frame is not None:
-                    if butler is not None:
-                        superbias_im = get_raw_image(None, superbias_frame, amp+1)
-                    else:
-                        superbias_im = get_raw_image(None, superbias_frame, amp)
-                else:
-                    superbias_im = None
-
-                image_1 = unbias_amp(im_1, serial_oscan, bias_type=self.config.bias,
-                                     superbias_im=superbias_im, region=imaging)
-                image_2 = unbias_amp(im_2, serial_oscan, bias_type=self.config.bias,
-                                     superbias_im=superbias_im, region=imaging)
+                image_1 = ccd_1_ims[amp]
+                image_2 = ccd_2_ims[amp]
 
                 fstats = self.get_pair_stats(image_1, image_2)
                 signal = fstats[1]

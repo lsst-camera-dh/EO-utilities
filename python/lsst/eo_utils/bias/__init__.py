@@ -3,8 +3,6 @@
 This module contains tasks to analyze bias frames.
 """
 
-from .butler_utils import get_bias_files_butler
-
 from . import file_utils as bias_file_utils
 
 from . import data_utils as bias_data_utils

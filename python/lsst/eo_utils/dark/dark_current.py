@@ -32,7 +32,7 @@ class DarkCurrentConfig(DarkRaftTableAnalysisConfig):
 
 
 class DarkCurrentTask(DarkRaftTableAnalysisTask):
-    """Analyze some dark data"""
+    """Measure the dark currents using data from the superdark frames"""
 
     ConfigClass = DarkCurrentConfig
     _DefaultName = "DarkCurrentTask"
@@ -84,15 +84,15 @@ class DarkCurrentTask(DarkRaftTableAnalysisTask):
             self.log_progress("  %s" % slot)
 
             mask_files = self.get_mask_files(slot=slot)
-            superdark_file = data[slot].replace('.fits.fits', '.fits')
+            superdark_file = data[slot]
             superdark_frame = get_ccd_from_id(None, superdark_file, mask_files)
-            exptime = get_exposure_time(None, superdark_frame)
+            exptime = get_exposure_time(superdark_frame)
 
-            amps = get_amp_list(None, superdark_frame)
+            amps = get_amp_list(superdark_frame)
             for iamp, amp in enumerate(amps):
-                regions = get_geom_regions(None, superdark_frame, amp)
+                regions = get_geom_regions(superdark_frame, amp)
                 imaging = regions['imaging']
-                superdark_im = get_raw_image(None, superdark_frame, amp)
+                superdark_im = get_raw_image(superdark_frame, amp)
                 image_data = superdark_im[imaging].array
                 median = np.median(image_data)
                 stdev = np.std(image_data)

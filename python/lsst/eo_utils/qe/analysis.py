@@ -10,19 +10,14 @@ from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
-from lsst.eo_utils.qe.file_utils import get_qe_files_run,\
-    SLOT_QE_TABLE_FORMATTER, SLOT_QE_PLOT_FORMATTER
-
-from lsst.eo_utils.qe.butler_utils import get_qe_files_butler
-
+from lsst.eo_utils.qe.file_utils import SLOT_QE_TABLE_FORMATTER,\
+    SLOT_QE_PLOT_FORMATTER
 
 class QeAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
     nfiles = EOUtilOptions.clone_param('nfiles')
 
 
@@ -37,6 +32,8 @@ class QeAnalysisTask(AnalysisTask):
 
     tablename_format = SLOT_QE_TABLE_FORMATTER
     plotname_format = SLOT_QE_PLOT_FORMATTER
+    datatype = 'lambda'
+    testtypes = ['QE']
 
     def __init__(self, **kwargs):
         """C'tor
@@ -63,30 +60,3 @@ class QeAnalysisTask(AnalysisTask):
             The filename
         """
         return self.get_filename_from_format(PD_CALIB_FORMATTER, '.dat', **kwargs)
-
-    def get_data(self, butler, run_num, **kwargs):
-        """Get a set of qe and mask files out of a folder
-
-        Parameters
-        ----------
-        butler : `Butler`
-            The data butler
-        datakey : `str`
-            Run number or other id that defines the data to analyze
-        kwargs
-            Used to override default configuration
-
-        Returns
-        -------
-        retval : `dict`
-            Dictionary mapping input data by raft, slot and file type
-        """
-        kwargs.pop('run_num', None)
-
-        if butler is None:
-            retval = get_qe_files_run(run_num, **kwargs)
-        else:
-            retval = get_qe_files_butler(butler, run_num, **kwargs)
-        if not retval:
-            self.log.error("Call to get_data returned no data")
-        return retval

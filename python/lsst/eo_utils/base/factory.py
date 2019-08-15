@@ -75,6 +75,9 @@ class EOTaskFactory:
         -------
         parser : `ArgumentParser`
             The parser, filled with the options defined for the task in this dictionary
+
+        subparser_dict : `dict`
+            All the sub-parsers, keyed by name
         """
         if task_names is None:
             task_names = self._tasks.keys()
@@ -82,12 +85,14 @@ class EOTaskFactory:
         parser = setup_parser(**kwargs)
         supparsers = parser.add_subparsers(dest='task', help='sub-command help')
 
+        subparser_dict = {}
         for task_name in task_names:
             task = self._tasks[task_name]
             subparser = supparsers.add_parser(task_name, help=task.__doc__)
             task.add_parser_arguments(subparser)
+            subparser_dict[task_name] = subparser
 
-        return parser
+        return parser, subparser_dict
 
     def parse_and_run(self, **kwargs):
         """Run a task using the command line arguments
@@ -97,13 +102,46 @@ class EOTaskFactory:
         kwargs
             Used to override command line arguments
         """
-        parser = self.build_parser(usage="eo_task.py")
+        parser, subparser_dict = self.build_parser(usage="eo_task.py")
         args = parser.parse_args()
-
-        arg_dict = parse_args_to_dict(args)
+        arg_dict = parse_args_to_dict(args, parser, subparser_dict)
         arg_dict.update(**kwargs)
 
         self.run_task(args.task, **arg_dict)
+
+    def sort_tasks(self):
+        """Generate dictionary of tasks sorted by level and datatype"""
+        level_dict = {}
+        for task_name, task in self.items():
+            level = task.iteratorClass.level
+            if level not in level_dict:
+                level_dict[level] = {}
+            datatype_dict = level_dict[level]
+            if task.datatype not in datatype_dict:
+                datatype_dict[task.datatype] = {}
+            task_dict = datatype_dict[task.datatype]
+            task_dict[task_name] = task
+        return level_dict
+
+    def make_csv(self, stream):
+        """Generate a markdown table describing all the tasks"""
+        stream.write("Task, Level, Dataype, Description\n")
+        level_dict = self.sort_tasks()
+
+        for _, datatype_dict in level_dict.items():
+            for _, task_dict in datatype_dict.items():
+                for task_name, task in task_dict.items():
+                    task.csv_line(task_name, stream)
+
+
+    def make_markdown(self, stream):
+        """Generate a markdown table describing all the tasks"""
+        stream.write("|| Task || Level || Datatype || Description ||\n")
+        level_dict = self.sort_tasks()
+        for _, datatype_dict in level_dict.items():
+            for _, task_dict in datatype_dict.items():
+                for task_name, task in task_dict.items():
+                    task.markdown_line(task_name, stream)
 
 
 EO_TASK_FACTORY = EOTaskFactory()

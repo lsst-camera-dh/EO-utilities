@@ -13,12 +13,10 @@ from .file_utils import SLOT_FLAT_TABLE_FORMATTER,\
 
 class FlatRaftTableAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slots = EOUtilOptions.clone_param('slots')
     insuffix = EOUtilOptions.clone_param('insuffix')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class FlatRaftTableAnalysisTask(AnalysisTask):
@@ -33,13 +31,12 @@ class FlatRaftTableAnalysisTask(AnalysisTask):
     intablename_format = SLOT_FLAT_TABLE_FORMATTER
     tablename_format = RAFT_FLAT_TABLE_FORMATTER
     plotname_format = RAFT_FLAT_PLOT_FORMATTER
+    datatype = 'flat table'
 
 
 class FlatSummaryAnalysisConfig(AnalysisConfig):
     """Configurate for flat analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     dataset = EOUtilOptions.clone_param('dataset')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class FlatSummaryAnalysisTask(AnalysisTask):
@@ -54,3 +51,5 @@ class FlatSummaryAnalysisTask(AnalysisTask):
     intablename_format = RAFT_FLAT_TABLE_FORMATTER
     tablename_format = SUM_FLAT_TABLE_FORMATTER
     plotname_format = SUM_FLAT_PLOT_FORMATTER
+
+    datatype = 'flat table'

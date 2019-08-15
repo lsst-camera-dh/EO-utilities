@@ -25,7 +25,7 @@ class CTEConfig(SflatSlotTableAnalysisConfig):
     nframes = EOUtilOptions.clone_param('nframes')
 
 class CTETask(SflatSlotTableAnalysisTask):
-    """Analyze some sflat data"""
+    """Analyze overscans in superflat data to measure the CTE"""
 
     ConfigClass = CTEConfig
     _DefaultName = "CTETask"
@@ -55,8 +55,8 @@ class CTETask(SflatSlotTableAnalysisTask):
         #superbias_frame = self.get_superbias_frame(mask_files)
 
         superflat_file = data[0]
-        superflat_lo_file = superflat_file.replace('.fits.fits', '_l.fits')
-        superflat_hi_file = superflat_file.replace('.fits.fits', '_h.fits')
+        superflat_lo_file = superflat_file.replace('_l.fits', '_l.fits')
+        superflat_hi_file = superflat_file.replace('_l.fits', '_h.fits')
 
         self.log_info_slot_msg(self.config, "")
 

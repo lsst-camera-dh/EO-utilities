@@ -35,7 +35,7 @@ class TrapConfig(PpumpAnalysisConfig):
 
 
 class TrapTask(PpumpAnalysisTask):
-    """Analyze some ppump data"""
+    """Analyze some pocket-pumped data to find traps"""
 
     ConfigClass = TrapConfig
     _DefaultName = "TrapTask"
@@ -76,7 +76,7 @@ class TrapTask(PpumpAnalysisTask):
         # Analysis goes here, you should fill data_dict with data extracted
         # by the analysis
         #
-        ccd = get_ccd_from_id(butler, ppump_file, mask_files)
+        ccd = get_ccd_from_id(butler, ppump_file, mask_files, masked_ccd=True)
 
         my_traps = Traps(ccd, gains, cycles=self.config.cycles,
                          C2_thresh=self.config.C2_thresh,

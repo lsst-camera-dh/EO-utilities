@@ -14,12 +14,10 @@ from lsst.eo_utils.dark.file_utils import SLOT_DARK_TABLE_FORMATTER,\
 
 class DarkRaftTableAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slots = EOUtilOptions.clone_param('slots')
     insuffix = EOUtilOptions.clone_param('insuffix')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class DarkRaftTableAnalysisTask(AnalysisTask):
@@ -35,12 +33,12 @@ class DarkRaftTableAnalysisTask(AnalysisTask):
     tablename_format = RAFT_DARK_TABLE_FORMATTER
     plotname_format = RAFT_DARK_PLOT_FORMATTER
 
+    datatype = 'dark table'
+
 
 class DarkSummaryAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     dataset = EOUtilOptions.clone_param('dataset')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class DarkSummaryAnalysisTask(AnalysisTask):
@@ -55,3 +53,5 @@ class DarkSummaryAnalysisTask(AnalysisTask):
     intablename_format = RAFT_DARK_TABLE_FORMATTER
     tablename_format = SUM_DARK_TABLE_FORMATTER
     plotname_format = SUM_DARK_PLOT_FORMATTER
+
+    datatype = 'dark table'

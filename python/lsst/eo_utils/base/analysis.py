@@ -9,8 +9,9 @@ import lsst.pex.config as pexConfig
 
 from .defaults import DEFAULT_STAT_TYPE
 
-from .file_utils import makedir_safe, SLOT_BASE_FORMATTER,\
-    MASK_FORMATTER, SUPERBIAS_FORMATTER, SUPERBIAS_STAT_FORMATTER
+from .file_utils import makedir_safe,\
+    SLOT_BASE_FORMATTER, MASK_FORMATTER,\
+    SUPERBIAS_FORMATTER, SUPERBIAS_STAT_FORMATTER
 
 from .config_utils import EOUtilOptions, Configurable
 
@@ -20,7 +21,9 @@ from .plot_utils import FigureDict
 
 from .iter_utils import SimpleAnalysisHandler
 
-from .image_utils import get_ccd_from_id
+from .image_utils import get_ccd_from_id, get_raw_image
+
+from .data_access import get_data_for_run, LOCATION_INFO_DICT
 
 
 class BaseConfig(pexConfig.Config):
@@ -45,6 +48,8 @@ class BaseTask(Configurable):
                    this is used as a key by the factory class to find objects of the sub-class
     iteratorClass : this should be set to a `AnalysisHandler` sub-class that
                     can provide data for the sub-class
+    datatype : this is a string that defines what type of data a task runs over
+               this is used to group the tasks and also to help find data
     """
     __metaclass__ = abc.ABCMeta
 
@@ -52,6 +57,8 @@ class BaseTask(Configurable):
     ConfigClass = BaseConfig
     _DefaultName = "BaseTask"
     iteratorClass = SimpleAnalysisHandler
+    datatype = 'None'
+
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -164,6 +171,21 @@ class BaseTask(Configurable):
         """
         self.log.info(msg)
 
+    def csv_line(self, taskname, stream):
+        """Write a line of comma-seperated values, used to build a table of task types"""
+        stream.write("%s, %s, %s, %s\n" % (taskname,
+                                           self.iteratorClass.level,
+                                           self.datatype,
+                                           self.__doc__.replace(',', '').replace('\n', '')))
+
+    def markdown_line(self, taskname, stream):
+        """Write a line of markdown, used to build a table of task types"""
+        stream.write("| %s | %s | %s | %s |\n" % (taskname,
+                                                  self.iteratorClass.level,
+                                                  self.datatype,
+                                                  self.__doc__.replace('\n', '')))
+
+
 
 class BaseAnalysisConfig(BaseConfig):
     """Configuration for EO analysis tasks"""
@@ -216,6 +238,8 @@ class BaseAnalysisTask(BaseTask):
         ret_val : `str`
             The resulting filename
         """
+        if formatter is None:
+            return None
         format_key_dict = formatter.key_dict()
         format_vals = self.extract_config_vals(format_key_dict)
         format_vals.update(**kwargs)
@@ -224,6 +248,34 @@ class BaseAnalysisTask(BaseTask):
         if self.get_config_param('stat', None) in [DEFAULT_STAT_TYPE, None]:
             format_vals['stat'] = 'superbias'
         return formatter(**format_vals)
+
+
+    @staticmethod
+    def get_superbias_amp_image(butler, superbias_frame, amp):
+        """Get the image for one amp for the superbias
+
+        Parameters
+        ----------
+        butler : `Butler` or `None`
+            Data Butler (or none)
+        superbias_frame : `MaskedCCD` or `None`
+            superbias image for the whole CCD
+        amp : `int`
+            Amplifier index
+
+        Returns
+        -------
+        superbias_im : `ImageF`
+            The image for the requested amplifier
+        """
+        if superbias_frame is not None:
+            if butler is not None:
+                superbias_im = get_raw_image(superbias_frame, amp+1)
+            else:
+                superbias_im = get_raw_image(superbias_frame, amp)
+        else:
+            superbias_im = None
+        return superbias_im
 
 
     def get_superbias_file(self, suffix, **kwargs):
@@ -335,6 +387,8 @@ class BaseAnalysisTask(BaseTask):
 
 class AnalysisConfig(BaseAnalysisConfig):
     """Configuration for EO analysis tasks"""
+    outdir = EOUtilOptions.clone_param('outdir')
+    teststand = EOUtilOptions.clone_param('teststand')
     skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
     outsuffix = EOUtilOptions.clone_param('outsuffix')
@@ -362,6 +416,17 @@ class AnalysisTask(BaseAnalysisTask):
     Note that the ConfigClass.outsuffix parameter will be used in the construction
     of both types of filenames.
 
+    Finally, this class provides static data members should be overridden by sub-classes
+    to define how they access data for a given run
+
+    testtypes : `list` of `str` or `None`.
+                A list of the types of test the sub-class used data from.
+                `None` means to use the data from all the availble test types
+                Legal values are defined in `data_access.TEST_TYPES`
+    imagetype : `str` or `None`
+                Used to define the type of image to get for a particular task
+                `None` means to get the default image for a particular testtype
+
     """
     # These can overridden by the sub-class
     ConfigClass = AnalysisConfig
@@ -370,6 +435,11 @@ class AnalysisTask(BaseAnalysisTask):
 
     tablename_format = SLOT_BASE_FORMATTER
     plotname_format = SLOT_BASE_FORMATTER
+
+    # This is use to define the types of tests to get data for
+    testtypes = None
+    # This is used to override the default image type
+    imagetype = None
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -484,7 +554,10 @@ class AnalysisTask(BaseAnalysisTask):
         output_data = tablebase + ".fits"
 
         if self.config.skip:
-            dtables = TableDict(output_data)
+            try:
+                dtables = TableDict(output_data)
+            except IOError:
+                dtables = None
         else:
             dtables = self.extract(butler, data)
             if dtables is not None:
@@ -521,6 +594,7 @@ class AnalysisTask(BaseAnalysisTask):
 
         plotbase = self.plotfile_name()
         makedir_safe(plotbase)
+        self.log.info("Saving plots to %s" % plotbase)
         figs.save_all(plotbase, self.config.plot)
         return None
 
@@ -585,3 +659,35 @@ class AnalysisTask(BaseAnalysisTask):
             Used to override default configuration
         """
         raise NotImplementedError()
+
+
+    @classmethod
+    def get_data(cls, butler, run_num, **kwargs):
+        """Get a set of bias and mask files out of a folder
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        datakey : `str`
+            Run number or other id that defines the data to analyze
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        retval : `dict`
+            Dictionary mapping input data by raft, slot and file type
+        """
+        kwargs.pop('run', None)
+
+        imagetype = cls.imagetype
+
+        if imagetype is None:
+            imagetype = LOCATION_INFO_DICT[cls.testtypes[0]].get_imagetype(**kwargs)
+
+        return get_data_for_run(butler, run_num,
+                                testtypes=cls.testtypes,
+                                imagetype=imagetype,
+                                outkey=cls.datatype.upper(),
+                                **kwargs)

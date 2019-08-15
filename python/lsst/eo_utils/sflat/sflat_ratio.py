@@ -84,13 +84,13 @@ class SflatRatioTask(SflatSlotTableAnalysisTask):
         superflat_file = data[0]
 
         l_frame = get_ccd_from_id(None,
-                                  superflat_file.replace('.fits.fits', '_l.fits'),
+                                  superflat_file.replace('_l.fits', '_l.fits'),
                                   mask_files)
         h_frame = get_ccd_from_id(None,
-                                  superflat_file.replace('.fits.fits', '_h.fits'),
+                                  superflat_file.replace('_l.fits', '_h.fits'),
                                   mask_files)
         ratio_frame = get_ccd_from_id(None,
-                                      superflat_file.replace('.fits.fits', '_ratio.fits'),
+                                      superflat_file.replace('_l.fits', '_ratio.fits'),
                                       mask_files)
 
         # This is a dictionary of dictionaries to store all the
@@ -106,16 +106,16 @@ class SflatRatioTask(SflatSlotTableAnalysisTask):
         # by the analysis
         #
 
-        amps = get_amp_list(None, ratio_frame)
+        amps = get_amp_list(ratio_frame)
         for i, amp in enumerate(amps):
-            dims = get_dims_from_ccd(None, ratio_frame)
-            regions = get_geom_regions(None, ratio_frame, amp)
+            dims = get_dims_from_ccd(ratio_frame)
+            regions = get_geom_regions(ratio_frame, amp)
             imaging = regions['imaging']
-            l_im = get_raw_image(None, l_frame, amp)
-            h_im = get_raw_image(None, h_frame, amp)
-            ratio_im = get_raw_image(None, ratio_frame, amp)
+            l_im = get_raw_image(l_frame, amp)
+            h_im = get_raw_image(h_frame, amp)
+            ratio_im = get_raw_image(ratio_frame, amp)
             if superbias_frame is not None:
-                superbias_im = get_raw_image(None, superbias_frame, amp)
+                superbias_im = get_raw_image(superbias_frame, amp)
             else:
                 superbias_im = None
 
@@ -187,10 +187,10 @@ class SflatRatioTask(SflatSlotTableAnalysisTask):
 
         figs.plot_amp_arrays("mask", self.quality_masks, vmin=0, vmax=3)
 
-        for i in range(16):
+        for i, (amp, sbias_image) in enumerate(sorted(self.superbias_images)):
             figs.plot_two_image_hist2d('scatter', i,
-                                       self.superbias_images[i],
-                                       self.ratio_images[i],
+                                       sbias_image,
+                                       self.ratio_images[amp],
                                        bins=(200, 200),
                                        range=((-50, 50.), (0.018, 0.022)))
 

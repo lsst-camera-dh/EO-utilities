@@ -12,9 +12,9 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
-from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_amp_list,\
+from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
     get_exposure_time, get_mondiode_val, get_mono_wl,\
-    get_geom_regions, get_raw_image, unbias_amp
+    unbiased_ccd_image_dict
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
@@ -30,7 +30,7 @@ class QEMedianConfig(QeAnalysisConfig):
 
 
 class QEMedianTask(QeAnalysisTask):
-    """Analyze some qe data"""
+    """Analyze some monochromatic data to extract medians """
 
     ConfigClass = QEMedianConfig
     _DefaultName = "QEMedianTask"
@@ -83,28 +83,16 @@ class QEMedianTask(QeAnalysisTask):
 
             ccd = get_ccd_from_id(butler, qe_file, mask_files)
 
-            data_dict['WL'].append(get_mono_wl(butler, ccd))
-            data_dict['EXPTIME'].append(get_exposure_time(butler, ccd))
-            data_dict['MONDIODE'].append(get_mondiode_val(butler, ccd))
+            data_dict['WL'].append(get_mono_wl(ccd))
+            data_dict['EXPTIME'].append(get_exposure_time(ccd))
+            data_dict['MONDIODE'].append(get_mondiode_val(ccd))
 
-            amps = get_amp_list(butler, ccd)
+            unbiased_images = unbiased_ccd_image_dict(ccd,
+                                                      bias=self.config.bias,
+                                                      superbias_frame=superbias_frame)
 
-            for i, amp in enumerate(amps):
-                regions = get_geom_regions(butler, ccd, amp)
-                serial_oscan = regions['serial_overscan']
-                imaging = regions['imaging']
 
-                img = get_raw_image(butler, ccd, amp)
-                if superbias_frame is not None:
-                    if butler is not None:
-                        superbias_im = get_raw_image(None, superbias_frame, amp+1)
-                    else:
-                        superbias_im = get_raw_image(None, superbias_frame, amp)
-                else:
-                    superbias_im = None
-
-                image = unbias_amp(img, serial_oscan, bias_type=self.config.bias,
-                                   superbias_im=superbias_im, region=imaging)
+            for i, (amp, image) in enumerate(unbiased_images.items()):
                 if corrections is not None:
                     image *= corrections[amp]
 

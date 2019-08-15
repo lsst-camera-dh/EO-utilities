@@ -80,11 +80,11 @@ class OscanAmpStackTask(BiasAnalysisTask):
             ccd = get_ccd_from_id(butler, bias_file, mask_files)
 
             if ifile == 0:
-                dim_array_dict = get_dimension_arrays_from_ccd(butler, ccd)
+                dim_array_dict = get_dimension_arrays_from_ccd(ccd)
                 for key, val in dim_array_dict.items():
                     stack_arrays[key] = np.zeros((nfiles, 16, len(val)))
 
-            stack_by_amps(stack_arrays, butler, ccd,
+            stack_by_amps(stack_arrays, ccd,
                           ifile=ifile, bias_type=self.config.bias,
                           superbias_frame=superbias_frame)
 
@@ -127,7 +127,8 @@ class OscanAmpStackTask(BiasAnalysisTask):
                     xkey = "%s_%s" % (dkey, rkey)
                     datakey = "stack-%s" % xkey
                     figs.plot_xy_axs_from_tabledict(dtables, datakey, idx, figkey,
-                                                    x_name=xkey, y_name=y_name)
+                                                    x_name=xkey, y_name=y_name,
+                                                    ymin=-10., ymax=10.)
                     idx += 1
 
 

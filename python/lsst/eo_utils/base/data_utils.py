@@ -242,7 +242,7 @@ def construct_bbox_dict(defect_table):
     ----------
     defect_table : `Table`
         Astropy table with the defects
-    
+
     Returns
     -------
     bbox_dict : `dict`
@@ -266,6 +266,6 @@ def construct_bbox_dict(defect_table):
         bbox_list = slot_dict[amp]
         corner = afwGeom.Point2I(x_corner, y_corner)
         extent = afwGeom.Extent2I(x_size, y_size)
-        bbox =  afwGeom.Box2I(corner, extent)
+        bbox = afwGeom.Box2I(corner, extent)
         bbox_list.append(bbox)
     return bbox_dict

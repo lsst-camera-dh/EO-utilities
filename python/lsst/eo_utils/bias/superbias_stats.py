@@ -78,7 +78,7 @@ class SuperbiasStatsTask(SuperbiasRaftTableAnalysisTask):
             mask_files = self.get_mask_files(slot=slot)
 
             superbias_frame = get_ccd_from_id(None, superbias_file, mask_files)
-            self.get_superbias_stats(None, superbias_frame, stats_data, islot)
+            self.get_superbias_stats(superbias_frame, stats_data, islot)
 
         self.log_progress("Done!")
 
@@ -108,7 +108,7 @@ class SuperbiasStatsTask(SuperbiasRaftTableAnalysisTask):
 
 
     @staticmethod
-    def get_superbias_stats(butler, superbias, stats_data, islot):
+    def get_superbias_stats(superbias, stats_data, islot):
         """Get the serial overscan data
 
         Parameters
@@ -125,7 +125,7 @@ class SuperbiasStatsTask(SuperbiasRaftTableAnalysisTask):
         islot : `int`
             The slot index
         """
-        amps = get_amp_list(butler, superbias)
+        amps = get_amp_list(superbias)
 
         if 'mean' not in stats_data:
             stats_data['mean'] = np.ndarray((9, 16))
@@ -135,7 +135,7 @@ class SuperbiasStatsTask(SuperbiasRaftTableAnalysisTask):
             stats_data['max'] = np.ndarray((9, 16))
 
         for i, amp in enumerate(amps):
-            img = get_raw_image(butler, superbias, amp)
+            img = get_raw_image(superbias, amp)
             stats_data['mean'][islot, i] = img.array.mean()
             stats_data['median'][islot, i] = np.median(img.array)
             stats_data['std'][islot, i] = img.array.std()

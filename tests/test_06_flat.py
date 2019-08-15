@@ -3,33 +3,39 @@
 
 from __future__ import absolute_import, division, print_function
 
+from lsst.eo_utils.base.butler_utils import get_butler_by_repo
 from lsst.eo_utils import flat
-from lsst.eo_utils.flat.file_utils import get_flat_files_run
 
-from .utils import RUN_TASKS, RUN_OPTIONS, RUN_OPTIONS_NOPLOT, SUMMARY_OPTIONS
+from .utils import assert_data_dict,\
+    DATA_OPTIONS_TS8_GLOB, DATA_OPTIONS_BOT_GLOB,\
+    DATA_OPTIONS_TS8_BUTLER, DATA_OPTIONS_BOT_BUTLER,\
+    RUN_TASKS, RUN_OPTIONS, RUN_OPTIONS_NOPLOT, SUMMARY_OPTIONS
 
 
 def test_flat_file_utils():
     """Test the flat.file_utils module"""
-    flat_files_6106 = get_flat_files_run('6106D')
-    assert len(flat_files_6106) == 1
-    assert 'RTM-004' in flat_files_6106
-    assert len(flat_files_6106['RTM-004']) == 9
-    assert len(flat_files_6106['RTM-004']['S00']) == 2
-    assert 'FLAT1' in flat_files_6106['RTM-004']['S00']
-    assert len(flat_files_6106['RTM-004']['S00']['FLAT1']) == 43
+    flat_files_6106 = flat.FlatAnalysisTask.get_data(None, '6106D',
+                                                     **DATA_OPTIONS_TS8_GLOB)
+    assert_data_dict(flat_files_6106, 'RTM-004', 'FLAT1', (1, 9, 2, 43))
 
-    flat_files_6545 = get_flat_files_run('6545D')
-    assert len(flat_files_6545) == 2
-    assert 'R10' in flat_files_6545
-    assert len(flat_files_6545['R10']) == 9
-    assert len(flat_files_6545['R10']['S00']) == 2
-    assert 'FLAT1' in flat_files_6545['R10']['S00']
-    assert len(flat_files_6545['R10']['S00']['FLAT1']) == 43
+    flat_files_6545 = flat.FlatAnalysisTask.get_data(None, '6545D',
+                                                     **DATA_OPTIONS_BOT_GLOB)
+    assert_data_dict(flat_files_6545, 'R10', 'FLAT1', (2, 9, 2, 43))
+
 
 def test_flat_butler_utils():
     """Test the flat.butler_utils module"""
-    return
+    ts8_butler = get_butler_by_repo('ts8')
+    bot_butler = get_butler_by_repo('bot')
+
+    flat_files_6106 = flat.FlatAnalysisTask.get_data(ts8_butler, '6106D',
+                                                     **DATA_OPTIONS_TS8_BUTLER)
+    assert_data_dict(flat_files_6106, 'RTM-004', 'FLAT1', (1, 9, 2, 43))
+
+    flat_files_6545 = flat.FlatAnalysisTask.get_data(bot_butler, '6545D',
+                                                     **DATA_OPTIONS_BOT_BUTLER)
+    assert_data_dict(flat_files_6545, 'R10', 'FLAT1', (2, 9, 2, 43))
+
 
 def test_flat_oscan():
     """Test the FlatOverscanTask"""

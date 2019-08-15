@@ -32,6 +32,24 @@ def get_butler_by_repo(repo, **kwargs):
     return butler
 
 
+def get_filename_from_id(butler, data_id):
+    """Return the hardware type and hardware id for a given run
+
+    Parameters
+    ----------
+    butler : `Bulter`
+        The data Butler
+    data_id : `dict`
+        The data id in question
+
+    Returns
+    -------
+    filename : `str`
+        The filename for the assocated CCD data
+    """
+    return butler.get("raw_filename", data_id)[0][0:-3]
+
+
 def get_hardware_info(butler, run_num):
     """Return the hardware type and hardware id for a given run
 
@@ -168,7 +186,7 @@ def get_data_ref_list(butler, run, **kwargs):
 
     data_ref_list = []
     for testtype in testtypes:
-        data_id['testtype'] = testtype
+        data_id['testtype'] = testtype.upper()
         subset = butler.subset("raw", '', data_id)
         if nfiles is None:
             data_ref_list += subset.cache
@@ -251,7 +269,7 @@ def get_files_butler(butler, run_id, **kwargs):
     imagetype = kwargs.get('imagetype')
     nfiles = kwargs.get('nfiles', None)
     rafts = kwargs.get('rafts', None)
-    slots = kwargs.get('rafts', None)
+    slots = kwargs.get('slots', None)
     outkey = kwargs.get('outkey', imagetype)
 
     outdict = {}

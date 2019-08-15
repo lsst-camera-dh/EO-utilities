@@ -40,15 +40,17 @@ GLOB_FORMAT_PTC_BOT = os.path.join('{path}', 'LCA-10134_Cryostat-0001', '{run}',
 GLOB_FORMAT_MASK_RAFT_BOT = os.path.join('{path}', 'LCA-10134_Cryostat-0001', '{run}',
                                          '*', 'v0', '*', '*_{mask}.fits')
 
-OUTFORMAT_EOTEST = os.path.join('{outdir}', 'eotest_results', '{raft}',
-                                '{raft}-{run}-{slot}_eotest_results.fits')
-OUTFORMAT_FE55 = os.path.join('{outdir}', 'tables', '{raft}', 'fe55',
-                              '{raft}-{run}-{slot}_b-orig_s-orig_fe55_clusters.fits')
+OUTFORMAT_EOTEST = os.path.join('{outdir}', '{teststand}', 'eotest_results',
+                                '{raft}', '{raft}-{run}-{slot}_eotest_results.fits')
+OUTFORMAT_FE55 = os.path.join('{outdir}', '{teststand}', 'tables', '{raft}',
+                              'fe55', '{raft}-{run}-{slot}_b-orig_s-orig_fe55_clusters.fits')
 
-OUTFORMAT_PD_CALIB = os.path.join('{outdir}', 'pd_calib', '{raft}', '{raft}-{run}-pd_calib.dat')
-OUTFORMAT_PTC = os.path.join('{outdir}', 'flat', '{raft}',
+OUTFORMAT_PD_CALIB = os.path.join('{outdir}', '{teststand}', 'pd_calib',
+                                  '{raft}', '{raft}-{run}-pd_calib.dat')
+OUTFORMAT_PTC = os.path.join('{outdir}', '{teststand}', 'flat', '{raft}',
                              '{raft}-{run}-{slot}_b-orig_s-orig_ptc.fits')
-OUTFORMAT_MASK = os.path.join('{outdir}', 'masks_in', '{raft}', '{raft}-{run}-{slot}_{mask}.fits')
+OUTFORMAT_MASK = os.path.join('{outdir}', '{teststand}', 'masks_in', '{raft}',
+                              '{raft}-{run}-{slot}_{mask}.fits')
 
 
 def link_ts8_files(args):

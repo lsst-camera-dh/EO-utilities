@@ -7,7 +7,7 @@ from lsst.eo_utils.base.pipeline import MetaConfig, MetaTask
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from lsst.eo_utils.bias import BiasFFTTask, BiasStructTask,\
-    CorrelWRTOscanTask, OscanAmpStackTask
+    CorrelWRTOscanTask, OscanAmpStackTask, BiasVRowTask
 
 from lsst.eo_utils.flat import FlatOverscanTask, BFTask, FlatPairTask
 
@@ -15,25 +15,28 @@ from lsst.eo_utils.qe import QEMedianTask
 
 
 class SlotAnalysisConfig(MetaConfig):
-    """Configuration for SlotAnalysisTask"""
+    """Configuration for SlotAna
+lysisTask"""
     dataset = EOUtilOptions.clone_param('dataset')
     runs = EOUtilOptions.clone_param('runs')
     rafts = EOUtilOptions.clone_param('rafts')
     slots = EOUtilOptions.clone_param('slots')
+    skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
 
-SlotAnalysisConfig.add_task('_bias_fft', BiasFFTTask)
-SlotAnalysisConfig.add_task('_bias_struct', BiasStructTask)
-SlotAnalysisConfig.add_task('_correl_wrt_oscan', CorrelWRTOscanTask)
-SlotAnalysisConfig.add_task('_oscan_amp_stack', OscanAmpStackTask)
-SlotAnalysisConfig.add_task('_flat_overscan', FlatOverscanTask)
-SlotAnalysisConfig.add_task('_bf', BFTask)
-SlotAnalysisConfig.add_task('_flat_pair', FlatPairTask)
-SlotAnalysisConfig.add_task('_qe_median', QEMedianTask)
+SlotAnalysisConfig.add_task('_BiasFFT', BiasFFTTask)
+SlotAnalysisConfig.add_task('_BiasStruct', BiasStructTask)
+SlotAnalysisConfig.add_task('_BiasVRow', BiasVRowTask)
+SlotAnalysisConfig.add_task('_CorrelWRTOscan', CorrelWRTOscanTask)
+SlotAnalysisConfig.add_task('_OscanAmpStack', OscanAmpStackTask)
+SlotAnalysisConfig.add_task('_FlatOverscan', FlatOverscanTask)
+SlotAnalysisConfig.add_task('_BF', BFTask)
+SlotAnalysisConfig.add_task('_FlatPair', FlatPairTask)
+SlotAnalysisConfig.add_task('_QEMedian', QEMedianTask)
 
 
 class SlotAnalysisTask(MetaTask):
-    """Analyze Superbias, Superdark and Superflat frames"""
+    """Chain together all the slot-based image analyses"""
 
     ConfigClass = SlotAnalysisConfig
     _DefaultName = "SlotAnalysis"

@@ -19,12 +19,10 @@ from .file_utils import SLOT_BIAS_TABLE_FORMATTER,\
 
 class BiasRaftTableAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slots = EOUtilOptions.clone_param('slots')
     insuffix = EOUtilOptions.clone_param('insuffix')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class BiasRaftTableAnalysisTask(AnalysisTask):
@@ -39,14 +37,13 @@ class BiasRaftTableAnalysisTask(AnalysisTask):
     intablename_format = SLOT_BIAS_TABLE_FORMATTER
     tablename_format = RAFT_BIAS_TABLE_FORMATTER
     plotname_format = RAFT_BIAS_PLOT_FORMATTER
+    datatype = 'bias table'
 
 
 
 class BiasSummaryAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     dataset = EOUtilOptions.clone_param('dataset')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class BiasSummaryAnalysisTask(AnalysisTask):
@@ -61,16 +58,15 @@ class BiasSummaryAnalysisTask(AnalysisTask):
     intablename_format = RAFT_BIAS_TABLE_FORMATTER
     tablename_format = SUM_BIAS_TABLE_FORMATTER
     plotname_format = SUM_BIAS_PLOT_FORMATTER
+    datatype = 'bias table'
 
 
 class SuperbiasSlotTableAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
     insuffix = EOUtilOptions.clone_param('insuffix')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class SuperbiasSlotTableAnalysisTask(AnalysisTask):
@@ -86,16 +82,15 @@ class SuperbiasSlotTableAnalysisTask(AnalysisTask):
     tablename_format = SLOT_SBIAS_TABLE_FORMATTER
     plotname_format = SLOT_SBIAS_PLOT_FORMATTER
 
+    datatype = 'superbias'
 
 
 class SuperbiasRaftTableAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slots = EOUtilOptions.clone_param('slots')
     insuffix = EOUtilOptions.clone_param('insuffix')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class SuperbiasRaftTableAnalysisTask(AnalysisTask):
@@ -111,13 +106,12 @@ class SuperbiasRaftTableAnalysisTask(AnalysisTask):
     tablename_format = RAFT_SBIAS_TABLE_FORMATTER
     plotname_format = RAFT_SBIAS_PLOT_FORMATTER
 
+    datatype = 'superbias table'
 
 
 class SuperbiasSummaryAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
-    outdir = EOUtilOptions.clone_param('outdir')
     dataset = EOUtilOptions.clone_param('dataset')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
 class SuperbiasSummaryAnalysisTask(AnalysisTask):
@@ -132,3 +126,5 @@ class SuperbiasSummaryAnalysisTask(AnalysisTask):
     intablename_format = RAFT_SBIAS_TABLE_FORMATTER
     tablename_format = SUM_SBIAS_TABLE_FORMATTER
     plotname_format = SUM_SBIAS_PLOT_FORMATTER
+
+    datatype = 'superbias table'

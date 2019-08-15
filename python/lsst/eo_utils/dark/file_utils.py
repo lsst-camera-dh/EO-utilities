@@ -4,13 +4,13 @@
 
 """This module contains functions to find files of a particular type in the SLAC directory tree"""
 
-from lsst.eo_utils.base.file_utils import get_hardware_type_and_id, get_files_for_run,\
-    FILENAME_FORMATS, SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
+from lsst.eo_utils.base.file_utils import FILENAME_FORMATS,\
+    SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
 
 SUPERDARK_FORMAT_STRING =\
-    '{outdir}/superdark/{raft}/{raft}-{run}-{slot}_superdark_b-{bias}_s-{superbias}{suffix}.fits'
+    '{outdir}/{teststand}/superdark/{raft}/{raft}-{run}-{slot}_superdark_b-{bias}_s-{superbias}{suffix}'
 SUPERDARK_STAT_FORMAT_STRING =\
-    '{outdir}/superdark/{raft}/{raft}-{run}-{slot}_{stat}_b-{bias}_s-{superbias}{suffix}.fits'
+    '{outdir}/{teststand}/superdark/{raft}/{raft}-{run}-{slot}_{stat}_b-{bias}_s-{superbias}{suffix}'
 
 SLOT_DARK_FORMAT_STRING =\
     SLOT_FORMAT_STRING.replace('{suffix}', '_b-{bias}_s-{superbias}_{suffix}')
@@ -89,36 +89,3 @@ SUM_SDARK_PLOT_FORMATTER = FILENAME_FORMATS.add_format('sum_sdark_plot',
                                                        SUMMARY_SDARK_FORMAT_STRING,
                                                        fileType='plots',
                                                        **SDARK_DEFAULT_FIELDS)
-
-
-def get_dark_files_run(run_id, **kwargs):
-    """Get a set of dark and mask files out of a folder
-
-    Parameters
-    ----------
-    run_id : `str`
-        The number number we are reading
-    kwargs
-        Passed along to the underlying get_files_for_run function
-
-    Returns
-    -------
-    outdict : `dict`
-        Dictionary mapping slot to file names
-    """
-    testtypes = kwargs.get('testtypes', None)
-    hinfo = get_hardware_type_and_id(run_id)
-
-    if testtypes is None:
-        if hinfo[0] == 'LCA-11021':
-            testtypes = ['dark_raft_acq']
-            imagetype = 'DARK_DARK'
-        else:
-            testtypes = ['DARK']
-            imagetype = 'DARK'
-
-    return get_files_for_run(run_id,
-                             imagetype=imagetype,
-                             testtypes=testtypes,
-                             outkey='DARK',
-                             **kwargs)

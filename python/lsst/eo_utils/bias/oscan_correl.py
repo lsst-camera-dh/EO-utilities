@@ -30,8 +30,8 @@ from .analysis import BiasAnalysisTask, BiasAnalysisConfig
 class OscanCorrelConfig(BiasAnalysisConfig):
     """Configuration for OscanCorrelTask"""
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='oscorr')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
+    bias = EOUtilOptions.clone_param('bias', default=None)
+    superbias = EOUtilOptions.clone_param('superbias', default=None)
     mask = EOUtilOptions.clone_param('mask')
     std = EOUtilOptions.clone_param('std')
     covar = EOUtilOptions.clone_param('covar')
@@ -138,22 +138,16 @@ class OscanCorrelTask(BiasAnalysisTask):
         overscans : `list`
             The overscan data
         """
-        amps = get_amp_list(butler, ccd)
+        amps = get_amp_list(ccd)
         superbias_frame = kwargs.get('superbias_frame', None)
         overscans = []
         for amp in amps:
-            if superbias_frame is not None:
-                if butler is not None:
-                    superbias_im = get_raw_image(None, superbias_frame, amp+1)
-                else:
-                    superbias_im = get_raw_image(None, superbias_frame, amp)
-            else:
-                superbias_im = None
 
-            regions = get_geom_regions(butler, ccd, amp)
+            superbias_im = self.get_superbias_amp_image(butler, superbias_frame, amp)
+            regions = get_geom_regions(ccd, amp)
             serial_oscan = regions['serial_overscan']
 
-            img = get_raw_image(butler, ccd, amp)
+            img = get_raw_image(ccd, amp)
             image = unbias_amp(img, serial_oscan, bias_type=None, superbias_im=superbias_im)
             oscan_copy = copy.deepcopy(serial_oscan)
             oscan_copy.grow(-self.boundry)

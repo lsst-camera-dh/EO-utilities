@@ -1,4 +1,4 @@
-"""Class to analyze the correlations between the overscans for all amplifiers on a raft"""
+"""Class to analyze data for all ccds on a raft"""
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
@@ -33,6 +33,8 @@ class TemplateTask(TmplAnalysisTask):
 
     tablename_format = RAFT_TMPL_TABLE_FORMATTER
     plotname_format = RAFT_TMPL_PLOT_FORMATTER
+
+    datatype = 'tmpl'
 
     def __init__(self, **kwargs):
         """C'tor
@@ -70,15 +72,17 @@ class TemplateTask(TmplAnalysisTask):
         data_dict = {}
 
         for slot in slots:
-            tmpl_files = data[slot]['TMPL']
 
-            mask_files = self.get_mask_files(slot=slot)
-            superbias_frame = self.get_superbias_frame(mask_files, slot=slot)
+            #Get the datafiles, and the correpsonding superbias files
+            tmpl_files = data[slot]['TMPL']
+            print(tmpl_files)
+
+            #mask_files = self.get_mask_files(slot=slot)
+            #superbias_frame = self.get_superbias_frame(mask_files, slot=slot)
 
             # Analysis goes here, you should fill data_dict with data extracted
             # by the analysis
             #
-
 
         dtables = TableDict()
         for key, val in data_dict.items():

@@ -20,17 +20,18 @@ class SlotTableAnalysisConfig(MetaConfig):
     rafts = EOUtilOptions.clone_param('rafts')
     slots = EOUtilOptions.clone_param('slots')
     plot = EOUtilOptions.clone_param('plot')
+    skip = EOUtilOptions.clone_param('skip')
 
 
-SlotTableAnalysisConfig.add_task('_superbias_fft', SuperbiasFFTTask)
-SlotTableAnalysisConfig.add_task('_superbias_struct', SuperbiasStructTask)
-SlotTableAnalysisConfig.add_task('_cte', CTETask)
-SlotTableAnalysisConfig.add_task('_sflat_ratio', SflatRatioTask)
-SlotTableAnalysisConfig.add_task('_qe', QETask)
+SlotTableAnalysisConfig.add_task('_SuperbiasFFT', SuperbiasFFTTask)
+SlotTableAnalysisConfig.add_task('_SuperbiasStruct', SuperbiasStructTask)
+SlotTableAnalysisConfig.add_task('_CTE', CTETask)
+SlotTableAnalysisConfig.add_task('_SflatRatio', SflatRatioTask)
+SlotTableAnalysisConfig.add_task('_QE', QETask)
 
 
 class SlotTableAnalysisTask(MetaTask):
-    """Analyze Superbias, Superdark and Superflat frames"""
+    """Chain together all the slot-based table analyses"""
 
     ConfigClass = SlotTableAnalysisConfig
     _DefaultName = "SlotTableAnalysis"

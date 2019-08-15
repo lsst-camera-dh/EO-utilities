@@ -12,7 +12,9 @@ import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
 
 from .defaults import DEFAULT_OUTDIR, DEFAULT_LOGFILE,\
-    DEFAULT_NBINS, DEFAULT_BATCH_ARGS, DEFAULT_BITPIX
+    DEFAULT_NBINS, DEFAULT_BATCH_ARGS, DEFAULT_BITPIX,\
+    DEFAULT_DATA_SOURCE, DEFAULT_TESTSTAND
+
 
 
 
@@ -31,14 +33,18 @@ class EOUtilOptions(pexConfig.Config):
                               default=DEFAULT_LOGFILE)
     batch = pexConfig.Field("Dispatch job to batch", str,
                             default=None)
+    nofail = pexConfig.Field("Continue if a job fails", bool,
+                             default=False)
     dry_run = pexConfig.Field("Print batch command, do not send job", bool,
                               default=False)
     batch_args = pexConfig.Field("Arguments to pass to batch command", str,
                                  default=DEFAULT_BATCH_ARGS)
 
     # Options for the data source
-    butler_repo = pexConfig.Field("Butler repository", str, default=None)
-    datacat = pexConfig.Field("Use data catalog", bool, default=False)
+    data_source = pexConfig.Field("Data Source (glob | datacat | butler | butler_file)", str,
+                                  default=DEFAULT_DATA_SOURCE)
+    teststand = pexConfig.Field("Teststand name (ts8 | bot | bot_etu)", str,
+                                default=DEFAULT_TESTSTAND)
 
     # Options for selecing input data
     dataset = pexConfig.Field("dataset", str, default=None)
@@ -51,6 +57,7 @@ class EOUtilOptions(pexConfig.Config):
     nfiles = pexConfig.Field("Number of files to use", int, default=None)
     insuffix = pexConfig.Field("Suffix for input files", str, default="")
     infile = pexConfig.Field("Input file name", str, default=None)
+    indir = pexConfig.Field("Input directory name", str, default=DEFAULT_OUTDIR)
     outfile = pexConfig.Field("Output file name", str, default=None)
 
     # Options for input data processing
@@ -123,6 +130,14 @@ class EOUtilOptions(pexConfig.Config):
     bkg_nx = pexConfig.Field("Local background width (pixels)", int, default=10)
     bkg_ny = pexConfig.Field("Local background height (pixels)", int, default=10)
     edge_rolloff = pexConfig.Field("Edge rolloff width (pixels)", int, default=10)
+
+    # Options for html reports
+    template_file = pexConfig.Field("HTML report template file", str, default=None)
+    htmldir = pexConfig.Field("HTML report directory", str,
+                              default=os.path.join(DEFAULT_OUTDIR, 'html'))
+    css_file = pexConfig.Field("HTML report style file", str, default=None)
+    plot_report_action = pexConfig.Field("How to deal with figures in repots", str,
+                                         default='link')
 
     @classmethod
     def clone_param(cls, par_name, **kwargs):
@@ -208,11 +223,14 @@ def add_pex_arguments(parser, pex_class, exclude=None, prefix=None):
                                 help=val.doc)
 
 
-def make_argstring(**kwargs):
+def make_argstring(config, **kwargs):
     """Turns a dictionary of arguments into string with command line options
 
     Parameters
     ----------
+    config
+        The configuration (used to get defaults)
+
     kwargs
         The dictionary mapping argument name to value
 
@@ -224,7 +242,11 @@ def make_argstring(**kwargs):
     """
     ostring = ""
     for key, value in kwargs.items():
-        if value is None:
+        try:
+            def_value = config._fields[key].default
+        except KeyError:
+            def_value = None
+        if value in [def_value, None]:
             continue
         elif isinstance(value, bool):
             if not value:
@@ -366,7 +388,7 @@ def copy_pex_fields(field_names, target_class, library_class):
             raise TypeError("Field %s in class %s\n is not a pexConfig.Field" %
                             (fname, type(library_class)))
 
-def update_dict_from_string(o_dict, key, val):
+def update_dict_from_string(o_dict, key, val, subparser_dict=None):
     """Update a dictionary with sub-dictionaries
 
     Parameters
@@ -379,25 +401,50 @@ def update_dict_from_string(o_dict, key, val):
 
     val : `str`
         The value
+
+    subparser_dict : `dict` or `None`
+        The subparsers used to parser the command line
+
     """
     idx = key.find('.')
     use_key = key[0:idx]
     remain = key[idx+1:]
+    if subparser_dict is not None:
+        try:
+            subparser = subparser_dict[use_key[1:]]
+        except KeyError:
+            subparser = None
+    else:
+        subparser = None
+
     if use_key not in o_dict:
         o_dict[use_key] = {}
+
+    def_val = None
+    if subparser is not None:
+        def_val = subparser.get_default(remain)
+    if def_val == val:
+        return
+
     if remain.find('.') < 0:
         o_dict[use_key][remain] = val
     else:
         update_dict_from_string(o_dict[use_key], remain, val)
 
 
-def parse_args_to_dict(args):
+def parse_args_to_dict(args, parser, subparser_dict):
     """Parse the output of argparse
 
     Parameters
     ----------
     args : `Namespace`
         The output of argparse
+
+    parser : `ArgumentParser`
+        The parser
+
+    subparser_dict : `dict` or `None`
+        The sub-parsers
 
     Returns
     -------
@@ -407,9 +454,11 @@ def parse_args_to_dict(args):
     o_dict = {}
     for key, val in args.__dict__.items():
         if key.find('.') < 0:
+            if parser.get_default(key) == val:
+                continue
             o_dict[key] = val
         else:
-            update_dict_from_string(o_dict, key, val)
+            update_dict_from_string(o_dict, key, val, subparser_dict)
     return o_dict
 
 

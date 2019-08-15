@@ -6,8 +6,10 @@ from lsst.eo_utils.base.pipeline import MetaConfig, MetaTask
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
+from lsst.eo_utils.base.eo_results import EOResultsSummaryTask
+
 from lsst.eo_utils.bias import BiasFFTSummaryTask, OscanAmpStackSummaryTask,\
-    SuperbiasSummaryTask
+    SuperbiasSummaryTask, CorrelWRTOscanSummaryTask
 
 from lsst.eo_utils.dark import DarkCurrentSummaryTask
 
@@ -21,18 +23,21 @@ class SummaryAnalysisConfig(MetaConfig):
     dataset = EOUtilOptions.clone_param('dataset')
     runs = EOUtilOptions.clone_param('runs')
     plot = EOUtilOptions.clone_param('plot')
+    skip = EOUtilOptions.clone_param('skip')
 
 
-SummaryAnalysisConfig.add_task('_bias_fft_sum', BiasFFTSummaryTask)
-SummaryAnalysisConfig.add_task('_oscan_amp_stack_sum', OscanAmpStackSummaryTask)
-SummaryAnalysisConfig.add_task('_superbias_sum', SuperbiasSummaryTask)
-SummaryAnalysisConfig.add_task('_dark_current_sum', DarkCurrentSummaryTask)
-SummaryAnalysisConfig.add_task('_fe55_gain_sum', Fe55GainSummaryTask)
-SummaryAnalysisConfig.add_task('_ptc_sum', PTCSummaryTask)
+SummaryAnalysisConfig.add_task('_BiasFFTSummary', BiasFFTSummaryTask)
+SummaryAnalysisConfig.add_task('_OscanAmpStackSummary', OscanAmpStackSummaryTask)
+SummaryAnalysisConfig.add_task('_SuperbiasSummary', SuperbiasSummaryTask)
+SummaryAnalysisConfig.add_task('_DarkCurrentSummary', DarkCurrentSummaryTask)
+SummaryAnalysisConfig.add_task('_Fe55GainSummary', Fe55GainSummaryTask)
+SummaryAnalysisConfig.add_task('_PTCSummary', PTCSummaryTask)
+SummaryAnalysisConfig.add_task('_EOResultsSummary', EOResultsSummaryTask)
+SummaryAnalysisConfig.add_task('_CorrelWRTOscanSummary', CorrelWRTOscanSummaryTask)
 
 
 class SummaryAnalysisTask(MetaTask):
-    """Analyze Superbias, Superdark and Superflat frames"""
+    """Chain together all the summary-level analyses"""
 
     ConfigClass = SummaryAnalysisConfig
     _DefaultName = "SummaryAnalysis"

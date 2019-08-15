@@ -1,0 +1,158 @@
+defaults :
+  action : link
+  header_row_class : header_row
+  table_row_class : table_row
+  row_class : plot_row
+  table_col_class : table_col
+  col_desc_class : plot_col_desc
+  col_fig_class : plot_col_fig
+  col_img_class : plot
+slot_plot_tables :
+  biasval : 
+    header_text : "Fitted overscan values from bias images"
+    rows :
+      - text : "Fitted serial overscan value using spline.  One curve per image."
+        figure : 'plots/{raft}/bias/{raft}-{run}-{slot}_b-spline_s-None_biasval_biasval.png'
+  biasoscorr : 
+    header_text : "Correlation between overscan and imaging region from bias images"
+    rows :
+      - text : "Correlation between parallel overscan and imaging, by column.  One entry per image"
+        figure : 'plots/{raft}/bias/{raft}-{run}-{slot}_b-None_s-None_biasoscorr_oscorr-col.png'
+      - text : "Correlation between serial overscan and imaging, by row.  One entry per image"
+        figure : 'plots/{raft}/bias/{raft}-{run}-{slot}_b-None_s-None_biasoscorr_oscorr-row.png'
+  biasst:
+    header_text : "Profiles of structure in bias images"
+    rows :
+      - text : "Columnwise structure in parallel overscan in bias images.  One curve per image."
+        figure : 'plots/{raft}/bias/{raft}-{run}-{slot}_b-spline_s-spline_biasst_biasst-col_p.png'
+      - text : "Columnwise structure in serial overscan in bias images.  One curve per image."
+        figure : 'plots/{raft}/bias/{raft}-{run}-{slot}_b-spline_s-spline_biasst_biasst-col_s.png'
+      - text : "Columnwise structure in imaging region in bias images.  One curve per image."
+        figure : 'plots/{raft}/bias/{raft}-{run}-{slot}_b-spline_s-spline_biasst_biasst-col_i.png'
+      - text : "Rowwise structure in parallel overscan in bias images.  One curve per image."
+        figure : 'plots/{raft}/bias/{raft}-{run}-{slot}_b-spline_s-spline_biasst_biasst-row_p.png'
+      - text : "Rowwise structure in serial overscan in bias images.  One curve per image."
+        figure : 'plots/{raft}/bias/{raft}-{run}-{slot}_b-spline_s-spline_biasst_biasst-row_s.png'
+      - text : "Rowwise structure in imaging region in bias images.  One curve per image."
+        figure : 'plots/{raft}/bias/{raft}-{run}-{slot}_b-spline_s-spline_biasst_biasst-row_i.png'
+  biasosstack:
+    header_text : "Bias overscan, stacked by amplifier"
+    rows :
+      - text : "Mean of profile of regions stacked by amplifier.  One curve per image."
+        figure : 'plots/{raft}/bias/{raft}-{run}-{slot}_b-spline_s-spline_biasosstack_biasosstack-mean.png'
+      - text : "RMS of profile of regions stacked by amplifier.  One curve per image."
+        figure : 'plots/{raft}/bias/{raft}-{run}-{slot}_b-spline_s-spline_biasosstack_biasosstack-std.png'
+      - text : "Significance of profile of regions stacked by amplifier.  One curve per image."
+        figure : 'plots/{raft}/bias/{raft}-{run}-{slot}_b-spline_s-spline_biasosstack_biasosstack-signif.png'
+  biasfft:
+    header_text : "FFT of bias images"
+    rows :
+      - text : "FFT of row-wise mean of imaging region.  One curve per image."
+        figure : 'plots/{raft}/bias/{raft}-{run}-{slot}_b-spline_s-spline_biasfft_biasfft-i.png'
+      - text : "FFT of row-wise mean of serial overscan region.  One curve per image."
+        figure : 'plots/{raft}/bias/{raft}-{run}-{slot}_b-spline_s-spline_biasfft_biasfft-s.png'
+      - text : "FFT of col-wise mean of parallel overscan region.  One curve per image."
+        figure : 'plots/{raft}/bias/{raft}-{run}-{slot}_b-spline_s-spline_biasfft_biasfft-p.png'
+  flat_oscan:
+    header_text : "Analysis of overscan region in flat images"
+    rows :
+      - text : "Charge transfer inefficiency.  One point per image."
+        figure : 'plots/{raft}/flat/{raft}-{run}-{slot}_b-spline_s-spline_flat_oscan_cti.png'
+      - text : "EPER.  One curve per image."
+        figure : 'plots/{raft}/flat/{raft}-{run}-{slot}_b-spline_s-spline_flat_oscan_eper.png'
+      - text : "Noise in serial overscan.  One point per image."
+        figure : 'plots/{raft}/flat/{raft}-{run}-{slot}_b-spline_s-spline_flat_oscan_noise.png'
+      - text : "Residual charge in first overscan pixel.  One point per image."
+        figure : 'plots/{raft}/flat/{raft}-{run}-{slot}_b-spline_s-spline_flat_oscan_overscan1.png'
+      - text : "Residual charge in second overscan pixel.  One point per image."
+        figure : 'plots/{raft}/flat/{raft}-{run}-{slot}_b-spline_s-spline_flat_oscan_overscan2.png'
+      - text : "Summed residual charge in overscan region.  One point per image."
+        figure : 'plots/{raft}/flat/{raft}-{run}-{slot}_b-spline_s-spline_flat_oscan_summed.png'
+  ptc:
+    header_text : "Photon tranfer curves"
+    rows :
+      - text : "Photon tranfer curves, original analysis.  One point per image."
+        figure : 'plots/{raft}/flat/{raft}-{run}-RFT_b-orig_s-orig_ptc_stats_{slot}.png'
+      - text : "Photon tranfer curves, re-analysis.  One point per image."
+        figure : 'plots/{raft}/flat/{raft}-{run}-RFT_b-spline_s-spline_ptc_{slot}.png'
+raft_plot_tables :
+  mosaic :
+    header_text : "Raft-level mosaics"
+    rows :
+      - text : "Raft-level mosaic of superbias.  Overscan subtracted."
+        figure : 'plots/{raft}/superbias/{raft}-{run}-RFT_superbias_s-spline_sbias_mosaic.png'
+      - text : "Raft-level mosaic of superdark. Overscan and bias subtracted."
+        figure : 'plots/{raft}/dark/{raft}-{run}-RFT_b-spline_s-spline_raft_mosaic.png'
+      - text : "Raft-level mosaic of low superflat.  Overscan and bias subtracted."
+        figure : 'plots/{raft}/sflat/{raft}-{run}-RFT_b-spline_s-spline_raft_mosaic_l.png'
+      - text : "Raft-level mosaic of high superflat.  Overscan and bias subtracted."
+        figure : 'plots/{raft}/sflat/{raft}-{run}-RFT_b-spline_s-spline_raft_mosaic_l.png'
+      - text : "Raft-level mosaic of superflat ratio.  Overscan and bias subtracted."
+        figure : 'plots/{raft}/sflat/{raft}-{run}-RFT_b-spline_s-spline_raft_mosaic_r.png'
+  eo_results :
+    header_text : "Plots of eotest results saved quantities"
+    rows :
+      - text : "Read Noise [e- / pixel]. One point per amplifier."
+        figure : 'plots/{raft}/eotest_results/{raft}-{run}-RFT_eotest_results_read_noise.png'
+      - text : "Dark Current [e- / s  / pixel].  One point per amplifier."
+        figure : 'plots/{raft}/eotest_results/{raft}-{run}-RFT_eotest_results_dark_current.png'
+      - text : "Full Well [e- / pixel]. One point per amplifier."
+        figure : 'plots/{raft}/eotest_results/{raft}-{run}-RFT_eotest_results_full_well.png'
+  bias : 
+    header_text : "Plots from analysis of bias frames"
+    rows :
+      - text : "Amp to Amp correlations in serial overscan."
+        figure : 'plots/{raft}/bias/{raft}-{run}-RFT_b-None_s-None_oscorr.png'
+      - text : "Maximum power in FFT."
+        figure : 'plots/{raft}/bias/{raft}-{run}-RFT_b-spline_s-spline_biasfft_stats_max_fft_noise.png'
+  superbias : 
+    header_text : "Plots from analysis of superbias frames"
+    rows :
+      - text : "Mean of clipped STD of overscan-subtracted frames, by pixel."
+        figure : 'plots/{raft}/superbias/{raft}-{run}-RFT_stdevclip_s-spline_stats_mean.png'
+      - text : "RMS of clipped STD of overscan-subtracted frames, by pixel"
+        figure : 'plots/{raft}/superbias/{raft}-{run}-RFT_stdevclip_s-spline_stats_std.png'
+  superdark : 
+    header_text : "Plots from analysis of superdak frames"
+    rows :
+      - text : "Dark Current [e- / pixel].  One point per amplifier."
+        figure : 'plots/{raft}/dark/{raft}-{run}-RFT_b-spline_s-spline_dark_current_dark_current.png'
+      - text : "Histogram of overscan and bias subtracted dark frames. One energy per pixel, one curve per amplifier."
+        figure : 'plots/{raft}/dark/{raft}-{run}-RFT_b-spline_s-spline_raft_stats.png'
+      - text : "Outliers by row from overscan and bias subtracted dark frames.  One curve per amplifier."
+        figure : 'plots/{raft}/dark/{raft}-{run}-RFT_b-spline_s-spline_raft_out_row.png'
+      - text : "Outliers by column from overscan and bias subtracted dark frames.  One curve per amplifier."
+        figure : 'plots/{raft}/dark/{raft}-{run}-RFT_b-spline_s-spline_raft_out_col.png'
+      - text : "Bad pixel count from overscan and bias subtracted dark frames.  By amplifier."
+        figure : 'plots/{raft}/dark/{raft}-{run}-RFT_b-spline_s-spline_raft_nbad.png'
+      - text : "Bad column count from overscan and bias subtracted dark frames.  By amplifier."
+        figure : 'plots/{raft}/dark/{raft}-{run}-RFT_b-spline_s-spline_raft_nbad_col.png'
+      - text : "Bad row count count from overscan and bias subtracted dark frames.  By amplifier."
+        figure : 'plots/{raft}/dark/{raft}-{run}-RFT_b-spline_s-spline_raft_nbad_row.png'
+  fe55 : 
+    header_text : "Plots from analysis of fe55 analysis"
+    rows :
+      - text : "Gains from Fe55 Analysis.  By amplifier."
+        figure : 'plots/{raft}/fe55/{raft}-{run}-RFT_b-orig_s-orig_fe55_gain_stats_gain_array.png'
+
+summary_plot_tables :
+  noise : 
+    header_text : "Plots from analysis of Noise data"
+    rows :
+      - text : "Read Noise [e- / pixel] by amplifier, run"
+        figure : 'plots/summary/eotest_results/{dataset}_eotest_results_sum_read_noise.png'
+      - text : "Shot Noise [e- / pixel] by amplifier, run"
+        figure : 'plots/summary/eotest_results/{dataset}_eotest_results_sum_shot_noise.png'
+      - text : "Shot Noise [e- / pixel] by amplifier, run"
+        figure : 'plots/summary/eotest_results/{dataset}_eotest_results_sum_total_noise.png'
+      - text : "Dark Current [e- / s / pixel] by amplifier, run"
+        figure : 'plots/summary/eotest_results/{dataset}_eotest_results_sum_dark_current.png'
+  gains :
+    header_text : "Plots from analysis of Gain data"
+    rows :
+      - text : "Gains from Fe55 Analysis [e- / ADU] by amplifier, run"
+        figure : 'plots/summary/eotest_results/{dataset}_eotest_results_sum_gain.png'
+      - text : "Gains from PTC Analysis [e- / ADU] by amplifier, run"
+        figure : 'plots/summary/eotest_results/{dataset}_eotest_results_sum_ptc_gain.png'
+      - text : "Full well [e- / pixel] by amplifier, run"
+        figure : 'plots/summary/eotest_results/{dataset}_eotest_results_sum_full_well.png'

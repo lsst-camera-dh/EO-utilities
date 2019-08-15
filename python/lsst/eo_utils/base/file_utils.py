@@ -18,7 +18,7 @@ except ImportError:
     print("Warning, no datacat-utilities")
 
 
-from .defaults import ALL_RAFTS, ALL_SLOTS, ARCHIVE_SLAC
+from .defaults import ALL_RAFTS_BOT_ETU, ALL_SLOTS, ARCHIVE_DIR
 
 
 # These are the standard input filenames
@@ -28,18 +28,23 @@ BOT_GLOB_STRING =\
     '{archive}/LCA-10134_Cryostat/LCA-10134_Cryostat-0001/{run}/' +\
     'BOT_acq/v0/*/{testName}*{imgtype}*/MC_C*{raft}_{slot}.fits'
 
-
 # These strings define the standard output filenames
-PD_CALIB_FORMAT_STRING = '{outdir}/pd_calib/{raft}/{raft}-{run}-pd_calib.dat'
-SLOT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}{suffix}'
-RAFT_FORMAT_STRING = '{outdir}/{fileType}/{raft}/{testType}/{raft}-{run}-RFT{suffix}'
-SUMMARY_FORMAT_STRING = '{outdir}/{fileType}/summary/{testType}/{dataset}{suffix}'
+PD_CALIB_FORMAT_STRING = '{outdir}/{teststand}/pd_calib/{raft}/{raft}-{run}-pd_calib.dat'
+SLOT_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}{suffix}'
+RAFT_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{raft}/{testType}/{raft}-{run}-RFT{suffix}'
+RUN_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{run}'
+
+SUMMARY_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/summary/{testType}/{dataset}{suffix}'
 SUPERBIAS_FORMAT_STRING =\
-    '{outdir}/superbias/{raft}/{raft}-{run}-{slot}_superbias_b-{bias}{suffix}'
+    '{outdir}/{teststand}/superbias/{raft}/{raft}-{run}-{slot}_superbias_b-{bias}{suffix}'
 SUPERBIAS_STAT_FORMAT_STRING =\
-    '{outdir}/superbias/{raft}/{raft}-{run}-{slot}_{stat}_b-{bias}{suffix}'
+    '{outdir}/{teststand}/superbias/{raft}/{raft}-{run}-{slot}_{stat}_b-{bias}{suffix}'
 
-
+# These string define the report output filename
+SLOT_REPORT_FORMAT_STRING = '{outdir}/{teststand}/html/{run}/{raft}/{slot}.html'
+RAFT_REPORT_FORMAT_STRING = '{outdir}/{teststand}/html/{run}/{raft}/index.html'
+RUN_REPORT_FORMAT_STRING = '{outdir}/{teststand}/html/{run}/index.html'
+SUMMARY_REPORT_FORMAT_STRING = '{outdir}/{teststand}/html/{dataset}.html'
 
 
 def makedir_safe(filepath):
@@ -78,6 +83,8 @@ def get_hardware_type_and_id(run):
     ex_run = exploreRun(db=db_)
     hsn = ex_run.hardware_sn(run=run)
     tokens = hsn.split('_')
+    if len(tokens) < 2:
+        raise ValueError("Did not find hardware type for run %s, does this run exist?" % run)
     htype = tokens[0]
     hid = tokens[1].replace('-Dev', '')
     return (htype, hid)
@@ -170,7 +177,7 @@ class FilenameFormat:
 
     @staticmethod
     def _findall(string, sep):
-        """Find all the values of sep in string
+        """Find all the values of sep in strin
 
         Returns
         -------
@@ -275,7 +282,7 @@ RAFT_BASE_FORMATTER = FILENAME_FORMATS.add_format('raft_basename', RAFT_FORMAT_S
 SUM_BASE_FORMATTER = FILENAME_FORMATS.add_format('summary_basename', SUMMARY_FORMAT_STRING)
 TS8_MASKIN_FORMATTER = FILENAME_FORMATS.add_format('ts8_mask_in', SLOT_FORMAT_STRING,
                                                    fileType='masks_in', testType='',
-                                                   suffix='_mask.fits')
+                                                   suffix='_mask.fits', teststand='ts8')
 MASK_FORMATTER = FILENAME_FORMATS.add_format('mask', SLOT_FORMAT_STRING,
                                              fileType='masks', testType='',
                                              suffix='_mask.fits')
@@ -287,10 +294,10 @@ SUPERBIAS_STAT_FORMATTER = FILENAME_FORMATS.add_format('superbias_stat',
                                                        bias=None, suffix='')
 TS8_FORMATTER = FILENAME_FORMATS.add_format('ts8_images',
                                             TS8_GLOB_STRING,
-                                            archive=ARCHIVE_SLAC)
+                                            archive=ARCHIVE_DIR)
 BOT_FORMATTER = FILENAME_FORMATS.add_format('bot_images',
                                             BOT_GLOB_STRING,
-                                            archive=ARCHIVE_SLAC)
+                                            archive=ARCHIVE_DIR)
 
 TS8_EORESULTSIN_FORMATTER = FILENAME_FORMATS.add_format('ts8_eoresults_in',
                                                         SLOT_FORMAT_STRING,
@@ -318,6 +325,18 @@ EORESULTS_SUMMARY_PLOT_FORMATTER = FILENAME_FORMATS.add_format('eoresults_sum_pl
                                                                testType='eotest_results',
                                                                suffix='_eotest_results')
 
+
+SLOT_REPORT_FORMATTER = FILENAME_FORMATS.add_format('slot_report',
+                                                    SLOT_REPORT_FORMAT_STRING)
+RAFT_REPORT_FORMATTER = FILENAME_FORMATS.add_format('raft_report',
+                                                    RAFT_REPORT_FORMAT_STRING)
+RUN_REPORT_FORMATTER = FILENAME_FORMATS.add_format('run_report',
+                                                   RUN_REPORT_FORMAT_STRING)
+SUMMARY_REPORT_FORMATTER = FILENAME_FORMATS.add_format('summary_report',
+                                                       SUMMARY_REPORT_FORMAT_STRING)
+
+
+
 def get_ts8_files_glob(**kwargs):
     """Returns a `list` with the matching file names using the format string for TS8 data """
     outdict = {}
@@ -333,10 +352,13 @@ def get_bot_files_glob(**kwargs):
     outdict = {}
     kwcopy = kwargs.copy()
     test_name = kwcopy.pop('testName').lower()
-    for raft in ALL_RAFTS:
+    rafts = get_raft_names_dc(kwcopy['run'])
+
+    for raft in rafts:
         raftdict = {}
         for slot in ALL_SLOTS:
             glob_string = BOT_FORMATTER(raft=raft, slot=slot, testName=test_name, **kwcopy)
+            print(glob_string)
             raftdict[slot] = sorted(glob.glob(glob_string))
         outdict[raft] = raftdict
     return outdict
@@ -364,6 +386,28 @@ def merge_file_dicts(dict_1, dict_2):
             out_dict[key] = val
     return out_dict
 
+def split_flat_pair_dict(the_dict):
+    """Combine a pair of file dictionaries
+
+    Parameters
+    ----------
+    the_dict : `dict`
+        A dictionary of data_ids or filenames keyed by raft, slot, filetype
+
+    Returns
+    -------
+    out_dict : `dict`
+        A dictionary of data_ids or filenames keyed by raft, slot, filetype
+    """
+    out_dict = {}
+    for key, val in the_dict.items():
+        if isinstance(val, dict):
+            out_dict[key] = split_flat_pair_dict(the_dict[key])
+        elif key == 'FLAT':
+            full_list = the_dict[key]
+            out_dict['FLAT1'] = full_list[0:-1:2]
+            out_dict['FLAT2'] = full_list[1::2]
+    return out_dict
 
 def get_files_for_run(run_id, **kwargs):
     """Get a set of data files of a particular type for a particular run
@@ -375,9 +419,9 @@ def get_files_for_run(run_id, **kwargs):
 
     Keywords
     --------
-    testTypes : `list`
+    testtypes : `list`
         The types of acquistions we want to include
-    imageType : `str`
+    imagetype : `str`
         The image type we want
     outkey : `str`
         Where to put the output file
@@ -480,7 +524,7 @@ def get_run_files_from_formatter(run_id, formatter, **kwargs):
 
     kwcopy = kwargs.copy()
     outdict = {}
-    rafts = kwcopy.pop('rafts')
+    rafts = kwcopy.pop('rafts', None)
     if rafts is None:
         raft = kwcopy.get('raft', None)
         if raft is None:
@@ -495,6 +539,40 @@ def get_run_files_from_formatter(run_id, formatter, **kwargs):
         for slot in ALL_SLOTS:
             glob_string = formatter(slot=slot, run=run_id, **kwcopy)
             slotdict[slot] = dict(MASK=sorted(glob.glob(glob_string)))
+    return outdict
+
+
+def make_dataids_for_run(run_id, **kwargs):
+    """Get a set of files for a particular run
+
+    Parameters
+    ----------
+    run_id : `str`
+        The number number we are reading
+
+    Returns
+    -------
+    retval : `dict`
+        Dictionary mapping slot to dataids
+    """
+    hinfo = get_hardware_type_and_id(run_id)
+
+    kwcopy = kwargs.copy()
+    outdict = {}
+    rafts = kwcopy.pop('rafts', None)
+    if rafts is None:
+        raft = kwcopy.get('raft', None)
+        if raft is None:
+            rafts = [hinfo[1]]
+        else:
+            rafts = [raft]
+
+    for raft in rafts:
+        kwcopy['raft'] = raft
+        slotdict = {}
+        outdict[raft] = slotdict
+        for slot in ALL_SLOTS:
+            slotdict[slot] = dict(run=run_id, raft=raft, slot=slot)
     return outdict
 
 
@@ -572,7 +650,7 @@ def get_raft_names_dc(run):
     if htype == 'LCA-11021':
         return [hid]
     if htype == 'LCA-10134':
-        return ALL_RAFTS
+        return ALL_RAFTS_BOT_ETU
     raise ValueError("Unrecognized hardware type %s" % htype)
 
 
@@ -668,15 +746,59 @@ def link_eo_results(ccd_map, fdict, outformat, **kwargs):
     KeyError : If missing values in fdict
     """
     raft = kwargs.pop('raft')
-    slot_map = ccd_map[raft]
+    try:
+        slot_map = ccd_map[raft]
+    except KeyError:
+        raise KeyError("No mapping for %s" % raft)
+    use_orig = False
     for slot, val in slot_map.items():
         try:
             fname = fdict[val]
-        except KeyError as msg:
-            print(fdict.keys())
-            raise KeyError(msg)
+        except KeyError:
+            use_orig = True
+            break
         outpath = outformat.format(raft=raft, slot=slot, **kwargs)
         makedir_safe(outpath)
+        if not os.path.exists(outpath):
+            os.system("ln -s %s %s" % (fname, outpath))
+
+    if not use_orig:
+        return
+    try:
+        slot_map = ccd_map[raft + '_orig']
+    except KeyError:
+        raise KeyError("Failed to find ccd and no orig mapping for %s" % raft)
+    for slot, val in slot_map.items():
+        try:
+            fname = fdict[val]
+        except KeyError:
+            raise KeyError("Failed to find ccd in either mapping for %s" % raft)
+        outpath = outformat.format(raft=raft, slot=slot, **kwargs)
+        makedir_safe(outpath)
+        if not os.path.exists(outpath):
+            os.system("ln -s %s %s" % (fname, outpath))
+
+
+def link_eo_calib(fname, outformat, **kwargs):
+    """Link eo results to the analysis area
+
+    Parameters
+    ----------
+    fname : `str`
+        Input file name
+    outformat : `str`
+        Formatting string for output path
+    kwargs
+        Passed to formatting string
+
+    Raises
+    ------
+    KeyError : If missing values in fdict
+    """
+    raft = kwargs.pop('raft')
+    outpath = outformat.format(raft=raft, **kwargs)
+    makedir_safe(outpath)
+    if not os.path.exists(outpath):
         os.system("ln -s %s %s" % (fname, outpath))
 
 def link_eo_calib(fname, outformat, **kwargs):
@@ -736,6 +858,42 @@ def link_eo_calib_runlist(args, glob_format, paths, outformat, **kwargs):
                       raft=hid, outdir=args['outdir'], **kwargs)
 
 
+def link_eo_calib_runlist(args, glob_format, paths, outformat, **kwargs):
+    """Link eo results to the analysis area
+
+    Parameters
+    ----------
+    args : `dict`
+        Mapping between rafts, slot and CCD id
+    glob_format : `str`
+        Formatting string for search path
+    paths : `list`
+        Search paths for input datra
+    outformat : `str`
+        Formatting string for output path
+    """
+    runlist_file = args.get('input', None)
+    if runlist_file is not None:
+        run_list = read_runlist(args['input'])
+    else:
+        run_list = [(args['raft'], args['run'])]
+
+    for run in run_list:
+
+        run_num = run[1]
+        hid = run[0].replace('-Dev', '')
+
+        fname = find_eo_calib(glob_format, paths, run=run_num, raft=hid, **kwargs)
+        if fname is None:
+            sys.stderr.write("Could not find eotest_calib for %s %s %s\n"\
+                             % (run_num, hid, glob_format))
+            continue
+
+        link_eo_calib(fname, outformat, run=run_num,
+                      raft=hid, outdir=args['outdir'],
+                      teststand=args['teststand'], **kwargs)
+
+
 def link_eo_results_runlist(args, glob_format, paths, outformat, **kwargs):
     """Link eo results to the analysis area
 
@@ -769,8 +927,12 @@ def link_eo_results_runlist(args, glob_format, paths, outformat, **kwargs):
                              % (run_num, hid, glob_format))
             continue
 
-        link_eo_results(ccd_map, fdict, outformat, run=run_num,
-                        raft=hid, outdir=args['outdir'], **kwargs)
+        try:
+            link_eo_results(ccd_map, fdict, outformat, run=run_num,
+                            raft=hid, outdir=args['outdir'],
+                            teststand=args['teststand'], **kwargs)
+        except KeyError as msg:
+            sys.stderr.write("Failed to link files for %s %s, bad mapping %s\n" % (run_num, hid, msg))
 
 
 def find_eo_bot_results(glob_format, paths, **kwargs):
@@ -827,7 +989,8 @@ def link_eo_bot_results(fdict, outformat, **kwargs):
         for slot, fname in raft_dict.items():
             outpath = outformat.format(raft=raft, slot=slot, **kwargs)
             makedir_safe(outpath)
-            os.system("ln -s %s %s" % (fname, outpath))
+            if not os.path.exists(outpath):
+                os.system("ln -s %s %s" % (fname, outpath))
 
 
 def link_eo_bot_results_runlist(args, glob_format, paths, outformat, **kwargs):
@@ -857,4 +1020,58 @@ def link_eo_bot_results_runlist(args, glob_format, paths, outformat, **kwargs):
             sys.stderr.write("Could not find eotest_results for %s %s\n" % (run_num, glob_format))
             continue
 
-        link_eo_bot_results(fdict, outformat, run=run_num, outdir=args['outdir'], **kwargs)
+        link_eo_bot_results(fdict, outformat, run=run_num,
+                            outdir=args['outdir'], teststand=args['teststand'],
+                            **kwargs)
+
+
+def test_files_exist(flist):
+    """Test to see if files exits"
+
+    Parameters
+    ----------
+    flist : `list`
+        List of files to test
+
+    Returns
+    -------
+    found : `list`
+        List of found files
+
+    missing : `list`
+        List of missing files
+    """
+    found = []
+    missing = []
+    for fname in flist:
+        if os.path.exists(fname):
+            found.append(fname)
+        else:
+            missing.append(fname)
+    return found, missing
+
+
+def make_links(basedir, outdir):
+    """Make links for an analysis directory
+
+    Parameters
+    ----------
+    basedir : `str`
+        Area we are pointing to
+    outdir : `str`
+        Area we are writing to
+    """
+    print("Linking directories in %s to %s" % (basedir, outdir))
+
+    topdirs = glob.glob(os.path.join(basedir, '*'))
+    for topdir in topdirs:
+        if os.path.basename(topdir) in ['test']:
+            continue
+        dir_glob = glob.glob(os.path.join(topdir, '*'))
+        for link_from in dir_glob:
+            if os.path.basename(link_from) in ['plots', 'tables']:
+                continue
+            link_to = link_from.replace(basedir, outdir)
+            comm = 'ln -s %s %s' % (link_from, link_to)
+            makedir_safe(link_to)
+            os.system(comm)

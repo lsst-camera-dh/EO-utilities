@@ -1,4 +1,4 @@
-"""Class to analyze the FFT of the bias frames"""
+"""Class to summarize data from multiple runs"""
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
@@ -68,7 +68,7 @@ class TemplateTask(TmplSummaryAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data 
+        """Plot the summary data
 
         Parameters
         ----------

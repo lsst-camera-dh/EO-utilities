@@ -19,17 +19,19 @@ class CalibStackConfig(MetaConfig):
     runs = EOUtilOptions.clone_param('runs')
     rafts = EOUtilOptions.clone_param('rafts')
     slots = EOUtilOptions.clone_param('slots')
+    outdir = EOUtilOptions.clone_param('outdir')
     mask = EOUtilOptions.clone_param('mask')
+    skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
     stats_hist = EOUtilOptions.clone_param('stats_hist')
 
-CalibStackConfig.add_task('_superbias', SuperbiasTask)
-CalibStackConfig.add_task('_superdark', SuperdarkTask)
-CalibStackConfig.add_task('_superflat', SuperflatTask)
+CalibStackConfig.add_task('_Superbias', SuperbiasTask)
+CalibStackConfig.add_task('_Superdark', SuperdarkTask)
+CalibStackConfig.add_task('_Superflat', SuperflatTask)
 
 
 class CalibStackTask(MetaTask):
-    """Construct Superbias, Superdark and Superflat frames"""
+    """Construct Superbias Superdark and Superflat frames"""
 
     ConfigClass = CalibStackConfig
     _DefaultName = "CalibStack"

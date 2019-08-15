@@ -1,4 +1,4 @@
-"""Class to analyze the FFT of the bias frames"""
+"""Class to analyze tabular data for a given CCD"""
 
 import sys
 
@@ -64,15 +64,16 @@ class TemplateTask(TmplAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        slot = self.config.slot
+        # Get the slot, if needed
+        #slot = self.config.slot
 
         tmpl_files = data['TMPL']
 
-        mask_files = self.get_mask_files()
-        superbias_frame = self.get_superbias_frame(mask_files)
+        # Get the superbias frame, if needed
+        #mask_files = self.get_mask_files()
+        #superbias_frame = self.get_superbias_frame(mask_files)
 
-        sys.stdout.write("Working on %s, %i files: " % (slot, len(tmpl_files)))
-        sys.stdout.flush()
+        self.log_info_slot_msg(self.config, "")
 
         # This is a dictionary of dictionaries to store all the
         # data you extract from the tmpl_files
@@ -82,8 +83,7 @@ class TemplateTask(TmplAnalysisTask):
         # by the analysis
         #
 
-        sys.stdout.write("!\n")
-        sys.stdout.flush()
+        self.log_progress("Done!")
 
         dtables = TableDict()
         dtables.make_datatable('files', make_file_dict(butler, tmpl_files))
@@ -94,7 +94,7 @@ class TemplateTask(TmplAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Make plots 
+        """Make plots
 
         Parameters
         ----------
@@ -104,7 +104,7 @@ class TemplateTask(TmplAnalysisTask):
             The resulting figures
         kwargs
             Used to override default configuration
-        """        
+        """
         self.safe_update(**kwargs)
 
         # Analysis goes here.
@@ -177,6 +177,7 @@ class TemplateStatsTask(TmplAnalysisTask):
             datapath = basename.replace(self.config.outsuffix, self.config.insuffix)
 
             dtables = TableDict(datapath)
+            print(dtables)
 
             for amp in range(16):
 
@@ -195,7 +196,7 @@ class TemplateStatsTask(TmplAnalysisTask):
 
 
     def plot(self, dtables, figs, **kwargs):
-        """Plot the summary data 
+        """Plot the summary data
 
         Parameters
         ----------
