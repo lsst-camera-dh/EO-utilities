@@ -9,6 +9,7 @@ BUTLER_BOT_NCSA_REPO = '/datasets/bot/repo'
 
 # Location of slac archive
 ARCHIVE_SLAC = '/gpfs/slac/lsst/fs*/g/data/jobHarness/jh_archive*'
+#ARCHIVE_SLAC = '/nfs/farm/g/lsst/u1/mirror/BNL-prod/prod'
 
 # Map the Butler repos to simple names
 BUTLER_REPO_DICT = dict(TS8=BUTLER_TS8_REPO,
