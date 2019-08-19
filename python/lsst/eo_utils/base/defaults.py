@@ -18,7 +18,7 @@ if SITE == 'slac':
     DEFAULT_BATCH_ARGS = '-W 1200 -R bullet'
     BATCH_SYSTEM = 'lsf'
 elif SITE == 'ncsa':
-    BUTLER_TS8_REPO = '/datasets/ts8/OBSOLETE/repo'
+    BUTLER_TS8_REPO = '/datasets/ts8/repo'
     BUTLER_BOT_REPO = '/project/production/tmpdataloc/BOT/gen2repo'
     ARCHIVE_DIR = None
     DEFAULT_BATCH_ARGS = ""
