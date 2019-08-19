@@ -2,7 +2,7 @@
 
 import sys
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS
+import numpy as np
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
@@ -13,19 +13,14 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_amp_list,\
-    get_exposure_time, get_mondiode_val, get_mono_wl,\
     get_geom_regions, get_raw_image, unbias_amp
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from lsst.eo_utils.sflat.file_utils import RAFT_SFLAT_TABLE_FORMATTER
 
-from lsst.eo_utils.qe.file_utils import SLOT_QE_TABLE_FORMATTER,\
-    RAFT_QE_TABLE_FORMATTER, RAFT_QE_PLOT_FORMATTER
-
 from lsst.eo_utils.qe.analysis import QeAnalysisConfig, QeAnalysisTask
 
-import numpy as np
 
 class DustColorConfig(QeAnalysisConfig):
     """Configuration for DustColorTask"""
@@ -109,24 +104,24 @@ class DustColorTask(QeAnalysisTask):
         spot = 0
         for ifile, qe_file in enumerate(qe_files):
             lam = qe_file.split('flat_')[1].split('_')[0]
-            #for i, amp in enumerate(amps):
-            for i, amp in enumerate(slot_bbox_dict.keys()):
+            for i, amp in enumerate(amps):
                 bbox_list = slot_bbox_dict[amp]
-                
+
                 if len(bbox_list) > 100:
-                    self.log.warn("Skipping slot:amp %s:%i with %i defects" % (slot, amp, len(bbox_list)))
+                    if i == 0:
+                        self.log.warn("Skipping slot:amp %s:%i with %i defects" % (slot, amp, len(bbox_list)))
                     continue
 
                 ccd = get_ccd_from_id(butler, qe_file, mask_files)
                 regions = get_geom_regions(ccd, amp)
                 serial_oscan = regions['serial_overscan']
                 imaging = regions['imaging']
-                img = get_raw_image(ccd, amp + 1)
+                img = get_raw_image(ccd, amp)
                 if superbias_frame is not None:
                     if butler is not None:
-                        superbias_im = get_raw_image(superbias_frame, amp + 1)
+                        superbias_im = get_raw_image(superbias_frame, amp)
                     else:
-                        superbias_im = get_raw_image(superbias_frame, amp + 1) 
+                        superbias_im = get_raw_image(superbias_frame, amp)
                 else:
                     superbias_im = None
 
@@ -144,7 +139,7 @@ class DustColorTask(QeAnalysisTask):
 
                     try:
                         cutout = image[bbox]
-                    except:
+                    except Exception:
                         pass
                     # Here evaluate the 'flux' of the feature, relative to the median
                     # value of the amplifier image.  May also want to assemble bounding
@@ -155,19 +150,17 @@ class DustColorTask(QeAnalysisTask):
                     #temp_dict[spot].append((lam, flux, med))
                     temp_list.append((lam, flux, med))
 
-        for i in range(len(temp_list)):
+        for i, tmp_data in enumerate(temp_list):
             #data_dict['SLOT'].append(temp_dict['SLOT'][i])
             #data_dict['AMP'].append(temp_dict['AMP'][i])
             #lam = temp_dict['LAM'][i]
-            lam, flux, med = temp_list[i]
+            lam, flux, med = tmp_data
             data_dict['FLUX_' + lam].append(flux)  #temp_dict['FLUX'][i])
             data_dict['MED_' + lam].append(med)  #np.median(image.array))
 
 
         sys.stdout.write("!\n")
         sys.stdout.flush()
-        for key in data_dict.keys():
-            print(key, len(data_dict[key]))
 
         dtables = TableDict()
         dtables.make_datatable('files', make_file_dict(butler, qe_files))

@@ -356,6 +356,34 @@ def get_amp_list(ccd):
     return amplist
 
 
+def get_amp_offset(ccd1, ccd2):
+    """Get the Geometry for a particular dataId or file
+
+    Parameters
+    ----------
+    ccd1 : `ExposureF` or `MaskedCCD`
+        CCD data object
+    ccd2 : `ExposureF` or `MaskedCCD`
+        CCD data object
+
+    Returns
+    -------
+    offter : `int`
+        Offset to return
+    """
+    offset = 0
+    if isinstance(ccd1, MaskedCCD):
+        offset -= 1
+        
+    if isinstance(ccd2, MaskedCCD):
+        offset += 1
+
+    return offset
+
+
+
+
+
 def get_image_frames_2d(img, regions, regionlist=None):
     """Split out the arrays for the serial_overscan, parallel_overscan, and imaging regions
 
@@ -534,11 +562,14 @@ def unbiased_ccd_image_dict(ccd, **kwargs):
     amps = get_amp_list(ccd)
 
     o_dict = {}
+    offset = get_amp_offset(ccd, superbias_frame)
+
     for amp in amps:
         regions = get_geom_regions(ccd, amp)
         serial_oscan = regions['serial_overscan']
         img = get_raw_image(ccd, amp)
-        superbias_im = raw_amp_image(superbias_frame, amp)
+        
+        superbias_im = raw_amp_image(superbias_frame, amp + offset)
         image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
         o_dict[amp] = image
 
@@ -731,47 +762,6 @@ def get_mono_wl(ccd):
         return ccd.md.get('MONOWL')
     return ccd.getMetadata()['MONOWL']
 
-
-def get_mondiode_val(butler, ccd):
-    """Return the monitoring diode value
-
-    Parameters
-    ----------
-    butler : `Butler` or `None`
-        Data Butler (or none)
-    ccd : `ImageF` or `MaskedImageF`
-        CCD image object
-
-    Returns
-    -------
-    val : `float`
-        The value
-    """
-    if butler is None:
-        return ccd.md.get('MONDIODE')
-    raise NotImplementedError("Can't get mondiode value for butlerlized data")
-
-
-def get_mono_wl(butler, ccd):
-    """Return the monochromatic wavelength
-
-    Parameters
-    ----------
-    butler : `Butler` or `None`
-        Data Butler (or none)
-    ccd : `ImageF` or `MaskedImageF`
-        CCD image object
-
-    Returns
-    -------
-    val : `float`
-        The value
-    """
-    if butler is None:
-        return ccd.md.get('MONOWL')
-    raise NotImplementedError("Can't get monowl for butlerlized data")
-
-
 def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
     """Stack a set of images
 
@@ -817,11 +807,12 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
         exp_time += get_exposure_time(ccd)
         amps = get_amp_list(ccd)
 
+        offset = get_amp_offset(ccd, superbias_frame)
         for amp in amps:
             regions = get_geom_regions(ccd, amp)
             serial_oscan = regions['serial_overscan']
             img = get_raw_image(ccd, amp)
-            superbias_im = raw_amp_image(superbias_frame, amp)
+            superbias_im = raw_amp_image(superbias_frame, amp + offset)
 
             if ifile == 0:
                 amp_stack_dict[amp] = [unbias_amp(img, serial_oscan,

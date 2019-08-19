@@ -798,65 +798,7 @@ def link_eo_calib(fname, outformat, **kwargs):
     raft = kwargs.pop('raft')
     outpath = outformat.format(raft=raft, **kwargs)
     makedir_safe(outpath)
-    if not os.path.exists(outpath):
-        os.system("ln -s %s %s" % (fname, outpath))
-
-def link_eo_calib(fname, outformat, **kwargs):
-    """Link eo results to the analysis area
-
-    Parameters
-    ----------
-    fname : `str`
-        Input file name
-    outformat : `str`
-        Formatting string for output path
-    kwargs
-        Passed to formatting string
-
-    Raises
-    ------
-    KeyError : If missing values in fdict
-    """
-    raft = kwargs.pop('raft')
-    outpath = outformat.format(raft=raft, **kwargs)
-    makedir_safe(outpath)
     os.system("ln -s %s %s" % (fname, outpath))
-
-
-def link_eo_calib_runlist(args, glob_format, paths, outformat, **kwargs):
-    """Link eo results to the analysis area
-
-    Parameters
-    ----------
-    args : `dict`
-        Mapping between rafts, slot and CCD id
-    glob_format : `str`
-        Formatting string for search path
-    paths : `list`
-        Search paths for input datra
-    outformat : `str`
-        Formatting string for output path
-    """
-    runlist_file = args.get('input', None)
-    if runlist_file is not None:
-        run_list = read_runlist(args['input'])
-    else:
-        run_list = [(args['raft'], args['run'])]
-
-    for run in run_list:
-
-        run_num = run[1]
-        hid = run[0].replace('-Dev', '')
-
-        fname = find_eo_calib(glob_format, paths, run=run_num, raft=hid, **kwargs)
-        if fname is None:
-            sys.stderr.write("Could not find eotest_calib for %s %s %s\n"\
-                             % (run_num, hid, glob_format))
-            continue
-
-        link_eo_calib(fname, outformat, run=run_num,
-                      raft=hid, outdir=args['outdir'], **kwargs)
-
 
 def link_eo_calib_runlist(args, glob_format, paths, outformat, **kwargs):
     """Link eo results to the analysis area
