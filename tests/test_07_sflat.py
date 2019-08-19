@@ -6,12 +6,12 @@ from __future__ import absolute_import, division, print_function
 from lsst.eo_utils.base.butler_utils import get_butler_by_repo
 from lsst.eo_utils import sflat
 
-from .utils import assert_data_dict,\
+from .utils import assert_data_dict, requires_site,\
     DATA_OPTIONS_TS8_GLOB, DATA_OPTIONS_BOT_GLOB,\
     DATA_OPTIONS_TS8_BUTLER, DATA_OPTIONS_BOT_BUTLER,\
     RUN_TASKS, RUN_OPTIONS, RUN_OPTIONS_NOPLOT
 
-
+@requires_site('slac')
 def test_sflat_file_utils():
     """Test the sflat.file_utils module"""
     sflat_files_6106 = sflat.SflatAnalysisTask.get_data(None, '6106D',

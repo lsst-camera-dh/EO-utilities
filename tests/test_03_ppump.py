@@ -6,12 +6,13 @@ from __future__ import absolute_import, division, print_function
 from lsst.eo_utils.base.butler_utils import get_butler_by_repo
 from lsst.eo_utils import ppump
 
-from .utils import assert_data_dict,\
+from .utils import assert_data_dict, requires_site,\
     DATA_OPTIONS_TS8_GLOB,\
     DATA_OPTIONS_TS8_BUTLER,\
     RUN_TASKS, RUN_OPTIONS
 
 
+@requires_site('slac')
 def test_ppump_file_utils():
     """Test the ppump.file_utils module"""
     ppump_files_6106 = ppump.PpumpAnalysisTask.get_data(None, '6106D',
