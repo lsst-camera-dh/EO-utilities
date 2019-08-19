@@ -13,6 +13,7 @@ from lsst.eo_utils.base.plot_utils import FigureDict
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
+from .utils import requires_site
 
 def test_config_utils():
     """Test the config_utils module"""
@@ -27,6 +28,7 @@ def test_stat_utils():
     return
 
 
+@requires_site('slac')
 def test_file_utils_get_ts8():
     """Test the file_utils module"""
     bias_files = get_files_for_run('6106D',
@@ -48,6 +50,7 @@ def test_file_utils_get_ts8():
     assert len(files['RTM-004']['S00']['DARK']) == 5
 
 
+@requires_site('slac')
 def test_file_utils_get_bot():
     """Test the file_utils module"""
     bias_files = get_files_for_run('6545D',

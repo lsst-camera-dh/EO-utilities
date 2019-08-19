@@ -13,7 +13,6 @@ from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 from lsst.eo_utils.qe.file_utils import SLOT_QE_TABLE_FORMATTER,\
     SLOT_QE_PLOT_FORMATTER
 
-
 class QeAnalysisConfig(AnalysisConfig):
     """Configurate for bias analyses"""
     run = EOUtilOptions.clone_param('run')

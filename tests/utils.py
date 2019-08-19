@@ -6,6 +6,8 @@ from __future__ import absolute_import, division, print_function
 import os
 from astropy.tests.helper import pytest
 
+from lsst.eo_utils.base.defaults import SITE
+
 __all__ = ['requires_file', 'RUN_TASKS']
 
 DATA_OPTIONS_TS8_GLOB = dict(teststand='ts8', data_source='glob')
@@ -27,7 +29,12 @@ def requires_file(filepath):
     return pytest.mark.skipif(skip_it,
                               reason='File %s does not exist.' % filepath)
 
-
+def requires_site(site):
+    """Skip test based on where it is being run"""
+    skip_it = bool(site != SITE)
+    return pytest.mark.skipif(skip_it,
+                              reason='SITE is not %s.' % site)
+    
 def assert_data_dict(the_dict, raft_name, key_name, size_tuple):
     """Check that a dictionary matches the expected size"""
     dict_size = [0, 0, 0, 0]
@@ -44,3 +51,5 @@ def assert_data_dict(the_dict, raft_name, key_name, size_tuple):
         assert dict_size[3] == size_tuple[3]
     except AssertionError:
         raise ValueError("%s != %s\n" % (str(dict_size), str(size_tuple)))
+
+
