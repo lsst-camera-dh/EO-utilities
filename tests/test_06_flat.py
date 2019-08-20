@@ -37,6 +37,7 @@ def test_flat_butler_utils():
     assert_data_dict(flat_files_6545, 'R10', 'FLAT1', (2, 9, 2, 43))
 
 
+@requires_site('slac')
 def test_flat_oscan():
     """Test the FlatOverscanTask"""
     task = flat.FlatOverscanTask()
