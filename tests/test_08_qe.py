@@ -3,6 +3,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+from lsst.eo_utils.base.defaults import SITE
 from lsst.eo_utils.base.butler_utils import get_butler_by_repo
 from lsst.eo_utils import qe
 
@@ -34,7 +35,11 @@ def test_qe_butler_utils():
 
     qe_files_6545 = qe.QeAnalysisTask.get_data(bot_butler, '6545D',
                                                **DATA_OPTIONS_BOT_BUTLER)
-    assert_data_dict(qe_files_6545, 'R10', 'LAMBDA', (2, 9, 1, 12))
+    #FIXME
+    if SITE in ['slac']:
+        assert_data_dict(qe_files_6545, 'R10', 'LAMBDA', (2, 9, 1, 12))
+    else:
+        assert_data_dict(qe_files_6545, 'R10', 'LAMBDA', (2, 9, 1, 6))
 
 
 def test_qe_median():

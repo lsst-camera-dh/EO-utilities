@@ -9,7 +9,7 @@ from lsst.eo_utils.base.data_utils import TableDict
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES, REGION_LABELS,\
-    get_dimension_arrays_from_ccd, get_ccd_from_id, get_raw_image,\
+    get_dimension_arrays_from_ccd, get_ccd_from_id, get_raw_image, get_amp_offset,\
     get_geom_regions, get_amp_list, get_image_frames_2d, array_struct, unbias_amp
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
@@ -141,6 +141,7 @@ class BiasStructTask(BiasAnalysisTask):
         ifile = kwargs.get('ifile', 0)
         slot = kwargs.get('slot')
         superbias_frame = kwargs.get('superbias_frame', None)
+        offset = get_amp_offset(ccd, superbias_frame)
 
         amps = get_amp_list(ccd)
         for i, amp in enumerate(amps):
@@ -148,7 +149,7 @@ class BiasStructTask(BiasAnalysisTask):
             serial_oscan = regions['serial_overscan']
             img = get_raw_image(ccd, amp)
             if superbias_frame is not None:
-                superbias_im = get_raw_image(superbias_frame, amp)
+                superbias_im = get_raw_image(superbias_frame, amp + offset)
             else:
                 superbias_im = None
             image = unbias_amp(img, serial_oscan,
