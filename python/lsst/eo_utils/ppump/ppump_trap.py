@@ -63,6 +63,7 @@ class TrapTask(PpumpAnalysisTask):
         gains = np.ones((17))
 
         ppump_files = data['PPUMP']
+        print(ppump_files)
         ppump_file = ppump_files[0]
 
         mask_files = self.get_mask_files()

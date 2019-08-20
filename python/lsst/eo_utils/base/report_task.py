@@ -173,6 +173,7 @@ class ReportRaftTask(ReportTask):
 class ReportRunConfig(ReportConfig):
     """Configuration for report analyses"""
     run = EOUtilOptions.clone_param('run')
+    teststand = EOUtilOptions.clone_param('teststand')
 
 
 class ReportRunTask(ReportTask):
