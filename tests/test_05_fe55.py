@@ -36,12 +36,14 @@ def test_fe55_butler_utils():
     assert_data_dict(fe55_files_6545, 'R10', 'FE55', (2, 9, 1, 5))
 
 
+@requires_site('slac')
 def test_fe55_gain_stats():
     """Test the Fe55GainStatsTask"""
     task = fe55.Fe55GainStatsTask()
     if RUN_TASKS:
         task.run(**RUN_OPTIONS)
 
+@requires_site('slac')
 def test_fe55_gain_sum():
     """Test the Fe55GainSummaryTask"""
     task = fe55.Fe55GainSummaryTask()

@@ -43,6 +43,8 @@ def test_qe_median():
     if RUN_TASKS:
         task.run(slots=['S00'], **RUN_OPTIONS)
 
+
+@requires_site('slac')
 def test_qe_task():
     """Test the QETask"""
     task = qe.QETask()
