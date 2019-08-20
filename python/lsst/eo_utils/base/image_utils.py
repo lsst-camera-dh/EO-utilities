@@ -375,7 +375,7 @@ def get_amp_offset(ccd1, ccd2):
     offset = 0
     if isinstance(ccd1, MaskedCCD):
         offset -= 1
-        
+
     if isinstance(ccd2, MaskedCCD):
         offset += 1
 
@@ -569,7 +569,7 @@ def unbiased_ccd_image_dict(ccd, **kwargs):
         regions = get_geom_regions(ccd, amp)
         serial_oscan = regions['serial_overscan']
         img = get_raw_image(ccd, amp)
-        
+
         superbias_im = raw_amp_image(superbias_frame, amp + offset)
         image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
         o_dict[amp] = image
