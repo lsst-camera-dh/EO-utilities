@@ -104,9 +104,9 @@ class BFTask(FlatAnalysisTask):
                 superbias_im = self.get_superbias_amp_image(butler, superbias_frame, amp)
 
                 image_1 = unbias_amp(im_1, serial_oscan, bias_type=self.config.bias,
-                                     superbias_im=superbias_im, region=imaging)
+                                     superbias_im=superbias_im, region=imaging).image
                 image_2 = unbias_amp(im_2, serial_oscan, bias_type=self.config.bias,
-                                     superbias_im=superbias_im, region=imaging)
+                                     superbias_im=superbias_im, region=imaging).image
 
                 avemean = (self.mean(image_1) + self.mean(image_2)) / 2.
 

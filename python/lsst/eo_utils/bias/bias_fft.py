@@ -84,7 +84,8 @@ class BiasFFTTask(BiasAnalysisTask):
             for key in REGION_KEYS:
                 freqs = freqs_dict['freqs_%s' % key]
                 nfreqs = len(freqs)
-                fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
+                if key not in fft_data:
+                    fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
 
             BiasFFTTask.get_ccd_data(self, ccd, fft_data,
                                      ifile=ifile, nfiles_used=len(bias_files),
@@ -117,11 +118,9 @@ class BiasFFTTask(BiasAnalysisTask):
         for key, region in zip(REGION_KEYS, REGION_NAMES):
             datakey = 'biasfft-%s' % key
             figs.setup_amp_plots_grid(datakey, title="FFT of %s region mean by row" % region,
-                                      xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]",
-                                      ymin=0., ymax=3.)
+                                      xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]")
             figs.plot_xy_amps_from_tabledict(dtables, datakey, datakey,
-                                             x_name='freqs', y_name='fftpow',
-                                             ymin=0., ymax=3.)
+                                             x_name='freqs', y_name='fftpow')
 
     @staticmethod
     def get_ccd_data(for_whom, ccd, data, **kwargs):
@@ -178,9 +177,8 @@ class BiasFFTTask(BiasAnalysisTask):
                 nval = len(fftpow)
                 fftpow /= nval/2
                 if key_str not in data[key]:
-                    data[key][key_str] = np.ndarray((int(nval/2), nfiles_used))
+                    data[key][key_str] = np.zeros((int(nval/2), nfiles_used))
                 data[key][key_str][:, ifile] = np.sqrt(fftpow[0:int(nval/2)])
-
 
 
 class SuperbiasFFTConfig(SuperbiasSlotTableAnalysisConfig):

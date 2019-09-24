@@ -24,6 +24,7 @@ class BiasVRowConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasval')
     bias = EOUtilOptions.clone_param('bias')
+    mask = EOUtilOptions.clone_param('mask')
 
 
 class BiasVRowTask(BiasAnalysisTask):
@@ -52,6 +53,7 @@ class BiasVRowTask(BiasAnalysisTask):
         self.safe_update(**kwargs)
 
         bias_files = data['BIAS']
+        mask_files = self.get_mask_files()
 
         self.log_info_slot_msg(self.config, "%i files" % len(bias_files))
 
@@ -61,7 +63,7 @@ class BiasVRowTask(BiasAnalysisTask):
             if ifile % 10 == 0:
                 self.log_progress("  %i" % ifile)
 
-            ccd = get_ccd_from_id(butler, bias_file, [])
+            ccd = get_ccd_from_id(butler, bias_file, mask_files)
             if ifile == 0:
                 dims = get_dims_from_ccd(ccd)
                 xrow_s = np.linspace(0, dims['nrow_s']-1, dims['nrow_s'])

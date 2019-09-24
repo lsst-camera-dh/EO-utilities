@@ -92,7 +92,7 @@ class DarkCurrentTask(DarkRaftTableAnalysisTask):
             for iamp, amp in enumerate(amps):
                 regions = get_geom_regions(superdark_frame, amp)
                 imaging = regions['imaging']
-                superdark_im = get_raw_image(superdark_frame, amp)
+                superdark_im = get_raw_image(superdark_frame, amp).image
                 image_data = superdark_im[imaging].array
                 median = np.median(image_data)
                 stdev = np.std(image_data)

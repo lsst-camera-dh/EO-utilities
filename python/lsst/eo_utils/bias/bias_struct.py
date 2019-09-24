@@ -109,7 +109,7 @@ class BiasStructTask(BiasAnalysisTask):
                                           xlabel=dkey, ylabel="ADU")
                 figs.plot_xy_amps_from_tabledict(dtables, datakey, datakey,
                                                  x_name="%s_%s" % (dkey, rkey),
-                                                 y_name="biasst", ymin=-10., ymax=10)
+                                                 y_name="biasst")
 
 
     def get_ccd_data(self, ccd, data, **kwargs):

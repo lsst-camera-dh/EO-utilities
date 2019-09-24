@@ -135,7 +135,7 @@ class SuperbiasStatsTask(SuperbiasRaftTableAnalysisTask):
             stats_data['max'] = np.ndarray((9, 16))
 
         for i, amp in enumerate(amps):
-            img = get_raw_image(superbias, amp)
+            img = get_raw_image(superbias, amp).image
             stats_data['mean'][islot, i] = img.array.mean()
             stats_data['median'][islot, i] = np.median(img.array)
             stats_data['std'][islot, i] = img.array.std()

@@ -7,7 +7,7 @@ import lsst.eotest.image_utils as imutil
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.file_utils import makedir_safe,\
-    SUPERBIAS_FORMATTER
+    SUPERBIAS_FORMATTER, SUPERBIAS_STAT_FORMATTER
 
 from lsst.eo_utils.base.butler_utils import get_filename_from_id
 
@@ -124,7 +124,18 @@ class SuperbiasTask(BiasAnalysisTask):
         self.safe_update(**kwargs)
 
         mask_files = self.get_mask_files()
-        output_file = self.tablefile_name() + '.fits'
+
+        stat_type = self.config.stat
+        if stat_type is None:
+            stat_type = DEFAULT_STAT_TYPE
+
+        if stat_type == DEFAULT_STAT_TYPE:
+            output_file = self.tablefile_name() + '.fits'
+        else:
+            output_file = self.get_filename_from_format(SUPERBIAS_STAT_FORMATTER,
+                                                        self.get_suffix(),
+                                                        **kwargs) + '.fits'
+
         makedir_safe(output_file)
 
         if not self.config.skip:
@@ -137,6 +148,7 @@ class SuperbiasTask(BiasAnalysisTask):
             imutil.writeFits(out_data, output_file, template_file, self.config.bitpix)
             if butler is not None:
                 flip_data_in_place(output_file)
+
 
         self._superbias_frame = get_ccd_from_id(None, output_file, mask_files)
 
@@ -161,7 +173,7 @@ class SuperbiasTask(BiasAnalysisTask):
 
         subtract_mean = self.config.stat == DEFAULT_STAT_TYPE
         if self.config.vmin is None or self.config.vmax is None:
-            hist_range = (0., 2000.)
+            hist_range = None
         else:
             hist_range = (self.config.vmin, self.config.vmax)
 

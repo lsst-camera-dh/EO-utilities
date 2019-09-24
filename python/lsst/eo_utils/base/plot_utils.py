@@ -524,6 +524,7 @@ class FigureDict:
                 continue
             valarray = dtab[col]
             for row, test_type in zip(valarray.T, file_data['testtype']):
+                print(y_name, row.max())
                 self.plot(plotkey, idx, xcol, row,
                           color=TESTCOLORMAP.get(test_type, 'gray'),
                           **kwcopy)
@@ -871,7 +872,7 @@ class FigureDict:
         ----------
         key : `str`
             Key for the figure.
-        ccd : `MaskedCCD` or `AFWImage`
+        ccd : `MaskedCCD` or `MaskedImage`
             Object with the image data
 
         Keywords
@@ -907,7 +908,7 @@ class FigureDict:
         amps = get_amp_list(ccd)
         for idx, amp in enumerate(amps):
             image = unbiased_images[amp]
-            darray = image.array
+            darray = image.image.array
             if subtract_mean:
                 darray -= darray.mean()
 
@@ -956,18 +957,22 @@ class FigureDict:
         axs = o_dict['axs']
         unbiased_images = unbiased_ccd_image_dict(ccd, **kwcopy)
 
+        hist_range = kwcopy.pop('range')
+
         for amp, image in unbiased_images.items():
             regions = get_geom_regions(ccd, amp)
             frames = get_image_frames_2d(image, regions)
             darray = frames[kwcopy.pop('region', 'imaging')]
             if kwcopy.pop('subtract_mean', False):
                 darray -= darray.mean()
+            if hist_range is None:
+                hist_range = (darray.min(), darray.max())
             if isinstance(ccd, MaskedCCD):
                 idx = amp - 1
             else:
                 idx = amp
             axes = axs.flat[idx]
-            axes.hist(darray.flat, **kwcopy)
+            axes.hist(darray.flat, range=hist_range, **kwcopy)
 
         plt.tight_layout()
 

@@ -80,7 +80,12 @@ class PTCTask(FlatRaftTableAnalysisTask):
             self.log_progress("  %s" % slot)
 
             dtables = TableDict(data[slot].replace('ptc.fits', 'flat.fits'))
-            tab = dtables['flat']
+
+            try:
+                tab = dtables['flat']
+            except KeyError:
+                print(dtables.keys())
+                tab = dtables['ptc_stats']
 
             for amp in range(1, 17):
                 mean = tab["AMP%02i_MEAN" % (amp)]
@@ -89,15 +94,20 @@ class PTCTask(FlatRaftTableAnalysisTask):
                 frac_resids = np.abs((var - mean/med_gain)/var)
                 index = np.where(frac_resids < 0.2)
                 try:
-                    results = scipy.optimize.leastsq(residuals, (1., med_gain, 0.), full_output=1,
+                    results = scipy.optimize.leastsq(residuals, (2.7e-6, med_gain, 25.), full_output=1,
                                                      args=(mean[index], var[index]))
                     pars, cov = results[:2]
                     ptc_a00 = pars[0]
-                    ptc_a00_error = np.sqrt(cov[0][0])
-                    ptc_alpha = pars[1]
-                    ptc_alpha_error = np.sqrt(cov[1][1])
-                    ptc_gain = pars[2]
-                    ptc_gain_error = np.sqrt(cov[2][2])
+                    ptc_gain = pars[1]
+                    ptc_alpha = pars[2]
+                    if cov is not None:
+                        ptc_a00_error = np.sqrt(cov[0][0])
+                        ptc_gain_error = np.sqrt(cov[1][1])
+                        ptc_alpha_error = np.sqrt(cov[2][2])
+                    else:
+                        ptc_a00_error = -1.
+                        ptc_alpha_error = -1.
+                        ptc_gain_error = -1.
                 except Exception as eobj:
                     self.log.warn("Exception caught while fitting PTC:")
                     self.log.warn(str(eobj))
@@ -146,8 +156,8 @@ class PTCTask(FlatRaftTableAnalysisTask):
         alphas = table['alpha']
         gains = table['gain']
 
-        log_xmins = np.log10(ptc_means[:, 0])
-        log_xmaxs = np.log10(ptc_means[:, -1])
+        log_xmins = np.log10(ptc_means[:, 0].clip(1., np.inf))
+        log_xmaxs = np.log10(ptc_means[:, -1].clip(10., np.inf))
 
         idx = 0
         xlo = np.power(10, 1.5)

@@ -284,7 +284,7 @@ def get_raw_image(ccd, amp):
         The image
     """
     if isinstance(ccd, MaskedCCD):
-        img = ccd[amp].getImage()
+        img = ccd[amp]
     else:
         geom = ccd.getDetector()
         img = ccd.maskedImage[geom[amp].getRawBBox()].image
@@ -550,6 +550,8 @@ def unbiased_ccd_image_dict(ccd, **kwargs):
         Method for bias subtraction
     superbias_frame : `MaskedCCD` or `None`
         Bias frame to subtract off
+    trim : `str` or `None`
+        Region to trim return images to
 
     Returns
     -------
@@ -559,6 +561,7 @@ def unbiased_ccd_image_dict(ccd, **kwargs):
     kwcopy = kwargs.copy()
     bias_type = kwcopy.pop('bias', None)
     superbias_frame = kwcopy.pop('superbias_frame', None)
+    trim = kwcopy.pop('trim', None)
 
     amps = get_amp_list(ccd)
 
@@ -568,10 +571,16 @@ def unbiased_ccd_image_dict(ccd, **kwargs):
     for amp in amps:
         regions = get_geom_regions(ccd, amp)
         serial_oscan = regions['serial_overscan']
+        if trim is None:
+            trim_region = None
+        else:
+            trim_region = regions[trim]
+
         img = get_raw_image(ccd, amp)
 
         superbias_im = raw_amp_image(superbias_frame, amp + offset)
-        image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+        image = unbias_amp(img, serial_oscan, bias_type=bias_type,
+                           superbias_im=superbias_im, region=trim_region)
         o_dict[amp] = image
 
     return o_dict
@@ -833,7 +842,7 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
         else:
             outkey = key + 1
         stackimage = imutil.stack(val, statistic)
-        out_dict[outkey] = stackimage
+        out_dict[outkey] = stackimage.image
 
     if log is not None:
         log.info("Done!")

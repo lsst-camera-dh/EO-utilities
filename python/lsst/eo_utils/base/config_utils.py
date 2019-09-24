@@ -248,11 +248,10 @@ def make_argstring(config, **kwargs):
             def_value = None
         if value in [def_value, None]:
             continue
-        elif isinstance(value, bool):
+        if isinstance(value, bool):
             if not value:
                 continue
-            else:
-                ostring += " --%s" % key
+            ostring += " --%s" % key
         elif isinstance(value, (list, pexConfig.listField.List)):
             for val2 in value:
                 ostring += " --%s %s" % (key, val2)

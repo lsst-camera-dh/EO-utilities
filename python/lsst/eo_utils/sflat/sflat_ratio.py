@@ -111,11 +111,11 @@ class SflatRatioTask(SflatSlotTableAnalysisTask):
             dims = get_dims_from_ccd(ratio_frame)
             regions = get_geom_regions(ratio_frame, amp)
             imaging = regions['imaging']
-            l_im = get_raw_image(l_frame, amp)
-            h_im = get_raw_image(h_frame, amp)
-            ratio_im = get_raw_image(ratio_frame, amp)
+            l_im = get_raw_image(l_frame, amp).image
+            h_im = get_raw_image(h_frame, amp).image
+            ratio_im = get_raw_image(ratio_frame, amp).image
             if superbias_frame is not None:
-                superbias_im = get_raw_image(superbias_frame, amp)
+                superbias_im = get_raw_image(superbias_frame, amp).image
             else:
                 superbias_im = None
 

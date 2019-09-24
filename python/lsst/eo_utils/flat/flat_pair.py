@@ -49,13 +49,13 @@ class FlatPairTask(FlatAnalysisTask):
 
     def get_pair_stats(self, image_1, image_2):
         """Get the mean and varience from a pair of flats"""
-        fratio_im = afwImage.ImageF(image_1, True)
+        fratio_im = afwImage.MaskedImageF(image_1, True)
         operator.itruediv(fratio_im, image_2)
         fratio = self.mean(fratio_im)
         image_2 *= fratio
         fmean = (self.mean(image_1) + self.mean(image_2))/2.
 
-        fdiff = afwImage.ImageF(image_1, True)
+        fdiff = afwImage.MaskedImageF(image_1, True)
         fdiff -= image_2
         fvar = self.var(fdiff)/2.
         return (fratio, fmean, fvar)
@@ -108,8 +108,8 @@ class FlatPairTask(FlatAnalysisTask):
             if ifile % 10 == 0:
                 self.log_progress("  %i" % ifile)
 
-            flat_1 = get_ccd_from_id(butler, id_1, [])
-            flat_2 = get_ccd_from_id(butler, id_2, [])
+            flat_1 = get_ccd_from_id(butler, id_1, mask_files)
+            flat_2 = get_ccd_from_id(butler, id_2, mask_files)
 
             amps = get_amp_list(flat_1)
 
@@ -139,9 +139,11 @@ class FlatPairTask(FlatAnalysisTask):
             data_dict['FLUX'].append(flux)
 
             ccd_1_ims = unbiased_ccd_image_dict(flat_1, bias=self.config.bias,
-                                                superbias_frame=superbias_frame)
+                                                superbias_frame=superbias_frame,
+                                                trim='imaging')
             ccd_2_ims = unbiased_ccd_image_dict(flat_2, bias=self.config.bias,
-                                                superbias_frame=superbias_frame)
+                                                superbias_frame=superbias_frame,
+                                                trim='imaging')
 
             for i, amp in enumerate(amps):
                 image_1 = ccd_1_ims[amp]
