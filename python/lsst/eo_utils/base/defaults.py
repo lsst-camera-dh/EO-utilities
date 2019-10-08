@@ -29,7 +29,7 @@ else:
 
 
 # TEST
-DEFAULT_TESTSTAND = os.environ.get('EO_TESTSTSAND', 'ts8')
+DEFAULT_TESTSTAND = os.environ.get('EO_TESTSTSAND', 'bot')
 
 if os.environ.get('EO_PRINT_OPTS', False):
     sys.stdout.write("SITE=%s\n" % SITE)

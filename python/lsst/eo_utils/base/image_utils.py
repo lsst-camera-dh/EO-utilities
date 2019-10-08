@@ -158,7 +158,10 @@ def get_geom_steps_from_amp(ccd, amp):
     step_y : `int`
         Step to take in y to go from readout to physical order
     """
-    manu = ccd.getInfo().getMetadata().getString('CCD_MANU')
+    try:
+        manu = ccd.getInfo().getMetadata().getString('CCD_MANU')
+    except Exception:
+        manu = ccd.getDetector().getSerial()[0:3]
     if manu == 'ITL':
         flip_y = -1
     elif manu == 'E2V':
@@ -184,7 +187,9 @@ def flip_data_in_place(filepath):
         The file we are adjusting
     """
     hdus = fits.open(filepath)
-    manu = hdus[0].header['CCD_MANU']
+    manu = hdus[0].header.get('CCD_MANU', None)
+    if manu is None:
+        manu = hdus[0].header.get('LSST_NUM')[0:3]
     for amp in range(1, 17):
         (step_x, step_y) = get_geom_steps_manu_hdu(manu, amp)
         hdus[amp].data = hdus[amp].data[::step_x, ::step_y]
@@ -287,7 +292,7 @@ def get_raw_image(ccd, amp):
         img = ccd[amp]
     else:
         geom = ccd.getDetector()
-        img = ccd.maskedImage[geom[amp].getRawBBox()].image
+        img = ccd.maskedImage[geom[amp].getRawBBox()]
     return img
 
 
