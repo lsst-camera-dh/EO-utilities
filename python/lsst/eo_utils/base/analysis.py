@@ -5,13 +5,20 @@ This module contains base classes for analysis tasks.
 
 import abc
 
+import glob
+
+import numpy as np
+
 import lsst.pex.config as pexConfig
+
+from lsst.eotest.sensor import NonlinearityCorrection
 
 from .defaults import DEFAULT_STAT_TYPE
 
 from .file_utils import makedir_safe,\
     SLOT_BASE_FORMATTER, MASK_FORMATTER,\
-    SUPERBIAS_FORMATTER, SUPERBIAS_STAT_FORMATTER
+    SUPERBIAS_FORMATTER, SUPERBIAS_STAT_FORMATTER,\
+    NONLIN_FORMATTER, EORESULTS_TABLE_FORMATTER
 
 from .config_utils import EOUtilOptions, Configurable
 
@@ -316,8 +323,54 @@ class BaseAnalysisTask(BaseTask):
         """
         self.safe_update(**kwargs)
         if self.config.mask:
-            return [self.get_filename_from_format(MASK_FORMATTER, "_mask.fits")]
+            mask_files = glob.glob(self.get_filename_from_format(MASK_FORMATTER, "*_mask.fits"))
+            print(mask_files)
+            return mask_files
+            #return [self.get_filename_from_format(MASK_FORMATTER, "_mask.fits")]
         return []
+
+    
+    def get_gains(self, **kwargs):
+        """Get the gains for a specific set of input parameters.
+                
+        Parameters
+        ----------
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        gains : `array`
+            The gains
+        """
+        self.safe_update(**kwargs)
+        if self.config.gain:
+            gain_file = self.get_filename_from_format(EORESULTS_TABLE_FORMATTER, '_eotest_results.fits')
+            tables = TableDict(gain_file)
+            gain_table = tables['eo_results']
+            gain_vals = gain_table['GAIN']
+            return gain_table['GAIN'].reshape(9, 16)
+        return np.ones((9, 16), float)
+
+    def get_nonlinearirty_correction(self, **kwargs):
+        """Get the gains for a specific set of input parameters.
+                
+        Parameters
+        ----------
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        ncl : `NonlinearityCorrection`
+            The object that implements the correction
+        """
+        self.safe_update(**kwargs)
+        if self.config.nonlin:
+            nonlin_file = self.get_filename_from_format(NONLIN_FORMATTER, "flat_lin.fits")
+            nlc = NonlinearityCorrection.create_from_fits_file(nonlin_file)
+            return nlc            
+        return None
 
     def log_info_slot_msg(self, config, msg):
         """Make an info message that we are running a particular slot
@@ -521,7 +574,10 @@ class AnalysisTask(BaseAnalysisTask):
         if self.config.superbias in [None, 'none', 'None']:
             return None
         superbias_file = self.get_superbias_file('.fits')
-        ccd = get_ccd_from_id(None, superbias_file, mask_files)
+        try:
+            ccd = get_ccd_from_id(None, superbias_file, mask_files)
+        except Exception:
+            ccd = None
         return ccd
 
     def make_datatables(self, butler, data, **kwargs):

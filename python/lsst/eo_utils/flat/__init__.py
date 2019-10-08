@@ -18,6 +18,8 @@ from .flat_linearity import FlatLinearityConfig, FlatLinearityTask
 
 from .flat_bf import BFConfig, BFTask
 
+from .nonlinearity import NonlinearityConfig, NonlinearityTask
+
 from .ptc import PTCConfig, PTCTask,\
     PTCSummaryConfig, PTCSummaryTask
 

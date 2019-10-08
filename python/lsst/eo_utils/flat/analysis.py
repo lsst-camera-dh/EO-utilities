@@ -48,6 +48,7 @@ class FlatAnalysisTask(AnalysisTask):
         """
         AnalysisTask.__init__(self, **kwargs)
         self.stat_ctrl = afwMath.StatisticsControl()
+        self.stat_ctrl.setAndMask(0x7FF)
 
     @classmethod
     def get_data(cls, butler, run_num, **kwargs):

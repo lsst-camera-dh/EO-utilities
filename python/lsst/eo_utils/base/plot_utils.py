@@ -26,6 +26,7 @@ from . import mpl_utils
 from matplotlib import ticker, colors
 import matplotlib.pyplot as plt
 
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 mpl_utils.set_plt_ioff()
 
@@ -219,6 +220,119 @@ class FigureDict:
         return o_dict
 
 
+    def setup_amp_resid_plots_grid(self, key, **kwargs):
+        """Set up a 4x4 grid of plots with requested labeling
+
+        Parameters
+        ----------
+        key : str
+            Key for the figure.
+
+        Keywords
+        --------
+        title : `str`
+            Figure title
+        xlabel : `str`
+            X-axis label
+        ylabel : `str`
+            Y-axis label
+        ylabel_resid : `str`
+            Y-axis residual label
+        figsize : `tuple`
+            Figure width, height in inches
+        ymin : `float` or `None`
+            Y-axis minimum value
+        ymax : `float` or `None`
+            Y-axis maximum value
+        xscale : `str` or `None
+            X-axis scaling
+        tscale : `str` or `None
+            Y-axis scaling
+
+        Returns
+        -------
+        fig : `Figure`
+            The newly created `Figure`
+        axes : `AxesSubplot`
+            The axes objects for the subplotsw
+        body_axes : `list` of `Axes`
+            The axes objects for the main plots
+        resid_axes ; `list` of `Axes`
+            The axes objects for the residual plots
+        """
+        title = kwargs.get('title', None)
+        xlabel = kwargs.get('xlabel', None)
+        ylabel = kwargs.get('ylabel', None)
+        ylabel_resid = kwargs.get('ylabel_resid', None)
+        xmin = kwargs.get('xmin', None)
+        xmax = kwargs.get('xmax', None)
+        ymin = kwargs.get('ymin', None)
+        ymax = kwargs.get('ymax', None)
+        ymin_resid = kwargs.get('ymin_resid', None)
+        ymax_resid = kwargs.get('ymax_resid', None)
+        xscale = kwargs.get('xscale', None)
+        yscale = kwargs.get('yscale', None)
+
+        figsize = kwargs.get('figsize', (15, 10))
+
+        fig_nrow = 4
+        fig_ncol = 4
+        fig, axs = plt.subplots(nrows=fig_nrow, ncols=fig_ncol, figsize=figsize)
+
+        if title is not None:
+            fig.suptitle(title)
+
+        body_axes_list = []
+        resid_axes_list = []
+  
+        for i_row in range(4):
+            for i_col in range(4):
+                axes = axs[i_row, i_col]
+                axes.tick_params(labelleft=False, labelbottom=False)
+                axes.set_visible(False)
+                
+                axes_body = inset_axes(axes, '100%', '60%', loc='upper right')
+                axes_resid = inset_axes(axes, '100%', '30%', loc='lower right')
+
+                if xscale is not None:
+                    axes_body.set_xscale(xscale)
+                    axes_resid.set_xscale(xscale)
+                if yscale is not None:
+                    axes_body.set_yscale(yscale)
+                
+                if ymin is not None or ymax is not None:                    
+                    axes_body.set_ylim(ymin, ymax)
+                if ymin_resid is not None or ymax_resid is not None:                    
+                    axes_resid.set_ylim(ymin_resid, ymax_resid)
+
+                if xmin is not None or xmax is not None:                    
+                    axes_body.set_xlim(xmin, xmax)
+                    axes_resid.set_xlim(xmin, xmax)
+
+                if i_col == 0:
+                    if ylabel is not None:
+                        axes_body.set_ylabel(ylabel)
+                    if ylabel_resid is not None:                    
+                        axes_resid.set_ylabel(ylabel_resid)
+                else:
+                    axes_body.set_yticklabels([])
+                    axes_resid.set_yticklabels([])
+                axes_body.set_xticklabels([])
+     
+                if i_row == 3:
+                    if xlabel is not None:
+                        axes_resid.set_xlabel(xlabel)
+                    else:
+                        axes_resid.set_xticklabels([])
+                
+                body_axes_list.append(axes_body)
+                resid_axes_list.append(axes_resid)
+
+        o_dict = dict(fig=fig, axs=axs, body_axes=body_axes_list, resid_axes=resid_axes_list)
+        self._fig_dict[key] = o_dict
+        return o_dict
+
+
     def setup_region_plots_grid(self, key, **kwargs):
         """Set up a 2x3 grid of plots with requested labeling
 
@@ -406,6 +520,49 @@ class FigureDict:
         axs.plot(xdata, ydata, **kwcopy)
         if ymin is not None and ymax is not None:
             axs.set_ylim(ymin, ymax)
+
+
+    def plot_resid(self, key, iamp, data_struct, **kwargs):
+        """Plot x versus y data for one amp
+
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        iamp : `int`
+            Amp index
+        data_struct : `dict`
+            Dictionary with x, y and model data
+        kwargs
+            Passed to matplotlib
+        """
+        kwcopy = kwargs.copy()
+        ymin = kwcopy.pop('ymin', None)
+        ymax = kwcopy.pop('ymax', None)
+        axes_body = self._fig_dict[key]['body_axes'][iamp]
+        axes_resid = self._fig_dict[key]['resid_axes'][iamp]
+        
+        xvals = data_struct['xvals']
+        yvals = data_struct['yvals']
+        resid_vals = data_struct['resid_vals']
+        model_vals = data_struct.get('model_vals', None)
+        resid_errors = data_struct.get('resid_errors', None)
+        body_mask = data_struct.get('mask', None)
+        resid_mask = data_struct.get('resid_mask', None)
+
+        if body_mask is None:
+            body_mask = np.ones(xvals.shape, bool)
+        if resid_mask is None:
+            resid_mask = np.ones(xvals.shape, bool)
+        axes_body.plot(xvals[body_mask], yvals[body_mask], '.')
+        if model_vals is not None:
+            axes_body.plot(xvals[body_mask], model_vals[body_mask], 'r--')
+        
+        if resid_errors is None:
+            axes_resid.plot(xvals[resid_mask], resid_vals[resid_mask], '.')
+        else:
+            axes_resid.errorbar(xvals[resid_mask], resid_vals[resid_mask],
+                                yerr=resid_errors[resid_mask], fmt='.')
 
 
     def plot_stats_band_amp(self, key, iamp, xvals, **kwargs):

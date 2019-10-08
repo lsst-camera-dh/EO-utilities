@@ -22,6 +22,7 @@ from lsst.pex.exceptions.wrappers import LengthError
 
 import lsst.eotest.image_utils as imutil
 from lsst.eotest.sensor import MaskedCCD
+from lsst.eotest.sensor.flatPairTask import mondiode_value
 
 from .defaults import T_SERIAL, T_PARALLEL
 
@@ -287,7 +288,7 @@ def get_raw_image(ccd, amp):
         img = ccd[amp]
     else:
         geom = ccd.getDetector()
-        img = ccd.maskedImage[geom[amp].getRawBBox()].image
+        img = ccd.maskedImage[geom[amp].getRawBBox()]
     return img
 
 
@@ -552,6 +553,8 @@ def unbiased_ccd_image_dict(ccd, **kwargs):
         Bias frame to subtract off
     trim : `str` or `None`
         Region to trim return images to
+    nonlinearity : `NonlinearityCorrection` or `None`
+        Object that applies the nonlinearity correction
 
     Returns
     -------
@@ -562,6 +565,7 @@ def unbiased_ccd_image_dict(ccd, **kwargs):
     bias_type = kwcopy.pop('bias', None)
     superbias_frame = kwcopy.pop('superbias_frame', None)
     trim = kwcopy.pop('trim', None)
+    nlc = kwcopy.pop('nonlinearity', None)
 
     amps = get_amp_list(ccd)
 
@@ -581,6 +585,8 @@ def unbiased_ccd_image_dict(ccd, **kwargs):
         superbias_im = raw_amp_image(superbias_frame, amp + offset)
         image = unbias_amp(img, serial_oscan, bias_type=bias_type,
                            superbias_im=superbias_im, region=trim_region)
+        if nlc is not None:
+            image.getImage().array[:] = nlc(amp, image.getImage().array)
         o_dict[amp] = image
 
     return o_dict
@@ -733,13 +739,36 @@ def get_exposure_time(ccd):
         return ccd.md.md.get('EXPTIME')
     return ccd.getInfo().getVisitInfo().getExposureTime()
 
+
+def compute_mondiode_flux_from_txt(pd_file, exptime):
+    """Return the monitoring diode computed from the txtfile
+
+    Parameters
+    ----------
+    pd_file : `str`
+        Filenaem of the text file in question
+
+    Returns
+    -------
+    val : `float`
+        The value
+    """
+    x, y = np.recfromtxt(pd_file).transpose()
+    # Threshold for finding baseline current values:
+    ythresh = (min(y) + max(y))/factor + min(y)
+    # Subtract the median of the baseline values to get a calibrated
+    # current.
+    y -= np.median(y[np.where(y < ythresh)])
+    integral = sum((y[1:] + y[:-1])/2*(x[1:] - x[:-1]))
+    return integral
+
+
+
 def get_mondiode_val(ccd):
     """Return the monitoring diode value
 
     Parameters
     ----------
-    butler : `Butler` or `None`
-        Data Butler (or none)
     ccd : `ImageF` or `MaskedImageF`
         CCD image object
 
@@ -749,6 +778,12 @@ def get_mondiode_val(ccd):
         The value
     """
     if isinstance(ccd, MaskedCCD):
+        try:
+            return mondiode_value(ccd.imfile, 0)
+        except Exception as msg:
+            print('mondiode_value functions failed, falling back to header keyword')
+            print(msg)
+            pass
         return ccd.md.get('MONDIODE')
     return ccd.getMetadata()['MONDIODE']
 
@@ -758,8 +793,6 @@ def get_mono_wl(ccd):
 
     Parameters
     ----------
-    butler : `Butler` or `None`
-        Data Butler (or none)
     ccd : `ImageF` or `MaskedImageF`
         CCD image object
 
@@ -771,6 +804,24 @@ def get_mono_wl(ccd):
     if isinstance(ccd, MaskedCCD):
         return ccd.md.get('MONOWL')
     return ccd.getMetadata()['MONOWL']
+
+def get_mono_slit_b(ccd):
+    """Return the monochromatic slit wdith 
+
+    Parameters
+    ----------
+    ccd : `MaskedImageF` or `MaskedCCD`
+        CCD image object
+
+    Returns
+    -------
+    val : `float`
+        The value
+    """
+    if isinstance(ccd, MaskedCCD):
+        return ccd.md.get('MONOCH-SLIT_B')
+    return ccd.getMetadata()['MONOCH-SLIT_B']
+
 
 def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
     """Stack a set of images
@@ -833,7 +884,8 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
                                                       bias_type=bias_type,
                                                       superbias_im=superbias_im))
 
-    exp_time /= len(in_files)
+    if in_files:
+        exp_time /= len(in_files)
     out_dict['METADATA'] = dict(EXPTIME=exp_time)
 
     for key, val in amp_stack_dict.items():
@@ -1023,6 +1075,8 @@ def outlier_raft_dict(raft_data, mean_val, max_offset):
             for key, val in outlier_data.items():
                 out_data[key].append(val)
     return out_data
+
+
 
 
 def fill_footprint_dict(image, fp_dict, amp, slot, **kwargs):
