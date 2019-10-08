@@ -2,14 +2,39 @@
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.iter_utils import TableAnalysisByRaft,\
-    SummaryAnalysisIterator
+from lsst.eo_utils.base.iter_utils import TableAnalysisBySlot,\
+    TableAnalysisByRaft, SummaryAnalysisIterator
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
 from .file_utils import SLOT_FLAT_TABLE_FORMATTER,\
     SUM_FLAT_TABLE_FORMATTER, SUM_FLAT_PLOT_FORMATTER,\
+    SLOT_FLAT_TABLE_FORMATTER, SLOT_FLAT_PLOT_FORMATTER,\
     RAFT_FLAT_TABLE_FORMATTER, RAFT_FLAT_PLOT_FORMATTER
+
+
+class FlatSlotTableAnalysisConfig(AnalysisConfig):
+    """Configuration for superflat analyses"""
+    run = EOUtilOptions.clone_param('run')
+    raft = EOUtilOptions.clone_param('raft')
+    slot = EOUtilOptions.clone_param('slot')
+    insuffix = EOUtilOptions.clone_param('insuffix')
+
+
+class FlatSlotTableAnalysisTask(AnalysisTask):
+    """Simple functor class to tie together standard superflat data analysis
+    """
+
+    # These can overridden by the sub-class
+    ConfigClass = FlatSlotTableAnalysisConfig
+    _DefaultName = "FlatSlotTableAnalysisTask"
+    iteratorClass = TableAnalysisBySlot
+
+    intablename_format = SLOT_FLAT_TABLE_FORMATTER
+    tablename_format = SLOT_FLAT_TABLE_FORMATTER
+    plotname_format = SLOT_FLAT_PLOT_FORMATTER
+    datatype = 'flat table'
+
 
 class FlatRaftTableAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""

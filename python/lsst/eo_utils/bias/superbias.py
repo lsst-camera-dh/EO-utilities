@@ -135,6 +135,8 @@ class SuperbiasTask(BiasAnalysisTask):
             output_file = self.get_filename_from_format(SUPERBIAS_STAT_FORMATTER,
                                                         self.get_suffix(),
                                                         **kwargs) + '.fits'
+        if not slot_data['BIAS']:
+            return
 
         makedir_safe(output_file)
 

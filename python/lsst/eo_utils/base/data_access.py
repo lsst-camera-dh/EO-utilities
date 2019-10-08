@@ -110,6 +110,10 @@ class DataLocationInfo:
         return self.get_trait('imagetype', **kwargs)
 
 
+BIAS_LOCATION_INFO = DataLocationInfo('bias',
+                                      ts8_glob_testname='bias_raft_acq',
+                                      ts8_glob_imagetype='bias_bias',
+                                      bot_glob_imagetype='bias_bias')
 DARK_LOCATION_INFO = DataLocationInfo('dark',
                                       ts8_glob_testname='dark_raft_acq',
                                       ts8_glob_imagetype='dark_dark')
@@ -137,14 +141,15 @@ QE_LOCATION_INFO = DataLocationInfo('lambda',
                                     ts8_glob_imagetype='FLAT',
                                     bot_butler_imagetype='FLAT',
                                     ts8_butler_imagetype='FLAT')
-LOCATION_INFO_DICT = dict(DARK=DARK_LOCATION_INFO,
+LOCATION_INFO_DICT = dict(BIAS=BIAS_LOCATION_INFO,
+                          DARK=DARK_LOCATION_INFO,
                           FLAT=FLAT_LOCATION_INFO,
                           FE55=FE55_LOCATION_INFO,
                           PPUMP=PPUMP_LOCATION_INFO,
                           SFLAT=SFLAT_LOCATION_INFO,
                           QE=QE_LOCATION_INFO)
 
-TEST_TYPES = ['DARK', 'FLAT', 'FE55', 'PPUMP', 'SFLAT', 'QE']
+TEST_TYPES = ['BIAS', 'DARK', 'FLAT', 'FE55', 'PPUMP', 'SFLAT', 'QE']
 
 
 def get_data_for_run(butler, run_id, **kwargs):

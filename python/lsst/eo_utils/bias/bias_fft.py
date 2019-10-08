@@ -67,6 +67,10 @@ class BiasFFTTask(BiasAnalysisTask):
 
         bias_files = data['BIAS']
 
+        if not bias_files:
+            self.log_info_slot_msg(self.config, "No bias data, skipping")
+            return TableDict()
+
         mask_files = self.get_mask_files()
         superbias_frame = self.get_superbias_frame(mask_files)
 

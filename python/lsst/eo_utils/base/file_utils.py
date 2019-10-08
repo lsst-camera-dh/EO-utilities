@@ -18,7 +18,7 @@ except ImportError:
     print("Warning, no datacat-utilities")
 
 
-from .defaults import ALL_RAFTS_BOT_ETU, ALL_SLOTS, ARCHIVE_DIR
+from .defaults import ALL_RAFTS_BOT_ETU, NINE_RAFTS, ALL_SLOTS, ARCHIVE_DIR
 
 
 # These are the standard input filenames
@@ -283,15 +283,24 @@ SUM_BASE_FORMATTER = FILENAME_FORMATS.add_format('summary_basename', SUMMARY_FOR
 TS8_MASKIN_FORMATTER = FILENAME_FORMATS.add_format('ts8_mask_in', SLOT_FORMAT_STRING,
                                                    fileType='masks_in', testType='',
                                                    suffix='_mask.fits', teststand='ts8')
+#MASK_FORMATTER = FILENAME_FORMATS.add_format('mask', SLOT_FORMAT_STRING,
+#                                             fileType='masks', testType='',
+#                                             suffix='_mask.fits')
 MASK_FORMATTER = FILENAME_FORMATS.add_format('mask', SLOT_FORMAT_STRING,
-                                             fileType='masks', testType='',
-                                             suffix='_mask.fits')
+                                             fileType='masks_in', testType='',
+                                             suffix='*_mask.fits')
+
 SUPERBIAS_FORMATTER = FILENAME_FORMATS.add_format('superbias',
                                                   SUPERBIAS_FORMAT_STRING,
                                                   superbias=None, suffix='')
 SUPERBIAS_STAT_FORMATTER = FILENAME_FORMATS.add_format('superbias_stat',
                                                        SUPERBIAS_STAT_FORMAT_STRING,
                                                        bias=None, suffix='')
+NONLIN_FORMATTER = FILENAME_FORMATS.add_format('nonlin',
+                                               SLOT_FORMAT_STRING.replace('{suffix}',
+                                                                          '_b-{bias}_s-{superbias}_{suffix}'),
+                                               fileType='tables',
+                                               testType='flat')                                               
 TS8_FORMATTER = FILENAME_FORMATS.add_format('ts8_images',
                                             TS8_GLOB_STRING,
                                             archive=ARCHIVE_DIR)
@@ -650,7 +659,7 @@ def get_raft_names_dc(run):
     if htype == 'LCA-11021':
         return [hid]
     if htype == 'LCA-10134':
-        return ALL_RAFTS_BOT_ETU
+        return NINE_RAFTS
     raise ValueError("Unrecognized hardware type %s" % htype)
 
 

@@ -47,8 +47,9 @@ ALL_SLOTS = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
 
 # The rafts
 ALL_RAFTS_BOT_ETU = ["R10", "R22"]
-
-
+NINE_RAFTS = ["R01", "RO2", "R10",
+              "R11", "R12", "R20",
+              "R21", "R22", "R30"]
 
 # Various types of tests
 TS8_MASK_TEST_TYPES = ['bright_pixel_mask',
