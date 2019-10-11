@@ -284,13 +284,13 @@ class FigureDict:
 
         body_axes_list = []
         resid_axes_list = []
-  
+
         for i_row in range(4):
             for i_col in range(4):
                 axes = axs[i_row, i_col]
                 axes.tick_params(labelleft=False, labelbottom=False)
                 axes.set_visible(False)
-                
+
                 axes_body = inset_axes(axes, '100%', '60%', loc='upper right')
                 axes_resid = inset_axes(axes, '100%', '30%', loc='lower right')
 
@@ -299,32 +299,32 @@ class FigureDict:
                     axes_resid.set_xscale(xscale)
                 if yscale is not None:
                     axes_body.set_yscale(yscale)
-                
-                if ymin is not None or ymax is not None:                    
+
+                if ymin is not None or ymax is not None:
                     axes_body.set_ylim(ymin, ymax)
-                if ymin_resid is not None or ymax_resid is not None:                    
+                if ymin_resid is not None or ymax_resid is not None:
                     axes_resid.set_ylim(ymin_resid, ymax_resid)
 
-                if xmin is not None or xmax is not None:                    
+                if xmin is not None or xmax is not None:
                     axes_body.set_xlim(xmin, xmax)
                     axes_resid.set_xlim(xmin, xmax)
 
                 if i_col == 0:
                     if ylabel is not None:
                         axes_body.set_ylabel(ylabel)
-                    if ylabel_resid is not None:                    
+                    if ylabel_resid is not None:
                         axes_resid.set_ylabel(ylabel_resid)
                 else:
                     axes_body.set_yticklabels([])
                     axes_resid.set_yticklabels([])
                 axes_body.set_xticklabels([])
-     
+
                 if i_row == 3:
                     if xlabel is not None:
                         axes_resid.set_xlabel(xlabel)
                     else:
                         axes_resid.set_xticklabels([])
-                
+
                 body_axes_list.append(axes_body)
                 resid_axes_list.append(axes_resid)
 
@@ -536,12 +536,9 @@ class FigureDict:
         kwargs
             Passed to matplotlib
         """
-        kwcopy = kwargs.copy()
-        ymin = kwcopy.pop('ymin', None)
-        ymax = kwcopy.pop('ymax', None)
         axes_body = self._fig_dict[key]['body_axes'][iamp]
         axes_resid = self._fig_dict[key]['resid_axes'][iamp]
-        
+
         xvals = data_struct['xvals']
         yvals = data_struct['yvals']
         resid_vals = data_struct['resid_vals']
@@ -556,13 +553,13 @@ class FigureDict:
             resid_mask = np.ones(xvals.shape, bool)
         axes_body.plot(xvals[body_mask], yvals[body_mask], '.')
         if model_vals is not None:
-            axes_body.plot(xvals[body_mask], model_vals[body_mask], 'r--')
-        
+            axes_body.plot(xvals[body_mask], model_vals[body_mask], 'r--', **kwargs)
+
         if resid_errors is None:
-            axes_resid.plot(xvals[resid_mask], resid_vals[resid_mask], '.')
+            axes_resid.plot(xvals[resid_mask], resid_vals[resid_mask], '.', **kwargs)
         else:
             axes_resid.errorbar(xvals[resid_mask], resid_vals[resid_mask],
-                                yerr=resid_errors[resid_mask], fmt='.')
+                                yerr=resid_errors[resid_mask], fmt='.', **kwargs)
 
 
     def plot_stats_band_amp(self, key, iamp, xvals, **kwargs):

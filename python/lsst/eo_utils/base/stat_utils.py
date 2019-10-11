@@ -112,19 +112,19 @@ def make_profile_hist(xbin_edges, xdata, ydata, **kwargs):
     yerrs = kwargs.get('yerrs', None)
     stderr = kwargs.get('stderr', False)
 
-    nx = len(xbin_edges) - 1
+    nbinsx = len(xbin_edges) - 1
     x_vals = (xbin_edges[0:-1] + xbin_edges[1:])/2.
-    y_vals = np.ndarray((nx))
-    y_errs = np.ndarray((nx))
-    
+    y_vals = np.ndarray((nbinsx))
+    y_errs = np.ndarray((nbinsx))
+
 
     if yerrs is None:
         weights = np.ones(y_vals.shape)
     else:
         weights = 1./(yerrs*yerrs)
-        
+
     y_w = ydata*weights
-    
+
     for i, (xmin, xmax) in enumerate(zip(xbin_edges[0:-1], xbin_edges[1:])):
         mask = (xdata >= xmin) * (xdata < xmax)
         if mask.sum() < 2:
@@ -135,7 +135,7 @@ def make_profile_hist(xbin_edges, xdata, ydata, **kwargs):
         y_errs[i] = ydata[mask].std()
         if stderr:
             y_errs[i] /= np.sqrt(mask.sum())
-    
+
     return x_vals, y_vals, y_errs
 
 
@@ -151,7 +151,7 @@ def lin_func_3(pars, xvals):
     """Return quadratic function of the form pars[0]*x + pars[1]*x*x + pars[2]"""
     return pars[0]*xvals + pars[1]*xvals*xvals + pars[2]
 
-LINEARITY_FUNC_DICT = {1:lin_func_1, 2:lin_func_2, 3:lin_func_3}                    
+LINEARITY_FUNC_DICT = {1:lin_func_1, 2:lin_func_2, 3:lin_func_3}
 
 
 
@@ -161,7 +161,7 @@ def chi2_model(pars, xvals, yvals, model):
 
 
 
-def perform_linear_chisq_fit(xdata, ydata, fit_mask, model_func_choice):    
+def perform_linear_chisq_fit(xdata, ydata, fit_mask, model_func_choice):
     """Preform a linear chi**2 fit to data
 
     Parameters
@@ -176,8 +176,8 @@ def perform_linear_chisq_fit(xdata, ydata, fit_mask, model_func_choice):
         Function choice
 
     Returns
-    -------    
-    results : 
+    -------
+    results :
         The x-bin centers
     model_yvals : `array`
         The model values at the bins
@@ -203,12 +203,11 @@ def perform_linear_chisq_fit(xdata, ydata, fit_mask, model_func_choice):
     elif model_func_choice == 3:
         pars = (mean_slope, 0., 0.)
     results = scipy.optimize.leastsq(chi2_model, pars,
-                                     full_output=1,                                    
+                                     full_output=1,
                                      args=(xdata_fit, ydata_fit, model_func))
-   
+
     model_yvals = model_func(results[0], xdata)
     frac_resid = (ydata - model_yvals)/model_yvals
     frac_resid_err = 1./ydata
-   
-    return results, model_yvals, frac_resid, frac_resid_err
 
+    return results, model_yvals, frac_resid, frac_resid_err

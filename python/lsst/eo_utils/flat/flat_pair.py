@@ -22,7 +22,7 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_amp_list,\
     get_exposure_time, get_mondiode_val, get_mono_slit_b, unbiased_ccd_image_dict
-    
+
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
@@ -32,18 +32,24 @@ from lsst.eo_utils.flat.analysis import FlatAnalysisConfig, FlatAnalysisTask
 
 
 def get_mondiode_data(fits_file, factor=5):
+    """Get the monitoring diode data"""
     with fits.open(fits_file) as hdus:
-        x = hdus['AMP0.MEAS_TIMES'].data.field('AMP0_MEAS_TIMES')
-        y = -hdus['AMP0.MEAS_TIMES'].data.field('AMP0_A_CURRENT')*1e9
-    ythresh = (max(y) - min(y))/factor + min(y)
-    index = np.where(y < ythresh)
-    y0 = np.median(y[index])
-    y -= y0
-    return x, y
+        hdu = hdus['AMP0.MEAS_TIMES']
+        xvals = hdu.data.field('AMP0_MEAS_TIMES')
+        yvals = -1.0e9*hdu.data.field('AMP0_A_CURRENT')
+    ythresh = (max(yvals) - min(yvals))/factor + min(yvals)
+    index = np.where(yvals < ythresh)
+    y_0 = np.median(yvals[index])
+    yvals -= y_0
+    return xvals, yvals
 
 def avg_sum(times, currents):
-    dt = times[1:] - times[0:-1]
-    return (currents[1:] * dt).sum()
+    """Computing the photodiode charge as the product of the
+    bin widths and the bin values.
+    This is b/c the picoampmeter return the averaged time
+    for each interval"""
+    del_t = times[1:] - times[0:-1]
+    return (currents[1:] * del_t).sum()
 
 
 class FlatPairConfig(FlatAnalysisConfig):
@@ -53,7 +59,7 @@ class FlatPairConfig(FlatAnalysisConfig):
     superbias = EOUtilOptions.clone_param('superbias')
     gain = EOUtilOptions.clone_param('gain')
     mask = EOUtilOptions.clone_param('mask')
-    nonlin =  EOUtilOptions.clone_param('nonlin')
+    nonlin = EOUtilOptions.clone_param('nonlin')
 
 
 class FlatPairTask(FlatAnalysisTask):
@@ -167,29 +173,29 @@ class FlatPairTask(FlatAnalysisTask):
 
             amps = get_amp_list(flat_1)
 
-            expTime_1 = get_exposure_time(flat_1)
-            expTime_2 = get_exposure_time(flat_2)
+            exp_time_1 = get_exposure_time(flat_1)
+            exp_time_2 = get_exposure_time(flat_2)
 
-            if expTime_1 != expTime_2:
+            if exp_time_1 != exp_time_2:
                 raise RuntimeError("Exposure times do not match for:\n%s\n%s\n"
                                    % (id_1, id_1))
-            data_dict['EXPTIME'].append(expTime_1)
+            data_dict['EXPTIME'].append(exp_time_1)
 
             mon_diode_1_x, mon_diode_1_y = get_mondiode_data(id_1)
             mon_diode_2_x, mon_diode_2_y = get_mondiode_data(id_2)
 
-            mon_diode_trapz_1 = trapz(mon_diode_1_y, mon_diode_1_x) / expTime_1
-            mon_diode_trapz_2 = trapz(mon_diode_2_y, mon_diode_2_x) / expTime_2
+            mon_diode_trapz_1 = trapz(mon_diode_1_y, mon_diode_1_x) / exp_time_1
+            mon_diode_trapz_2 = trapz(mon_diode_2_y, mon_diode_2_x) / exp_time_2
 
-            mon_diode_simps_1 = simps(mon_diode_1_y, mon_diode_1_x) / expTime_1
-            mon_diode_simps_2 = simps(mon_diode_2_y, mon_diode_2_x) / expTime_2
+            mon_diode_simps_1 = simps(mon_diode_1_y, mon_diode_1_x) / exp_time_1
+            mon_diode_simps_2 = simps(mon_diode_2_y, mon_diode_2_x) / exp_time_2
 
-            mon_diode_avg_1 = avg_sum(mon_diode_1_y, mon_diode_1_x) / expTime_1
-            mon_diode_avg_2 = avg_sum(mon_diode_2_y, mon_diode_2_x) / expTime_2
+            mon_diode_avg_1 = avg_sum(mon_diode_1_y, mon_diode_1_x) / exp_time_1
+            mon_diode_avg_2 = avg_sum(mon_diode_2_y, mon_diode_2_x) / exp_time_2
 
-            flux_trapz = expTime_1 * (mon_diode_trapz_1 + mon_diode_trapz_2)/2.
-            flux_simps = expTime_1 * (mon_diode_simps_1 + mon_diode_simps_2)/2.
-            flux_avg = -1. * expTime_1 * (mon_diode_avg_1 + mon_diode_avg_2)/2.
+            flux_trapz = exp_time_1 * (mon_diode_trapz_1 + mon_diode_trapz_2)/2.
+            flux_simps = exp_time_1 * (mon_diode_simps_1 + mon_diode_simps_2)/2.
+            flux_avg = -1. * exp_time_1 * (mon_diode_avg_1 + mon_diode_avg_2)/2.
 
             data_dict['MONDIODE1_trapz'].append(mon_diode_trapz_1)
             data_dict['MONDIODE1_simps'].append(mon_diode_simps_1)
@@ -206,12 +212,12 @@ class FlatPairTask(FlatAnalysisTask):
             mondiode_2 = get_mondiode_val(flat_2)
 
             if mondiode_1 is not None:
-                flux_1 = expTime_1 * mondiode_1
+                flux_1 = exp_time_1 * mondiode_1
                 data_dict['MONDIODE1'].append(mondiode_1)
             else:
                 data_dict['MONDIODE1'].append(-1)
             if mondiode_2 is not None:
-                flux_2 = expTime_2 * mondiode_2
+                flux_2 = exp_time_2 * mondiode_2
                 data_dict['MONDIODE2'].append(mondiode_2)
             else:
                 data_dict['MONDIODE2'].append(-1)

@@ -4,7 +4,7 @@ import scipy.optimize
 
 import numpy as np
 
-from lsst.eotest.sensor.ptcTask import ptc_func, residuals
+from lsst.eotest.sensor.ptcTask import ptc_func
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
@@ -19,11 +19,12 @@ from .meta_analysis import  FlatRaftTableAnalysisConfig,\
     FlatSummaryAnalysisConfig, FlatSummaryAnalysisTask
 
 
-def model_func(pars, xvals):
-    """Return a line whose slope is pars[0]"""
+def model_func_quad(pars, xvals):
+    """Return a quadratic function of xvals"""
     #return pars[0] + pars[1]*xvals + pars[2]*xvals*xvals
     #return pars[0]*xvals + pars[1]*xvals*xvals
     return pars[0] + pars[1]*xvals + pars[2]*xvals*xvals
+
 
 def chi2_model(pars, xvals, yvals, model):
     """Return the chi2 w.r.t. the model"""
@@ -91,7 +92,6 @@ class PTCTask(FlatRaftTableAnalysisTask):
 
             self.log_progress("  %s" % slot)
 
-            datafile = data[slot].replace('flat.fits', '%s.fits' % self.config.insuffix)
             dtables = TableDict(data[slot].replace('flat.fits', '%s.fits' % self.config.insuffix))
 
             try:
@@ -101,17 +101,17 @@ class PTCTask(FlatRaftTableAnalysisTask):
                 tab = dtables['ptc_stats']
 
             for amp in range(1, 17):
-                mean = tab["AMP%02i_MEAN" % (amp)]
+                mean = tab["AMP%02i_CORRMEAN" % (amp)]
                 var = tab["AMP%02i_VAR" % (amp)]
                 med_gain = np.median(mean/var)
                 frac_resids = np.abs((var - mean/med_gain)/var)
                 index = np.where(frac_resids < 0.2)
                 #index = var < 0.4 * var.max()
                 try:
-                    #pars = (2.7e-6, med_gain, 25.)
-                    pars = (25., med_gain, 0.)
+                    pars = (2.7e-6, med_gain, 25.)
+                    #pars = (25., med_gain, 0.)
                     results = scipy.optimize.leastsq(chi2_model, pars, full_output=1,
-                                                     args=(mean[index], var[index], model_func))
+                                                     args=(mean[index], var[index], ptc_func))
                     pars, cov = results[:2]
                     ptc_a00 = pars[0]
                     ptc_gain = pars[1]
@@ -175,17 +175,20 @@ class PTCTask(FlatRaftTableAnalysisTask):
         idx = 0
         for slot in ALL_SLOTS:
 
-            fig_resid_slot = figs.setup_amp_resid_plots_grid('ptc_fits_%s' % slot, xlabel='Mean [ADU]',
-                                                             ylabel='VARIANCE [ADU**2]', ylabel_resid='Frac. Resid.',
-                                                             xmin=10., xmax=250000.,
-                                                             ymin=10., ymax=250000,
-                                                             ymin_resid=-0.2, ymax_resid=0.2,
-                                                             xscale='log', yscale='log')
+            _ = figs.setup_amp_resid_plots_grid('ptc_fits_%s' % slot, xlabel='Mean [ADU]',
+                                                ylabel='VARIANCE [ADU**2]',
+                                                ylabel_resid='Frac. Resid.',
+                                                xmin=10., xmax=250000.,
+                                                ymin=10., ymax=250000,
+                                                ymin_resid=-0.2, ymax_resid=0.2,
+                                                xscale='log', yscale='log')
 
-            fig_nonlin_log = figs.setup_figure("non_lin_log_%s" % slot, xlabel="Flux [a.u.]", ylabel='Frac. Resid')
+            fig_nonlin_log = figs.setup_figure("non_lin_log_%s" % slot,
+                                               xlabel="Flux [a.u.]",
+                                               ylabel='Frac. Resid')
             axes_nonlin_log = fig_nonlin_log['axes']
             axes_nonlin_log.set_xscale('log')
-            
+
             fig_nonlin = figs.setup_figure("non_lin_%s" % slot, xlabel="Flux [a.u.]", ylabel='Frac. Resid')
             axes_nonlin = fig_nonlin['axes']
 
@@ -200,7 +203,7 @@ class PTCTask(FlatRaftTableAnalysisTask):
                 yvals = ptc_vars[idx][sort_idx]
 
                 ptc_pars = (a00s[idx], gains[idx], alphas[idx])
-                yvals_fit = model_func(ptc_pars, xvals)
+                yvals_fit = ptc_func(ptc_pars, xvals)
                 frac_resid = (yvals - yvals_fit)/yvals_fit
                 mask = np.fabs(frac_resid) < 0.2
                 x_masked = xvals[mask]
@@ -212,7 +215,7 @@ class PTCTask(FlatRaftTableAnalysisTask):
 
                 axes_nonlin.plot(x_masked, y_masked, '-', label="Amp %i" % amp)
                 axes_nonlin_log.plot(x_masked, y_masked, '-', label="Amp %i" % amp)
-                
+
                 idx += 1
 
 

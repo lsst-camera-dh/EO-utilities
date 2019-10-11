@@ -18,7 +18,7 @@ except ImportError:
     print("Warning, no datacat-utilities")
 
 
-from .defaults import ALL_RAFTS_BOT_ETU, NINE_RAFTS, ALL_SLOTS, ARCHIVE_DIR
+from .defaults import NINE_RAFTS, ALL_SLOTS, ARCHIVE_DIR
 
 
 # These are the standard input filenames
@@ -300,7 +300,7 @@ NONLIN_FORMATTER = FILENAME_FORMATS.add_format('nonlin',
                                                SLOT_FORMAT_STRING.replace('{suffix}',
                                                                           '_b-{bias}_s-{superbias}_{suffix}'),
                                                fileType='tables',
-                                               testType='flat')                                               
+                                               testType='flat')
 TS8_FORMATTER = FILENAME_FORMATS.add_format('ts8_images',
                                             TS8_GLOB_STRING,
                                             archive=ARCHIVE_DIR)
@@ -348,10 +348,15 @@ SUMMARY_REPORT_FORMATTER = FILENAME_FORMATS.add_format('summary_report',
 
 def get_ts8_files_glob(**kwargs):
     """Returns a `list` with the matching file names using the format string for TS8 data """
+    nfiles = kwargs.get('nfiles', None)
     outdict = {}
     for slot in ALL_SLOTS:
         glob_string = TS8_FORMATTER(slot=slot, **kwargs)
-        outdict[slot] = sorted(glob.glob(glob_string))
+        files = sorted(glob.glob(glob_string))
+        if nfiles is None:
+            outdict[slot] = files
+        else:
+            outdict[slot] = files[0:nfiles]
     return outdict
 
 
@@ -361,14 +366,18 @@ def get_bot_files_glob(**kwargs):
     outdict = {}
     kwcopy = kwargs.copy()
     test_name = kwcopy.pop('testName').lower()
+    nfiles = kwcopy.get('nfiles', None)
     rafts = get_raft_names_dc(kwcopy['run'])
 
     for raft in rafts:
         raftdict = {}
         for slot in ALL_SLOTS:
             glob_string = BOT_FORMATTER(raft=raft, slot=slot, testName=test_name, **kwcopy)
-            print(glob_string)
-            raftdict[slot] = sorted(glob.glob(glob_string))
+            files = sorted(glob.glob(glob_string))
+            if nfiles is None:
+                raftdict[slot] = files
+            else:
+                raftdict[slot] = files[0:nfiles]
         outdict[raft] = raftdict
     return outdict
 
