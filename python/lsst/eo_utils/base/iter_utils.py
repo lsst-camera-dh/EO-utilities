@@ -366,6 +366,16 @@ class AnalysisIterator(AnalysisHandler):
                 kwargs['slots'] = slot
                 kw_remain = self.get_dispatch_args(run, **kwargs)
                 dispatch_job(jobname, logfile_slot, **kw_remain)
+        elif 'raft' in self.config.batch:
+            jobname = "eo_task.py %s" % taskname
+            rafts = kwargs.pop('rafts')
+            if rafts is None:
+                rafts = ALL_RAFTS
+            for raft in rafts:
+                logfile_raft = self.config.logfile.replace('.log', '%s_%s_%s.log' % (taskname, run, raft))
+                kwargs['rafts'] = raft
+                kw_remain = self.get_dispatch_args(run, **kwargs)
+                dispatch_job(jobname, logfile_raft, **kw_remain)
         else:
             jobname = "eo_task.py %s" % self._task.getName().replace('Task', '')
             kw_remain = self.get_dispatch_args(run, **kwargs)
