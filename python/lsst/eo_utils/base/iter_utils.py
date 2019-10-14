@@ -5,7 +5,7 @@ import os
 
 import lsst.pex.config as pexConfig
 
-from .defaults import ALL_SLOTS
+from .defaults import ALL_SLOTS, NINE_RAFTS
 
 from .config_utils import EOUtilOptions, Configurable,\
     setup_parser, add_pex_arguments,\
@@ -175,7 +175,9 @@ class SimpleAnalysisHandler(AnalysisHandler):
         """
         kwcopy = kwargs.copy()
         kwcopy.pop('task', None)
-        ret_dict = dict(optstring=make_argstring(self._task.config, **kwcopy),
+        optstring = make_argstring(self._task.config, **kwcopy)
+        optstring += make_argstring(self.config)
+        ret_dict = dict(optstring=optstring,
                         batch_args=self.config.batch_args,
                         batch=self.config.batch,
                         dry_run=self.config.dry_run)
@@ -329,7 +331,7 @@ class AnalysisIterator(AnalysisHandler):
         kwcopy = kwargs.copy()
         kwcopy.pop('task', None)
         optstring = make_argstring(self._task.config, **kwcopy)
-
+        optstring += make_argstring(self.config, **kwcopy)
         ret_dict = dict(optstring=optstring,
                         batch_args=self.config.batch_args,
                         batch=self.config.batch,
@@ -581,6 +583,7 @@ class AnalysisBySlotConfig(AnalysisIteratorConfig):
     """Additional configuration for EO analysis iterator for slot-based analysis
     """
     slots = EOUtilOptions.clone_param('slots')
+    rafts = EOUtilOptions.clone_param('rafts')
 
 
 class AnalysisBySlot(AnalysisIterator):
@@ -650,6 +653,7 @@ class AnalysisBySlot(AnalysisIterator):
         data_files = self.get_data(self._butler, run, **kwdata)
 
         kwargs['run'] = run
+
         if htype == "LCA-10134":
             iterate_over_rafts_slots(self._task, self._butler, data_files, **kwargs)
         elif htype == "LCA-11021":
@@ -732,6 +736,7 @@ class AnalysisByRaft(AnalysisIterator):
         data_files = self.get_data(self._butler, run, **kwdata)
 
         kwargs['run'] = run
+
         if htype == "LCA-10134":
             iterate_over_rafts(self._task, self._butler, data_files, **kwargs)
         elif htype == "LCA-11021":
