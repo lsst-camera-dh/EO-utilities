@@ -79,7 +79,8 @@ class FlatPairTask(FlatAnalysisTask):
 
     def var(self, img):
         """Return the variance of an image"""
-        return afwMath.makeStatistics(img, afwMath.STDEVCLIP, self.stat_ctrl).getValue()**2
+        #return afwMath.makeStatistics(img, afwMath.VARIANCECLIP, self.stat_ctrl).getValue()
+        return afwMath.makeStatistics(img, afwMath.VARIANCE, self.stat_ctrl).getValue()
 
     def get_pair_stats(self, image_1, image_2):
         """Get the mean and varience from a pair of flats"""
