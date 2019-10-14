@@ -90,20 +90,30 @@ def get_readout_freqs_from_ccd(ccd):
         nrow_i = geom.imaging.getHeight()
         nrow_s = geom.serial_overscan.getHeight()
         nrow_p = geom.parallel_overscan.getHeight()
+        ncol_i = geom.imaging.getWidth()
+        ncol_s = geom.serial_overscan.getWidth()
+        ncol_p = geom.parallel_overscan.getWidth()
         ncol_f = geom.naxis1
     else:
         geom = ccd.getDetector()[0]
         nrow_i = geom.getBBox().getHeight()
         nrow_s = geom.getRawHorizontalOverscanBBox().getHeight()
         nrow_p = geom.getRawVerticalOverscanBBox().getHeight()
+        ncol_i = geom.getBBox().getWidth()
+        ncol_s = geom.getRawHorizontalOverscanBBox().getWidth()
+        ncol_p = geom.getRawVerticalOverscanBBox().getWidth()
         ncol_f = geom.getRawBBox().getWidth()
 
     t_row = ncol_f*T_SERIAL + T_PARALLEL
     f_s = 1./t_row
+    f_c = 1/T_SERIAL
 
     o_dict = dict(freqs_i=fftpack.fftfreq(nrow_i)*f_s,
                   freqs_s=fftpack.fftfreq(nrow_s)*f_s,
-                  freqs_p=fftpack.fftfreq(nrow_p)*f_s)
+                  freqs_p=fftpack.fftfreq(nrow_p)*f_s,
+                  freqs_i_col=fftpack.fftfreq(ncol_i)*f_c,
+                  freqs_s_col=fftpack.fftfreq(ncol_s)*f_c,
+                  freqs_p_col=fftpack.fftfreq(ncol_p)*f_c)
     return o_dict
 
 
@@ -357,9 +367,9 @@ def get_amp_list(ccd):
         List of amplifier indices
     """
     if isinstance(ccd, MaskedCCD):
-        amplist = [amp for amp in ccd]
+        amplist = list(ccd)
     else:
-        amplist = [amp for amp in range(16)]
+        amplist = range(16)
     return amplist
 
 
@@ -745,7 +755,7 @@ def get_exposure_time(ccd):
     return ccd.getInfo().getVisitInfo().getExposureTime()
 
 
-def compute_mondiode_flux_from_txt(pd_file, exptime):
+def compute_mondiode_flux_from_txt(pd_file, factor=5):
     """Return the monitoring diode computed from the txtfile
 
     Parameters
@@ -758,13 +768,13 @@ def compute_mondiode_flux_from_txt(pd_file, exptime):
     val : `float`
         The value
     """
-    x, y = np.recfromtxt(pd_file).transpose()
+    xvals, yvals = np.recfromtxt(pd_file).transpose()
     # Threshold for finding baseline current values:
-    ythresh = (min(y) + max(y))/factor + min(y)
+    ythresh = (min(yvals) + max(yvals))/factor + min(yvals)
     # Subtract the median of the baseline values to get a calibrated
     # current.
-    y -= np.median(y[np.where(y < ythresh)])
-    integral = sum((y[1:] + y[:-1])/2*(x[1:] - x[:-1]))
+    yvals -= np.median(yvals[np.where(yvals < ythresh)])
+    integral = sum((yvals[1:] + yvals[:-1])/2*(xvals[1:] - xvals[:-1]))
     return integral
 
 
@@ -788,7 +798,6 @@ def get_mondiode_val(ccd):
         except Exception as msg:
             print('mondiode_value functions failed, falling back to header keyword')
             print(msg)
-            pass
         return ccd.md.get('MONDIODE')
     return ccd.getMetadata()['MONDIODE']
 
@@ -811,7 +820,7 @@ def get_mono_wl(ccd):
     return ccd.getMetadata()['MONOWL']
 
 def get_mono_slit_b(ccd):
-    """Return the monochromatic slit wdith 
+    """Return the monochromatic slit wdith
 
     Parameters
     ----------

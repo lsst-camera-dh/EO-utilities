@@ -329,10 +329,10 @@ class BaseAnalysisTask(BaseTask):
             #return [self.get_filename_from_format(MASK_FORMATTER, "_mask.fits")]
         return []
 
-    
+
     def get_gains(self, **kwargs):
         """Get the gains for a specific set of input parameters.
-                
+
         Parameters
         ----------
         kwargs
@@ -348,13 +348,12 @@ class BaseAnalysisTask(BaseTask):
             gain_file = self.get_filename_from_format(EORESULTS_TABLE_FORMATTER, '_eotest_results.fits')
             tables = TableDict(gain_file)
             gain_table = tables['eo_results']
-            gain_vals = gain_table['GAIN']
             return gain_table['GAIN'].reshape(9, 16)
         return np.ones((9, 16), float)
 
     def get_nonlinearirty_correction(self, **kwargs):
         """Get the gains for a specific set of input parameters.
-                
+
         Parameters
         ----------
         kwargs
@@ -369,7 +368,7 @@ class BaseAnalysisTask(BaseTask):
         if self.config.nonlin:
             nonlin_file = self.get_filename_from_format(NONLIN_FORMATTER, "flat_lin.fits")
             nlc = NonlinearityCorrection.create_from_fits_file(nonlin_file)
-            return nlc            
+            return nlc
         return None
 
     def log_info_slot_msg(self, config, msg):

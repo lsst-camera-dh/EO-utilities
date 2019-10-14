@@ -341,7 +341,6 @@ class AnalysisIterator(AnalysisHandler):
             pass
         return ret_dict
 
-
     def dispatch_single_run(self, run, **kwargs):
         """Run the analysis over all of the requested objects.
 
@@ -352,30 +351,23 @@ class AnalysisIterator(AnalysisHandler):
         kwargs
             Used to update `Task` configuration
         """
-
         taskname = self._task.getName().replace('Task', '')
+
+        htype, hid = self.get_hardware(self._butler, run)
+
         if self.config.batch in ['None', 'none', None]:
             self.call_analysis_task(run, **kwargs)
         elif 'slot' in self.config.batch:
-            jobname = "eo_task.py %s" % taskname
-            slots = kwargs.pop('slots')
-            if slots is None:
-                slots = ALL_SLOTS
-            for slot in slots:
-                logfile_slot = self.config.logfile.replace('.log', '%s_%s_%s.log' % (taskname, run, slot))
-                kwargs['slots'] = slot
-                kw_remain = self.get_dispatch_args(run, **kwargs)
-                dispatch_job(jobname, logfile_slot, **kw_remain)
+            if htype == "LCA-10134":
+                rafts = kwargs.pop('rafts')
+                slots = kwargs.pop('slots')
+                dispatch_by_raft_slot(self, taskname, rafts, slots, **kwargs)
+            elif htype == "LCA-11021":
+                slots = kwargs.pop('slots')
+                dispatch_by_slot(self, taskname, slots, **kwargs)
         elif 'raft' in self.config.batch:
-            jobname = "eo_task.py %s" % taskname
             rafts = kwargs.pop('rafts')
-            if rafts is None:
-                rafts = ALL_RAFTS
-            for raft in rafts:
-                logfile_raft = self.config.logfile.replace('.log', '%s_%s_%s.log' % (taskname, run, raft))
-                kwargs['rafts'] = raft
-                kw_remain = self.get_dispatch_args(run, **kwargs)
-                dispatch_job(jobname, logfile_raft, **kw_remain)
+            dispatch_by_raft(self, taskname, rafts, **kwargs)
         else:
             jobname = "eo_task.py %s" % self._task.getName().replace('Task', '')
             kw_remain = self.get_dispatch_args(run, **kwargs)
@@ -424,6 +416,78 @@ class AnalysisIterator(AnalysisHandler):
                     self._task.log.warn("Run %s failed, continue to next run" % run)
             else:
                 self.dispatch_single_run(run, **kw_remain)
+
+
+def dispatch_by_slot(handler, taskname, slots, **kwargs):
+    """Dispatch a job for a seriers of slots
+
+    Parameters
+    ----------
+    handler : `AnalysisHandler`
+        Handler that manages the analysis
+    taskname : `str`
+        Name of the task
+    slots : `list` or `None`
+        Slots to run the analysis on
+    """
+    jobname = "eo_task.py %s" % taskname
+    if slots is None:
+        slots = ALL_SLOTS
+    for slot in slots:
+        logfile_slot = handler.config.logfile.replace('.log', '%s_%s_%s.log' % (taskname, run, slot))
+        kwargs['slots'] = slot
+        kw_remain = handler.get_dispatch_args(run, **kwargs)
+        dispatch_job(jobname, logfile_slot, **kw_remain)
+
+
+def dispatch_by_raft_slot(handler, taskname, rafts, slots, **kwargs):
+    """Dispatch a job for a seriers of slots
+
+    Parameters
+    ----------
+    handler : `AnalysisHandler`
+        Handler that manages the analysis
+    taskname : `str`
+        Name of the task
+    rafts : `list` or `None`
+        Rafts to run the analysis on
+    slots : `list` or `None`
+        Slots to run the analysis on
+    """
+    jobname = "eo_task.py %s" % taskname
+    if slots is None:
+        slots = ALL_SLOTS
+    if rafts is None:
+        rafts = ALL_RAFTS
+    for raft in rafts:
+        kwargs['rafts'] = raft
+        for slot in slots:
+            logfile_slot = handler.config.logfile.replace('.log', '%s_%s_Ts_%s.log' % (taskname, run, raft, slot))            
+            kwargs['slots'] = slot
+            kw_remain = handler.get_dispatch_args(run, **kwargs)
+            dispatch_job(jobname, logfile_slot, **kw_remain)
+
+def dispatch_by_raft(handler, taskname, rafts, **kwargs):
+    """Dispatch a job for a seriers of slots
+
+    Parameters
+    ----------
+    handler : `AnalysisHandler`
+        Handler that manages the analysis
+    taskname : `str`
+        Name of the task
+    rafts : `list` or `None`
+        Rafts to run the analysis on
+    """
+    jobname = "eo_task.py %s" % taskname
+    if rafts is None:
+        rafts = ALL_RAFTS
+    for raft in rafts:
+        logfile_raft = self.config.logfile.replace('.log', '%s_%s_%s.log' % (taskname, run, raft))
+        kwargs['rafts'] = raft
+        kw_remain = handler.get_dispatch_args(run, **kwargs)
+        dispatch_job(jobname, logfile_raft, **kw_remain)
+
 
 
 def iterate_over_slots(analysis_task, butler, data_files, **kwargs):

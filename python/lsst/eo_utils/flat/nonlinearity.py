@@ -1,17 +1,12 @@
 """Class to analyze the FFT of the bias frames"""
 
 import numpy as np
-import scipy.optimize
 
 from scipy.interpolate import UnivariateSpline
 
-from lsst.eo_utils.base import TableDict, FigureDict
-
-from lsst.eo_utils.base.defaults import ALL_SLOTS
+from lsst.eo_utils.base import TableDict
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
-
-from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 from lsst.eo_utils.base.stat_utils import perform_linear_chisq_fit, make_profile_hist, LINEARITY_FUNC_DICT
@@ -52,6 +47,33 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
 
     model_func_choice = 1
     do_profiles = True
+    null_point = 0.
+    
+    @staticmethod
+    def _correct_null_point(profile_x, profile_y, null_point):
+        """Force the spline to go through zero at a particular x-xvalue
+
+        Parameters
+        ----------
+        profile_x : `array`
+            The x-bin centers
+        profile_yerr : `array`
+            The y-bin values
+        null_point : `float`
+            The x-value where the spline should go through zero
+       
+        Returns
+        -------
+        y_vals_offset
+            The adjusted y-values
+        """
+        try:
+            uni_spline = UnivariateSpline(profile_x, profile_y)
+            offset =  uni_spline(null_point)
+        except Exception:
+            offset = 0.
+        return profile_y - offset
+
 
     def extract(self, butler, data, **kwargs):
         """Extract data
@@ -89,9 +111,11 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
         if self.do_profiles:
             data_dict['prof_x'] = []
             data_dict['prof_y'] = []
+            data_dict['prof_y_corr'] = []
             data_dict['prof_yerr'] = []
             data_dict_inv['prof_x'] = []
             data_dict_inv['prof_y'] = []
+            data_dict_inv['prof_y_corr'] = []
             data_dict_inv['prof_yerr'] = []
 
         self.log_info_slot_msg(self.config, "")
@@ -119,7 +143,6 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             slit_widths = np.zeros(flux.shape)
 
         flux_vals = np.hstack([flux_1, flux_2])
-        slit_formats = build_slitw_format_dict(slit_widths)
 
         copy_dict = dict(flux=flux,
                          flux_1=flux_1,
@@ -148,10 +171,10 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             mask = amp_vals < 0.8 * amp_vals.max()
             #mask = amp_vals <= amp_vals.max()
 
-            results, model_yvals, frac_resid, frac_resid_err =\
+            results, _, frac_resid, frac_resid_err =\
                 perform_linear_chisq_fit(amp_vals, flux_vals, mask, self.model_func_choice)
 
-            results_inv, model_yvals_inv, frac_resid_inv, frac_resid_err_inv =\
+            results_inv, _, frac_resid_inv, frac_resid_err_inv =\
                 perform_linear_chisq_fit(flux_vals, amp_vals, mask, self.model_func_choice)
 
             if self.do_profiles:
@@ -165,12 +188,19 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                     make_profile_hist(profile_xbins_inv, flux_vals, frac_resid_inv,
                                       yerrs=frac_resid_err_inv, stderr=True)
 
+                if self.null_point is not None:
+                    profile_y_corr = self._correct_null_point(profile_x, profile_y, self.null_point)
+                else:
+                    profile_y_corr = profile_y
+
                 data_dict['prof_x'].append(profile_x)
                 data_dict['prof_y'].append(profile_y)
+                data_dict['prof_y_corr'].append(profile_y_corr)
                 data_dict['prof_yerr'].append(profile_yerr)
 
                 data_dict_inv['prof_x'].append(profile_x_inv)
                 data_dict_inv['prof_y'].append(profile_y_inv)
+                data_dict_inv['prof_y_corr'].append(profile_y_inv)
                 data_dict_inv['prof_yerr'].append(profile_yerr_inv)
 
 
@@ -308,7 +338,6 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
 
             model_yvals = model_func(pars, xvals)
             xline = np.linspace(1., xvals[mask].max(), 1001)
-            yline = model_func(pars, xline)
 
             amp_plot_data = dict(xvals=xvals, yvals=yvals, resid_vals=frac_resid_col[iamp],
                                  model_vals=model_yvals, resid_errors=frac_resid_err_col[iamp],
@@ -317,12 +346,15 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
 
             profile_x = tab_nonlin['prof_x'][amp-1]
             profile_y = tab_nonlin['prof_y'][amp-1]
+            profile_y_corr = tab_nonlin['prof_y_corr'][amp-1]
             profile_yerr = tab_nonlin['prof_yerr'][amp-1]
             prof_mask = profile_yerr >= 0.
 
             axs_prof = figs['prof_fits%s' % suffix]['axs'].flat[amp-1]
             axs_prof.errorbar(profile_x[prof_mask], profile_y[prof_mask],
                               yerr=profile_yerr[prof_mask], fmt='.')
+            axs_prof.errorbar(profile_x[prof_mask], profile_y_corr[prof_mask],
+                              yerr=profile_yerr[prof_mask], fmt='+')
 
             x_masked = xvals[mask]
             y_resid_masked = frac_resid_col[iamp][mask]
@@ -335,11 +367,13 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             try:
                 uni_spline = UnivariateSpline(profile_x[prof_mask], profile_y[prof_mask])
                 axs_prof.plot(xline, uni_spline(xline), 'r-')
+                uni_spline_corr = UnivariateSpline(profile_x[prof_mask], profile_y_corr[prof_mask])
+                axs_prof.plot(xline, uni_spline_corr(xline), 'g-')
             except Exception:
                 pass
 
-            axes_nonlin.plot(x_masked[idx_sort],  y_resid_masked[idx_sort], fmt, label="Amp %i" % amp)
-            axes_nonlin_log.plot(x_masked[idx_sort],  y_resid_masked[idx_sort], fmt, label="Amp %i" % amp)
+            axes_nonlin.plot(x_masked[idx_sort], y_resid_masked[idx_sort], fmt, label="Amp %i" % amp)
+            axes_nonlin_log.plot(x_masked[idx_sort], y_resid_masked[idx_sort], fmt, label="Amp %i" % amp)
 
         stack_means_a0 = frac_resid_col[0:8,].mean(0)
         stack_stds_a0 = frac_resid_col[0:8,].std(0)
@@ -376,8 +410,6 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             Used to override default configuration
         """
         self.safe_update(**kwargs)
-
-        slot = self.config.slot
 
         tab_flatlin = dtables['flat_lin']
 

@@ -7,8 +7,7 @@ from lsst.eo_utils.base.iter_utils import TableAnalysisBySlot,\
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
-from .file_utils import SLOT_FLAT_TABLE_FORMATTER,\
-    SUM_FLAT_TABLE_FORMATTER, SUM_FLAT_PLOT_FORMATTER,\
+from .file_utils import SUM_FLAT_TABLE_FORMATTER, SUM_FLAT_PLOT_FORMATTER,\
     SLOT_FLAT_TABLE_FORMATTER, SLOT_FLAT_PLOT_FORMATTER,\
     RAFT_FLAT_TABLE_FORMATTER, RAFT_FLAT_PLOT_FORMATTER
 
