@@ -47,6 +47,33 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
 
     model_func_choice = 1
     do_profiles = True
+    null_point = 0.
+    
+    @staticmethod
+    def _correct_null_point(profile_x, profile_y, null_point):
+        """Force the spline to go through zero at a particular x-xvalue
+
+        Parameters
+        ----------
+        profile_x : `array`
+            The x-bin centers
+        profile_yerr : `array`
+            The y-bin values
+        null_point : `float`
+            The x-value where the spline should go through zero
+       
+        Returns
+        -------
+        y_vals_offset
+            The adjusted y-values
+        """
+        try:
+            uni_spline = UnivariateSpline(profile_x, profile_y)
+            offset =  uni_spline(null_point)
+        except Exception:
+            offset = 0.
+        return profile_y - offset
+
 
     def extract(self, butler, data, **kwargs):
         """Extract data
@@ -84,9 +111,11 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
         if self.do_profiles:
             data_dict['prof_x'] = []
             data_dict['prof_y'] = []
+            data_dict['prof_y_corr'] = []
             data_dict['prof_yerr'] = []
             data_dict_inv['prof_x'] = []
             data_dict_inv['prof_y'] = []
+            data_dict_inv['prof_y_corr'] = []
             data_dict_inv['prof_yerr'] = []
 
         self.log_info_slot_msg(self.config, "")
@@ -159,12 +188,19 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                     make_profile_hist(profile_xbins_inv, flux_vals, frac_resid_inv,
                                       yerrs=frac_resid_err_inv, stderr=True)
 
+                if self.null_point is not None:
+                    profile_y_corr = self._correct_null_point(profile_x, profile_y, self.null_point)
+                else:
+                    profile_y_corr = profile_y
+
                 data_dict['prof_x'].append(profile_x)
                 data_dict['prof_y'].append(profile_y)
+                data_dict['prof_y_corr'].append(profile_y_corr)
                 data_dict['prof_yerr'].append(profile_yerr)
 
                 data_dict_inv['prof_x'].append(profile_x_inv)
                 data_dict_inv['prof_y'].append(profile_y_inv)
+                data_dict_inv['prof_y_corr'].append(profile_y_inv)
                 data_dict_inv['prof_yerr'].append(profile_yerr_inv)
 
 
@@ -310,12 +346,15 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
 
             profile_x = tab_nonlin['prof_x'][amp-1]
             profile_y = tab_nonlin['prof_y'][amp-1]
+            profile_y_corr = tab_nonlin['prof_y_corr'][amp-1]
             profile_yerr = tab_nonlin['prof_yerr'][amp-1]
             prof_mask = profile_yerr >= 0.
 
             axs_prof = figs['prof_fits%s' % suffix]['axs'].flat[amp-1]
             axs_prof.errorbar(profile_x[prof_mask], profile_y[prof_mask],
                               yerr=profile_yerr[prof_mask], fmt='.')
+            axs_prof.errorbar(profile_x[prof_mask], profile_y_corr[prof_mask],
+                              yerr=profile_yerr[prof_mask], fmt='+')
 
             x_masked = xvals[mask]
             y_resid_masked = frac_resid_col[iamp][mask]
@@ -328,6 +367,8 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             try:
                 uni_spline = UnivariateSpline(profile_x[prof_mask], profile_y[prof_mask])
                 axs_prof.plot(xline, uni_spline(xline), 'r-')
+                uni_spline_corr = UnivariateSpline(profile_x[prof_mask], profile_y_corr[prof_mask])
+                axs_prof.plot(xline, uni_spline_corr(xline), 'g-')
             except Exception:
                 pass
 
