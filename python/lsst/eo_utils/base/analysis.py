@@ -5,6 +5,8 @@ This module contains base classes for analysis tasks.
 
 import abc
 
+import glob
+
 import lsst.pex.config as pexConfig
 
 from .defaults import DEFAULT_STAT_TYPE
