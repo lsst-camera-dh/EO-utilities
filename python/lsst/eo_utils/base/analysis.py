@@ -316,7 +316,8 @@ class BaseAnalysisTask(BaseTask):
         """
         self.safe_update(**kwargs)
         if self.config.mask:
-            return [self.get_filename_from_format(MASK_FORMATTER, "_mask.fits")]
+            mask_files = glob.glob(self.get_filename_from_format(MASK_FORMATTER, "*_mask.fits"))
+            return mask_files
         return []
 
     def log_info_slot_msg(self, config, msg):
