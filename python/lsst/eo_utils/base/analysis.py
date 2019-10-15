@@ -7,7 +7,6 @@ import abc
 
 import glob
 
-import numpy as np
 
 import lsst.pex.config as pexConfig
 
@@ -324,9 +323,7 @@ class BaseAnalysisTask(BaseTask):
         self.safe_update(**kwargs)
         if self.config.mask:
             mask_files = glob.glob(self.get_filename_from_format(MASK_FORMATTER, "*_mask.fits"))
-            print(mask_files)
             return mask_files
-            #return [self.get_filename_from_format(MASK_FORMATTER, "_mask.fits")]
         return []
 
 
