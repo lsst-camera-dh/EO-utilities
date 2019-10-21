@@ -255,7 +255,10 @@ class FlatPairTask(FlatAnalysisTask):
 
         self.log_progress("Done!")
 
-        dtables = TableDict()
+        primary_hdu = fits.PrimaryHDU()
+        primary_hdu.header['NAMPS'] = 16
+
+        dtables = TableDict(primary=primary_hdu)
         dtables.make_datatable('files', make_file_dict(butler, flat1_files + flat2_files))
         dtables.make_datatable('flat', data_dict)
 
