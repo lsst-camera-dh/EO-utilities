@@ -53,3 +53,36 @@ SUM_SFLAT_PLOT_FORMATTER = FILENAME_FORMATS.add_format('sum_sflat_plot',
                                                        SUMMARY_SFLAT_FORMAT_STRING,
                                                        fileType='plots',
                                                        **SFLAT_DEFAULT_FIELDS)
+
+def get_sflat_files_run(run_id, **kwargs):
+    """Get a set of sflat and mask files out of a folder
+
+    Parameters
+    ----------
+    run_id : `str`
+        The number number we are reading
+    kwargs
+        Passed along to the underlying get_files_for_run function
+
+    Returns
+    -------
+    outdict : `dict`
+        Dictionary mapping slot to file names
+    """
+    testtypes = kwargs.get('testtypes', None)
+    hinfo = get_hardware_type_and_id(run_id)
+
+    if testtypes is None:
+        if hinfo[0] == 'LCA-11021':
+            testtypes = ['sflat_raft_acq']
+            #testtypes = ['SFLAT']
+            imagetype = "SFLAT"
+        else:
+            testtypes = ['SFLAT']
+            imagetype = "FLAT"
+
+    return get_files_for_run(run_id,
+                             imagetype=imagetype,
+                             testtypes=testtypes,
+                             outkey='SFLAT',
+                             **kwargs)
