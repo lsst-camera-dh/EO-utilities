@@ -148,7 +148,7 @@ class OscanCorrelTask(BiasAnalysisTask):
             serial_oscan = regions['serial_overscan']
 
             img = get_raw_image(ccd, amp)
-            image = unbias_amp(img, serial_oscan, bias_type=None, superbias_im=superbias_im)
+            image = unbias_amp(img, serial_oscan, bias_type=None, superbias_im=superbias_im).image
             oscan_copy = copy.deepcopy(serial_oscan)
             oscan_copy.grow(-self.boundry)
             oscan_data = image[oscan_copy]

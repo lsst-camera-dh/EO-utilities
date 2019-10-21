@@ -330,7 +330,7 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
         for islot, (_, slot_data) in enumerate(sorted(flat_array.items())):
             for iamp, (_, image) in enumerate(sorted(slot_data.items())):
                 image *= -1
-                fill_footprint_dict(image, fp_dict, iamp, islot, **kwargs)
+                fill_footprint_dict(image.image, fp_dict, iamp, islot, **kwargs)
         return fp_dict
 
     def extract(self, butler, data, **kwargs):

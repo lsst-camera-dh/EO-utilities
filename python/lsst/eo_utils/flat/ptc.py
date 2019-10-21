@@ -4,7 +4,7 @@ import scipy.optimize
 
 import numpy as np
 
-from lsst.eotest.sensor.ptcTask import ptc_func, residuals
+from lsst.eotest.sensor.ptcTask import ptc_func
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
 
@@ -17,6 +17,19 @@ from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 from .meta_analysis import  FlatRaftTableAnalysisConfig,\
     FlatRaftTableAnalysisTask,\
     FlatSummaryAnalysisConfig, FlatSummaryAnalysisTask
+
+
+def model_func_quad(pars, xvals):
+    """Return a quadratic function of xvals"""
+    #return pars[0] + pars[1]*xvals + pars[2]*xvals*xvals
+    #return pars[0]*xvals + pars[1]*xvals*xvals
+    return pars[0] + pars[1]*xvals + pars[2]*xvals*xvals
+
+
+def chi2_model(pars, xvals, yvals, model):
+    """Return the chi2 w.r.t. the model"""
+    return (yvals - model(pars, xvals))/np.sqrt(yvals)
+
 
 
 class PTCConfig(FlatRaftTableAnalysisConfig):
@@ -79,25 +92,38 @@ class PTCTask(FlatRaftTableAnalysisTask):
 
             self.log_progress("  %s" % slot)
 
-            dtables = TableDict(data[slot].replace('ptc.fits', 'flat.fits'))
-            tab = dtables['flat']
+            dtables = TableDict(data[slot].replace('flat.fits', '%s.fits' % self.config.insuffix))
+
+            try:
+                tab = dtables['flat']
+            except KeyError:
+                print(dtables.keys())
+                tab = dtables['ptc_stats']
 
             for amp in range(1, 17):
-                mean = tab["AMP%02i_MEAN" % (amp)]
+                mean = tab["AMP%02i_CORRMEAN" % (amp)]
                 var = tab["AMP%02i_VAR" % (amp)]
                 med_gain = np.median(mean/var)
                 frac_resids = np.abs((var - mean/med_gain)/var)
                 index = np.where(frac_resids < 0.2)
+                #index = var < 0.4 * var.max()
                 try:
-                    results = scipy.optimize.leastsq(residuals, (1., med_gain, 0.), full_output=1,
-                                                     args=(mean[index], var[index]))
+                    pars = (2.7e-6, med_gain, 25.)
+                    #pars = (25., med_gain, 0.)
+                    results = scipy.optimize.leastsq(chi2_model, pars, full_output=1,
+                                                     args=(mean[index], var[index], ptc_func))
                     pars, cov = results[:2]
                     ptc_a00 = pars[0]
-                    ptc_a00_error = np.sqrt(cov[0][0])
-                    ptc_alpha = pars[1]
-                    ptc_alpha_error = np.sqrt(cov[1][1])
-                    ptc_gain = pars[2]
-                    ptc_gain_error = np.sqrt(cov[2][2])
+                    ptc_gain = pars[1]
+                    ptc_alpha = pars[2]
+                    if cov is not None:
+                        ptc_a00_error = np.sqrt(cov[0][0])
+                        ptc_gain_error = np.sqrt(cov[1][1])
+                        ptc_alpha_error = np.sqrt(cov[2][2])
+                    else:
+                        ptc_a00_error = -1.
+                        ptc_alpha_error = -1.
+                        ptc_gain_error = -1.
                 except Exception as eobj:
                     self.log.warn("Exception caught while fitting PTC:")
                     self.log.warn(str(eobj))
@@ -146,26 +172,54 @@ class PTCTask(FlatRaftTableAnalysisTask):
         alphas = table['alpha']
         gains = table['gain']
 
-        log_xmins = np.log10(ptc_means[:, 0])
-        log_xmaxs = np.log10(ptc_means[:, -1])
-
         idx = 0
-        xlo = np.power(10, 1.5)
-        xhi = np.power(10, 5.5)
         for slot in ALL_SLOTS:
-            figs.setup_amp_plots_grid(slot, xlabel="Mean [ADU]", ylabel="Var [ADU**2]")
+
+            _ = figs.setup_amp_resid_plots_grid('ptc_fits_%s' % slot, xlabel='Mean [ADU]',
+                                                ylabel='VARIANCE [ADU**2]',
+                                                ylabel_resid='Frac. Resid.',
+                                                xmin=10., xmax=250000.,
+                                                ymin=10., ymax=250000,
+                                                ymin_resid=-0.2, ymax_resid=0.2,
+                                                xscale='log', yscale='log')
+
+            fig_nonlin_log = figs.setup_figure("non_lin_log_%s" % slot,
+                                               xlabel="Flux [a.u.]",
+                                               ylabel='Frac. Resid')
+            axes_nonlin_log = fig_nonlin_log['axes']
+            axes_nonlin_log.set_xscale('log')
+
+            fig_nonlin = figs.setup_figure("non_lin_%s" % slot, xlabel="Flux [a.u.]", ylabel='Frac. Resid')
+            axes_nonlin = fig_nonlin['axes']
+
             for amp in range(16):
-                axes = figs.get_amp_axes(slot, amp)
-                axes.set_xscale('log')
-                axes.set_yscale('log')
-                axes.set_xlim(xlo, xhi)
-                axes.set_ylim(1e1, 1e7)
-                axes.scatter(ptc_means[idx], ptc_vars[idx])
-                xvals = np.logspace(log_xmins[idx], log_xmaxs[idx], 100)
+                try:
+                    xvals = ptc_means[idx]
+                except IndexError:
+                    break
+
+                sort_idx = np.argsort(xvals)
+                xvals = xvals[sort_idx]
+                yvals = ptc_vars[idx][sort_idx]
+
                 ptc_pars = (a00s[idx], gains[idx], alphas[idx])
-                yvals = ptc_func(ptc_pars, xvals)
-                axes.plot(xvals, yvals, 'r-')
+                yvals_fit = ptc_func(ptc_pars, xvals)
+                frac_resid = (yvals - yvals_fit)/yvals_fit
+                mask = np.fabs(frac_resid) < 0.2
+                x_masked = xvals[mask]
+                y_masked = frac_resid[mask]
+
+                amp_plot_data = dict(xvals=xvals, yvals=yvals, resid_vals=frac_resid,
+                                     model_vals=yvals_fit, body_mask=mask, resid_mask=mask)
+                figs.plot_resid('ptc_fits_%s' % slot, amp, amp_plot_data)
+
+                axes_nonlin.plot(x_masked, y_masked, '-', label="Amp %i" % amp)
+                axes_nonlin_log.plot(x_masked, y_masked, '-', label="Amp %i" % amp)
+
                 idx += 1
+
+
+
 
     def plot(self, dtables, figs, **kwargs):
         """Plot the summary data from the ptc statistics study

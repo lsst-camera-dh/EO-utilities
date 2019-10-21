@@ -22,6 +22,7 @@ from lsst.pex.exceptions.wrappers import LengthError
 
 import lsst.eotest.image_utils as imutil
 from lsst.eotest.sensor import MaskedCCD
+from lsst.eotest.sensor.flatPairTask import mondiode_value
 
 from .defaults import T_SERIAL, T_PARALLEL
 
@@ -89,20 +90,30 @@ def get_readout_freqs_from_ccd(ccd):
         nrow_i = geom.imaging.getHeight()
         nrow_s = geom.serial_overscan.getHeight()
         nrow_p = geom.parallel_overscan.getHeight()
+        ncol_i = geom.imaging.getWidth()
+        ncol_s = geom.serial_overscan.getWidth()
+        ncol_p = geom.parallel_overscan.getWidth()
         ncol_f = geom.naxis1
     else:
         geom = ccd.getDetector()[0]
         nrow_i = geom.getBBox().getHeight()
         nrow_s = geom.getRawHorizontalOverscanBBox().getHeight()
         nrow_p = geom.getRawVerticalOverscanBBox().getHeight()
+        ncol_i = geom.getBBox().getWidth()
+        ncol_s = geom.getRawHorizontalOverscanBBox().getWidth()
+        ncol_p = geom.getRawVerticalOverscanBBox().getWidth()
         ncol_f = geom.getRawBBox().getWidth()
 
     t_row = ncol_f*T_SERIAL + T_PARALLEL
     f_s = 1./t_row
+    f_c = 1/T_SERIAL
 
     o_dict = dict(freqs_i=fftpack.fftfreq(nrow_i)*f_s,
                   freqs_s=fftpack.fftfreq(nrow_s)*f_s,
-                  freqs_p=fftpack.fftfreq(nrow_p)*f_s)
+                  freqs_p=fftpack.fftfreq(nrow_p)*f_s,
+                  freqs_i_col=fftpack.fftfreq(ncol_i)*f_c,
+                  freqs_s_col=fftpack.fftfreq(ncol_s)*f_c,
+                  freqs_p_col=fftpack.fftfreq(ncol_p)*f_c)
     return o_dict
 
 
@@ -158,7 +169,10 @@ def get_geom_steps_from_amp(ccd, amp):
     step_y : `int`
         Step to take in y to go from readout to physical order
     """
-    manu = ccd.getInfo().getMetadata().getString('CCD_MANU')
+    try:
+        manu = ccd.getInfo().getMetadata().getString('CCD_MANU')
+    except Exception:
+        manu = ccd.getDetector().getSerial()[0:3]
     if manu == 'ITL':
         flip_y = -1
     elif manu == 'E2V':
@@ -184,7 +198,9 @@ def flip_data_in_place(filepath):
         The file we are adjusting
     """
     hdus = fits.open(filepath)
-    manu = hdus[0].header['CCD_MANU']
+    manu = hdus[0].header.get('CCD_MANU', None)
+    if manu is None:
+        manu = hdus[0].header.get('LSST_NUM')[0:3]
     for amp in range(1, 17):
         (step_x, step_y) = get_geom_steps_manu_hdu(manu, amp)
         hdus[amp].data = hdus[amp].data[::step_x, ::step_y]
@@ -284,10 +300,10 @@ def get_raw_image(ccd, amp):
         The image
     """
     if isinstance(ccd, MaskedCCD):
-        img = ccd[amp].getImage()
+        img = ccd[amp]
     else:
         geom = ccd.getDetector()
-        img = ccd.maskedImage[geom[amp].getRawBBox()].image
+        img = ccd.maskedImage[geom[amp].getRawBBox()]
     return img
 
 
@@ -351,9 +367,9 @@ def get_amp_list(ccd):
         List of amplifier indices
     """
     if isinstance(ccd, MaskedCCD):
-        amplist = [amp for amp in ccd]
+        amplist = list(ccd)
     else:
-        amplist = [amp for amp in range(16)]
+        amplist = range(16)
     return amplist
 
 
@@ -550,6 +566,10 @@ def unbiased_ccd_image_dict(ccd, **kwargs):
         Method for bias subtraction
     superbias_frame : `MaskedCCD` or `None`
         Bias frame to subtract off
+    trim : `str` or `None`
+        Region to trim return images to
+    nonlinearity : `NonlinearityCorrection` or `None`
+        Object that applies the nonlinearity correction
 
     Returns
     -------
@@ -559,6 +579,8 @@ def unbiased_ccd_image_dict(ccd, **kwargs):
     kwcopy = kwargs.copy()
     bias_type = kwcopy.pop('bias', None)
     superbias_frame = kwcopy.pop('superbias_frame', None)
+    trim = kwcopy.pop('trim', None)
+    nlc = kwcopy.pop('nonlinearity', None)
 
     amps = get_amp_list(ccd)
 
@@ -568,10 +590,18 @@ def unbiased_ccd_image_dict(ccd, **kwargs):
     for amp in amps:
         regions = get_geom_regions(ccd, amp)
         serial_oscan = regions['serial_overscan']
+        if trim is None:
+            trim_region = None
+        else:
+            trim_region = regions[trim]
+
         img = get_raw_image(ccd, amp)
 
         superbias_im = raw_amp_image(superbias_frame, amp + offset)
-        image = unbias_amp(img, serial_oscan, bias_type=bias_type, superbias_im=superbias_im)
+        image = unbias_amp(img, serial_oscan, bias_type=bias_type,
+                           superbias_im=superbias_im, region=trim_region)
+        if nlc is not None:
+            image.getImage().array[:] = nlc(amp, image.getImage().array)
         o_dict[amp] = image
 
     return o_dict
@@ -724,13 +754,36 @@ def get_exposure_time(ccd):
         return ccd.md.md.get('EXPTIME')
     return ccd.getInfo().getVisitInfo().getExposureTime()
 
+
+def compute_mondiode_flux_from_txt(pd_file, factor=5):
+    """Return the monitoring diode computed from the txtfile
+
+    Parameters
+    ----------
+    pd_file : `str`
+        Filenaem of the text file in question
+
+    Returns
+    -------
+    val : `float`
+        The value
+    """
+    xvals, yvals = np.recfromtxt(pd_file).transpose()
+    # Threshold for finding baseline current values:
+    ythresh = (min(yvals) + max(yvals))/factor + min(yvals)
+    # Subtract the median of the baseline values to get a calibrated
+    # current.
+    yvals -= np.median(yvals[np.where(yvals < ythresh)])
+    integral = sum((yvals[1:] + yvals[:-1])/2*(xvals[1:] - xvals[:-1]))
+    return integral
+
+
+
 def get_mondiode_val(ccd):
     """Return the monitoring diode value
 
     Parameters
     ----------
-    butler : `Butler` or `None`
-        Data Butler (or none)
     ccd : `ImageF` or `MaskedImageF`
         CCD image object
 
@@ -740,6 +793,11 @@ def get_mondiode_val(ccd):
         The value
     """
     if isinstance(ccd, MaskedCCD):
+        try:
+            return mondiode_value(ccd.imfile, 0)
+        except Exception as msg:
+            print('mondiode_value functions failed, falling back to header keyword')
+            print(msg)
         return ccd.md.get('MONDIODE')
     return ccd.getMetadata()['MONDIODE']
 
@@ -749,8 +807,6 @@ def get_mono_wl(ccd):
 
     Parameters
     ----------
-    butler : `Butler` or `None`
-        Data Butler (or none)
     ccd : `ImageF` or `MaskedImageF`
         CCD image object
 
@@ -762,6 +818,24 @@ def get_mono_wl(ccd):
     if isinstance(ccd, MaskedCCD):
         return ccd.md.get('MONOWL')
     return ccd.getMetadata()['MONOWL']
+
+def get_mono_slit_b(ccd):
+    """Return the monochromatic slit wdith
+
+    Parameters
+    ----------
+    ccd : `MaskedImageF` or `MaskedCCD`
+        CCD image object
+
+    Returns
+    -------
+    val : `float`
+        The value
+    """
+    if isinstance(ccd, MaskedCCD):
+        return ccd.md.get('MONOCH-SLIT_B')
+    return ccd.getMetadata()['MONOCH-SLIT_B']
+
 
 def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
     """Stack a set of images
@@ -824,7 +898,8 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
                                                       bias_type=bias_type,
                                                       superbias_im=superbias_im))
 
-    exp_time /= len(in_files)
+    if in_files:
+        exp_time /= len(in_files)
     out_dict['METADATA'] = dict(EXPTIME=exp_time)
 
     for key, val in amp_stack_dict.items():
@@ -833,7 +908,7 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
         else:
             outkey = key + 1
         stackimage = imutil.stack(val, statistic)
-        out_dict[outkey] = stackimage
+        out_dict[outkey] = stackimage.image
 
     if log is not None:
         log.info("Done!")
@@ -917,7 +992,7 @@ def sort_sflats(butler, sflat_files):
         else:
             exp_time = butler.queryMetadata('raw', 'EXPTIME', sflat)[0]
             #FIXME, this should not be hardcoded
-            if exp_time < 10.:
+            if exp_time < 20.:
                 sflats_l.append(sflat)
             else:
                 sflats_h.append(sflat)
@@ -1014,6 +1089,8 @@ def outlier_raft_dict(raft_data, mean_val, max_offset):
             for key, val in outlier_data.items():
                 out_data[key].append(val)
     return out_data
+
+
 
 
 def fill_footprint_dict(image, fp_dict, amp, slot, **kwargs):

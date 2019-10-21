@@ -64,7 +64,9 @@ class EOUtilOptions(pexConfig.Config):
     bias = pexConfig.Field("Method to use for unbiasing", str, default='spline')
     superbias = pexConfig.Field("Version of superbias frame to use", str,
                                 default='spline')
+    gain = pexConfig.Field("Use the gain correction", bool, default=False)
     mask = pexConfig.Field("Use the mask files", bool, default=False)
+    nonlin = pexConfig.Field("Use the nonlinearity correction", bool, default=False)
 
     # Options for where to put output data and what to include
     outdir = pexConfig.Field("Output file path root", str,
@@ -248,11 +250,14 @@ def make_argstring(config, **kwargs):
             def_value = None
         if value in [def_value, None]:
             continue
-        elif isinstance(value, bool):
+        if isinstance(value, bool):
             if not value:
                 continue
-            else:
-                ostring += " --%s" % key
+            ostring += " --%s" % key
+        elif isinstance(value, str):
+            if not value:
+                continue
+            ostring += " --%s %s" % (key, value)
         elif isinstance(value, (list, pexConfig.listField.List)):
             for val2 in value:
                 ostring += " --%s %s" % (key, val2)

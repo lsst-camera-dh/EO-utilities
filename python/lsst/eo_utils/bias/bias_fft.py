@@ -67,6 +67,10 @@ class BiasFFTTask(BiasAnalysisTask):
 
         bias_files = data['BIAS']
 
+        if not bias_files:
+            self.log_info_slot_msg(self.config, "No bias data, skipping")
+            return TableDict()
+
         mask_files = self.get_mask_files()
         superbias_frame = self.get_superbias_frame(mask_files)
 
@@ -81,10 +85,16 @@ class BiasFFTTask(BiasAnalysisTask):
             ccd = get_ccd_from_id(butler, bias_file, mask_files)
             if ifile == 0:
                 freqs_dict = get_readout_freqs_from_ccd(ccd)
+                print(freqs_dict.keys())
+
             for key in REGION_KEYS:
                 freqs = freqs_dict['freqs_%s' % key]
+                freqs_col = freqs_dict['freqs_%s_col' % key]
                 nfreqs = len(freqs)
-                fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
+                nfreqs_col = len(freqs_col)
+                if key not in fft_data:
+                    fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
+                    fft_data["%s_col" % key] = dict(freqs=freqs_col[0:int(nfreqs_col/2)])
 
             BiasFFTTask.get_ccd_data(self, ccd, fft_data,
                                      ifile=ifile, nfiles_used=len(bias_files),
@@ -96,6 +106,7 @@ class BiasFFTTask(BiasAnalysisTask):
         dtables.make_datatable('files', make_file_dict(butler, bias_files))
         for key in REGION_KEYS:
             dtables.make_datatable('biasfft-%s' % key, fft_data[key])
+            dtables.make_datatable('biasfft-%s_col' % key, fft_data["%s_col" % key])
 
         return dtables
 
@@ -104,7 +115,7 @@ class BiasFFTTask(BiasAnalysisTask):
         """Plot the FFT of the bias as function of row
 
         Parameters
-        ----------
+        ----2------
         dtables : `TableDict`
             The data produced by this task
         figs : `FigureDict`
@@ -114,14 +125,21 @@ class BiasFFTTask(BiasAnalysisTask):
         """
         self.safe_update(**kwargs)
 
+        if not dtables.keys():
+            return
+
         for key, region in zip(REGION_KEYS, REGION_NAMES):
             datakey = 'biasfft-%s' % key
             figs.setup_amp_plots_grid(datakey, title="FFT of %s region mean by row" % region,
-                                      xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]",
-                                      ymin=0., ymax=3.)
+                                      xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]")
             figs.plot_xy_amps_from_tabledict(dtables, datakey, datakey,
-                                             x_name='freqs', y_name='fftpow',
-                                             ymin=0., ymax=3.)
+                                             x_name='freqs', y_name='fftpow')
+            datakey_col = "biasfft-%s_col" % key
+            figs.setup_amp_plots_grid(datakey_col, title="FFT of %s region columns" % region,
+                                      xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]")
+            figs.plot_xy_amps_from_tabledict(dtables, datakey_col, datakey_col,
+                                             x_name='freqs', y_name='fftpow')
+
 
     @staticmethod
     def get_ccd_data(for_whom, ccd, data, **kwargs):
@@ -173,14 +191,26 @@ class BiasFFTTask(BiasAnalysisTask):
             key_str = "fftpow_%s_a%02i" % (slot, i)
 
             for key, region in zip(REGION_KEYS, REGION_NAMES):
+                key_col = "%s_col" % key
                 struct = array_struct(frames[region], do_std=for_whom.config.std)
                 fftpow = np.abs(fftpack.fft(struct['rows']-struct['rows'].mean()))
                 nval = len(fftpow)
                 fftpow /= nval/2
                 if key_str not in data[key]:
-                    data[key][key_str] = np.ndarray((int(nval/2), nfiles_used))
+                    data[key][key_str] = np.zeros((int(nval/2), nfiles_used))
                 data[key][key_str][:, ifile] = np.sqrt(fftpow[0:int(nval/2)])
 
+                fft_by_col = []
+                for row_data in frames[region]:
+                    fftpow_row = np.abs(fftpack.fft(row_data-row_data.mean()))
+                    nvals = len(fftpow_row)
+                    fftpow /= nvals/2
+                    fft_by_col.append(fftpow_row)
+                fft_mean_by_col = np.vstack(fft_by_col).mean(axis=0)
+                if key_str not in data[key_col]:
+                    data[key_col][key_str] = np.zeros((int(nvals/2), nfiles_used))
+                data[key_col][key_str][:, ifile] = np.sqrt(fft_mean_by_col[0:int(nvals/2)])
+                
 
 
 class SuperbiasFFTConfig(SuperbiasSlotTableAnalysisConfig):
@@ -235,6 +265,9 @@ class SuperbiasFFTTask(SuperbiasSlotTableAnalysisTask):
             freqs = freqs_dict['freqs_%s' % key]
             nfreqs = len(freqs)
             fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
+            fft_data['%s_col' % key] = dict(freqs=freqs[0:int(nfreqs/2)])
+
+        print(fft_data.keys())
 
         BiasFFTTask.get_ccd_data(self, superbias, fft_data,
                                  slot=slot, superbias_frame=None)
@@ -335,6 +368,22 @@ class BiasFFTStatsTask(BiasRaftTableAnalysisTask):
             datapath = basename.replace('_biasfft_stats.fits', '_biasfft.fits')
 
             dtables = TableDict(datapath, [datakey])
+            if not dtables.keys():
+                self.log.warn("No tables")
+
+                for amp in range(16):
+                    zeros = np.zeros((1024), float)
+                    data_dict['fftpow_mean'].append(zeros)
+                    data_dict['fftpow_median'].append(zeros)
+                    data_dict['fftpow_std'].append(zeros)
+                    data_dict['fftpow_min'].append(zeros)
+                    data_dict['fftpow_max'].append(zeros)
+                    data_dict['fftpow_maxval'].append(0.)
+                    data_dict['fftpow_argmax'].append(-1)
+                    data_dict['slot'].append(islot)
+                    data_dict['amp'].append(amp)
+                continue
+
             table = dtables[datakey]
 
             if freqs is None:
@@ -356,6 +405,8 @@ class BiasFFTStatsTask(BiasRaftTableAnalysisTask):
         self.log_progress("Done!")
 
         outtables = TableDict()
+        if freqs is None:
+            freqs = np.zeros((1024), float)
         outtables.make_datatable("freqs", dict(freqs=freqs))
         outtables.make_datatable("biasfft_stats", data_dict)
         return outtables

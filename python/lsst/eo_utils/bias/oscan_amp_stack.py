@@ -118,7 +118,7 @@ class OscanAmpStackTask(BiasAnalysisTask):
         for skey, slabel in zip(stats, stats_labels):
             y_name = "stack_%s" % skey
             figkey = "biasosstack-%s" % skey
-            figs.setup_region_plots_grid(figkey, title=stats,
+            figs.setup_region_plots_grid(figkey, title="Amplifier Stacked Overscan Data",
                                          xlabel="Channel", ylabel=slabel)
 
             idx = 0

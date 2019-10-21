@@ -169,7 +169,7 @@ def make_child_node(parent_node, child_name, **kwargs):
     for key, val in kwargs.items():
         if val is None:
             continue
-        elif key == 'text':
+        if key == 'text':
             child_node.text = val
         elif key == 'node_class':
             child_node.set('class', val)

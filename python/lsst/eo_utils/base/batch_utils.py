@@ -55,7 +55,7 @@ def write_slurm_batchfile(jobname, logfile, **kwargs):
     for key, val in zip(tokens[0::2], tokens[1::2]):
         fout.write("#SBATCH %s %s\n" % (key, val))
     fout.write("\n")
-    sub_com = "srun --output %s" % logfile
+    sub_com = "srun --output %s" % os.path.join('sbatch', logfile)
 
     if run is None:
         sub_com += " %s" % jobname
@@ -107,7 +107,7 @@ def dispatch_job(jobname, logfile, **kwargs):
             sub_com += " %s " % batch_args
     elif disptach.find('slurm') == 0:
         batchfile = write_slurm_batchfile(jobname, logfile, **kwargs)
-        sub_com = "sbatch %s" % batchfile
+        sub_com = "sbatch %s -o %s" % (batchfile, os.path.join('sbatch', logfile.replace('.fits', '.out')))
     else:
         sub_com = ""
 
