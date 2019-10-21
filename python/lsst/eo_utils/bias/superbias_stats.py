@@ -75,9 +75,15 @@ class SuperbiasStatsTask(SuperbiasRaftTableAnalysisTask):
             self.log_progress("  %s" % slot)
 
             superbias_file = data[slot]
+            if self.config.stat is not None:
+                superbias_file = superbias_file.replace('_superbias_', '_%s_' % self.config.stat)
             mask_files = self.get_mask_files(slot=slot)
 
-            superbias_frame = get_ccd_from_id(None, superbias_file, mask_files)
+            try:
+                superbias_frame = get_ccd_from_id(None, superbias_file, mask_files)
+            except Exception:
+                self.log.warn("Skipping %s:%s:%s" % (self.config.run, self.config.raft, slot))
+                superbias_frame = None
             self.get_superbias_stats(superbias_frame, stats_data, islot)
 
         self.log_progress("Done!")
@@ -125,16 +131,19 @@ class SuperbiasStatsTask(SuperbiasRaftTableAnalysisTask):
         islot : `int`
             The slot index
         """
-        amps = get_amp_list(superbias)
-
         if 'mean' not in stats_data:
-            stats_data['mean'] = np.ndarray((9, 16))
-            stats_data['median'] = np.ndarray((9, 16))
-            stats_data['std'] = np.ndarray((9, 16))
-            stats_data['min'] = np.ndarray((9, 16))
-            stats_data['max'] = np.ndarray((9, 16))
+            stats_data['mean'] = np.zeros((9, 16))
+            stats_data['median'] = np.zeros((9, 16))
+            stats_data['std'] = np.zeros((9, 16))
+            stats_data['min'] = np.zeros((9, 16))
+            stats_data['max'] = np.zeros((9, 16))
 
+        if superbias is None:
+            return
+
+        amps = get_amp_list(superbias)
         for i, amp in enumerate(amps):
+        
             img = get_raw_image(superbias, amp).image
             stats_data['mean'][islot, i] = img.array.mean()
             stats_data['median'][islot, i] = np.median(img.array)
