@@ -992,7 +992,7 @@ def sort_sflats(butler, sflat_files):
         else:
             exp_time = butler.queryMetadata('raw', 'EXPTIME', sflat)[0]
             #FIXME, this should not be hardcoded
-            if exp_time < 10.:
+            if exp_time < 20.:
                 sflats_l.append(sflat)
             else:
                 sflats_h.append(sflat)
