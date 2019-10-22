@@ -883,13 +883,19 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
     out_dict = {}
 
     exp_time = 0.0
+    used_files = 0
 
     for ifile, in_file in enumerate(in_files):
         if ifile % 10 == 0:
             if log is not None:
                 log.info("  %i" % ifile)
 
-        ccd = get_ccd_from_id(butler, in_file, mask_files=[])
+        try:
+            ccd = get_ccd_from_id(butler, in_file, mask_files=[])
+        except Exception:
+            log.warn("  Failed to read %s, skipping" % (str(in_file)))
+
+        used_files += 1
         exp_time += get_exposure_time(ccd)
         amps = get_amp_list(ccd)
 
@@ -910,7 +916,7 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
                                                       superbias_im=superbias_im))
 
     if in_files:
-        exp_time /= len(in_files)
+        exp_time /= float(used_files)
     out_dict['METADATA'] = dict(EXPTIME=exp_time)
 
     for key, val in amp_stack_dict.items():
