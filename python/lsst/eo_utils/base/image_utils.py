@@ -173,7 +173,7 @@ def get_geom_steps_from_amp(ccd, amp):
         try:
             manu = ccd.md.get('CCD_MANU')
         except KeyError:
-            manu = ccd.md.get('LSST_SN')
+            manu = ccd.md.get('LSST_NUM')[0:3]
     else:
         manu = ccd.getDetector().getSerial()[0:3]
 
