@@ -206,7 +206,6 @@ def flip_data_in_place(filepath):
         hdus[amp].data = hdus[amp].data[::step_x, ::step_y]
     hdus.writeto(filepath, overwrite=True)
 
-
 def get_geom_regions(ccd, amp):
     """Get the ccd amp bounding boxes for a particular dataId or file
 
@@ -584,6 +583,8 @@ def unbiased_ccd_image_dict(ccd, **kwargs):
 
     amps = get_amp_list(ccd)
 
+    is_masked_ccd = isinstance(ccd, MaskedCCD)
+
     o_dict = {}
     offset = get_amp_offset(ccd, superbias_frame)
 
@@ -598,6 +599,12 @@ def unbiased_ccd_image_dict(ccd, **kwargs):
         img = get_raw_image(ccd, amp)
 
         superbias_im = raw_amp_image(superbias_frame, amp + offset)
+        if not is_masked_ccd and superbias_frame is not None:
+            # Flip the superbias image for the subtraction
+            (step_x, step_y) = get_geom_steps_from_amp(superbias_frame, amp + offset)
+            superbias_im.mask.array = superbias_im.mask.array[::step_x, ::step_y]
+            superbias_im.image.array = superbias_im.image.array[::step_x, ::step_y]
+
         image = unbias_amp(img, serial_oscan, bias_type=bias_type,
                            superbias_im=superbias_im, region=trim_region)
         if nlc is not None:

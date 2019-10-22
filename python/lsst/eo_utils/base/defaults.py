@@ -15,7 +15,7 @@ if SITE == 'slac':
     BUTLER_BOT_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/bot'
     ARCHIVE_DIR = '/gpfs/slac/lsst/fs*/g/data/jobHarness/jh_archive*'
     DEFAULT_DATA_SOURCE = os.environ.get('EO_DATA_SOURCE', 'glob')
-    DEFAULT_BATCH_ARGS = '-W 1200 -R bullet'
+    DEFAULT_BATCH_ARGS = '-W 1200 -R bubble'
     BATCH_SYSTEM = 'lsf'
 elif SITE == 'ncsa':
     BUTLER_TS8_REPO = '/datasets/ts8/repo'
@@ -29,7 +29,7 @@ else:
 
 
 # TEST
-DEFAULT_TESTSTAND = os.environ.get('EO_TESTSTSAND', 'bot')
+DEFAULT_TESTSTAND = os.environ.get('EO_TESTSTAND', 'bot')
 
 if os.environ.get('EO_PRINT_OPTS', False):
     sys.stdout.write("SITE=%s\n" % SITE)
@@ -45,11 +45,17 @@ BUTLER_REPO_DICT = dict(ts8=BUTLER_TS8_REPO,
 # The slots
 ALL_SLOTS = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
 
+
 # The rafts
 ALL_RAFTS_BOT_ETU = ["R10", "R22"]
 NINE_RAFTS = ["R01", "R02", "R10",
               "R11", "R12", "R20",
               "R21", "R22", "R30"]
+
+
+RAFT_NAMES_DICT = dict(bot_etu=ALL_RAFTS_BOT_ETU,
+                       bot_9=NINE_RAFTS,
+                       bot=NINE_RAFTS)
 
 # Various types of tests
 TS8_MASK_TEST_TYPES = ['bright_pixel_mask',
