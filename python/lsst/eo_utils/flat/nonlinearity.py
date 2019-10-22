@@ -48,7 +48,8 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
     model_func_choice = 1
     do_profiles = True
     null_point = 0.
-    
+    num_profile_points = 40
+
     @staticmethod
     def _correct_null_point(profile_x, profile_y, null_point):
         """Force the spline to go through zero at a particular x-xvalue
@@ -70,9 +71,12 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
         try:
             uni_spline = UnivariateSpline(profile_x, profile_y)
             offset =  uni_spline(null_point)
-        except Exception:
+            print("offset", offset)
+        except Exception as msg:
+            print("Failed to extract null point")
+            print(msg)
             offset = 0.
-        return profile_y - offset
+        return ((1 + profile_y) / (1 + offset)) - 1.
 
 
     def extract(self, butler, data, **kwargs):
@@ -173,20 +177,30 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
 
             results, _, frac_resid, frac_resid_err =\
                 perform_linear_chisq_fit(amp_vals, flux_vals, mask, self.model_func_choice)
+            # Correct the error for the conversion to ne
+            frac_resid_err *= results[0][0]
 
             results_inv, _, frac_resid_inv, frac_resid_err_inv =\
                 perform_linear_chisq_fit(flux_vals, amp_vals, mask, self.model_func_choice)
 
             if self.do_profiles:
-                profile_xbins = np.linspace(0., amp_vals[mask].max(), 11)
-                profile_xbins_inv = np.linspace(0., flux_vals[mask].max(), 11)
+                if self.num_profile_points is not None:
+                    profile_xbins = np.linspace(0., amp_vals[mask].max(), self.num_profile_points)
+                    profile_xbins_inv = np.linspace(0., flux_vals[mask].max(), self.num_profile_points)
 
-                profile_x, profile_y, profile_yerr =\
-                    make_profile_hist(profile_xbins, amp_vals, frac_resid,
-                                      yerrs=frac_resid_err, stderr=True)
-                profile_x_inv, profile_y_inv, profile_yerr_inv =\
-                    make_profile_hist(profile_xbins_inv, flux_vals, frac_resid_inv,
-                                      yerrs=frac_resid_err_inv, stderr=True)
+                    profile_x, profile_y, profile_yerr =\
+                        make_profile_hist(profile_xbins, amp_vals, frac_resid,
+                                          yerrs=frac_resid_err, stderr=True)
+                    profile_x_inv, profile_y_inv, profile_yerr_inv =\
+                       make_profile_hist(profile_xbins_inv, flux_vals, frac_resid_inv,
+                                         yerrs=frac_resid_err_inv, stderr=True)
+                else:
+                    idx_sort = np.argsort(amp_vals)
+                    idx_sort_inv = np.argsort(flux_vals)
+                    profile_x, profile_y, profile_yerr =\
+                        amp_vals[idx_sort], frac_resid[idx_sort], frac_resid_err[idx_sort]
+                    profile_x_inv, profile_y_inv, profile_yerr_inv =\
+                        flux_vals[idx_sort_inv], frac_resid_inv[idx_sort_inv], frac_resid_err_inv[idx_sort_inv]
 
                 if self.null_point is not None:
                     profile_y_corr = self._correct_null_point(profile_x, profile_y, self.null_point)
@@ -288,27 +302,31 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                                   xscale='lin', yscale='log')
 
         fig_nonlin_log = figs.setup_figure("non_lin_log%s" % suffix,
-                                           xlabel=xlabel_full, ylabel=ylabel_resid_full)
+                                           xlabel=xlabel_full, ylabel=ylabel_resid_full,
+                                           figsize=(7,5))
         axes_nonlin_log = fig_nonlin_log['axes']
         #axes_nonlin_log.set_xlim(1., 3000.)
         axes_nonlin_log.set_ylim(self.plot_resid_ymin, self.plot_resid_ymax)
         axes_nonlin_log.set_xscale('log')
 
         fig_nonlin = figs.setup_figure("non_lin%s" % suffix,
-                                       xlabel=xlabel_full, ylabel=ylabel_resid_full)
+                                       xlabel=xlabel_full, ylabel=ylabel_resid_full,
+                                       figsize=(7,5))
         axes_nonlin = fig_nonlin['axes']
         #axes_nonlin.set_xlim(0., 3000.)
         axes_nonlin.set_ylim(self.plot_resid_ymin, self.plot_resid_ymax)
 
         fig_nonlin_log_stack = figs.setup_figure("non_lin_log_stack%s" % suffix,
-                                                 xlabel=xlabel_full, ylabel=ylabel_resid_full)
+                                                 xlabel=xlabel_full, ylabel=ylabel_resid_full,
+                                                 figsize=(7,5))
         axes_nonlin_log_stack = fig_nonlin_log_stack['axes']
         #axes_nonlin_log_stack.set_xlim(1., 3000.)
         axes_nonlin_log_stack.set_ylim(self.plot_resid_ymin, self.plot_resid_ymax)
         axes_nonlin_log_stack.set_xscale('log')
 
         fig_nonlin_stack = figs.setup_figure("non_lin_stack%s" % suffix,
-                                             xlabel=xlabel_full, ylabel=ylabel_resid_full)
+                                             xlabel=xlabel_full, ylabel=ylabel_resid_full,
+                                             figsize=(7,5))
         axes_nonlin_stack = fig_nonlin_stack['axes']
         #axes_nonlin_stack.set_xlim(0., 3000.)
         axes_nonlin_stack.set_ylim(self.plot_resid_ymin, self.plot_resid_ymax)

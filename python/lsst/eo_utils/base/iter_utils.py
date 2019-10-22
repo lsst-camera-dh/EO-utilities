@@ -5,7 +5,7 @@ import os
 
 import lsst.pex.config as pexConfig
 
-from .defaults import ALL_SLOTS, NINE_RAFTS
+from .defaults import ALL_SLOTS, RAFT_NAMES_DICT
 
 from .config_utils import EOUtilOptions, Configurable,\
     setup_parser, add_pex_arguments,\
@@ -464,7 +464,7 @@ def dispatch_by_raft_slot(handler, taskname, run, rafts, slots, **kwargs):
     if slots is None:
         slots = ALL_SLOTS
     if rafts is None:
-        rafts = NINE_RAFTS
+        rafts = RAFT_NAMES_DICT[kwcopy.get('teststand', 'bot')]
     for raft in rafts:
         kwcopy['rafts'] = raft
         for slot in slots:
@@ -490,7 +490,7 @@ def dispatch_by_raft(handler, taskname, run, rafts, **kwargs):
     jobname = "eo_task.py %s" % taskname
     kwcopy = kwargs.copy()
     if rafts is None:
-        rafts = NINE_RAFTS
+        rafts = RAFT_NAMES_DICT[kwcopy.get('teststand', 'bot')]
     for raft in rafts:
         logfile_raft = handler.config.logfile.replace('.log', '%s_%s_%s.log' % (taskname, run, raft))
         kwcopy['rafts'] = raft

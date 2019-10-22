@@ -185,11 +185,13 @@ class PTCTask(FlatRaftTableAnalysisTask):
 
             fig_nonlin_log = figs.setup_figure("non_lin_log_%s" % slot,
                                                xlabel="Flux [a.u.]",
-                                               ylabel='Frac. Resid')
+                                               ylabel='Frac. Resid',
+                                               figsize=(7,5))
             axes_nonlin_log = fig_nonlin_log['axes']
             axes_nonlin_log.set_xscale('log')
 
-            fig_nonlin = figs.setup_figure("non_lin_%s" % slot, xlabel="Flux [a.u.]", ylabel='Frac. Resid')
+            fig_nonlin = figs.setup_figure("non_lin_%s" % slot, xlabel="Flux [a.u.]", ylabel='Frac. Resid',
+                                           figsize=(7,5))
             axes_nonlin = fig_nonlin['axes']
 
             for amp in range(16):
