@@ -169,10 +169,14 @@ def get_geom_steps_from_amp(ccd, amp):
     step_y : `int`
         Step to take in y to go from readout to physical order
     """
-    try:
-        manu = ccd.getInfo().getMetadata().getString('CCD_MANU')
-    except Exception:
+    if isinstance(ccd, MaskedCCD):
+        try:
+            manu = ccd.md.get('CCD_MANU')
+        except KeyError:
+            manu = ccd.md.get('LSST_SN')
+    else:
         manu = ccd.getDetector().getSerial()[0:3]
+
     if manu == 'ITL':
         flip_y = -1
     elif manu == 'E2V':
