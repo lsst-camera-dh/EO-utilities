@@ -59,21 +59,28 @@ class AnalysisHandler(Configurable):
         self._task = task
         self._butler = None
 
-    def get_butler(self):
+    def get_butler(self, **kwargs):
         """Return a data Butler
 
         This uses the config.data_surce and config.teststand parameters
         to pick the correct `Butler` or `None` if not using butler
+
+        Keywords
+        --------
+        teststand : `str`
+            The teststand we arg getting a butler for
 
         Returns
         -------
         butler : `Butler`
             The requested data Butler
         """
+        teststand = kwargs.get('teststand', self._task.config.teststand)
+
         if self.config.data_source not in ['butler', 'butler_file']:
             self._butler = None
         else:
-            self._butler = get_butler_by_repo(self._task.config.teststand)
+            self._butler = get_butler_by_repo(teststand)
         return self._butler
 
 
@@ -406,7 +413,7 @@ class AnalysisIterator(AnalysisHandler):
         else:
             raise ValueError("Either runs or dataset must be set")
 
-        self.get_butler()
+        self.get_butler(**kw_remain)
 
         for run in runs:
             if self.config.nofail:
