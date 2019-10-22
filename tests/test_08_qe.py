@@ -35,11 +35,7 @@ def test_qe_butler_utils():
 
     qe_files_6545 = qe.QeAnalysisTask.get_data(bot_butler, '6545D',
                                                **DATA_OPTIONS_BOT_BUTLER)
-    #FIXME
-    if SITE in ['slac']:
-        assert_data_dict(qe_files_6545, 'R10', 'LAMBDA', (2, 9, 1, 12))
-    else:
-        assert_data_dict(qe_files_6545, 'R10', 'LAMBDA', (2, 9, 1, 6))
+    assert_data_dict(qe_files_6545, 'R10', 'LAMBDA', (2, 9, 1, 12))
 
 
 def test_qe_median():

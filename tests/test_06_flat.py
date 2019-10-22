@@ -44,12 +44,14 @@ def test_flat_oscan():
     if RUN_TASKS:
         task.run(slots=['S00'], **RUN_OPTIONS)
 
+@requires_site('slac')
 def test_flat_pair():
     """Test the FlatPairTask"""
     task = flat.FlatPairTask()
     if RUN_TASKS:
         task.run(slots=['S00'], **RUN_OPTIONS)
 
+@requires_site('slac')
 def test_flat_linearity():
     """Test the FlatLinearityTask"""
     task = flat.FlatLinearityTask()
@@ -62,12 +64,14 @@ def test_flat_bf():
     if RUN_TASKS:
         task.run(slots=['S00'], **RUN_OPTIONS)
 
+@requires_site('slac')
 def test_flat_ptc():
     """Test the PTCTask"""
     task = flat.PTCTask()
     if RUN_TASKS:
         task.run(slots=['S00'], **RUN_OPTIONS_NOPLOT)
 
+@requires_site('slac')
 def test_flat_ptc_sum():
     """Test the PTCSummaryTask"""
     task = flat.PTCSummaryTask()
