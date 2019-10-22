@@ -19,9 +19,9 @@ RUN_TASKS = True
 if os.environ.get('EO_TEST_NO_RUN_TASKS', False):
     RUN_TASKS = False
 
-RUN_OPTIONS = dict(runs=['6106D'], outdir='test_out', plot='png')
-RUN_OPTIONS_NOPLOT = dict(runs=['6106D'], outdir='test_out')
-SUMMARY_OPTIONS = dict(dataset='tests/test', outdir='test_out', plot='png')
+RUN_OPTIONS = dict(runs=['6106D'], outdir='test_out', plot='png', teststand='ts8')
+RUN_OPTIONS_NOPLOT = dict(runs=['6106D'], outdir='test_out', teststand='ts8')
+SUMMARY_OPTIONS = dict(dataset='tests/test', outdir='test_out', plot='png',  teststand='ts8')
 
 def requires_file(filepath):
     """Skip test if required file is missing"""
