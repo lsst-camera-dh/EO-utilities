@@ -20,7 +20,7 @@ def test_bias_file_utils():
 
     bias_files_6545 = bias.BiasAnalysisTask.get_data(None, '6545D',
                                                      **DATA_OPTIONS_BOT_GLOB)
-    assert_data_dict(bias_files_6545, 'R10', 'BIAS', (2, 9, 1, 159))
+    assert_data_dict(bias_files_6545, 'R10', 'BIAS', (2, 9, 1, 169))
 
 
 def test_bias_butler_utils():
@@ -34,7 +34,7 @@ def test_bias_butler_utils():
 
     bias_files_6545 = bias.BiasAnalysisTask.get_data(bot_butler, '6545D',
                                                      **DATA_OPTIONS_BOT_BUTLER)
-    assert_data_dict(bias_files_6545, 'R10', 'BIAS', (2, 9, 1, 159))
+    assert_data_dict(bias_files_6545, 'R10', 'BIAS', (2, 9, 1, 169))
 
 
 def test_superbias():
