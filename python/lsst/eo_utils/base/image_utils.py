@@ -893,7 +893,8 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
         try:
             ccd = get_ccd_from_id(butler, in_file, mask_files=[])
         except Exception:
-            log.warn("  Failed to read %s, skipping" % (str(in_file)))
+            if log is not None:
+                log.warn("  Failed to read %s, skipping" % (str(in_file)))
 
         used_files += 1
         exp_time += get_exposure_time(ccd)
