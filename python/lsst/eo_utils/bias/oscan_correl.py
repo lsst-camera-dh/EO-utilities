@@ -14,7 +14,7 @@ from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
-from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_raw_image,\
+from lsst.eo_utils.base.image_utils import get_raw_image,\
     get_geom_regions, get_amp_list, unbias_amp
 
 from lsst.eo_utils.base.iter_utils import AnalysisByRaft
@@ -77,7 +77,7 @@ class OscanCorrelTask(BiasAnalysisTask):
             mask_files = self.get_mask_files(slot=slot)
             superbias_frame = self.get_superbias_frame(mask_files, slot=slot)
 
-            ccd = get_ccd_from_id(butler, bias_files[0], [])
+            ccd = self.get_ccd(butler, bias_files[0], [])
             overscans += self.get_ccd_data(butler, ccd, superbias_frame=superbias_frame)
 
         namps = len(overscans)

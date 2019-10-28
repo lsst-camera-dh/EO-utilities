@@ -9,7 +9,7 @@ from lsst.eo_utils.base.data_utils import TableDict
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES, REGION_LABELS,\
-    get_dimension_arrays_from_ccd, get_ccd_from_id, get_raw_image, get_amp_offset,\
+    get_dimension_arrays_from_ccd, get_raw_image, get_amp_offset,\
     get_geom_regions, get_amp_list, get_image_frames_2d, array_struct, unbias_amp
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
@@ -72,7 +72,7 @@ class BiasStructTask(BiasAnalysisTask):
             if ifile % 10 == 0:
                 self.log_progress("  %i" % ifile)
 
-            ccd = get_ccd_from_id(butler, bias_file, mask_files)
+            ccd = self.get_ccd(butler, bias_file, mask_files)
             if ifile == 0:
                 dim_array_dict = get_dimension_arrays_from_ccd(ccd)
                 for key, val in dim_array_dict.items():

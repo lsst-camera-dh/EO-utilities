@@ -642,10 +642,15 @@ def extract_ccd_array_dict(data_id, **kwargs):
     """
     kwcopy = kwargs.copy()
     mask_files = kwcopy.pop('mask_files', [])
-    ccd = get_ccd_from_id(None, data_id, mask_files)
+    o_dict = {}
+
+    try:
+        ccd = get_ccd_from_id(None, data_id, mask_files)
+    except Exception:
+        return o_dict
+
     unbiased_images = unbiased_ccd_image_dict(ccd, **kwargs)
 
-    o_dict = {}
     for amp, image in unbiased_images.items():
         regions = get_geom_regions(ccd, amp)
         frames = get_image_frames_2d(image, regions)

@@ -8,8 +8,8 @@ from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
-from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
-    get_dims_from_ccd, get_raw_image, get_geom_regions, get_amp_list
+from lsst.eo_utils.base.image_utils import get_dims_from_ccd,\
+    get_raw_image, get_geom_regions, get_amp_list
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
@@ -83,15 +83,15 @@ class SflatRatioTask(SflatSlotTableAnalysisTask):
         superbias_frame = self.get_superbias_frame(mask_files)
         superflat_file = data[0]
 
-        l_frame = get_ccd_from_id(None,
-                                  superflat_file.replace('_l.fits', '_l.fits'),
-                                  mask_files)
-        h_frame = get_ccd_from_id(None,
-                                  superflat_file.replace('_l.fits', '_h.fits'),
-                                  mask_files)
-        ratio_frame = get_ccd_from_id(None,
-                                      superflat_file.replace('_l.fits', '_ratio.fits'),
-                                      mask_files)
+        l_frame = self.get_ccd(None,
+                               superflat_file.replace('_l.fits', '_l.fits'),
+                               mask_files)
+        h_frame = self.get_ccd(None,
+                               superflat_file.replace('_l.fits', '_h.fits'),
+                               mask_files)
+        ratio_frame = self.get_ccd(None,
+                                   superflat_file.replace('_l.fits', '_ratio.fits'),
+                                   mask_files)
 
         # This is a dictionary of dictionaries to store all the
         # data you extract from the sflat_files

@@ -12,8 +12,6 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
-from lsst.eo_utils.base.image_utils import get_ccd_from_id
-
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from .analysis import FlatAnalysisConfig, FlatAnalysisTask
@@ -83,7 +81,7 @@ class FlatOverscanTask(FlatAnalysisTask):
             if ifile % 10 == 0:
                 self.log_progress("  %i" % ifile)
 
-            flat = get_ccd_from_id(butler, flat_id, mask_files, bias_frame=superbias_frame)
+            flat = self.get_ccd(butler, flat_id, mask_files, bias_frame=superbias_frame)
             fitter.process_image(flat, gains)
 
         self.xmax = fitter.xmax_val

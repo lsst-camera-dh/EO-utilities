@@ -12,7 +12,7 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
-from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_amp_list,\
+from lsst.eo_utils.base.image_utils import get_amp_list,\
     get_geom_regions, get_raw_image, unbias_amp
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
@@ -99,7 +99,7 @@ class DustColorTask(QeAnalysisTask):
         # For this slot, loop over qe files, loop over amplifiers, loop over dust spots in that amplifier,
         #  record the flux and median for each dust spot
         # Then loop over dust spots CCDs, amplifiers, and QE files to accumulate the output dictionary
-        ccd = get_ccd_from_id(butler, qe_files[0], mask_files)
+        ccd = self.get_ccd(butler, qe_files[0], mask_files)
         amps = get_amp_list(ccd)
         spot = 0
         for ifile, qe_file in enumerate(qe_files):
@@ -112,7 +112,7 @@ class DustColorTask(QeAnalysisTask):
                         self.log.warn("Skipping slot:amp %s:%i with %i defects" % (slot, amp, len(bbox_list)))
                     continue
 
-                ccd = get_ccd_from_id(butler, qe_file, mask_files)
+                ccd = self.get_ccd(butler, qe_file, mask_files)
                 regions = get_geom_regions(ccd, amp)
                 serial_oscan = regions['serial_overscan']
                 imaging = regions['imaging']

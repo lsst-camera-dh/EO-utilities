@@ -6,8 +6,6 @@ from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
-from lsst.eo_utils.base.image_utils import get_ccd_from_id
-
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
 from lsst.eo_utils.dark.file_utils import SLOT_DARK_TABLE_FORMATTER, SLOT_DARK_PLOT_FORMATTER,\
@@ -77,4 +75,4 @@ class DarkAnalysisTask(AnalysisTask):
         """
         self.safe_update(**kwargs)
         superdark_file = self.get_superdark_file('')
-        return get_ccd_from_id(None, superdark_file, mask_files)
+        return self.get_ccd(None, superdark_file, mask_files)

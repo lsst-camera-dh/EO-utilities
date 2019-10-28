@@ -13,7 +13,7 @@ from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES,\
-    raw_amp_image, get_readout_freqs_from_ccd, get_ccd_from_id, get_raw_image,\
+    raw_amp_image, get_readout_freqs_from_ccd, get_raw_image,\
     get_geom_regions, get_amp_list, get_image_frames_2d, array_struct, unbias_amp,\
     get_amp_offset
 
@@ -82,7 +82,7 @@ class BiasFFTTask(BiasAnalysisTask):
             if ifile % 10 == 0:
                 self.log_progress("  %i" % ifile)
 
-            ccd = get_ccd_from_id(butler, bias_file, mask_files)
+            ccd = self.get_ccd(butler, bias_file, mask_files)
             if ifile == 0:
                 freqs_dict = get_readout_freqs_from_ccd(ccd)
                 print(freqs_dict.keys())
@@ -254,7 +254,7 @@ class SuperbiasFFTTask(SuperbiasSlotTableAnalysisTask):
 
         mask_files = self.get_mask_files()
         superbias_file = data[0]
-        superbias = get_ccd_from_id(None, superbias_file, mask_files)
+        superbias = self.get_ccd(None, superbias_file, mask_files)
 
         fft_data = {}
 

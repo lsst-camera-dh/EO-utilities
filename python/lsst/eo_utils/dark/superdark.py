@@ -1,5 +1,7 @@
 """Class to construct superdark frames"""
 
+import os
+
 import lsst.afw.math as afwMath
 
 import lsst.eotest.image_utils as imutil
@@ -16,8 +18,8 @@ from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict
 
-from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
-    flip_data_in_place, stack_images, extract_raft_array_dict,\
+from lsst.eo_utils.base.image_utils import flip_data_in_place,\
+    stack_images, extract_raft_array_dict,\
     outlier_raft_dict
 
 from lsst.eo_utils.bias.analysis import AnalysisTask
@@ -132,6 +134,10 @@ class SuperdarkTask(DarkAnalysisTask):
         mask_files = self.get_mask_files()
 
         output_file = self.tablefile_name() + '.fits'
+
+        if not slot_data['DARK']:
+            return
+
         makedir_safe(output_file)
 
         if not self.config.skip:
@@ -145,7 +151,7 @@ class SuperdarkTask(DarkAnalysisTask):
             if butler is not None:
                 flip_data_in_place(output_file)
 
-        self._superdark_frame = get_ccd_from_id(None, output_file, mask_files)
+        self._superdark_frame = self.get_ccd(None, output_file, mask_files)
 
 
     def plot(self, dtables, figs, **kwargs):
@@ -275,6 +281,9 @@ class SuperdarkRaftTask(AnalysisTask):
             slots = ALL_SLOTS
 
         for slot in slots:
+            if not os.path.exists(data[slot]):
+                self.log.warn("skipping missing data for %s:%s" % (self.config.raft, slot))
+                continue
             mask_files = self.get_mask_files(slot=slot)
             self._mask_file_dict[slot] = mask_files
             self._sdark_file_dict[slot] = data[slot]
@@ -301,8 +310,8 @@ class SuperdarkRaftTask(AnalysisTask):
             Used to override default configuration
         """
         self.safe_update(**kwargs)
-
-        figs.make_raft_outlier_plots(dtables['outliers'])
+        
+        #figs.make_raft_outlier_plots(dtables['outliers'])
 
         if self.config.skip:
             return

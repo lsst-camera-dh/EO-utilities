@@ -162,6 +162,7 @@ class SimpleAnalysisHandler(AnalysisHandler):
             Data `Butler` that is being used to access data
         """
         kwargs.setdefault('butler', self._butler)
+        kwargs.setdefault('handler_config', self.config)
         if kwargs.get('dry_run', False):
             self._task.info("Skipping %s" % (kwargs))
             return None
@@ -360,7 +361,7 @@ class AnalysisIterator(AnalysisHandler):
         """
         taskname = self._task.getName().replace('Task', '')
 
-        htype, hid = self.get_hardware(self._butler, run)
+        htype, _ = self.get_hardware(self._butler, run)
 
         if self.config.batch in ['None', 'none', None]:
             self.call_analysis_task(run, **kwargs)
@@ -475,7 +476,8 @@ def dispatch_by_raft_slot(handler, taskname, run, rafts, slots, **kwargs):
     for raft in rafts:
         kwcopy['rafts'] = raft
         for slot in slots:
-            logfile_slot = handler.config.logfile.replace('.log', '%s_%s_%s_%s.log' % (taskname, run, raft, slot))            
+            logfile_slot = handler.config.logfile.replace('.log',
+                                                          '%s_%s_%s_%s.log' % (taskname, run, raft, slot))
             kwcopy['slots'] = slot
             kw_remain = handler.get_dispatch_args(run, **kwcopy)
             dispatch_job(jobname, logfile_slot, **kw_remain)
@@ -667,6 +669,7 @@ class AnalysisBySlot(AnalysisIterator):
         data_files = self.get_data(self._butler, run, **kwdata)
 
         kwargs['run'] = run
+        kwargs.setdefault('handler_config', self.config)
 
         if htype == "LCA-10134":
             iterate_over_rafts_slots(self._task, self._butler, data_files, **kwargs)
@@ -750,6 +753,7 @@ class AnalysisByRaft(AnalysisIterator):
         data_files = self.get_data(self._butler, run, **kwdata)
 
         kwargs['run'] = run
+        kwargs.setdefault('handler_config', self.config)
 
         if htype == "LCA-10134":
             iterate_over_rafts(self._task, self._butler, data_files, **kwargs)
@@ -939,6 +943,8 @@ class AnalysisByRun(AnalysisIterator):
         """
         data_files = self.get_data(self._butler, run, **kwargs)
         kwargs['run'] = run
+        kwargs.setdefault('handler_config', self.config)
+
         if self._task is not None:
             self._task(self._butler, data_files, **kwargs)
 
@@ -989,6 +995,7 @@ class AnalysisByDataset(SimpleAnalysisHandler):
         ------
         ValueError : If the hardware type (raft or focal plane) is not recognized
         """
+        kwargs.setdefault('handler_config', self.config)
         if kwargs.get('dry_run', False):
             self._task.info("Skipping %s" % (kwargs))
             return
@@ -1068,6 +1075,7 @@ class SummaryAnalysisIterator(AnalysisHandler):
         kwargs
             Passed to get_data() and to the analysis function
         """
+        kwargs.setdefault('handler_config', self.config)
         if kwargs.get('dry_run', False):
             self._task.info("Skipping %s" % (kwargs))
             return
@@ -1089,7 +1097,7 @@ class SummaryAnalysisIterator(AnalysisHandler):
         """
         kwcopy = kwargs.copy()
         kwcopy.pop('task', None)
-        optstring=make_argstring(self._task.config, **kwcopy)
+        optstring = make_argstring(self._task.config, **kwcopy)
         ret_dict = dict(optstring=optstring,
                         batch_args=self.config.batch_args,
                         batch=self.config.batch,

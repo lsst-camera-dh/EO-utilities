@@ -12,8 +12,7 @@ from lsst.eo_utils.base.file_utils import SUPERBIAS_STAT_FORMATTER
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
-from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
-    get_raw_image, get_amp_list
+from lsst.eo_utils.base.image_utils import get_raw_image, get_amp_list
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
@@ -80,7 +79,7 @@ class SuperbiasStatsTask(SuperbiasRaftTableAnalysisTask):
             mask_files = self.get_mask_files(slot=slot)
 
             try:
-                superbias_frame = get_ccd_from_id(None, superbias_file, mask_files)
+                superbias_frame = self.get_ccd(None, superbias_file, mask_files)
             except Exception:
                 self.log.warn("Skipping %s:%s:%s" % (self.config.run, self.config.raft, slot))
                 superbias_frame = None

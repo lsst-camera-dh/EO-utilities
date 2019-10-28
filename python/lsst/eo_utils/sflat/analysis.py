@@ -6,8 +6,6 @@ from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
-from lsst.eo_utils.base.image_utils import get_ccd_from_id
-
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
 from lsst.eo_utils.sflat.file_utils import SLOT_SFLAT_TABLE_FORMATTER,\
@@ -82,6 +80,6 @@ class SflatAnalysisTask(AnalysisTask):
             types = ['l', 'h', 'ratio']
         superflat_file = self.get_superflat_file('').replace('.fits', '')
 
-        o_dict = {key:get_ccd_from_id(None, superflat_file + '_%s.fits' % key, mask_files)
+        o_dict = {key:self.get_ccd(None, superflat_file + '_%s.fits' % key, mask_files)
                   for key in types}
         return o_dict

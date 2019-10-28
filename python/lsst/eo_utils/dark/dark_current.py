@@ -10,8 +10,8 @@ from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
 from lsst.eo_utils.base.stat_utils import gauss_fit
 
-from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
-    get_exposure_time, get_amp_list, get_raw_image, get_geom_regions
+from lsst.eo_utils.base.image_utils import get_exposure_time,\
+    get_amp_list, get_raw_image, get_geom_regions
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
@@ -85,7 +85,7 @@ class DarkCurrentTask(DarkRaftTableAnalysisTask):
 
             mask_files = self.get_mask_files(slot=slot)
             superdark_file = data[slot]
-            superdark_frame = get_ccd_from_id(None, superdark_file, mask_files)
+            superdark_frame = self.get_ccd(None, superdark_file, mask_files)
             exptime = get_exposure_time(superdark_frame)
 
             amps = get_amp_list(superdark_frame)

@@ -476,8 +476,7 @@ def get_files_for_run(run_id, **kwargs):
     for test_type in testtypes:
         if handler is not None:
             r_dict = handler.get_files(testName=test_type, run=run_id,
-                                       imgtype=imagetype, matchstr=matchstr,
-                                       teststand=teststand)
+                                       imgtype=imagetype, matchstr=matchstr)
         else:
             if imagetype is None:
                 imgtype = None

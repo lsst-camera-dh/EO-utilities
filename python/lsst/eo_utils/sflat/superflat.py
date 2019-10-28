@@ -20,8 +20,8 @@ from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict
 
-from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
-    flip_data_in_place, sort_sflats, stack_images, extract_raft_array_dict,\
+from lsst.eo_utils.base.image_utils import flip_data_in_place,\
+    sort_sflats, stack_images, extract_raft_array_dict,\
     outlier_raft_dict, fill_footprint_dict, extract_raft_imaging_data,\
     extract_raft_unbiased_images
 
@@ -177,9 +177,9 @@ class SuperflatTask(SflatAnalysisTask):
                 flip_data_in_place(output_file + '_h.fits')
                 flip_data_in_place(output_file + '_ratio.fits')
 
-        self._superflat_frame_l = get_ccd_from_id(None, output_file + '_l.fits', mask_files)
-        self._superflat_frame_h = get_ccd_from_id(None, output_file + '_h.fits', mask_files)
-        self._superflat_frame_r = get_ccd_from_id(None, output_file + '_ratio.fits', mask_files)
+        self._superflat_frame_l = self.get_ccd(None, output_file + '_l.fits', mask_files)
+        self._superflat_frame_h = self.get_ccd(None, output_file + '_h.fits', mask_files)
+        self._superflat_frame_r = self.get_ccd(None, output_file + '_ratio.fits', mask_files)
 
 
     def plot(self, dtables, figs, **kwargs):

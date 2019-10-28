@@ -16,8 +16,7 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
-from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
-    get_exposure_time, get_mondiode_val,\
+from lsst.eo_utils.base.image_utils import get_exposure_time, get_mondiode_val,\
     unbiased_ccd_image_dict
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
@@ -123,7 +122,7 @@ class DustLinearityAnalysisTask(FlatAnalysisTask):
             if ifile % 10 == 0:
                 self.log_progress("  %i" % ifile)
 
-            ccd = get_ccd_from_id(butler, flat1_file, mask_files)
+            ccd = self.get_ccd(butler, flat1_file, mask_files)
 
             # To be appended while looping over bounding boxes
             exptime = get_exposure_time(ccd)
