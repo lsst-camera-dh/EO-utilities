@@ -256,34 +256,6 @@ class BaseAnalysisTask(BaseTask):
         return formatter(**format_vals)
 
 
-    @staticmethod
-    def get_superbias_amp_image(butler, superbias_frame, amp):
-        """Get the image for one amp for the superbias
-
-        Parameters
-        ----------
-        butler : `Butler` or `None`
-            Data Butler (or none)
-        superbias_frame : `MaskedCCD` or `None`
-            superbias image for the whole CCD
-        amp : `int`
-            Amplifier index
-
-        Returns
-        -------
-        superbias_im : `ImageF`
-            The image for the requested amplifier
-        """
-        if superbias_frame is not None:
-            if butler is not None:
-                superbias_im = get_raw_image(superbias_frame, amp+1)
-            else:
-                superbias_im = get_raw_image(superbias_frame, amp)
-        else:
-            superbias_im = None
-        return superbias_im
-
-
     def get_superbias_file(self, suffix, **kwargs):
         """Get the name of the superbias file for a particular run, raft, ccd...
 
@@ -551,6 +523,36 @@ class AnalysisTask(BaseAnalysisTask):
         return self.get_filename_from_format(self.plotname_format,
                                              self.get_suffix(),
                                              **kwargs)
+
+
+    def get_superbias_amp_image(self, butler, superbias_frame, amp):
+        """Get the image for one amp for the superbias                                                                                                           
+
+        Parameters                                                                                                                                               
+        ----------                                                                                                                                                
+        butler : `Butler` or `None`                                                                                                                               
+            Data Butler (or none)                                                                                                                                 
+        superbias_frame : `MaskedCCD` or `None`                                                                                                                   
+            superbias image for the whole CCD                                                                                                                     
+        amp : `int`                                                                                                                                               
+            Amplifier index
+
+        Returns
+        -------
+        superbias_im : `ImageF`
+            The image for the requested amplifier
+        """                                                                                                                                                      
+        offset = 0
+        if self._handler_config is not None:
+            if self._handler_config.data_source == 'butler':
+                offset = 1
+
+        if superbias_frame is not None:                                                                                                                          
+            superbias_im = get_raw_image(superbias_frame, amp+offset)
+        else:
+            superbias_im = None                                                                                                                                   
+        return superbias_im                                                                                                                                      
+
 
     def get_superbias_frame(self, mask_files, **kwargs):
         """Get the superbias frame for a particular run, raft, ccd...
