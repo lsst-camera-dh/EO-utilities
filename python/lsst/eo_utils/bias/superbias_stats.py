@@ -142,7 +142,7 @@ class SuperbiasStatsTask(SuperbiasRaftTableAnalysisTask):
 
         amps = get_amp_list(superbias)
         for i, amp in enumerate(amps):
-        
+
             img = get_raw_image(superbias, amp).image
             stats_data['mean'][islot, i] = img.array.mean()
             stats_data['median'][islot, i] = np.median(img.array)

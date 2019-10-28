@@ -310,7 +310,7 @@ class SuperdarkRaftTask(AnalysisTask):
             Used to override default configuration
         """
         self.safe_update(**kwargs)
-        
+
         #figs.make_raft_outlier_plots(dtables['outliers'])
 
         if self.config.skip:

@@ -210,7 +210,7 @@ class BiasFFTTask(BiasAnalysisTask):
                 if key_str not in data[key_col]:
                     data[key_col][key_str] = np.zeros((int(nvals/2), nfiles_used))
                 data[key_col][key_str][:, ifile] = np.sqrt(fft_mean_by_col[0:int(nvals/2)])
-                
+
 
 
 class SuperbiasFFTConfig(SuperbiasSlotTableAnalysisConfig):

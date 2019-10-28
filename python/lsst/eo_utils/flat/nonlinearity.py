@@ -62,7 +62,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             The y-bin values
         null_point : `float`
             The x-value where the spline should go through zero
-       
+
         Returns
         -------
         y_vals_offset
@@ -70,7 +70,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
         """
         try:
             uni_spline = UnivariateSpline(profile_x, profile_y)
-            offset =  uni_spline(null_point)
+            offset = uni_spline(null_point)
             print("offset", offset)
         except Exception as msg:
             print("Failed to extract null point")
@@ -200,7 +200,8 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                     profile_x, profile_y, profile_yerr =\
                         amp_vals[idx_sort], frac_resid[idx_sort], frac_resid_err[idx_sort]
                     profile_x_inv, profile_y_inv, profile_yerr_inv =\
-                        flux_vals[idx_sort_inv], frac_resid_inv[idx_sort_inv], frac_resid_err_inv[idx_sort_inv]
+                        flux_vals[idx_sort_inv], frac_resid_inv[idx_sort_inv],\
+                        frac_resid_err_inv[idx_sort_inv]
 
                 if self.null_point is not None:
                     profile_y_corr = self._correct_null_point(profile_x, profile_y, self.null_point)
@@ -303,7 +304,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
 
         fig_nonlin_log = figs.setup_figure("non_lin_log%s" % suffix,
                                            xlabel=xlabel_full, ylabel=ylabel_resid_full,
-                                           figsize=(7,5))
+                                           figsize=(7, 5))
         axes_nonlin_log = fig_nonlin_log['axes']
         #axes_nonlin_log.set_xlim(1., 3000.)
         axes_nonlin_log.set_ylim(self.plot_resid_ymin, self.plot_resid_ymax)
@@ -311,7 +312,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
 
         fig_nonlin = figs.setup_figure("non_lin%s" % suffix,
                                        xlabel=xlabel_full, ylabel=ylabel_resid_full,
-                                       figsize=(7,5))
+                                       figsize=(7, 5))
         axes_nonlin = fig_nonlin['axes']
         #axes_nonlin.set_xlim(0., 3000.)
         axes_nonlin.set_ylim(self.plot_resid_ymin, self.plot_resid_ymax)

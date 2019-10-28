@@ -5,7 +5,8 @@
 """This module contains functions to find files of a particular type in the SLAC directory tree"""
 
 from lsst.eo_utils.base.file_utils import FILENAME_FORMATS,\
-    SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING
+    SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING,\
+    get_hardware_type_and_id, get_files_for_run
 
 SUPERFLAT_FORMAT_STRING =\
     '{outdir}/{teststand}/superflat/{raft}/{raft}-{run}-{slot}_superflat_b-{bias}_s-{superbias}{suffix}_l'
