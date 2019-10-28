@@ -705,7 +705,7 @@ class AnalysisTask(BaseAnalysisTask):
             CCD data object
         """
         if self._handler_config is not None:
-            use_masked_ccd = self._handler_config.data_source == 'butler_filename'
+            use_masked_ccd = self._handler_config.data_source == 'butler_file'
             kwargs.setdefault('masked_ccd', use_masked_ccd)
         return get_ccd_from_id(butler, data_id, mask_files, **kwargs)
 

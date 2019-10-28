@@ -22,7 +22,7 @@ elif SITE == 'ncsa':
     BUTLER_BOT_REPO = '/project/production/tmpdataloc/BOT/gen2repo'
     ARCHIVE_DIR = None
     DEFAULT_BATCH_ARGS = ""
-    DEFAULT_DATA_SOURCE = os.environ.get('EO_DATA_SOURCE', 'butler_filename')
+    DEFAULT_DATA_SOURCE = os.environ.get('EO_DATA_SOURCE', 'butler_file')
     BATCH_SYSTEM = 'slurm'
 else:
     raise ValueError("Unknown site %s" % SITE)
