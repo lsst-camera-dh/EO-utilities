@@ -250,7 +250,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
         return outtables
 
 
-    def _plot_nonlinearity(self, flux, slit_widths, dtables, figs, inverse=False):
+    def _plot_nonlinearity(self, flux, slit_widths, dtables, figs, **kwargs):
         """Plot the non-linearity data
 
         Parameters
@@ -263,9 +263,14 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             The table dictionary
         figs : `FigureDict`
             The resulting figures
+
+        Keywords
+        --------
         inverse : bool
             Flip the x and y axes
         """
+        inverse = kwargs.get('inverse', False)
+
         if inverse:
             suffix = "_inv"
             xlabel_short = 'Flux [a.u.]'
@@ -440,7 +445,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
         slit_widths = np.hstack([slit_widths, slit_widths])
 
         self._plot_nonlinearity(flux, slit_widths, dtables, figs)
-        self._plot_nonlinearity(flux, slit_widths, dtables, figs, True)
+        self._plot_nonlinearity(flux, slit_widths, dtables, figs, inverse=True)
 
 
 EO_TASK_FACTORY.add_task_class('Nonlinearity', NonlinearityTask)
