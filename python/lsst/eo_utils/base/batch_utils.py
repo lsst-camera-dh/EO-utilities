@@ -107,7 +107,8 @@ def dispatch_job(jobname, logfile, **kwargs):
             sub_com += " %s " % batch_args
     elif disptach.find('slurm') == 0:
         batchfile = write_slurm_batchfile(jobname, logfile, **kwargs)
-        sub_com = "sbatch %s -o %s" % (batchfile, os.path.join('sbatch', logfile.replace('.fits', '.out')))
+        logfile_job = os.path.join('sbatch', logfile.replace('.fits', '.out'))
+        sub_com = "sbatch %s -o %s -e %s" % (batchfile, logfile_job, logfile_job)
     else:
         sub_com = ""
 
