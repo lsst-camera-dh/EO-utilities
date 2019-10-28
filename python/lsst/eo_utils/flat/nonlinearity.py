@@ -319,7 +319,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
 
         fig_nonlin_log_stack = figs.setup_figure("non_lin_log_stack%s" % suffix,
                                                  xlabel=xlabel_full, ylabel=ylabel_resid_full,
-                                                 figsize=(7,5))
+                                                 figsize=(7, 5))
         axes_nonlin_log_stack = fig_nonlin_log_stack['axes']
         #axes_nonlin_log_stack.set_xlim(1., 3000.)
         axes_nonlin_log_stack.set_ylim(self.plot_resid_ymin, self.plot_resid_ymax)
@@ -327,7 +327,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
 
         fig_nonlin_stack = figs.setup_figure("non_lin_stack%s" % suffix,
                                              xlabel=xlabel_full, ylabel=ylabel_resid_full,
-                                             figsize=(7,5))
+                                             figsize=(7, 5))
         axes_nonlin_stack = fig_nonlin_stack['axes']
         #axes_nonlin_stack.set_xlim(0., 3000.)
         axes_nonlin_stack.set_ylim(self.plot_resid_ymin, self.plot_resid_ymax)

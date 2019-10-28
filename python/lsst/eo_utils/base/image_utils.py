@@ -15,8 +15,7 @@ import lsst.afw.image as afwImage
 
 import lsst.afw.detection as afwDetect
 
-#import lsst.afw.geom as afwGeom
-from lsst.geom import Point2I, Extent2I, Box2I
+import lsst.geom as afwGeom
 
 from lsst.pex.exceptions.wrappers import LengthError
 
@@ -1173,9 +1172,9 @@ def fill_footprint_dict(image, fp_dict, amp, slot, **kwargs):
         fp_dict['x_peak'].append(peak_x)
         fp_dict['y_peak'].append(peak_y)
 
-        peak = Point2I(peak_x, peak_y)
-        extent = Extent2I(1, 1)
-        bbox_expand = Box2I(peak, extent)
+        peak = afwGeom.Point2I(peak_x, peak_y)
+        extent = afwGeom.Extent2I(1, 1)
+        bbox_expand = afwGeom.Box2I(peak, extent)
 
         fp_dict['ratio_full'].append(np.mean(cutout)/median)
 
