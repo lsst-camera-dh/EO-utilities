@@ -1,5 +1,7 @@
 """Class to construct superbias frames"""
 
+import os
+
 import lsst.afw.math as afwMath
 
 import lsst.eotest.image_utils as imutil
@@ -282,6 +284,9 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
         if slot_list is None:
             slot_list = ALL_SLOTS
         for slot in slot_list:
+            if not os.path.exists(data[slot]):
+                self.log.warn("Skipping missing file for %s:%s" % (self.config.raft, slot))
+                continue
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
             self._sbias_file_dict[slot] = data[slot]
 
@@ -309,7 +314,7 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        figs.make_raft_outlier_plots(dtables['outliers'])
+        #figs.make_raft_outlier_plots(dtables['outliers'])
 
         if self.config.skip:
             return

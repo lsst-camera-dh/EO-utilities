@@ -1,5 +1,7 @@
 """Class to construct superbias frames"""
 
+import os
+
 import numpy as np
 
 import lsst.afw.math as afwMath
@@ -360,8 +362,11 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
             slots = ALL_SLOTS
 
         for slot in slots:
-            self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
             basename = data[slot]
+            if not os.path.exists(basename):
+                self.log.warn("Skipping %s:%s" % (self.config.raft, slot))
+                continue
+            self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
             self._sflat_file_dict_l[slot] = basename.replace('_l.fits', '_l.fits')
             self._sflat_file_dict_h[slot] = basename.replace('_l.fits', '_h.fits')
             self._sflat_file_dict_r[slot] = basename.replace('_l.fits', '_ratio.fits')
