@@ -12,7 +12,7 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
-from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_amp_list,\
+from lsst.eo_utils.base.image_utils import get_amp_list,\
     get_geom_regions, unbias_amp, get_raw_image
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
@@ -88,8 +88,8 @@ class BFTask(FlatAnalysisTask):
             if ifile % 10 == 0:
                 self.log_progress("  %i" % ifile)
 
-            flat_1 = get_ccd_from_id(butler, id_1, [])
-            flat_2 = get_ccd_from_id(butler, id_2, [])
+            flat_1 = self.get_ccd(butler, id_1, [])
+            flat_2 = self.get_ccd(butler, id_2, [])
 
             amps = get_amp_list(flat_1)
 

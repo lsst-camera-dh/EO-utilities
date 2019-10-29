@@ -66,7 +66,7 @@ class DataLocationInfo:
         data_source = kwargs.get('data_source', DEFAULT_DATA_SOURCE)
         if teststand in ['bot_etu']:
             teststand = 'bot'
-        if data_source in ['butler', 'butler_files']:
+        if data_source in ['butler', 'butler_file']:
             data_source = 'butler'
 
         key = '%s_%s_%s' % (teststand, data_source, traitname)

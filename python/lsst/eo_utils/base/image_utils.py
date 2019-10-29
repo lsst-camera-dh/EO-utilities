@@ -15,8 +15,7 @@ import lsst.afw.image as afwImage
 
 import lsst.afw.detection as afwDetect
 
-#import lsst.afw.geom as afwGeom
-from lsst.geom import Point2I, Extent2I, Box2I
+import lsst.geom as afwGeom
 
 from lsst.pex.exceptions.wrappers import LengthError
 
@@ -169,10 +168,14 @@ def get_geom_steps_from_amp(ccd, amp):
     step_y : `int`
         Step to take in y to go from readout to physical order
     """
-    try:
-        manu = ccd.getInfo().getMetadata().getString('CCD_MANU')
-    except Exception:
+    if isinstance(ccd, MaskedCCD):
+        try:
+            manu = ccd.md.get('CCD_MANU')
+        except KeyError:
+            manu = ccd.md.get('LSST_NUM')[0:3]
+    else:
         manu = ccd.getDetector().getSerial()[0:3]
+
     if manu == 'ITL':
         flip_y = -1
     elif manu == 'E2V':
@@ -205,7 +208,6 @@ def flip_data_in_place(filepath):
         (step_x, step_y) = get_geom_steps_manu_hdu(manu, amp)
         hdus[amp].data = hdus[amp].data[::step_x, ::step_y]
     hdus.writeto(filepath, overwrite=True)
-
 
 def get_geom_regions(ccd, amp):
     """Get the ccd amp bounding boxes for a particular dataId or file
@@ -584,6 +586,8 @@ def unbiased_ccd_image_dict(ccd, **kwargs):
 
     amps = get_amp_list(ccd)
 
+    is_masked_ccd = isinstance(ccd, MaskedCCD)
+
     o_dict = {}
     offset = get_amp_offset(ccd, superbias_frame)
 
@@ -598,6 +602,12 @@ def unbiased_ccd_image_dict(ccd, **kwargs):
         img = get_raw_image(ccd, amp)
 
         superbias_im = raw_amp_image(superbias_frame, amp + offset)
+        if not is_masked_ccd and superbias_frame is not None:
+            # Flip the superbias image for the subtraction
+            (step_x, step_y) = get_geom_steps_from_amp(superbias_frame, amp + offset)
+            superbias_im.mask.array = superbias_im.mask.array[::step_x, ::step_y]
+            superbias_im.image.array = superbias_im.image.array[::step_x, ::step_y]
+
         image = unbias_amp(img, serial_oscan, bias_type=bias_type,
                            superbias_im=superbias_im, region=trim_region)
         if nlc is not None:
@@ -631,10 +641,15 @@ def extract_ccd_array_dict(data_id, **kwargs):
     """
     kwcopy = kwargs.copy()
     mask_files = kwcopy.pop('mask_files', [])
-    ccd = get_ccd_from_id(None, data_id, mask_files)
+    o_dict = {}
+
+    try:
+        ccd = get_ccd_from_id(None, data_id, mask_files)
+    except Exception:
+        return o_dict
+
     unbiased_images = unbiased_ccd_image_dict(ccd, **kwargs)
 
-    o_dict = {}
     for amp, image in unbiased_images.items():
         regions = get_geom_regions(ccd, amp)
         frames = get_image_frames_2d(image, regions)
@@ -872,13 +887,20 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
     out_dict = {}
 
     exp_time = 0.0
+    used_files = 0
 
     for ifile, in_file in enumerate(in_files):
         if ifile % 10 == 0:
             if log is not None:
                 log.info("  %i" % ifile)
 
-        ccd = get_ccd_from_id(butler, in_file, mask_files=[])
+        try:
+            ccd = get_ccd_from_id(butler, in_file, mask_files=[])
+        except Exception:
+            if log is not None:
+                log.warn("  Failed to read %s, skipping" % (str(in_file)))
+
+        used_files += 1
         exp_time += get_exposure_time(ccd)
         amps = get_amp_list(ccd)
 
@@ -899,7 +921,7 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
                                                       superbias_im=superbias_im))
 
     if in_files:
-        exp_time /= len(in_files)
+        exp_time /= float(used_files)
     out_dict['METADATA'] = dict(EXPTIME=exp_time)
 
     for key, val in amp_stack_dict.items():
@@ -1150,9 +1172,9 @@ def fill_footprint_dict(image, fp_dict, amp, slot, **kwargs):
         fp_dict['x_peak'].append(peak_x)
         fp_dict['y_peak'].append(peak_y)
 
-        peak = Point2I(peak_x, peak_y)
-        extent = Extent2I(1, 1)
-        bbox_expand = Box2I(peak, extent)
+        peak = afwGeom.Point2I(peak_x, peak_y)
+        extent = afwGeom.Extent2I(1, 1)
+        bbox_expand = afwGeom.Box2I(peak, extent)
 
         fp_dict['ratio_full'].append(np.mean(cutout)/median)
 

@@ -56,11 +56,13 @@ def test_file_utils_get_bot():
     bias_files = get_files_for_run('6545D',
                                    imagetype='BIAS',
                                    testtypes=['DARK'],
-                                   outkey='BIAS')
+                                   outkey='BIAS', 
+                                   teststand='bot_etu')
     dark_files = get_files_for_run('6545D',
                                    imagetype='DARK',
                                    testtypes=['DARK'],
-                                   outkey='DARK')
+                                   outkey='DARK', 
+                                   teststand='bot_etu')
     files = merge_file_dicts(bias_files, dark_files)
     assert len(files) == 2
     assert 'R10' in files
@@ -74,11 +76,11 @@ def test_file_utils_get_bot():
 
 def test_file_utils_get_names_dc():
     """Test the file_utils module"""
-    rafts_6106 = get_raft_names_dc('6106D')
+    rafts_6106 = get_raft_names_dc('6106D', 'bot_etu')
     assert len(rafts_6106) == 1
     assert rafts_6106[0] == 'RTM-004'
 
-    rafts_6545 = get_raft_names_dc('6545D')
+    rafts_6545 = get_raft_names_dc('6545D', 'bot_etu')
     assert len(rafts_6545) == 2
     assert rafts_6545[0] == 'R10'
     assert rafts_6545[1] == 'R22'

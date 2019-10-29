@@ -20,7 +20,7 @@ from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
-from lsst.eo_utils.base.image_utils import get_ccd_from_id, get_amp_list,\
+from lsst.eo_utils.base.image_utils import get_amp_list,\
     get_exposure_time, get_mondiode_val, get_mono_slit_b, unbiased_ccd_image_dict
 
 
@@ -169,8 +169,8 @@ class FlatPairTask(FlatAnalysisTask):
             if ifile % 10 == 0:
                 self.log_progress("  %i" % ifile)
 
-            flat_1 = get_ccd_from_id(butler, id_1, mask_files)
-            flat_2 = get_ccd_from_id(butler, id_2, mask_files)
+            flat_1 = self.get_ccd(butler, id_1, mask_files)
+            flat_2 = self.get_ccd(butler, id_2, mask_files)
 
             amps = get_amp_list(flat_1)
 

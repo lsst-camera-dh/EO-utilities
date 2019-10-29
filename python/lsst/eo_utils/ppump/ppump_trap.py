@@ -12,8 +12,6 @@ from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
-from lsst.eo_utils.base.image_utils import get_ccd_from_id
-
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from lsst.eo_utils.ppump.analysis import PpumpAnalysisConfig, PpumpAnalysisTask
@@ -77,7 +75,7 @@ class TrapTask(PpumpAnalysisTask):
         # Analysis goes here, you should fill data_dict with data extracted
         # by the analysis
         #
-        ccd = get_ccd_from_id(butler, ppump_file, mask_files, masked_ccd=True)
+        ccd = self.get_ccd(butler, ppump_file, mask_files, masked_ccd=True)
 
         my_traps = Traps(ccd, gains, cycles=self.config.cycles,
                          C2_thresh=self.config.C2_thresh,

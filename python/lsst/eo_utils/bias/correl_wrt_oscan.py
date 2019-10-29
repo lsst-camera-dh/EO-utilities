@@ -10,7 +10,7 @@ from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
-from lsst.eo_utils.base.image_utils import get_dims_from_ccd, get_ccd_from_id,\
+from lsst.eo_utils.base.image_utils import get_dims_from_ccd,\
     get_raw_image, get_geom_regions, get_amp_list, get_image_frames_2d
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
@@ -77,7 +77,7 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
             if ifile % 10 == 0:
                 self.log_progress("  %i" % ifile)
 
-            ccd = get_ccd_from_id(butler, bias_file, mask_files)
+            ccd = self.get_ccd(butler, bias_file, mask_files)
             if ifile == 0:
                 dims = get_dims_from_ccd(ccd)
                 nrow_i = dims['nrow_i']

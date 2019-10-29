@@ -7,6 +7,7 @@ import abc
 
 import glob
 
+import numpy as np
 
 import lsst.pex.config as pexConfig
 
@@ -225,7 +226,6 @@ class BaseAnalysisTask(BaseTask):
         """
         raise NotImplementedError()
 
-
     def get_filename_from_format(self, formatter, suffix, **kwargs):
         """Use a `FilenameFormat` object to construct a filename for a
         specific set of input parameters.
@@ -254,34 +254,6 @@ class BaseAnalysisTask(BaseTask):
         if self.get_config_param('stat', None) in [DEFAULT_STAT_TYPE, None]:
             format_vals['stat'] = 'superbias'
         return formatter(**format_vals)
-
-
-    @staticmethod
-    def get_superbias_amp_image(butler, superbias_frame, amp):
-        """Get the image for one amp for the superbias
-
-        Parameters
-        ----------
-        butler : `Butler` or `None`
-            Data Butler (or none)
-        superbias_frame : `MaskedCCD` or `None`
-            superbias image for the whole CCD
-        amp : `int`
-            Amplifier index
-
-        Returns
-        -------
-        superbias_im : `ImageF`
-            The image for the requested amplifier
-        """
-        if superbias_frame is not None:
-            if butler is not None:
-                superbias_im = get_raw_image(superbias_frame, amp+1)
-            else:
-                superbias_im = get_raw_image(superbias_frame, amp)
-        else:
-            superbias_im = None
-        return superbias_im
 
 
     def get_superbias_file(self, suffix, **kwargs):
@@ -499,6 +471,7 @@ class AnalysisTask(BaseAnalysisTask):
             Used to override default configuration
         """
         BaseAnalysisTask.__init__(self, **kwargs)
+        self._handler_config = None
 
     def get_suffix(self, **kwargs):
         """Get the suffix to add to table and plot filenames
@@ -550,6 +523,36 @@ class AnalysisTask(BaseAnalysisTask):
         return self.get_filename_from_format(self.plotname_format,
                                              self.get_suffix(),
                                              **kwargs)
+
+
+    def get_superbias_amp_image(self, butler, superbias_frame, amp):
+        """Get the image for one amp for the superbias                                                                                                           
+
+        Parameters                                                                                                                                               
+        ----------                                                                                                                                                
+        butler : `Butler` or `None`                                                                                                                               
+            Data Butler (or none)                                                                                                                                 
+        superbias_frame : `MaskedCCD` or `None`                                                                                                                   
+            superbias image for the whole CCD                                                                                                                     
+        amp : `int`                                                                                                                                               
+            Amplifier index
+
+        Returns
+        -------
+        superbias_im : `ImageF`
+            The image for the requested amplifier
+        """                                                                                                                                                      
+        offset = 0
+        if self._handler_config is not None:
+            if self._handler_config.data_source == 'butler':
+                offset = 1
+
+        if superbias_frame is not None:                                                                                                                          
+            superbias_im = get_raw_image(superbias_frame, amp+offset)
+        else:
+            superbias_im = None                                                                                                                                   
+        return superbias_im                                                                                                                                      
+
 
     def get_superbias_frame(self, mask_files, **kwargs):
         """Get the superbias frame for a particular run, raft, ccd...
@@ -667,9 +670,46 @@ class AnalysisTask(BaseAnalysisTask):
             Used to override default configuration
          """
         self.safe_update(**kwargs)
+        self._handler_config = kwargs.get('handler_config', None)
         dtables = self.make_datatables(butler, data)
         if self.config.plot is not None:
             self.make_plots(dtables)
+
+
+    def get_ccd(self, butler, data_id, mask_files, **kwargs):
+        """CCD image from a data_id
+
+        If we are using `Butler` then this will take a
+        data_id `dict` ojbect and return an `ExposureF` object
+
+        If we are not using `Butler` (i.e., if bulter is `None`)
+        then this will take a filename and return a `MaskedCCD` object
+
+        Parameters
+        ----------
+        butler : `Butler` or `None`
+            Data Butler
+        data_id : `dict` or `str`
+            Data identier
+        mask_files : `list`
+            List of data_ids for the files to construct the pixel mask
+
+        Keywords
+        --------
+        bias_frame : `ExposureF` or `MaskedCCD` or `None`
+            Object with the bias data
+        masked_ccd : `bool`
+            Use bulter only to get filename, return as MaskedCCD object
+
+        Returns
+        -------
+        ccd : `ExposureF` or `MaskedCCD`
+            CCD data object
+        """
+        if self._handler_config is not None:
+            use_masked_ccd = self._handler_config.data_source == 'butler_file'
+            kwargs.setdefault('masked_ccd', use_masked_ccd)
+        return get_ccd_from_id(butler, data_id, mask_files, **kwargs)
 
     @abc.abstractmethod
     def extract(self, butler, data, **kwargs):

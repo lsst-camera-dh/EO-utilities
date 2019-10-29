@@ -11,7 +11,7 @@ from lsst.eo_utils.base.data_utils import TableDict
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import get_dims_from_ccd,\
-    get_ccd_from_id, get_raw_image, get_geom_regions, get_amp_list
+    get_raw_image, get_geom_regions, get_amp_list
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
@@ -63,7 +63,7 @@ class BiasVRowTask(BiasAnalysisTask):
             if ifile % 10 == 0:
                 self.log_progress("  %i" % ifile)
 
-            ccd = get_ccd_from_id(butler, bias_file, mask_files)
+            ccd = self.get_ccd(butler, bias_file, mask_files)
             if ifile == 0:
                 dims = get_dims_from_ccd(ccd)
                 xrow_s = np.linspace(0, dims['nrow_s']-1, dims['nrow_s'])

@@ -12,7 +12,7 @@ from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import  REGION_KEYS,\
-    get_ccd_from_id, get_dimension_arrays_from_ccd
+    get_dimension_arrays_from_ccd
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
@@ -77,7 +77,7 @@ class OscanAmpStackTask(BiasAnalysisTask):
             if ifile % 10 == 0:
                 self.log_progress("  %i" % ifile)
 
-            ccd = get_ccd_from_id(butler, bias_file, mask_files)
+            ccd = self.get_ccd(butler, bias_file, mask_files)
 
             if ifile == 0:
                 dim_array_dict = get_dimension_arrays_from_ccd(ccd)

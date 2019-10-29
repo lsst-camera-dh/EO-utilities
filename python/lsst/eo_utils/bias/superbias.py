@@ -17,8 +17,8 @@ from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict
 
-from lsst.eo_utils.base.image_utils import get_ccd_from_id,\
-    flip_data_in_place, stack_images, extract_raft_array_dict,\
+from lsst.eo_utils.base.image_utils import flip_data_in_place,\
+    stack_images, extract_raft_array_dict,\
     outlier_raft_dict
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
@@ -152,7 +152,7 @@ class SuperbiasTask(BiasAnalysisTask):
                 flip_data_in_place(output_file)
 
 
-        self._superbias_frame = get_ccd_from_id(None, output_file, mask_files)
+        self._superbias_frame = self.get_ccd(None, output_file, mask_files)
 
 
     def plot(self, dtables, figs, **kwargs):

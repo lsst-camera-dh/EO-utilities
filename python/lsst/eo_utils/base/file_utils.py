@@ -18,7 +18,7 @@ except ImportError:
     print("Warning, no datacat-utilities")
 
 
-from .defaults import NINE_RAFTS, ALL_SLOTS, ARCHIVE_DIR
+from .defaults import ALL_SLOTS, ARCHIVE_DIR, RAFT_NAMES_DICT
 
 
 # These are the standard input filenames
@@ -367,7 +367,7 @@ def get_bot_files_glob(**kwargs):
     kwcopy = kwargs.copy()
     test_name = kwcopy.pop('testName').lower()
     nfiles = kwcopy.get('nfiles', None)
-    rafts = get_raft_names_dc(kwcopy['run'])
+    rafts = get_raft_names_dc(kwcopy['run'], kwcopy.get('teststand', 'bot'))
 
     for raft in rafts:
         raftdict = {}
@@ -458,6 +458,7 @@ def get_files_for_run(run_id, **kwargs):
     outkey = kwargs.get('outkey', imagetype)
     matchstr = kwargs.get('matchstr', None)
     nfiles = kwargs.get('nfiles', None)
+    teststand = kwargs.get('teststand', 'bot')
 
     outdict = {}
 
@@ -485,11 +486,13 @@ def get_files_for_run(run_id, **kwargs):
                 r_dict = get_ts8_files_glob(run=run_id,
                                             testName=test_type,
                                             imgtype=imgtype,
-                                            raft=hinfo[1])
+                                            raft=hinfo[1],
+                                            teststand=teststand)
             else:
                 r_dict = get_bot_files_glob(run=run_id,
                                             testName=test_type,
-                                            imgtype=imgtype)
+                                            imgtype=imgtype,
+                                            teststand=teststand)
         for key, val in r_dict.items():
             if hinfo[0] == 'LCA-11021':
                 # Raft level data
@@ -644,7 +647,7 @@ def read_runlist(filepath):
     return outlist
 
 
-def get_raft_names_dc(run):
+def get_raft_names_dc(run, teststand='bot'):
     """Get the list of rafts used for a particular run
 
     Parameters
@@ -668,7 +671,7 @@ def get_raft_names_dc(run):
     if htype == 'LCA-11021':
         return [hid]
     if htype == 'LCA-10134':
-        return NINE_RAFTS
+        return RAFT_NAMES_DICT[teststand]
     raise ValueError("Unrecognized hardware type %s" % htype)
 
 
