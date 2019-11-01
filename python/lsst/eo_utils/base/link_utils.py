@@ -37,6 +37,8 @@ GLOB_FORMAT_FE55_BOT = os.path.join('{path}', 'LCA-10134_Cryostat-0001', '{run}'
                                     '*', '*_psf_results_nsig4.fits')
 GLOB_FORMAT_PTC_BOT = os.path.join('{path}', 'LCA-10134_Cryostat-0001', '{run}',
                                    'ptc_BOT', 'v0', '*', '*_ptc.fits')
+GLOB_FORMAT_DETRESP_BOT = os.path.join('{path}', 'LCA-10134_Cryostat-0001', '{run}',
+                                       'flat_pairs_BOT', 'v0', '*', '*_det_response.fits')
 GLOB_FORMAT_MASK_RAFT_BOT = os.path.join('{path}', 'LCA-10134_Cryostat-0001', '{run}',
                                          '*', 'v0', '*', '*_{mask}.fits')
 
@@ -49,6 +51,8 @@ OUTFORMAT_PD_CALIB = os.path.join('{outdir}', '{teststand}', 'pd_calib',
                                   '{raft}', '{raft}-{run}-pd_calib.dat')
 OUTFORMAT_PTC = os.path.join('{outdir}', '{teststand}', 'flat', '{raft}',
                              '{raft}-{run}-{slot}_b-orig_s-orig_ptc.fits')
+OUTFORMAT_DETRESP = os.path.join('{outdir}', '{teststand}', 'tables', '{raft}',
+                                 'flat', '{raft}-{run}-{slot}_b-orig_s-orig_detresp.fits')
 OUTFORMAT_MASK = os.path.join('{outdir}', '{teststand}', 'masks_in', '{raft}',
                               '{raft}-{run}-{slot}_{mask}.fits')
 
@@ -93,6 +97,8 @@ def link_bot_files(args):
     link_eo_bot_results_runlist(args, GLOB_FORMAT_FE55_BOT, SEARCHPATH_BOT, OUTFORMAT_FE55)
     sys.stdout.write("Linking PTC results\n")
     link_eo_bot_results_runlist(args, GLOB_FORMAT_PTC_BOT, SEARCHPATH_BOT, OUTFORMAT_PTC)
+    sys.stdout.write("Linking detector response files\n")
+    link_eo_bot_results_runlist(args, GLOB_FORMAT_DETRESP_BOT, SEARCHPATH_BOT, OUTFORMAT_DETRESP)
     sys.stdout.write("Linking mask\n")
     for mask in ['edge_rolloff_mask', 'dark_pixel_mask']:
         link_eo_bot_results_runlist(args, GLOB_FORMAT_MASK_RAFT_BOT,
