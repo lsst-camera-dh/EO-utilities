@@ -185,10 +185,9 @@ class FlatPairTask(FlatAnalysisTask):
             exp_time_2 = get_exposure_time(flat_2)
 
             if exp_time_1 != exp_time_2:
-                #raise RuntimeError("Exposure times do not match for:\n%s\n%s\n   %0.3F %0.3F"
-                #                   % (id_1, id_2, exp_time_1, exp_time_2))
+                self.log.warn("Exposure times do not match for:\n%s\n%s\n   %0.3F %0.3F. Skipping Pair\n"
+                              % (id_1, id_2, exp_time_1, exp_time_2))
                 continue
-
 
             if butler is None:
                 mondiode_file_1 = id_1
@@ -262,7 +261,6 @@ class FlatPairTask(FlatAnalysisTask):
             ccd_2_ims = unbiased_ccd_image_dict(flat_2, bias=self.config.bias,
                                                 superbias_frame=superbias_frame,
                                                 trim='imaging', nonlinearity=nlc)
-
 
             for i, amp in enumerate(amps):
                 image_1 = ccd_1_ims[amp]
