@@ -395,6 +395,34 @@ class BaseAnalysisTask(BaseTask):
         self.log.info("Working on %s:%s.  %s" % (run, raft, msg))
 
 
+    def log_warn_slot_msg(self, config, msg):
+        """Make an warning message
+
+        Parameters
+        ----------
+        log : `lsst.log.log.log.Log`
+            The log to write to
+
+        config : `pexConfig`
+            The object with the configuration to get the run, raft, slot
+
+        msg : `str`
+            The rest of the message
+        """
+        if hasattr(config, 'run'):
+            run = config.run
+        else:
+            run = 'xx'
+        if hasattr(config, 'raft'):
+            raft = config.raft
+        else:
+            raft = 'xx'
+        if hasattr(config, 'slot'):
+            slot = config.slot
+        else:
+            slot = 'xx'
+        self.log.warn("%s:%s:%s.  %s" % (run, raft, slot, msg))
+
     def log_progress(self, msg):
         """Make an info message that we are running a particular slot
 
@@ -675,6 +703,9 @@ class AnalysisTask(BaseAnalysisTask):
         self.safe_update(**kwargs)
         self._handler_config = kwargs.get('handler_config', None)
         dtables = self.make_datatables(butler, data)
+        if dtables is None:
+            self.log_warn_slot_msg(self.config, "extract() failed")
+            return
         if self.config.plot is not None:
             self.make_plots(dtables)
 
