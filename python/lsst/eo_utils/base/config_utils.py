@@ -115,6 +115,10 @@ class EOUtilOptions(pexConfig.Config):
     num_oscan_pixels = pexConfig.Field("Number of overscan pixels used for model fit.",
                                        int, default=10)
 
+    # Options for Nonlinearity corrections
+    nonlin_spline_ext = pexConfig.Field("Method for extrapolating nonlinearity correction", int, default=0)
+    nonlin_spline_smooth = pexConfig.Field("Smoothing factor for nonlinearity correction", float, default=None)
+
     # Options for BF Tasks
     maxLag = pexConfig.Field("Max lag for BF analysis", int, default=1)
     nSigmaClip = pexConfig.Field("Sigma clip for BF analysis", int, default=3)
