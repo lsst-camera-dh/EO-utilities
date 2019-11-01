@@ -1,5 +1,7 @@
 """Analyze the flat pairs data"""
 
+import os
+
 import operator
 
 import numpy as np
@@ -31,12 +33,17 @@ from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 from lsst.eo_utils.flat.analysis import FlatAnalysisConfig, FlatAnalysisTask
 
 
-def get_mondiode_data(fits_file, factor=5):
+def get_mondiode_data(filepath, factor=5):
     """Get the monitoring diode data"""
-    with fits.open(fits_file) as hdus:
-        hdu = hdus['AMP0.MEAS_TIMES']
-        xvals = hdu.data.field('AMP0_MEAS_TIMES')
-        yvals = -1.0e9*hdu.data.field('AMP0_A_CURRENT')
+    if filepath.find('.txt') >= 0:
+        vals = np.recfromtxt(filepath)
+        xvals = vals[:,0]
+        yvals = 1.0e9*vals[:,1]
+    else:
+        with fits.open(filepath) as hdus:
+            hdu = hdus['AMP0.MEAS_TIMES']
+            xvals = hdu.data.field('AMP0_MEAS_TIMES')
+            yvals = -1.0e9*hdu.data.field('AMP0_A_CURRENT')
     ythresh = (max(yvals) - min(yvals))/factor + min(yvals)
     index = np.where(yvals < ythresh)
     y_0 = np.median(yvals[index])
@@ -178,12 +185,25 @@ class FlatPairTask(FlatAnalysisTask):
             exp_time_2 = get_exposure_time(flat_2)
 
             if exp_time_1 != exp_time_2:
-                raise RuntimeError("Exposure times do not match for:\n%s\n%s\n"
-                                   % (id_1, id_1))
-            data_dict['EXPTIME'].append(exp_time_1)
+                #raise RuntimeError("Exposure times do not match for:\n%s\n%s\n   %0.3F %0.3F"
+                #                   % (id_1, id_2, exp_time_1, exp_time_2))
+                continue
 
-            mon_diode_1_x, mon_diode_1_y = get_mondiode_data(id_1)
-            mon_diode_2_x, mon_diode_2_y = get_mondiode_data(id_2)
+
+            if butler is None:
+                mondiode_file_1 = id_1
+                mondiode_file_2 = id_2
+            else:
+                mondiode_file_1 = os.path.join('analysis', 'bot', 'pd_calib', id_1['run'], "pd_calib_%s.txt" % id_1['visit'])
+                mondiode_file_2 = os.path.join('analysis', 'bot', 'pd_calib', id_2['run'], "pd_calib_%s.txt" % id_2['visit'])
+
+            try:
+                mon_diode_1_x, mon_diode_1_y = get_mondiode_data(mondiode_file_1)                
+                mon_diode_2_x, mon_diode_2_y = get_mondiode_data(mondiode_file_2)
+            except Exception:
+                continue            
+
+            data_dict['EXPTIME'].append(exp_time_1)
 
             mon_diode_trapz_1 = trapz(mon_diode_1_y, mon_diode_1_x) / exp_time_1
             mon_diode_trapz_2 = trapz(mon_diode_2_y, mon_diode_2_x) / exp_time_2
@@ -209,8 +229,12 @@ class FlatPairTask(FlatAnalysisTask):
             data_dict['FLUX_simps'].append(flux_simps)
             data_dict['FLUX_avg'].append(flux_avg)
 
-            mondiode_1 = get_mondiode_val(flat_1)
-            mondiode_2 = get_mondiode_val(flat_2)
+            try:
+                mondiode_1 = get_mondiode_val(flat_1)
+                mondiode_2 = get_mondiode_val(flat_2)
+            except KeyError:
+                mondiode_1 = mon_diode_avg_1
+                mondiode_2 = mon_diode_avg_2
 
             if mondiode_1 is not None:
                 flux_1 = exp_time_1 * mondiode_1
@@ -226,7 +250,11 @@ class FlatPairTask(FlatAnalysisTask):
             flux = (flux_1 + flux_2)/2.
             data_dict['FLUX'].append(flux_avg)
             data_dict['FLUX_mondiode'].append(flux)
-            data_dict['MONOCH_SLIT_B'].append(get_mono_slit_b(flat_1))
+
+            try:
+                data_dict['MONOCH_SLIT_B'].append(get_mono_slit_b(flat_1))
+            except KeyError:
+                data_dict['MONOCH_SLIT_B'].append(0.)
 
             ccd_1_ims = unbiased_ccd_image_dict(flat_1, bias=self.config.bias,
                                                 superbias_frame=superbias_frame,

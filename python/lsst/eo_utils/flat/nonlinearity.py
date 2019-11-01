@@ -71,7 +71,6 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
         try:
             uni_spline = UnivariateSpline(profile_x, profile_y)
             offset = uni_spline(null_point)
-            print("offset", offset)
         except Exception as msg:
             print("Failed to extract null point")
             print(msg)
@@ -158,9 +157,6 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             # Here you can get the data out for each amp and append it to the
             # data_dict
 
-            data_dict['amp'].append(amp)
-            data_dict_inv['amp'].append(amp)
-
             try:
                 amp_val1 = tab['AMP%02i_MEAN1' % amp]
                 amp_val2 = tab['AMP%02i_MEAN2' % amp]
@@ -172,8 +168,70 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             copy_dict['AMP%02i_MEAN2' % amp] = amp_val2
             amp_vals = np.hstack([amp_val1, amp_val2])
 
+            data_dict['amp'].append(amp)
+            data_dict_inv['amp'].append(amp)
+
+
+            if amp_vals.size == 0:
+
+                if self.do_profiles:
+                    data_dict['prof_x'].append(0.)
+                    data_dict['prof_y'].append(0.)
+                    data_dict['prof_y_corr'].append(0.)
+                    data_dict['prof_yerr'].append(0.)
+
+                    data_dict_inv['prof_x'].append(0.)
+                    data_dict_inv['prof_y'].append(0.)
+                    data_dict_inv['prof_y_corr'].append(0.)
+                    data_dict_inv['prof_yerr'].append(0.)
+
+                data_dict['slope'].append(0.)
+                data_dict_inv['slope'].append(0.)
+
+                data_dict['curve'].append(0.)
+                data_dict_inv['curve'].append(0.)
+
+                data_dict['offset'].append(0.)
+                data_dict_inv['offset'].append(0.)
+                
+                data_dict['frac_resid'].append(0.)
+                data_dict['frac_resid_err'].append(0.)
+                
+                data_dict_inv['frac_resid'].append(0.)
+                data_dict_inv['frac_resid_err'].append(0.)                
+                continue
+
             mask = amp_vals < 0.8 * amp_vals.max()
             #mask = amp_vals <= amp_vals.max()
+            
+            if not mask.any():
+                if self.do_profiles:
+                    data_dict['prof_x'].append(0.)
+                    data_dict['prof_y'].append(0.)
+                    data_dict['prof_y_corr'].append(0.)
+                    data_dict['prof_yerr'].append(0.)
+
+                    data_dict_inv['prof_x'].append(0.)
+                    data_dict_inv['prof_y'].append(0.)
+                    data_dict_inv['prof_y_corr'].append(0.)
+                    data_dict_inv['prof_yerr'].append(0.)
+
+                data_dict['slope'].append(0.)
+                data_dict_inv['slope'].append(0.)
+
+                data_dict['curve'].append(0.)
+                data_dict_inv['curve'].append(0.)
+
+                data_dict['offset'].append(0.)
+                data_dict_inv['offset'].append(0.)
+
+                data_dict['frac_resid'].append(0.)
+                data_dict['frac_resid_err'].append(0.)
+
+                data_dict_inv['frac_resid'].append(0.)
+                data_dict_inv['frac_resid_err'].append(0.)
+
+                continue
 
             results, _, frac_resid, frac_resid_err =\
                 perform_linear_chisq_fit(amp_vals, flux_vals, mask, self.model_func_choice)
@@ -343,15 +401,22 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             amp_vals_1 = tab_flatlin['AMP%02i_MEAN1' % amp]
             amp_vals_2 = tab_flatlin['AMP%02i_MEAN2' % amp]
             amp_vals = np.hstack([amp_vals_1, amp_vals_2])
+
+            if amp_vals.size == 0:
+                continue
+
+            mask = amp_vals < 0.8 * amp_vals.max()
+            #mask = amp_vals <= amp_vals.max()                                                                                                              
+
+            full_mask *= mask
+            if not mask.any():
+                continue
+
             iamp = amp - 1
             slope = slopes[iamp]
             curve = curves[iamp]
             offset = offsets[iamp]
             pars = (slope, curve, offset)
-
-            mask = amp_vals < 0.8 * amp_vals.max()
-            #mask = amp_vals <= amp_vals.max()
-            full_mask *= mask
 
             if inverse:
                 xvals = flux

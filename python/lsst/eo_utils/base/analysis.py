@@ -616,8 +616,11 @@ class AnalysisTask(BaseAnalysisTask):
         else:
             dtables = self.extract(butler, data)
             if dtables is not None:
-                dtables.save_datatables(output_data)
-                self.log.info("Writing %s" % output_data)
+                try:
+                    dtables.save_datatables(output_data)
+                    self.log.info("Writing %s" % output_data)
+                except ValueError:
+                    self.log.warn("Failed to write table %s" % output_data)
         return dtables
 
     def make_plots(self, dtables, **kwargs):
