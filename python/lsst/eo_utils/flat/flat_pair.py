@@ -37,8 +37,8 @@ def get_mondiode_data(filepath, factor=5):
     """Get the monitoring diode data"""
     if filepath.find('.txt') >= 0:
         vals = np.recfromtxt(filepath)
-        xvals = vals[:,0]
-        yvals = 1.0e9*vals[:,1]
+        xvals = vals[:, 0]
+        yvals = 1.0e9*vals[:, 1]
     else:
         with fits.open(filepath) as hdus:
             hdu = hdus['AMP0.MEAS_TIMES']
@@ -193,14 +193,16 @@ class FlatPairTask(FlatAnalysisTask):
                 mondiode_file_1 = id_1
                 mondiode_file_2 = id_2
             else:
-                mondiode_file_1 = os.path.join('analysis', 'bot', 'pd_calib', id_1['run'], "pd_calib_%s.txt" % id_1['visit'])
-                mondiode_file_2 = os.path.join('analysis', 'bot', 'pd_calib', id_2['run'], "pd_calib_%s.txt" % id_2['visit'])
+                mondiode_file_1 = os.path.join('analysis', 'bot', 'pd_calib',
+                                               id_1['run'], "pd_calib_%s.txt" % id_1['visit'])
+                mondiode_file_2 = os.path.join('analysis', 'bot', 'pd_calib',
+                                               id_2['run'], "pd_calib_%s.txt" % id_2['visit'])
 
             try:
-                mon_diode_1_x, mon_diode_1_y = get_mondiode_data(mondiode_file_1)                
+                mon_diode_1_x, mon_diode_1_y = get_mondiode_data(mondiode_file_1)
                 mon_diode_2_x, mon_diode_2_y = get_mondiode_data(mondiode_file_2)
             except Exception:
-                continue            
+                continue
 
             data_dict['EXPTIME'].append(exp_time_1)
 

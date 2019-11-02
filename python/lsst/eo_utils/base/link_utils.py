@@ -118,4 +118,3 @@ def link_run(args):
     glob_format = args['glob_format']
 
     link_run_results(run_in, run_out, glob_format)
-    

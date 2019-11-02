@@ -807,7 +807,7 @@ class TableAnalysisBySlot(AnalysisBySlot):
         insuffix = self._task.get_config_param('insuffix', '')
 
         for raft in rafts:
-        
+
             kwcopy['raft'] = raft
             slot_dict = {}
 

@@ -554,32 +554,32 @@ class AnalysisTask(BaseAnalysisTask):
 
 
     def get_superbias_amp_image(self, butler, superbias_frame, amp):
-        """Get the image for one amp for the superbias                                                                                                           
+        """Get the image for one amp for the superbias
 
-        Parameters                                                                                                                                               
-        ----------                                                                                                                                                
-        butler : `Butler` or `None`                                                                                                                               
-            Data Butler (or none)                                                                                                                                 
-        superbias_frame : `MaskedCCD` or `None`                                                                                                                   
-            superbias image for the whole CCD                                                                                                                     
-        amp : `int`                                                                                                                                               
+        Parameters
+        ----------
+        butler : `Butler` or `None`
+            Data Butler (or none)
+        superbias_frame : `MaskedCCD` or `None`
+            superbias image for the whole CCD
+        amp : `int`
             Amplifier index
 
         Returns
         -------
         superbias_im : `ImageF`
             The image for the requested amplifier
-        """                                                                                                                                                      
+        """
         offset = 0
         if self._handler_config is not None:
             if self._handler_config.data_source == 'butler':
                 offset = 1
 
-        if superbias_frame is not None:                                                                                                                          
+        if superbias_frame is not None:
             superbias_im = get_raw_image(superbias_frame, amp+offset)
         else:
-            superbias_im = None                                                                                                                                   
-        return superbias_im                                                                                                                                      
+            superbias_im = None
+        return superbias_im
 
 
     def get_superbias_frame(self, mask_files, **kwargs):

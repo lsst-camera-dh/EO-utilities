@@ -170,21 +170,21 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             copy_dict['AMP%02i_MEAN2' % amp] = amp_val2
             amp_vals = np.hstack([amp_val1, amp_val2])
 
-            if amp_vals.size == 0:                
+            if amp_vals.size == 0:
                 guard_vals_dict['amp'] = amp
                 self.log.warn("No Amp values for amp %i, Writing guard values" % amp)
                 append_guard_row(data_dict, guard_vals_dict)
-                append_guard_row(data_dict_inv, guard_vals_dict)       
+                append_guard_row(data_dict_inv, guard_vals_dict)
                 continue
 
             mask = amp_vals < 0.8 * amp_vals.max()
             #mask = amp_vals <= amp_vals.max()
-            
+
             if not mask.any():
                 guard_vals_dict['amp'] = amp
                 self.log.warn("No frames passed cut for amp %i, Writing guard values" % amp)
                 append_guard_row(data_dict, guard_vals_dict)
-                append_guard_row(data_dict_inv, guard_vals_dict)       
+                append_guard_row(data_dict_inv, guard_vals_dict)
                 continue
 
             data_dict['amp'].append(amp)
@@ -367,7 +367,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                 continue
 
             mask = amp_vals < 0.8 * amp_vals.max()
-            #mask = amp_vals <= amp_vals.max()                                                                                                              
+            #mask = amp_vals <= amp_vals.max()
 
             full_mask *= mask
             if not mask.any():
@@ -417,7 +417,9 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             try:
                 uni_spline = UnivariateSpline(profile_x[prof_mask], profile_y[prof_mask], **kw_spline)
                 axs_prof.plot(xline, uni_spline(xline), 'r-')
-                uni_spline_corr = UnivariateSpline(profile_x[prof_mask], profile_y_corr[prof_mask], **kw_spline)
+                uni_spline_corr = UnivariateSpline(profile_x[prof_mask],
+                                                   profile_y_corr[prof_mask],
+                                                   **kw_spline)
                 axs_prof.plot(xline, uni_spline_corr(xline), 'g-')
             except Exception:
                 pass
