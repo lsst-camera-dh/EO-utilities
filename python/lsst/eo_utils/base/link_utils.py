@@ -4,7 +4,7 @@ import os
 import sys
 
 from .file_utils import link_eo_results_runlist, link_eo_calib_runlist,\
-    link_eo_bot_results_runlist
+    link_eo_bot_results_runlist, link_run_results
 
 SEARCHPATH_TS8 = ['/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive/LCA-11021_RTM',
                   '/gpfs/slac/lsst/fs1/g/data/jobHarness/jh_archive-test/LCA-11021_RTM',
@@ -103,3 +103,19 @@ def link_bot_files(args):
     for mask in ['edge_rolloff_mask', 'dark_pixel_mask']:
         link_eo_bot_results_runlist(args, GLOB_FORMAT_MASK_RAFT_BOT,
                                     SEARCHPATH_BOT, OUTFORMAT_MASK, mask=mask)
+
+
+def link_run(args):
+    """Link eo results to the analysis area
+
+    Parameters
+    ----------
+    args : `dict`
+        Arguments
+    """
+    run_in = args['input']
+    run_out = args['output']
+    glob_format = args['glob_format']
+
+    link_run_results(run_in, run_out, glob_format)
+    
