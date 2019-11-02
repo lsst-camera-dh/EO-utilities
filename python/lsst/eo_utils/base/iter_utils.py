@@ -561,7 +561,6 @@ def iterate_over_rafts_slots(analysis_task, butler, data_files, **kwargs):
     raft_list = kwargs.get('rafts', None)
     if raft_list is None:
         raft_list = sorted(data_files.keys())
-    print(data_files.keys())
     for raft in raft_list:
         raft_data = data_files[raft]
         kwargs['raft'] = raft
@@ -802,8 +801,6 @@ class TableAnalysisBySlot(AnalysisBySlot):
         kwcopy['run'] = datakey
 
         rafts = AnalysisIterator.get_raft_list(butler, datakey)
-        print('rafts', rafts)
-
         out_dict = {}
 
         formatter = self._task.intablename_format
