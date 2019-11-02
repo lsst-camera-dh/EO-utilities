@@ -128,22 +128,26 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             flux_2 = flux
             slit_widths = np.zeros(flux.shape)
 
+        flux_vals = np.hstack([flux_1, flux_2])
+
         guard_vals_dict = dict(amp=0,
                                slope=0.,
                                curve=0.,
                                offset=0.,
-                               frac_resid=np.zeros((len(flux))),
-                               frac_resid_err=np.zeros((len(flux))))
+                               frac_resid=np.zeros((len(flux_vals))),
+                               frac_resid_err=np.zeros((len(flux_vals))))
         if self.do_profiles:
-            guard_vals_dict['prof_x'] = np.zeros((self.num_profile_points))
-            guard_vals_dict['prof_y'] = np.zeros((self.num_profile_points))
-            guard_vals_dict['prof_y_corr'] = np.zeros((self.num_profile_points))
-            guard_vals_dict['prof_yerr'] = np.zeros((self.num_profile_points))
+            if self.num_profile_points is not None:
+                np_bins = self.num_profile_points - 1
+            else:
+                np_bins = len(flux_vals)
+            guard_vals_dict['prof_x'] = np.zeros((np_bins))
+            guard_vals_dict['prof_y'] = np.zeros((np_bins))
+            guard_vals_dict['prof_y_corr'] = np.zeros((np_bins))
+            guard_vals_dict['prof_yerr'] = np.zeros((np_bins))
 
         data_dict = create_dict_from_guard_rows(guard_vals_dict)
         data_dict_inv = create_dict_from_guard_rows(guard_vals_dict)
-
-        flux_vals = np.hstack([flux_1, flux_2])
 
         copy_dict = dict(flux=flux,
                          flux_1=flux_1,
@@ -168,6 +172,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
 
             if amp_vals.size == 0:                
                 guard_vals_dict['amp'] = amp
+                self.log.warn("No Amp values for amp %i, Writing guard values" % amp)
                 append_guard_row(data_dict, guard_vals_dict)
                 append_guard_row(data_dict_inv, guard_vals_dict)       
                 continue
@@ -177,6 +182,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             
             if not mask.any():
                 guard_vals_dict['amp'] = amp
+                self.log.warn("No frames passed cut for amp %i, Writing guard values" % amp)
                 append_guard_row(data_dict, guard_vals_dict)
                 append_guard_row(data_dict_inv, guard_vals_dict)       
                 continue
@@ -226,7 +232,6 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                 data_dict_inv['prof_y'].append(profile_y_inv)
                 data_dict_inv['prof_y_corr'].append(profile_y_inv)
                 data_dict_inv['prof_yerr'].append(profile_yerr_inv)
-
 
             data_dict['slope'].append(results[0][0])
             data_dict_inv['slope'].append(results_inv[0][0])
