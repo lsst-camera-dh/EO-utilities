@@ -335,7 +335,6 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
             self.log.warn("No files for %s, skipping" % (self.config.raft))
             return None
 
-        
         self._sbias_images, ccd_dict = extract_raft_unbiased_images(self._sbias_file_dict,
                                                                     mask_dict=self._mask_file_dict)
 
