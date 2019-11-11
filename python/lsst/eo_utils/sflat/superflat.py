@@ -226,17 +226,17 @@ class SuperflatTask(SflatAnalysisTask):
         default_array_kw = {}
         if self.config.stats_hist:
             kwcopy = self.extract_config_vals(default_array_kw)
-            figs.histogram_array("hist_l", None, self._superflat_frame_l,
+            figs.histogram_array("hist_l", self._superflat_frame_l,
                                  title="Historam of RMS of flat-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
                                  subtract_mean=False, bins=100, range=(0., 2000,),
                                  **kwcopy)
-            figs.histogram_array("hist_h", None, self._superflat_frame_h,
+            figs.histogram_array("hist_h", self._superflat_frame_h,
                                  title="Historam of RMS of flat-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
                                  subtract_mean=False, bins=100, range=(0., 100000,),
                                  **kwcopy)
-            figs.histogram_array("hist_ratio", None, self._superflat_frame_r,
+            figs.histogram_array("hist_ratio", self._superflat_frame_r,
                                  title="Historam of Ratio flat-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.02",
                                  subtract_mean=False, bins=100, range=(0.015, 0.025),
