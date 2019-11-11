@@ -1138,15 +1138,21 @@ def fill_footprint_dict(image, fp_dict, amp, slot, **kwargs):
         Threshold as a fraction of the median
     """
     kwcopy = kwargs.copy()
-    frac_thresh = kwcopy.get('frac_thresh', 0.9)
+    fp_type = kwcopy.get('fp_type', 'dark')
 
-    median = np.median(image.array)
-    #stdev = np.std(image.array)
+    if fp_type == 'dark':
+        frac_thresh = kwcopy.get('frac_thresh', 0.6)
+        median = np.median(image.array)
+        #stdev = np.std(image.array)
+        thresh_float = frac_thresh*median
+        thresh_0p2_float = (1. - (1. - frac_thresh)*0.2)*median
+        threshold = afwDetect.Threshold(thresh_float)
+    elif fp_type == 'bright':
+        abs_thresh = kwcopy.get('abs_thresh', 50.)
+        median = float(np.median(image.array))
+        thresh_float = median + abs_thresh
+        thresh_0p2_float = median + 0.2*abs_thresh
 
-    thresh_float = frac_thresh*median
-    thresh_0p2_float = (1. - (1. - frac_thresh)*0.2)*median
-
-    threshold = afwDetect.Threshold(thresh_float)
     fpset = afwDetect.FootprintSet(image, threshold)
 
     for footprint in fpset.getFootprints():

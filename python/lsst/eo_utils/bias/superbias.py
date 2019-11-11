@@ -293,7 +293,7 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
             self._sbias_file_dict[slot] = data[slot]
 
-                    
+
         if not self._sbias_file_dict:
             self.log.warn("No files for %s, skipping" % (self.config.raft))
             return None

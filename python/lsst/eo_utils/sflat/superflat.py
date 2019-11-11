@@ -124,7 +124,7 @@ class SuperflatTask(SflatAnalysisTask):
                                                                 len(sflat_files_l),
                                                                 len(sflat_files_h)))
 
-            
+
 
         if stat_type.upper() in afwMath.__dict__:
             statistic = afwMath.__dict__[stat_type.upper()]
@@ -135,7 +135,7 @@ class SuperflatTask(SflatAnalysisTask):
                                bias_type=self.config.bias, superbias_frame=superbias_frame)
         sflat_h = stack_images(butler, sflat_files_h, statistic=statistic,
                                bias_type=self.config.bias, superbias_frame=superbias_frame)
-        
+
         ratio_images = {}
         for amp in range(1, 17):
             im_l = sflat_l[amp]

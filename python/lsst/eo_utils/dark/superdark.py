@@ -19,8 +19,8 @@ from lsst.eo_utils.base.config_utils import EOUtilOptions
 from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.image_utils import flip_data_in_place,\
-    stack_images, extract_raft_array_dict,\
-    outlier_raft_dict
+    stack_images, extract_raft_unbiased_images, extract_raft_imaging_data,\
+    outlier_raft_dict, fill_footprint_dict
 
 from lsst.eo_utils.bias.analysis import AnalysisTask
 
@@ -178,10 +178,10 @@ class SuperdarkTask(DarkAnalysisTask):
         default_array_kw = {}
         if self.config.stats_hist:
             kwcopy = self.extract_config_vals(default_array_kw)
-            figs.histogram_array("hist", None, self._superdark_frame,
+            figs.histogram_array("hist", self._superdark_frame,
                                  title="Historam of RMS of dark-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
-                                 subtract_mean=False, bins=100, range=(0., 2000,),
+                                 subtract_mean=False, bins=100, range=(-100., 100,),
                                  **kwcopy)
 
     def plotfile_name(self, **kwargs):
@@ -250,9 +250,46 @@ class SuperdarkRaftTask(AnalysisTask):
             Used to override configruation
         """
         AnalysisTask.__init__(self, **kwargs)
-        self._mask_file_dict = {}
+        self._mask_file_dict = {}        
         self._sdark_file_dict = {}
+        self._sdark_images = None      
         self._sdark_arrays = None
+
+    @staticmethod
+    def build_defect_dict(dark_array, **kwargs):
+        """Extract information about the defects into a dictionary
+
+        Parameters
+        ----------
+        dark_array : `dict`
+            The images, keyed by slot, amp
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        out_dict : `dict`
+            The output dictionary
+        """
+        fp_dict = dict(slot=[],
+                       amp=[],
+                       x_corner=[],
+                       y_corner=[],
+                       x_peak=[],
+                       y_peak=[],
+                       x_size=[],
+                       y_size=[],
+                       ratio_full=[])
+        for i in range(4):
+            fp_dict['ratio_%i' % i] = []
+            fp_dict['npix_%i' % i] = []
+            fp_dict['npix_0p2_%i' % i] = []
+
+        for islot, (_, slot_data) in enumerate(sorted(dark_array.items())):
+            for iamp, (_, image) in enumerate(sorted(slot_data.items())):
+                fill_footprint_dict(image.image, fp_dict, iamp, islot, **kwargs)
+        return fp_dict
+
 
     def extract(self, butler, data, **kwargs):
         """Extract the utliers in the superdark frames for the raft
@@ -295,11 +332,17 @@ class SuperdarkRaftTask(AnalysisTask):
             self.log.warn("No files for %s, skipping" % (self.config.raft))
             return None
 
-        self._sdark_arrays = extract_raft_array_dict(self._sdark_file_dict,
-                                                     mask_dict=self._mask_file_dict)
+        self._sdark_images, ccd_dict = extract_raft_unbiased_images(self._sdark_file_dict,
+                                                                    mask_dict=self._mask_file_dict)
+
+        self._sdark_arrays = extract_raft_imaging_data(self._sdark_images, ccd_dict)
 
         out_data = outlier_raft_dict(self._sdark_arrays, 0., 25.)
+
+        fp_dict = SuperdarkRaftTask.build_defect_dict(self._sdark_images, fp_type='dark', abs_thresh=50)
+
         dtables = TableDict()
+        dtables.make_datatable('defects', fp_dict)
         dtables.make_datatable('outliers', out_data)
         return dtables
 

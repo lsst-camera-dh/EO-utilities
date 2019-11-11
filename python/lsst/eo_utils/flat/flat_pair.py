@@ -23,7 +23,7 @@ from lsst.eo_utils.base.data_utils import TableDict
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import get_amp_list,\
-    get_exposure_time, get_mondiode_val, get_mono_slit_b, unbiased_ccd_image_dict
+    get_exposure_time, get_mono_slit_b, unbiased_ccd_image_dict
 
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
