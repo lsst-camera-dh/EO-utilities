@@ -92,7 +92,7 @@ def link_bot_files(args):
         Mapping between rafts, slot and CCD id
     """
     sys.stdout.write("Linking eotest summary results\n")
-    #link_eo_bot_results_runlist(args, GLOB_FORMAT_EOTEST_BOT, SEARCHPATH_BOT, OUTFORMAT_EOTEST)
+    link_eo_bot_results_runlist(args, GLOB_FORMAT_EOTEST_BOT, SEARCHPATH_BOT, OUTFORMAT_EOTEST)
     sys.stdout.write("Linking Fe55 results\n")
     link_eo_bot_results_runlist(args, GLOB_FORMAT_FE55_BOT, SEARCHPATH_BOT, OUTFORMAT_FE55)
     sys.stdout.write("Linking PTC results\n")
@@ -100,7 +100,7 @@ def link_bot_files(args):
     sys.stdout.write("Linking detector response files\n")
     link_eo_bot_results_runlist(args, GLOB_FORMAT_DETRESP_BOT, SEARCHPATH_BOT, OUTFORMAT_DETRESP)
     sys.stdout.write("Linking mask\n")
-    for mask in ['edge_rolloff_mask', 'dark_pixel_mask']:
+    for mask in ['edge_rolloff_mask', 'dark_pixel_mask', 'bright_pixel_mask']:
         link_eo_bot_results_runlist(args, GLOB_FORMAT_MASK_RAFT_BOT,
                                     SEARCHPATH_BOT, OUTFORMAT_MASK, mask=mask)
 
