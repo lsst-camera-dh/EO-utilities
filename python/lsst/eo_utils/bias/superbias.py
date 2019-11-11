@@ -20,8 +20,8 @@ from lsst.eo_utils.base.config_utils import EOUtilOptions
 from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.image_utils import flip_data_in_place,\
-    stack_images, extract_raft_array_dict,\
-    outlier_raft_dict
+    stack_images,  extract_raft_unbiased_images, extract_raft_imaging_data,\
+    outlier_raft_dict, fill_footprint_dict
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
@@ -258,6 +258,43 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
         self._sbias_file_dict = {}
         self._sbias_arrays = None
 
+
+    @staticmethod
+    def build_defect_dict(dark_array, **kwargs):
+        """Extract information about the defects into a dictionary
+
+        Parameters
+        ----------
+        dark_array : `dict`
+            The images, keyed by slot, amp
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        out_dict : `dict`
+            The output dictionary
+        """
+        fp_dict = dict(slot=[],
+                       amp=[],
+                       x_corner=[],
+                       y_corner=[],
+                       x_peak=[],
+                       y_peak=[],
+                       x_size=[],
+                       y_size=[],
+                       mean_full=[])
+        for i in range(4):
+            fp_dict['mean_%i' % i] = []
+            fp_dict['npix_%i' % i] = []
+            fp_dict['npix_0p2_%i' % i] = []
+
+        for islot, (_, slot_data) in enumerate(sorted(dark_array.items())):
+            for iamp, (_, image) in enumerate(sorted(slot_data.items())):
+                fill_footprint_dict(image.image, fp_dict, iamp, islot, **kwargs)
+        return fp_dict
+
+
     def extract(self, butler, data, **kwargs):
         """Extract the outliers in the superbias frames for the raft
 
@@ -298,11 +335,17 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
             self.log.warn("No files for %s, skipping" % (self.config.raft))
             return None
 
-        self._sbias_arrays = extract_raft_array_dict(self._sbias_file_dict,
-                                                     mask_dict=self._mask_file_dict)
+        
+        self._sbias_images, ccd_dict = extract_raft_unbiased_images(self._sbias_file_dict,
+                                                                    mask_dict=self._mask_file_dict)
+
+
+        self._sbias_arrays = extract_raft_imaging_data(self._sbias_images, ccd_dict)
+        fp_dict = SuperbiasRaftTask.build_defect_dict(self._sbias_images, fp_type='bright', abs_thresh=50)
 
         out_data = outlier_raft_dict(self._sbias_arrays, 0., 10.)
         dtables = TableDict()
+        dtables.make_datatable('defects', fp_dict)
         dtables.make_datatable('outliers', out_data)
         return dtables
 
