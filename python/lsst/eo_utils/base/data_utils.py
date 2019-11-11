@@ -21,6 +21,40 @@ from .defaults import ALL_SLOTS
 HDF5_SUFFIXS = ['.hdf', '.h5', '.hd5', '.hdf5']
 FITS_SUFFIXS = ['.fit', '.fits']
 
+
+def create_dict_from_guard_rows(col_dict):
+    """Create a dictionary of lists from a dictionary of guard values
+
+    Parameters
+    ----------
+    col_dict : `dict`
+        The dictionary with the guard values
+
+    Returns
+    -------
+    ret_dict : `dict`
+        The dictionary we created
+    """
+    ret_dict = {}
+    for key in col_dict.keys():
+        ret_dict[key] = []
+    return ret_dict
+
+
+def append_guard_row(data_dict, col_dict):
+    """Append a row with guard values to a data dictionary
+
+    Parameters
+    ----------
+    data_dict : `dict'
+        The dictionary we are filling
+    col_dict
+        The dictionary with the guard values
+    """
+    for key, val in col_dict.items():
+        data_dict[key].append(val)
+
+
 class TableDict:
     """Object to collect `astropy.table.Table` objects
 

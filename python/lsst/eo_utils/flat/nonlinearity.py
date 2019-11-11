@@ -6,6 +6,8 @@ from scipy.interpolate import UnivariateSpline
 
 from lsst.eo_utils.base import TableDict
 
+from lsst.eo_utils.base.data_utils import create_dict_from_guard_rows, append_guard_row
+
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
@@ -33,7 +35,8 @@ class NonlinearityConfig(FlatSlotTableAnalysisConfig):
     outsuffix = EOUtilOptions.clone_param('outsuffix', default='flat_lin')
     bias = EOUtilOptions.clone_param('bias')
     superbias = EOUtilOptions.clone_param('superbias')
-
+    nonlin_spline_ext = EOUtilOptions.clone_param('nonlin_spline_ext')
+    nonlin_spline_smooth = EOUtilOptions.clone_param('nonlin_spline_smooth')
 
 
 class NonlinearityTask(FlatSlotTableAnalysisTask):
@@ -71,7 +74,6 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
         try:
             uni_spline = UnivariateSpline(profile_x, profile_y)
             offset = uni_spline(null_point)
-            print("offset", offset)
         except Exception as msg:
             print("Failed to extract null point")
             print(msg)
@@ -98,36 +100,16 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        data_dict = dict(amp=[],
-                         slope=[],
-                         curve=[],
-                         offset=[],
-                         frac_resid=[],
-                         frac_resid_err=[])
-
-        data_dict_inv = dict(amp=[],
-                             slope=[],
-                             curve=[],
-                             offset=[],
-                             frac_resid=[],
-                             frac_resid_err=[])
-
-        if self.do_profiles:
-            data_dict['prof_x'] = []
-            data_dict['prof_y'] = []
-            data_dict['prof_y_corr'] = []
-            data_dict['prof_yerr'] = []
-            data_dict_inv['prof_x'] = []
-            data_dict_inv['prof_y'] = []
-            data_dict_inv['prof_y_corr'] = []
-            data_dict_inv['prof_yerr'] = []
-
         self.log_info_slot_msg(self.config, "")
 
         basename = data[0]
         datapath = basename.replace('flat.fits', '%s.fits' % self.config.insuffix)
 
-        dtables = TableDict(datapath)
+        try:
+            dtables = TableDict(datapath)
+        except FileNotFoundError:
+            return None
+
         try:
             tab = dtables['flat']
             exp_time = tab['EXPTIME']
@@ -148,6 +130,25 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
 
         flux_vals = np.hstack([flux_1, flux_2])
 
+        guard_vals_dict = dict(amp=0,
+                               slope=0.,
+                               curve=0.,
+                               offset=0.,
+                               frac_resid=np.zeros((len(flux_vals))),
+                               frac_resid_err=np.zeros((len(flux_vals))))
+        if self.do_profiles:
+            if self.num_profile_points is not None:
+                np_bins = self.num_profile_points - 1
+            else:
+                np_bins = len(flux_vals)
+            guard_vals_dict['prof_x'] = np.zeros((np_bins))
+            guard_vals_dict['prof_y'] = np.zeros((np_bins))
+            guard_vals_dict['prof_y_corr'] = np.zeros((np_bins))
+            guard_vals_dict['prof_yerr'] = np.zeros((np_bins))
+
+        data_dict = create_dict_from_guard_rows(guard_vals_dict)
+        data_dict_inv = create_dict_from_guard_rows(guard_vals_dict)
+
         copy_dict = dict(flux=flux,
                          flux_1=flux_1,
                          flux_2=flux_2,
@@ -157,9 +158,6 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
 
             # Here you can get the data out for each amp and append it to the
             # data_dict
-
-            data_dict['amp'].append(amp)
-            data_dict_inv['amp'].append(amp)
 
             try:
                 amp_val1 = tab['AMP%02i_MEAN1' % amp]
@@ -172,8 +170,25 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             copy_dict['AMP%02i_MEAN2' % amp] = amp_val2
             amp_vals = np.hstack([amp_val1, amp_val2])
 
+            if amp_vals.size == 0:
+                guard_vals_dict['amp'] = amp
+                self.log.warn("No Amp values for amp %i, Writing guard values" % amp)
+                append_guard_row(data_dict, guard_vals_dict)
+                append_guard_row(data_dict_inv, guard_vals_dict)
+                continue
+
             mask = amp_vals < 0.8 * amp_vals.max()
             #mask = amp_vals <= amp_vals.max()
+
+            if not mask.any():
+                guard_vals_dict['amp'] = amp
+                self.log.warn("No frames passed cut for amp %i, Writing guard values" % amp)
+                append_guard_row(data_dict, guard_vals_dict)
+                append_guard_row(data_dict_inv, guard_vals_dict)
+                continue
+
+            data_dict['amp'].append(amp)
+            data_dict_inv['amp'].append(amp)
 
             results, _, frac_resid, frac_resid_err =\
                 perform_linear_chisq_fit(amp_vals, flux_vals, mask, self.model_func_choice)
@@ -217,7 +232,6 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                 data_dict_inv['prof_y'].append(profile_y_inv)
                 data_dict_inv['prof_y_corr'].append(profile_y_inv)
                 data_dict_inv['prof_yerr'].append(profile_yerr_inv)
-
 
             data_dict['slope'].append(results[0][0])
             data_dict_inv['slope'].append(results_inv[0][0])
@@ -295,8 +309,13 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
         frac_resid_col = tab_nonlin['frac_resid']
         frac_resid_err_col = tab_nonlin['frac_resid_err']
 
-        model_func = LINEARITY_FUNC_DICT[self.model_func_choice]
+        kw_spline = {}
+        if self.config.nonlin_spline_ext is not None:
+            kw_spline['ext'] = self.config.nonlin_spline_ext
+        if self.config.nonlin_spline_smooth is not None:
+            kw_spline['s'] = self.config.nonlin_spline_smooth
 
+        model_func = LINEARITY_FUNC_DICT[self.model_func_choice]
 
         figs.setup_amp_resid_plots_grid('lin_fits%s' % suffix, xlabel=xlabel_short,
                                         ylabel=ylabel, ylabel_resid=ylabel_resid_short,
@@ -343,15 +362,22 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             amp_vals_1 = tab_flatlin['AMP%02i_MEAN1' % amp]
             amp_vals_2 = tab_flatlin['AMP%02i_MEAN2' % amp]
             amp_vals = np.hstack([amp_vals_1, amp_vals_2])
+
+            if amp_vals.size == 0:
+                continue
+
+            mask = amp_vals < 0.8 * amp_vals.max()
+            #mask = amp_vals <= amp_vals.max()
+
+            full_mask *= mask
+            if not mask.any():
+                continue
+
             iamp = amp - 1
             slope = slopes[iamp]
             curve = curves[iamp]
             offset = offsets[iamp]
             pars = (slope, curve, offset)
-
-            mask = amp_vals < 0.8 * amp_vals.max()
-            #mask = amp_vals <= amp_vals.max()
-            full_mask *= mask
 
             if inverse:
                 xvals = flux
@@ -389,9 +415,11 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                 fmt = '-'
 
             try:
-                uni_spline = UnivariateSpline(profile_x[prof_mask], profile_y[prof_mask])
+                uni_spline = UnivariateSpline(profile_x[prof_mask], profile_y[prof_mask], **kw_spline)
                 axs_prof.plot(xline, uni_spline(xline), 'r-')
-                uni_spline_corr = UnivariateSpline(profile_x[prof_mask], profile_y_corr[prof_mask])
+                uni_spline_corr = UnivariateSpline(profile_x[prof_mask],
+                                                   profile_y_corr[prof_mask],
+                                                   **kw_spline)
                 axs_prof.plot(xline, uni_spline_corr(xline), 'g-')
             except Exception:
                 pass

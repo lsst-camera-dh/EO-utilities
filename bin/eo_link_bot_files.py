@@ -17,6 +17,8 @@ def main():
                         help="Run id")
     parser.add_argument("-o", "--outdir", default='analysis',
                         help="Output directory")
+    parser.add_argument("--teststand", default='bot',
+                        help='Teststand')
 
     args = parser.parse_args()
     link_bot_files(args.__dict__)

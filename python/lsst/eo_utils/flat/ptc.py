@@ -97,7 +97,6 @@ class PTCTask(FlatRaftTableAnalysisTask):
             try:
                 tab = dtables['flat']
             except KeyError:
-                print(dtables.keys())
                 tab = dtables['ptc_stats']
 
             for amp in range(1, 17):

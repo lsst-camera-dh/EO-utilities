@@ -102,6 +102,7 @@ def dispatch_job(jobname, logfile, **kwargs):
         disptach = BATCH_SYSTEM
 
     if disptach.find('lsf') == 0:
+        makedir_safe(logfile)
         sub_com = "bsub -o %s" % logfile
         if batch_args is not None:
             sub_com += " %s " % batch_args

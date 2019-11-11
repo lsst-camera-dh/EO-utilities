@@ -44,14 +44,15 @@ BUTLER_REPO_DICT = dict(ts8=BUTLER_TS8_REPO,
 
 # The slots
 ALL_SLOTS = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
-
+CORNER_SLOTS = ['SG0', 'SG1', 'SW0', 'SW1']
 
 # The rafts
-ALL_RAFTS_BOT_ETU = ["R10", "R22"]
-NINE_RAFTS = ["R01", "R02", "R10",
-              "R11", "R12", "R20",
-              "R21", "R22", "R30"]
-
+ALL_RAFTS_BOT_ETU = ['R10', 'R22']
+CORNER_RAFTS = ['R00', 'R04', 'R40', 'R44']
+NINE_RAFTS = ['R01', 'R02', 'R10',
+              'R11', 'R12', 'R20',
+              'R21', 'R22', 'R30']
+NINE_AND_CORNER_RAFTS = NINE_RAFTS + CORNER_RAFTS
 
 RAFT_NAMES_DICT = dict(bot_etu=ALL_RAFTS_BOT_ETU,
                        bot_9=NINE_RAFTS,
@@ -86,5 +87,5 @@ DEFAULT_STAT_TYPE = 'median'
 DEFAULT_BITPIX = -32
 DEFAULT_BIAS_TYPE = 'spline'
 DEFAULT_SUPERBIAS_TYPE = None
-DEFAULT_LOGFILE = 'temp.log'
+DEFAULT_LOGFILE = 'eo_util_log/temp.log'
 DEFAULT_NBINS = 100

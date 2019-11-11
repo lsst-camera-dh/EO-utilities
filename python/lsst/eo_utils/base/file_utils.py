@@ -987,6 +987,22 @@ def link_eo_bot_results_runlist(args, glob_format, paths, outformat, **kwargs):
                             outdir=args['outdir'], teststand=args['teststand'],
                             **kwargs)
 
+def link_run_results(run_in, run_out, glob_format):
+    """Link results from one run to another
+
+    Parameters
+    ----------
+    glob_format : `str`
+        Formatting string for search path
+    """
+    glob_string = glob_format.format(run=run_in)
+    glob_files = glob.glob(glob_string)
+    for infile in glob_files:
+        outfile = infile.replace(run_in, run_out)
+        makedir_safe(outfile)
+        comm = 'ln -s %s %s' % (os.path.realpath(infile), outfile)
+        os.system(comm)
+    sys.stdout.write("Linked %i files from run %s to run %s\n" % (len(glob_files), run_in, run_out))
 
 def test_files_exist(flist):
     """Test to see if files exits"

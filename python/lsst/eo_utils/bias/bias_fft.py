@@ -69,7 +69,7 @@ class BiasFFTTask(BiasAnalysisTask):
 
         if not bias_files:
             self.log_info_slot_msg(self.config, "No bias data, skipping")
-            return TableDict()
+            return None
 
         mask_files = self.get_mask_files()
         superbias_frame = self.get_superbias_frame(mask_files)
@@ -85,7 +85,6 @@ class BiasFFTTask(BiasAnalysisTask):
             ccd = self.get_ccd(butler, bias_file, mask_files)
             if ifile == 0:
                 freqs_dict = get_readout_freqs_from_ccd(ccd)
-                print(freqs_dict.keys())
 
             for key in REGION_KEYS:
                 freqs = freqs_dict['freqs_%s' % key]
@@ -204,12 +203,12 @@ class BiasFFTTask(BiasAnalysisTask):
                 for row_data in frames[region]:
                     fftpow_row = np.abs(fftpack.fft(row_data-row_data.mean()))
                     nvals = len(fftpow_row)
-                    fftpow /= nvals/2
-                    fft_by_col.append(fftpow_row)
-                fft_mean_by_col = np.vstack(fft_by_col).mean(axis=0)
+                    fftpow_row /= nvals/2
+                    fft_by_col.append(fftpow_row[0:int(nvals/2)])
+                fft_mean_by_col = np.sqrt(np.vstack(fft_by_col)).mean(axis=0)
                 if key_str not in data[key_col]:
                     data[key_col][key_str] = np.zeros((int(nvals/2), nfiles_used))
-                data[key_col][key_str][:, ifile] = np.sqrt(fft_mean_by_col[0:int(nvals/2)])
+                data[key_col][key_str][:, ifile] = fft_mean_by_col
 
 
 
@@ -266,8 +265,6 @@ class SuperbiasFFTTask(SuperbiasSlotTableAnalysisTask):
             nfreqs = len(freqs)
             fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
             fft_data['%s_col' % key] = dict(freqs=freqs[0:int(nfreqs/2)])
-
-        print(fft_data.keys())
 
         BiasFFTTask.get_ccd_data(self, superbias, fft_data,
                                  slot=slot, superbias_frame=None)

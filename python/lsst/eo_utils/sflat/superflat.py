@@ -1,5 +1,7 @@
 """Class to construct superbias frames"""
 
+import os
+
 import numpy as np
 
 import lsst.afw.math as afwMath
@@ -105,11 +107,24 @@ class SuperflatTask(SflatAnalysisTask):
 
         sflat_files = data['SFLAT']
 
+        if not sflat_files:
+            self.log_warn_slot_msg(self.config, "No superflat files")
+            return None
+
         sflat_files_l, sflat_files_h = sort_sflats(butler, sflat_files)
+
+        if not sflat_files_l:
+            self.log_warn_slot_msg(self.config, "No lo superflat files")
+            return None
+        if not sflat_files_h:
+            self.log_warn_slot_msg(self.config, "No hi superflat files")
+            return None
 
         self.log_info_slot_msg(self.config, "%i %i %i files" % (len(sflat_files),
                                                                 len(sflat_files_l),
                                                                 len(sflat_files_h)))
+
+
 
         if stat_type.upper() in afwMath.__dict__:
             statistic = afwMath.__dict__[stat_type.upper()]
@@ -161,6 +176,9 @@ class SuperflatTask(SflatAnalysisTask):
 
         if not self.config.skip:
             sflats = self.extract(butler, data)
+            if sflats is None:
+                return None
+
             if butler is None:
                 template_file = data['SFLAT'][0]
             else:
@@ -208,17 +226,17 @@ class SuperflatTask(SflatAnalysisTask):
         default_array_kw = {}
         if self.config.stats_hist:
             kwcopy = self.extract_config_vals(default_array_kw)
-            figs.histogram_array("hist_l", None, self._superflat_frame_l,
+            figs.histogram_array("hist_l", self._superflat_frame_l,
                                  title="Historam of RMS of flat-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
                                  subtract_mean=False, bins=100, range=(0., 2000,),
                                  **kwcopy)
-            figs.histogram_array("hist_h", None, self._superflat_frame_h,
+            figs.histogram_array("hist_h", self._superflat_frame_h,
                                  title="Historam of RMS of flat-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
                                  subtract_mean=False, bins=100, range=(0., 100000,),
                                  **kwcopy)
-            figs.histogram_array("hist_ratio", None, self._superflat_frame_r,
+            figs.histogram_array("hist_ratio", self._superflat_frame_r,
                                  title="Historam of Ratio flat-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.02",
                                  subtract_mean=False, bins=100, range=(0.015, 0.025),
@@ -352,6 +370,11 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
         """
         self.safe_update(**kwargs)
 
+        self._mask_file_dict = {}
+        self._sflat_file_dict_l = {}
+        self._sflat_file_dict_h = {}
+        self._sflat_file_dict_r = {}
+
         if butler is not None:
             self.log.warn("Ignoring butler")
 
@@ -360,11 +383,18 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
             slots = ALL_SLOTS
 
         for slot in slots:
-            self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
             basename = data[slot]
+            if not os.path.exists(basename):
+                self.log.warn("Skipping %s:%s" % (self.config.raft, slot))
+                continue
+            self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
             self._sflat_file_dict_l[slot] = basename.replace('_l.fits', '_l.fits')
             self._sflat_file_dict_h[slot] = basename.replace('_l.fits', '_h.fits')
             self._sflat_file_dict_r[slot] = basename.replace('_l.fits', '_ratio.fits')
+
+        if not self._sflat_file_dict_l:
+            self.log.warn("No files for %s, skipping" % (self.config.raft))
+            return None
 
         self._sflat_images_h, ccd_dict = extract_raft_unbiased_images(self._sflat_file_dict_h,
                                                                       mask_dict=self._mask_file_dict)

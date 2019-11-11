@@ -5,6 +5,8 @@ This module contains base classes for analysis tasks.
 
 import abc
 
+import os
+
 import glob
 
 import numpy as np
@@ -395,6 +397,34 @@ class BaseAnalysisTask(BaseTask):
         self.log.info("Working on %s:%s.  %s" % (run, raft, msg))
 
 
+    def log_warn_slot_msg(self, config, msg):
+        """Make an warning message
+
+        Parameters
+        ----------
+        log : `lsst.log.log.log.Log`
+            The log to write to
+
+        config : `pexConfig`
+            The object with the configuration to get the run, raft, slot
+
+        msg : `str`
+            The rest of the message
+        """
+        if hasattr(config, 'run'):
+            run = config.run
+        else:
+            run = 'xx'
+        if hasattr(config, 'raft'):
+            raft = config.raft
+        else:
+            raft = 'xx'
+        if hasattr(config, 'slot'):
+            slot = config.slot
+        else:
+            slot = 'xx'
+        self.log.warn("%s:%s:%s.  %s" % (run, raft, slot, msg))
+
     def log_progress(self, msg):
         """Make an info message that we are running a particular slot
 
@@ -412,6 +442,7 @@ class AnalysisConfig(BaseAnalysisConfig):
     teststand = EOUtilOptions.clone_param('teststand')
     skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
+    overwrite = EOUtilOptions.clone_param('overwrite')
     outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
@@ -526,32 +557,32 @@ class AnalysisTask(BaseAnalysisTask):
 
 
     def get_superbias_amp_image(self, butler, superbias_frame, amp):
-        """Get the image for one amp for the superbias                                                                                                           
+        """Get the image for one amp for the superbias
 
-        Parameters                                                                                                                                               
-        ----------                                                                                                                                                
-        butler : `Butler` or `None`                                                                                                                               
-            Data Butler (or none)                                                                                                                                 
-        superbias_frame : `MaskedCCD` or `None`                                                                                                                   
-            superbias image for the whole CCD                                                                                                                     
-        amp : `int`                                                                                                                                               
+        Parameters
+        ----------
+        butler : `Butler` or `None`
+            Data Butler (or none)
+        superbias_frame : `MaskedCCD` or `None`
+            superbias image for the whole CCD
+        amp : `int`
             Amplifier index
 
         Returns
         -------
         superbias_im : `ImageF`
             The image for the requested amplifier
-        """                                                                                                                                                      
+        """
         offset = 0
         if self._handler_config is not None:
             if self._handler_config.data_source == 'butler':
                 offset = 1
 
-        if superbias_frame is not None:                                                                                                                          
+        if superbias_frame is not None:
             superbias_im = get_raw_image(superbias_frame, amp+offset)
         else:
-            superbias_im = None                                                                                                                                   
-        return superbias_im                                                                                                                                      
+            superbias_im = None
+        return superbias_im
 
 
     def get_superbias_frame(self, mask_files, **kwargs):
@@ -614,10 +645,17 @@ class AnalysisTask(BaseAnalysisTask):
             except IOError:
                 dtables = None
         else:
+            if not self.config.overwrite:
+                if os.path.exists(output_data):
+                    self.log.info("Ouput file %s exists, skipping" % output_data)
+                    return None
             dtables = self.extract(butler, data)
             if dtables is not None:
-                dtables.save_datatables(output_data)
-                self.log.info("Writing %s" % output_data)
+                try:
+                    dtables.save_datatables(output_data)
+                    self.log.info("Writing %s" % output_data)
+                except ValueError:
+                    self.log.warn("Failed to write table %s" % output_data)
         return dtables
 
     def make_plots(self, dtables, **kwargs):
@@ -672,6 +710,9 @@ class AnalysisTask(BaseAnalysisTask):
         self.safe_update(**kwargs)
         self._handler_config = kwargs.get('handler_config', None)
         dtables = self.make_datatables(butler, data)
+        if dtables is None:
+            self.log_warn_slot_msg(self.config, "extract() returned None")
+            return
         if self.config.plot is not None:
             self.make_plots(dtables)
 

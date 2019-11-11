@@ -59,6 +59,7 @@ class EOUtilOptions(pexConfig.Config):
     infile = pexConfig.Field("Input file name", str, default=None)
     indir = pexConfig.Field("Input directory name", str, default=DEFAULT_OUTDIR)
     outfile = pexConfig.Field("Output file name", str, default=None)
+    overwrite = pexConfig.Field("Process even if output data already exists", bool, default=False)
 
     # Options for input data processing
     bias = pexConfig.Field("Method to use for unbiasing", str, default='spline')
@@ -114,6 +115,10 @@ class EOUtilOptions(pexConfig.Config):
     maxflux = pexConfig.Field("Maximum flux for overscan fitting.", float, default=140000.0)
     num_oscan_pixels = pexConfig.Field("Number of overscan pixels used for model fit.",
                                        int, default=10)
+
+    # Options for Nonlinearity corrections
+    nonlin_spline_ext = pexConfig.Field("Method for extrapolating nonlinearity correction", int, default=0)
+    nonlin_spline_smooth = pexConfig.Field("Smoothing factor for nonlinearity correction", float, default=None)
 
     # Options for BF Tasks
     maxLag = pexConfig.Field("Max lag for BF analysis", int, default=1)

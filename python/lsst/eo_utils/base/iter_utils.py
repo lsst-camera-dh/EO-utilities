@@ -800,21 +800,24 @@ class TableAnalysisBySlot(AnalysisBySlot):
         kwcopy = kwargs.copy()
         kwcopy['run'] = datakey
 
-        raft = AnalysisIterator.get_raft_list(butler, datakey)[0]
-        kwcopy['raft'] = raft
-
+        rafts = AnalysisIterator.get_raft_list(butler, datakey)
         out_dict = {}
 
         formatter = self._task.intablename_format
         insuffix = self._task.get_config_param('insuffix', '')
 
-        slot_dict = {}
-        for slot in ALL_SLOTS:
-            kwcopy['slot'] = slot
-            datapath = self._task.get_filename_from_format(formatter, insuffix, **kwcopy)
-            slot_dict[slot] = [datapath + '.fits']
+        for raft in rafts:
 
-        out_dict = {raft:slot_dict}
+            kwcopy['raft'] = raft
+            slot_dict = {}
+
+            for slot in ALL_SLOTS:
+                kwcopy['slot'] = slot
+                datapath = self._task.get_filename_from_format(formatter, insuffix, **kwcopy)
+                slot_dict[slot] = [datapath + '.fits']
+
+            out_dict[raft] = slot_dict
+
         return out_dict
 
 
