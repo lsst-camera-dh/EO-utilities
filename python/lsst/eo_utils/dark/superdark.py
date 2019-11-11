@@ -279,9 +279,9 @@ class SuperdarkRaftTask(AnalysisTask):
                        y_peak=[],
                        x_size=[],
                        y_size=[],
-                       ratio_full=[])
+                       mean_full=[])
         for i in range(4):
-            fp_dict['ratio_%i' % i] = []
+            fp_dict['mean_%i' % i] = []
             fp_dict['npix_%i' % i] = []
             fp_dict['npix_0p2_%i' % i] = []
 
@@ -339,7 +339,11 @@ class SuperdarkRaftTask(AnalysisTask):
 
         out_data = outlier_raft_dict(self._sdark_arrays, 0., 25.)
 
+<<<<<<< HEAD
+        fp_dict = SuperdarkRaftTask.build_defect_dict(self._sdark_images, fp_type='bright', abs_thresh=50)
+=======
         fp_dict = SuperdarkRaftTask.build_defect_dict(self._sdark_images, fp_type='dark', abs_thresh=50)
+>>>>>>> master
 
         dtables = TableDict()
         dtables.make_datatable('defects', fp_dict)

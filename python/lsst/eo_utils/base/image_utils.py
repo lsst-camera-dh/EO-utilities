@@ -1147,11 +1147,14 @@ def fill_footprint_dict(image, fp_dict, amp, slot, **kwargs):
         thresh_float = frac_thresh*median
         thresh_0p2_float = (1. - (1. - frac_thresh)*0.2)*median
         threshold = afwDetect.Threshold(thresh_float)
+        keystr = 'ratio'
     elif fp_type == 'bright':
         abs_thresh = kwcopy.get('abs_thresh', 50.)
         median = float(np.median(image.array))
         thresh_float = median + abs_thresh
         thresh_0p2_float = median + 0.2*abs_thresh
+        threshold = afwDetect.Threshold(thresh_float)
+        keystr = 'mean'
 
     fpset = afwDetect.FootprintSet(image, threshold)
 
@@ -1182,7 +1185,11 @@ def fill_footprint_dict(image, fp_dict, amp, slot, **kwargs):
         extent = afwGeom.Extent2I(1, 1)
         bbox_expand = afwGeom.Box2I(peak, extent)
 
-        fp_dict['ratio_full'].append(np.mean(cutout)/median)
+        ratio_full = np.mean(cutout)
+        if fp_type == 'dark':
+            ratio_full /= median
+
+        fp_dict['%s_full' % keystr].append(ratio_full)
 
         npix_cumul = np.array([1, 8, 16, 24])
         sums = np.zeros((4))
@@ -1215,9 +1222,12 @@ def fill_footprint_dict(image, fp_dict, amp, slot, **kwargs):
 
             bbox_expand.grow(1)
 
-        means_cumul = sums_cumul/(npix_cumul*median)
+        means_cumul = sums_cumul/npix_cumul
+
+        if fp_type == 'dark':
+            means_cumul /= median
 
         for i in range(4):
-            fp_dict['ratio_%i' % i].append(means_cumul[i])
+            fp_dict['%s_%i' % (keystr, i)].append(means_cumul[i])
             fp_dict['npix_%i' % i].append(over_thresh_cumul[i])
             fp_dict['npix_0p2_%i' % i].append(over_0p2_thresh_cumul[i])
