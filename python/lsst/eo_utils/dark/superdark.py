@@ -339,11 +339,7 @@ class SuperdarkRaftTask(AnalysisTask):
 
         out_data = outlier_raft_dict(self._sdark_arrays, 0., 25.)
 
-<<<<<<< HEAD
         fp_dict = SuperdarkRaftTask.build_defect_dict(self._sdark_images, fp_type='bright', abs_thresh=50)
-=======
-        fp_dict = SuperdarkRaftTask.build_defect_dict(self._sdark_images, fp_type='dark', abs_thresh=50)
->>>>>>> master
 
         dtables = TableDict()
         dtables.make_datatable('defects', fp_dict)
