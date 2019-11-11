@@ -1417,7 +1417,7 @@ class FigureDict:
         nbad_total_array = np.zeros((144))
         nbad_row_array = np.zeros((144))
         nbad_col_array = np.zeros((144))
-        
+
         idxs = dtable['slot']*16 + dtable['amp']
         nbad_total_array[idxs] = dtable['nbad_total']
         nbad_row_array[idxs] = dtable['nbad_rows']

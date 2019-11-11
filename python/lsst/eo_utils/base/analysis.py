@@ -442,7 +442,7 @@ class AnalysisConfig(BaseAnalysisConfig):
     teststand = EOUtilOptions.clone_param('teststand')
     skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
-    retry = EOUtilOptions.clone_param('retry')
+    overwrite = EOUtilOptions.clone_param('overwrite')
     outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
@@ -645,7 +645,7 @@ class AnalysisTask(BaseAnalysisTask):
             except IOError:
                 dtables = None
         else:
-            if not self.config.retry:
+            if not self.config.overwrite:
                 if os.path.exists(output_data):
                     self.log.info("Ouput file %s exists, skipping" % output_data)
                     return None
