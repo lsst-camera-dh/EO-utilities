@@ -1399,6 +1399,8 @@ class FigureDict:
         prefix : `str`
             Prepended to the plot keys
         """
+        if not dtable:
+            return
         self.plot_raft_vals_from_table(dtable, prefix + 'out_row',
                                        title='Outliers by row',
                                        y_name='row_data',
@@ -1411,14 +1413,24 @@ class FigureDict:
                                        xlabel='Row',
                                        ylabel='N bad pixels',
                                        ymin=0, ymax=50)
+
+        nbad_total_array = np.zeros((144))
+        nbad_row_array = np.zeros((144))
+        nbad_col_array = np.zeros((144))
+        
+        idxs = dtable['slot']*16 + dtable['amp']
+        nbad_total_array[idxs] = dtable['nbad_total']
+        nbad_row_array[idxs] = dtable['nbad_rows']
+        nbad_col_array[idxs] = dtable['nbad_cols']
+
         self.plot_stat_color(prefix + 'nbad',
-                             dtable['nbad_total'].reshape(9, 16).clip(0, 0.05),
+                             nbad_total_array.reshape(9, 16).clip(0, 0.05),
                              title="Fraction of pixels")
         self.plot_stat_color(prefix + 'nbad_row',
-                             dtable['nbad_rows'].reshape(9, 16).clip(0, 0.05),
+                             nbad_row_array.reshape(9, 16).clip(0, 0.05),
                              title="Fraction of row with >= 10 outliers")
         self.plot_stat_color(prefix + 'nbad_col',
-                             dtable['nbad_cols'].reshape(9, 16).clip(0, 0.05),
+                             nbad_col_array.reshape(9, 16).clip(0, 0.05),
                              title="Fraction of cols with >= 10 outliers")
 
     def savefig(self, key, filename):
