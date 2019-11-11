@@ -5,6 +5,8 @@ This module contains base classes for analysis tasks.
 
 import abc
 
+import os
+
 import glob
 
 import numpy as np
@@ -440,6 +442,7 @@ class AnalysisConfig(BaseAnalysisConfig):
     teststand = EOUtilOptions.clone_param('teststand')
     skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
+    retry = EOUtilOptions.clone_param('retry')
     outsuffix = EOUtilOptions.clone_param('outsuffix')
 
 
@@ -642,6 +645,10 @@ class AnalysisTask(BaseAnalysisTask):
             except IOError:
                 dtables = None
         else:
+            if not self.config.retry:
+                if os.path.exists(output_data):
+                    self.log.info("Ouput file %s exists, skipping" % output_data)
+                    return None
             dtables = self.extract(butler, data)
             if dtables is not None:
                 try:
@@ -704,7 +711,7 @@ class AnalysisTask(BaseAnalysisTask):
         self._handler_config = kwargs.get('handler_config', None)
         dtables = self.make_datatables(butler, data)
         if dtables is None:
-            self.log_warn_slot_msg(self.config, "extract() failed")
+            self.log_warn_slot_msg(self.config, "extract() returned None")
             return
         if self.config.plot is not None:
             self.make_plots(dtables)

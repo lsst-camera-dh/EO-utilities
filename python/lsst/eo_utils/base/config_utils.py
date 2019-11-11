@@ -59,6 +59,7 @@ class EOUtilOptions(pexConfig.Config):
     infile = pexConfig.Field("Input file name", str, default=None)
     indir = pexConfig.Field("Input directory name", str, default=DEFAULT_OUTDIR)
     outfile = pexConfig.Field("Output file name", str, default=None)
+    retry = pexConfig.Field("Process only if output data doesn't already extis", bool, default=False)
 
     # Options for input data processing
     bias = pexConfig.Field("Method to use for unbiasing", str, default='spline')
