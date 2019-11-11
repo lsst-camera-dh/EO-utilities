@@ -107,11 +107,24 @@ class SuperflatTask(SflatAnalysisTask):
 
         sflat_files = data['SFLAT']
 
+        if not sflat_files:
+            self.log_warn_slot_msg(self.config, "No superflat files")
+            return None
+
         sflat_files_l, sflat_files_h = sort_sflats(butler, sflat_files)
+
+        if not sflat_files_l:
+            self.log_warn_slot_msg(self.config, "No lo superflat files")
+            return None
+        if not sflat_files_h:
+            self.log_warn_slot_msg(self.config, "No hi superflat files")
+            return None
 
         self.log_info_slot_msg(self.config, "%i %i %i files" % (len(sflat_files),
                                                                 len(sflat_files_l),
                                                                 len(sflat_files_h)))
+
+            
 
         if stat_type.upper() in afwMath.__dict__:
             statistic = afwMath.__dict__[stat_type.upper()]
@@ -122,7 +135,7 @@ class SuperflatTask(SflatAnalysisTask):
                                bias_type=self.config.bias, superbias_frame=superbias_frame)
         sflat_h = stack_images(butler, sflat_files_h, statistic=statistic,
                                bias_type=self.config.bias, superbias_frame=superbias_frame)
-
+        
         ratio_images = {}
         for amp in range(1, 17):
             im_l = sflat_l[amp]
@@ -163,6 +176,9 @@ class SuperflatTask(SflatAnalysisTask):
 
         if not self.config.skip:
             sflats = self.extract(butler, data)
+            if sflats is None:
+                return None
+
             if butler is None:
                 template_file = data['SFLAT'][0]
             else:
@@ -354,6 +370,11 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
         """
         self.safe_update(**kwargs)
 
+        self._mask_file_dict = {}
+        self._sflat_file_dict_l = {}
+        self._sflat_file_dict_h = {}
+        self._sflat_file_dict_r = {}
+
         if butler is not None:
             self.log.warn("Ignoring butler")
 
@@ -370,6 +391,10 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
             self._sflat_file_dict_l[slot] = basename.replace('_l.fits', '_l.fits')
             self._sflat_file_dict_h[slot] = basename.replace('_l.fits', '_h.fits')
             self._sflat_file_dict_r[slot] = basename.replace('_l.fits', '_ratio.fits')
+
+        if not self._sflat_file_dict_l:
+            self.log.warn("No files for %s, skipping" % (self.config.raft))
+            return None
 
         self._sflat_images_h, ccd_dict = extract_raft_unbiased_images(self._sflat_file_dict_h,
                                                                       mask_dict=self._mask_file_dict)

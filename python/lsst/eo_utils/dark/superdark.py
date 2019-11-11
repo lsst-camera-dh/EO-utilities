@@ -273,6 +273,9 @@ class SuperdarkRaftTask(AnalysisTask):
         """
         self.safe_update(**kwargs)
 
+        self._mask_file_dict = {}
+        self._sdark_file_dict = {}
+
         if butler is not None:
             self.log.warn("Ignoring butler")
 
@@ -287,6 +290,10 @@ class SuperdarkRaftTask(AnalysisTask):
             mask_files = self.get_mask_files(slot=slot)
             self._mask_file_dict[slot] = mask_files
             self._sdark_file_dict[slot] = data[slot]
+
+        if not self._sdark_file_dict:
+            self.log.warn("No files for %s, skipping" % (self.config.raft))
+            return None
 
         self._sdark_arrays = extract_raft_array_dict(self._sdark_file_dict,
                                                      mask_dict=self._mask_file_dict)
@@ -311,7 +318,7 @@ class SuperdarkRaftTask(AnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        #figs.make_raft_outlier_plots(dtables['outliers'])
+        figs.make_raft_outlier_plots(dtables['outliers'])
 
         if self.config.skip:
             return

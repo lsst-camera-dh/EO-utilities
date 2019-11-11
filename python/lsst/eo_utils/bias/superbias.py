@@ -277,6 +277,9 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
         """
         self.safe_update(**kwargs)
 
+        self._mask_file_dict = {}
+        self._sbias_file_dict = {}
+
         if butler is not None:
             self.log.warn("Ignoring butler")
 
@@ -289,6 +292,11 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
                 continue
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
             self._sbias_file_dict[slot] = data[slot]
+
+                    
+        if not self._sbias_file_dict:
+            self.log.warn("No files for %s, skipping" % (self.config.raft))
+            return None
 
         self._sbias_arrays = extract_raft_array_dict(self._sbias_file_dict,
                                                      mask_dict=self._mask_file_dict)
@@ -314,12 +322,13 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        #figs.make_raft_outlier_plots(dtables['outliers'])
+        figs.make_raft_outlier_plots(dtables['outliers'])
 
         if self.config.skip:
             return
 
         if self.config.mosaic:
+
             figs.plot_raft_mosaic('mosaic', self._sbias_file_dict, bias_subtract=False)
 
         if self.config.stats_hist:
