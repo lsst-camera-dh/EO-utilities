@@ -128,8 +128,12 @@ class FlatPairTask(FlatAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        flat1_files = data['FLAT1']
-        flat2_files = data['FLAT2']
+        if self.config.teststand == 'ts8':
+            flat1_files = data['FLAT1']
+            flat2_files = data['FLAT2']
+        elif self.config.teststand == 'bot':
+            flat1_files = data['FLAT0']
+            flat2_files = data['FLAT1']
 
         mask_files = self.get_mask_files()
         superbias_frame = self.get_superbias_frame(mask_files)
@@ -138,7 +142,7 @@ class FlatPairTask(FlatAnalysisTask):
         gains = self.get_gains()
         slot_idx = ALL_SLOTS.index(self.config.slot)
 
-        self.log_info_slot_msg(self.config, "%i files" % len(flat1_files))
+        self.log_info_slot_msg(self.config, "%i %i files" % (len(flat1_files), len(flat2_files)))
 
         # This is a dictionary of dictionaries to store all the
         # data you extract from the flat_files
@@ -190,8 +194,12 @@ class FlatPairTask(FlatAnalysisTask):
                 continue
 
             if butler is None:
-                mondiode_file_1 = id_1
-                mondiode_file_2 = id_2
+                if self.config.teststand == 'ts8':
+                    mondiode_file_1 = id_1
+                    mondiode_file_2 = id_2
+                elif self.config.teststand == 'bot':
+                    mondiode_file_1 = os.path.join(os.path.dirname(id_1), 'Photodiode_Readings.txt')
+                    mondiode_file_2 = os.path.join(os.path.dirname(id_2), 'Photodiode_Readings.txt')
             else:
                 mondiode_file_1 = os.path.join('analysis', 'bot', 'pd_calib',
                                                id_1['run'], "pd_calib_%s.txt" % id_1['visit'])
@@ -202,7 +210,9 @@ class FlatPairTask(FlatAnalysisTask):
                 mon_diode_1_x, mon_diode_1_y = get_mondiode_data(mondiode_file_1)
                 mon_diode_2_x, mon_diode_2_y = get_mondiode_data(mondiode_file_2)
             except Exception:
+                self.log.warn("Failed to get monitoring diode data %s %s\n" % (mondiode_file_1, mondiode_file_2))                            
                 continue
+
 
             data_dict['EXPTIME'].append(exp_time_1)
 
@@ -214,6 +224,9 @@ class FlatPairTask(FlatAnalysisTask):
 
             mon_diode_avg_1 = avg_sum(mon_diode_1_y, mon_diode_1_x) / exp_time_1
             mon_diode_avg_2 = avg_sum(mon_diode_2_y, mon_diode_2_x) / exp_time_2
+
+            mondiode_1 = mon_diode_avg_1
+            mondiode_2 = mon_diode_avg_2
 
             flux_trapz = exp_time_1 * (mon_diode_trapz_1 + mon_diode_trapz_2)/2.
             flux_simps = exp_time_1 * (mon_diode_simps_1 + mon_diode_simps_2)/2.
@@ -230,12 +243,6 @@ class FlatPairTask(FlatAnalysisTask):
             data_dict['FLUX_simps'].append(flux_simps)
             data_dict['FLUX_avg'].append(flux_avg)
 
-            try:
-                mondiode_1 = get_mondiode_val(flat_1)
-                mondiode_2 = get_mondiode_val(flat_2)
-            except KeyError:
-                mondiode_1 = mon_diode_avg_1
-                mondiode_2 = mon_diode_avg_2
 
             if mondiode_1 is not None:
                 flux_1 = exp_time_1 * mondiode_1
