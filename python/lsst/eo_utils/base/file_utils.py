@@ -28,19 +28,31 @@ BOT_GLOB_STRING =\
     '{archive}/LCA-10134_Cryostat/LCA-10134_Cryostat-0001/{run}/' +\
     'BOT_acq/v0/*/{testName}*{imgtype}*/MC_C*{raft}_{slot}.fits'
 
+# Photodiode calibration files
+PD_CALIB_FORMAT_STRING = '{outdir}/{teststand}/pdcalib/{raft}/{raft}-{run}-pd_calib.dat'
+
 # These strings define the standard output filenames
-PD_CALIB_FORMAT_STRING = '{outdir}/{teststand}/pd_calib/{raft}/{raft}-{run}-pd_calib.dat'
-SLOT_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}{suffix}'
-RAFT_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{raft}/{testType}/{raft}-{run}-RFT{suffix}'
+SLOT_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}_{calib}_{filekey}'
+RAFT_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{raft}/{testType}/{raft}-{run}-RFT_{calib}_{filekey}'
 RUN_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{run}'
 
-SUMMARY_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/summary/{testType}/{dataset}{suffix}'
-SUPERBIAS_FORMAT_STRING =\
-    '{outdir}/{teststand}/superbias/{raft}/{raft}-{run}-{slot}_superbias_b-{bias}{suffix}'
-SUPERBIAS_STAT_FORMAT_STRING =\
-    '{outdir}/{teststand}/superbias/{raft}/{raft}-{run}-{slot}_{stat}_b-{bias}{suffix}'
+SUMMARY_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/summary/{testType}/{dataset}_{calib}_{filekey}'
 
-# These string define the report output filename
+# These are image type calibration products
+SUPERBIAS_FORMAT_STRING = '{outdir}/{teststand}/superbias/{raft}/{raft}-{run}-{slot}_superbias_{calib}'
+SUPERBIAS_STAT_FORMAT_STRING = '{outdir}/{teststand}/superbias/{raft}/{raft}-{run}-{slot}_{stat}_{calib}'
+RUN_SUPERBIAS_FORMAT_STRING = '{outdir}/{teststand}/superbias/FP/FP-{run}_superbias_{calib}'
+
+SUPERDARK_FORMAT_STRING = '{outdir}/{teststand}/superdark/{raft}/{raft}-{run}-{slot}_superdark_{calib}'
+SUPERDARK_STAT_FORMAT_STRING = '{outdir}/{teststand}/superdark/{raft}/{raft}-{run}-{slot}_{stat}_{calib}'
+RUN_SUPERDARK_FORMAT_STRING = '{outdir}/{teststand}/superdark/FP/FP-{run}_superdark_{calib}'
+
+SUPERFLAT_FORMAT_STRING = '{outdir}/{teststand}/superflat/{raft}/{raft}-{run}-{slot}_superflat_{calib}'
+SUPERFLAT_STAT_FORMAT_STRING = '{outdir}/{teststand}/superflat/{raft}/{raft}-{run}-{slot}_{stat}_{calib}'
+RUN_SUPERFLAT_FORMAT_STRING = '{outdir}/{teststand}/superflat/FP/FP-{run}_superflat_{calib}'
+
+
+# These strings define the report output filename
 SLOT_REPORT_FORMAT_STRING = '{outdir}/{teststand}/html/{run}/{raft}/{slot}.html'
 RAFT_REPORT_FORMAT_STRING = '{outdir}/{teststand}/html/{run}/{raft}/index.html'
 RUN_REPORT_FORMAT_STRING = '{outdir}/{teststand}/html/{run}/index.html'
@@ -281,26 +293,23 @@ SLOT_BASE_FORMATTER = FILENAME_FORMATS.add_format('slot_basename', SLOT_FORMAT_S
 RAFT_BASE_FORMATTER = FILENAME_FORMATS.add_format('raft_basename', RAFT_FORMAT_STRING)
 SUM_BASE_FORMATTER = FILENAME_FORMATS.add_format('summary_basename', SUMMARY_FORMAT_STRING)
 TS8_MASKIN_FORMATTER = FILENAME_FORMATS.add_format('ts8_mask_in', SLOT_FORMAT_STRING,
-                                                   fileType='masks_in', testType='',
-                                                   suffix='_mask.fits', teststand='ts8')
-#MASK_FORMATTER = FILENAME_FORMATS.add_format('mask', SLOT_FORMAT_STRING,
-#                                             fileType='masks', testType='',
-#                                             suffix='_mask.fits')
+                                                   fileType='masks', testType='',
+                                                   filekey='mask', teststand='ts8',
+                                                   calib="*")
 MASK_FORMATTER = FILENAME_FORMATS.add_format('mask', SLOT_FORMAT_STRING,
-                                             fileType='masks_in', testType='',
-                                             suffix='*_mask.fits')
+                                             fileType='masks', testType='',
+                                             filekey='mask')
 
 SUPERBIAS_FORMATTER = FILENAME_FORMATS.add_format('superbias',
-                                                  SUPERBIAS_FORMAT_STRING,
-                                                  superbias=None, suffix='')
+                                                  SUPERBIAS_FORMAT_STRING)
+
 SUPERBIAS_STAT_FORMATTER = FILENAME_FORMATS.add_format('superbias_stat',
-                                                       SUPERBIAS_STAT_FORMAT_STRING,
-                                                       bias=None, suffix='')
+                                                       SUPERBIAS_STAT_FORMAT_STRING)
 NONLIN_FORMATTER = FILENAME_FORMATS.add_format('nonlin',
-                                               SLOT_FORMAT_STRING.replace('{suffix}',
-                                                                          '_b-{bias}_s-{superbias}_{suffix}'),
+                                               SLOT_FORMAT_STRING,
                                                fileType='tables',
-                                               testType='flat')
+                                               testType='flat',
+                                               filekey='flat-lin')
 TS8_FORMATTER = FILENAME_FORMATS.add_format('ts8_images',
                                             TS8_GLOB_STRING,
                                             archive=ARCHIVE_DIR)
@@ -310,39 +319,35 @@ BOT_FORMATTER = FILENAME_FORMATS.add_format('bot_images',
 
 TS8_EORESULTSIN_FORMATTER = FILENAME_FORMATS.add_format('ts8_eoresults_in',
                                                         SLOT_FORMAT_STRING,
-                                                        fileType='eotest_results',
+                                                        fileType='eotest',
                                                         testType='',
-                                                        suffix='_eotest_results.fits')
+                                                        filekey='eotest_results')
 EORESULTS_TABLE_FORMATTER = FILENAME_FORMATS.add_format('eoresults_table',
-                                                        RAFT_FORMAT_STRING,
-                                                        fileType='tables',
-                                                        testType='eotest_results',
-                                                        suffix='_eotest_results.fits')
+                                                        SLOT_FORMAT_STRING,
+                                                        fileType='eotest',
+                                                        testType='',
+                                                        filekey='results')
 EORESULTS_PLOT_FORMATTER = FILENAME_FORMATS.add_format('eoresults_plot',
                                                        RAFT_FORMAT_STRING,
                                                        fileType='plots',
-                                                       testType='eotest_results',
-                                                       suffix='_eotest_results')
+                                                       testType='eotest',
+                                                       filekey='results')
 EORESULTS_SUMMARY_TABLE_FORMATTER = FILENAME_FORMATS.add_format('eoresults_sum_table',
                                                                 SUMMARY_FORMAT_STRING,
                                                                 fileType='tables',
-                                                                testType='eotest_results',
-                                                                suffix='_eotest_results.fits')
+                                                                testType='eotest',
+                                                                filekey='results_sum')
 EORESULTS_SUMMARY_PLOT_FORMATTER = FILENAME_FORMATS.add_format('eoresults_sum_plot',
                                                                SUMMARY_FORMAT_STRING,
                                                                fileType='plots',
-                                                               testType='eotest_results',
-                                                               suffix='_eotest_results')
+                                                               testType='eotest',
+                                                               filekey='results_sum')
 
 
-SLOT_REPORT_FORMATTER = FILENAME_FORMATS.add_format('slot_report',
-                                                    SLOT_REPORT_FORMAT_STRING)
-RAFT_REPORT_FORMATTER = FILENAME_FORMATS.add_format('raft_report',
-                                                    RAFT_REPORT_FORMAT_STRING)
-RUN_REPORT_FORMATTER = FILENAME_FORMATS.add_format('run_report',
-                                                   RUN_REPORT_FORMAT_STRING)
-SUMMARY_REPORT_FORMATTER = FILENAME_FORMATS.add_format('summary_report',
-                                                       SUMMARY_REPORT_FORMAT_STRING)
+SLOT_REPORT_FORMATTER = FILENAME_FORMATS.add_format('slot_report', SLOT_REPORT_FORMAT_STRING)
+RAFT_REPORT_FORMATTER = FILENAME_FORMATS.add_format('raft_report', RAFT_REPORT_FORMAT_STRING)
+RUN_REPORT_FORMATTER = FILENAME_FORMATS.add_format('run_report', RUN_REPORT_FORMAT_STRING)
+SUMMARY_REPORT_FORMATTER = FILENAME_FORMATS.add_format('summary_report', SUMMARY_REPORT_FORMAT_STRING)
 
 
 
@@ -545,6 +550,8 @@ def get_run_files_from_formatter(run_id, formatter, **kwargs):
 
     kwcopy = kwargs.copy()
     outdict = {}
+
+    suffix = kwcopy.pop('suffix', '')
     rafts = kwcopy.pop('rafts', None)
     if rafts is None:
         raft = kwcopy.get('raft', None)
@@ -558,7 +565,7 @@ def get_run_files_from_formatter(run_id, formatter, **kwargs):
         slotdict = {}
         outdict[raft] = slotdict
         for slot in ALL_SLOTS:
-            glob_string = formatter(slot=slot, run=run_id, **kwcopy)
+            glob_string = formatter(slot=slot, run=run_id, **kwcopy) + suffix
             slotdict[slot] = dict(MASK=sorted(glob.glob(glob_string)))
     return outdict
 
@@ -580,13 +587,20 @@ def make_dataids_for_run(run_id, **kwargs):
 
     kwcopy = kwargs.copy()
     outdict = {}
+
     rafts = kwcopy.pop('rafts', None)
-    if rafts is None:
-        raft = kwcopy.get('raft', None)
-        if raft is None:
-            rafts = [hinfo[1]]
-        else:
-            rafts = [raft]
+    teststand = kwcopy.pop('teststand', 'bot')
+
+    if hinfo[0] == 'LCA-11021':
+        if rafts is None:
+            raft = kwcopy.get('raft', None)
+            if raft is None:
+                rafts = [hinfo[1]]
+            else:
+                rafts = [raft]
+    elif hinfo[0] == 'LCA-10134':
+        if rafts is None:
+            rafts = RAFT_NAMES_DICT[teststand]
 
     for raft in rafts:
         kwcopy['raft'] = raft
@@ -619,7 +633,7 @@ def get_mask_files_run(run_id, **kwargs):
         Dictionary mapping slot to file names
     """
     return get_run_files_from_formatter(run_id, TS8_MASKIN_FORMATTER,
-                                        suffix='*_mask.fits', **kwargs)
+                                        suffix='.fits', **kwargs)
 
 def read_runlist(filepath):
     """Read a list of runs from a txt file

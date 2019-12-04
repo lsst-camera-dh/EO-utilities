@@ -14,7 +14,7 @@ from xml.dom import minidom
 
 import yaml
 
-from .defaults import EO_PACKAGE_BASE, ALL_SLOTS
+from .defaults import EO_PACKAGE_BASE, ALL_SLOTS, NINE_RAFTS
 
 from .file_utils import makedir_safe,\
     get_raft_names_dc, read_runlist
@@ -53,9 +53,12 @@ def get_report_config_info(table_tag, **kwargs):
         cssfile = os.path.join(EO_PACKAGE_BASE, 'templates', 'style.css')
 
     template_dict = yaml.safe_load(open(yamlfile))
+    table_desc = template_dict.get(table_tag, None)
+    if table_desc is None:
+        table_desc = {}
 
     return dict(cssfile=cssfile,
-                table_desc=template_dict[table_tag],
+                table_desc=template_dict.get(table_tag, {}),
                 defaults=template_dict['defaults'])
 
 
@@ -87,6 +90,7 @@ def handle_file(file_name, outdir, action):
     except FileNotFoundError:
         pass
 
+    makedir_safe(outname)
     if action in ['copy', 'cp']:
         shutil.copyfile(inname, outname)
     elif action in ['move', 'mv']:
@@ -258,7 +262,13 @@ def create_slot_table(parent_node, **kwargs):
     """
     kwcopy = kwargs.copy()
 
-    make_child_node(parent_node, 'h3', text="List of CCDs")
+    html_file = kwargs.get('html_file', None)
+    if html_file is not None:
+        basedir = os.path.dirname(html_file)
+    else:
+        basedir = None
+
+    h3_node = make_child_node(parent_node, 'h3', text="List of CCDs")
 
     table_node = make_child_node(parent_node, 'table')
     tbody_node = make_child_node(table_node, 'tbody')
@@ -267,10 +277,16 @@ def create_slot_table(parent_node, **kwargs):
                                       node_class=kwcopy.get('header_row_class', None))
     make_child_node(header_row_node, 'td',
                     node_class=kwcopy.get('header_col_class', None),
-                    text='SLOT')
+                    text='CCD')
 
-
+    nslot = 0
     for slot in ALL_SLOTS:
+        if basedir is not None:
+            slot_path = os.path.join(basedir, "%s.html" % slot)
+            if not os.path.exists(slot_path):
+                continue
+
+        nslot += 1
         row_node = make_child_node(tbody_node, 'tr',
                                    node_class=kwcopy.get('table_row_class', None))
         if row_node is None:
@@ -280,6 +296,81 @@ def create_slot_table(parent_node, **kwargs):
         make_child_node(col_node, 'a',
                         text=slot,
                         href="%s.html" % slot)
+
+    if not nslot:
+        parent_node.remove(h3_node)
+        parent_node.remove(table_node)
+        return None
+
+    return table_node
+
+
+def create_raft_table(parent_node, **kwargs):
+    """Create table with descriptions and a plots
+
+    Parameters
+    ----------
+    parent_node : `xml.etree.ElementTree.SubElement`
+        The parent node
+
+    Keywords
+    --------
+    header_row_class : `str`
+        The style class to use for the header row node
+    header_col_class : `str`
+        The style class to use for the header column node
+    table_row_class : `str`
+        The style class to use for the row node
+    table_col_class : `str`
+        The style class to use for the description column node
+
+    Returns
+    -------
+    table_node : `xml.etree.ElementTree.SubElement`
+        The table node
+    """
+    kwcopy = kwargs.copy()
+
+    html_file = kwargs.get('html_file', None)
+    rafts = kwargs.get('rafts', NINE_RAFTS)
+    if html_file is not None:
+        basedir = os.path.dirname(html_file)
+    else:
+        basedir = None
+
+    h3_node = make_child_node(parent_node, 'h3', text="List of RAFTS")
+
+    table_node = make_child_node(parent_node, 'table')
+    tbody_node = make_child_node(table_node, 'tbody')
+
+    header_row_node = make_child_node(tbody_node, 'tr',
+                                      node_class=kwcopy.get('header_row_class', None))
+    make_child_node(header_row_node, 'td',
+                    node_class=kwcopy.get('header_col_class', None),
+                    text='RAFT')
+
+    nraft = 0
+    for raft in rafts:
+        if basedir is not None:
+            raft_path = os.path.join(basedir, raft, "index.html")
+            if not os.path.exists(raft_path):
+                continue
+
+        nraft += 1
+        row_node = make_child_node(tbody_node, 'tr',
+                                   node_class=kwcopy.get('table_row_class', None))
+        if row_node is None:
+            continue
+        col_node = make_child_node(row_node, 'td',
+                                   node_class=kwcopy.get('table_col_class', None))
+        make_child_node(col_node, 'a',
+                        text=raft,
+                        href=os.path.join(raft, "index.html"))
+
+    if not nraft:
+        parent_node.remove(h3_node)
+        parent_node.remove(table_node)
+        return None
 
     return table_node
 
@@ -326,10 +417,17 @@ def create_plot_table(parent_node, table_desc, inputdir, outdir, **kwargs):
                     node_class=header_col_class)
 
     rowlist = table_desc['rows']
+    nrows = 0
     for row_desc in rowlist:
         plotfile = os.path.join(inputdir, row_desc['figure'].format(**dataid))
-        create_plot_table_row(tbody_node, row_desc['text'],
-                              plotfile, outdir, **kwcopy)
+        row_node = create_plot_table_row(tbody_node, row_desc['text'],
+                                         plotfile, outdir, **kwcopy)
+        if row_node is not None:
+            nrows += 1
+    if nrows == 0:
+        sys.stdout.write("Warning, skipping empty table\n")
+        parent_node.remove(table_node)
+        return None
 
     return table_node
 
@@ -357,10 +455,15 @@ def create_plot_tables(parent_node, table_dict, inputdir, outdir, **kwargs):
     table_node : `xml.etree.ElementTree.SubElement`
         The table node
     """
+    ntable = 0
     for _, tdesc in table_dict.items():
-        make_child_node(parent_node, 'h3', text=tdesc.get('header_text', None))
-        create_plot_table(parent_node, tdesc, inputdir, outdir, **kwargs)
-
+        h3_node = make_child_node(parent_node, 'h3', text=tdesc.get('header_text', None))
+        tnode = create_plot_table(parent_node, tdesc, inputdir, outdir, **kwargs)
+        if tnode is None:
+            parent_node.remove(h3_node)
+            continue
+        ntable += 1
+    return ntable
 
 def create_run_table(parent_node, dataset, **kwargs):
     """Create table with descriptions and a plots
@@ -401,7 +504,7 @@ def create_run_table(parent_node, dataset, **kwargs):
         col_run_node = make_child_node(row_node, 'td',
                                        node_class=kwcopy.get('table_col_class', None))
         raft = run_info[0].replace('-Dev', '')
-        run_url = os.path.join(raft, run_info[1], 'index.html')
+        run_url = os.path.join(run_info[1], raft, 'index.html')
 
         make_child_node(col_run_node, 'a',
                         href=run_url,
@@ -467,20 +570,24 @@ def write_slot_report(dataid, inputbase, outbase, **kwargs):
         outdir = None
         html_file = None
     else:
-        outdir = os.path.join(outbase, dataid['raft'], dataid['run'])
+        outdir = os.path.join(outbase, dataid['run'], dataid['raft'])
         html_file = os.path.join(outdir, '%s.html' % dataid['slot'])
-        makedir_safe(html_file)
-        ccsfile_out = handle_file(config_info['cssfile'], outdir, action='copy')
 
     html_node = ET.Element('html')
     create_report_header(html_node,
                          title="TS8 Results for {run}:{raft}:{slot}".format(**dataid),
-                         stylesheet=kwcopy.pop('stylesheet', ccsfile_out))
+                         stylesheet=kwcopy.pop('stylesheet', os.path.basename(config_info['cssfile'])))
 
     body_node = make_child_node(html_node, 'body')
 
-    create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
-    write_tree_to_html(html_node, html_file)
+    ntables = create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
+    if ntables:
+        makedir_safe(html_file)
+        _ = handle_file(config_info['cssfile'], outdir, action='copy')
+        write_tree_to_html(html_node, html_file)
+    else:
+        sys.stdout.write("No data, skipping\n")
+
 
 
 def write_raft_report(dataid, inputbase, outbase, **kwargs):
@@ -511,23 +618,26 @@ def write_raft_report(dataid, inputbase, outbase, **kwargs):
         outdir = None
         html_file = None
     else:
-        outdir = os.path.join(outbase, dataid['raft'], dataid['run'])
+        outdir = os.path.join(outbase, dataid['run'], dataid['raft'])
         html_file = os.path.join(outdir, 'index.html')
-        makedir_safe(html_file)
-        ccsfile_out = handle_file(config_info['cssfile'], outdir, action='copy')
 
     html_node = ET.Element('html')
     create_report_header(html_node,
-                         title="TS8 Results for {run}:{raft}".format(**dataid),
-                         stylesheet=kwcopy.pop('stylesheet', ccsfile_out))
+                         title="Results for {run}:{raft}".format(**dataid),
+                         stylesheet=kwcopy.pop('stylesheet', os.path.basename(config_info['cssfile'])))
 
     body_node = make_child_node(html_node, 'body')
 
-    create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
+    ntables = create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
 
-    create_slot_table(body_node, **kwcopy)
-
-    write_tree_to_html(html_node, html_file)
+    kwcopy['html_file'] = html_file
+    if ntables:
+        create_slot_table(body_node, **kwcopy)
+        makedir_safe(html_file)
+        _ = handle_file(config_info['cssfile'], outdir, action='copy')
+        write_tree_to_html(html_node, html_file)
+    else:
+        sys.stdout.write("No data, skipping raft\n")
 
 
 
@@ -547,15 +657,47 @@ def write_run_report(run, inputbase, outbase, **kwargs):
     --------
     """
     sys.stdout.write("Writing report for %s\n" % run)
+    kwcopy = kwargs.copy()
+
+    config_info = get_report_config_info('run_plot_tables', **kwcopy)
+    kwcopy.update(config_info['defaults'])
+    dataid = dict(run=run)
+    kwcopy['dataid'] = dataid
+
+    if outbase is None:
+        outdir = None
+        html_file = None
+    else:
+        outdir = os.path.join(outbase, run)
+        html_file = os.path.join(outdir, 'index.html')
+        makedir_safe(html_file)
+        ccsfile_out = handle_file(config_info['cssfile'], outdir, action='copy')
+
+    html_node = ET.Element('html')
+    create_report_header(html_node,
+                         title="Results for {run}".format(**dataid),
+                         stylesheet=kwcopy.pop('stylesheet', ccsfile_out))
+
+    body_node = make_child_node(html_node, 'body')
+    _ = create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
 
     rafts = get_raft_names_dc(run)
 
     for raft in rafts:
         dataid = dict(run=run, raft=raft)
-        write_raft_report(dataid, inputbase, outbase, **kwargs)
         for slot in ALL_SLOTS:
             dataid['slot'] = slot
             write_slot_report(dataid, inputbase, outbase, **kwargs)
+        write_raft_report(dataid, inputbase, outbase, **kwargs)
+
+    kwcopy['html_file'] = html_file
+    kwcopy['rafts'] = rafts
+    if rafts:
+        create_raft_table(body_node, **kwcopy)
+        write_tree_to_html(html_node, html_file)
+    else:
+        sys.stdout.write("No data, skipping run\n")
+
 
 
 def write_summary_report(dataset, inputbase, outbase, **kwargs):

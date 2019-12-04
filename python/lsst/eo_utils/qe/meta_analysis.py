@@ -20,7 +20,7 @@ class QeSlotTableAnalysisConfig(AnalysisConfig):
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
-    insuffix = EOUtilOptions.clone_param('insuffix')
+    infilekey = EOUtilOptions.clone_param('infilekey')
 
 
 class QeSlotTableAnalysisTask(AnalysisTask):
@@ -51,14 +51,14 @@ class QeSlotTableAnalysisTask(AnalysisTask):
         ret_val : `str`
             The filename
         """
-        return self.get_filename_from_format(PD_CALIB_FORMATTER, '.dat', **kwargs)
+        return self.get_filename_from_format(PD_CALIB_FORMATTER, '', **kwargs)
 
 
 class QeRaftTableAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
-    insuffix = EOUtilOptions.clone_param('insuffix')
+    infilekey = EOUtilOptions.clone_param('infilekey')
 
 
 class QeRaftTableAnalysisTask(AnalysisTask):

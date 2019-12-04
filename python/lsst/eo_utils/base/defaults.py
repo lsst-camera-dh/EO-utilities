@@ -7,6 +7,9 @@ import sys
 # Package location
 EO_PACKAGE_BASE = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..', '..'))
 
+DEFAULT_CALIB_FILE = os.path.join(EO_PACKAGE_BASE, 'templates', 'calib_flavor.yaml')
+
+
 # SITE DEPENDENT STUFF
 SITE = os.environ.get('EO_UTILS_SITE', 'slac')
 

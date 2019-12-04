@@ -768,6 +768,8 @@ class AnalysisByRaft(AnalysisIterator):
 class TableAnalysisBySlot(AnalysisBySlot):
     """Small class to iterate an analysis function over slots"""
 
+    level = 'Slot table'
+
     def __init__(self, task, **kwargs):
         """C'tor
 
@@ -799,12 +801,12 @@ class TableAnalysisBySlot(AnalysisBySlot):
         """
         kwcopy = kwargs.copy()
         kwcopy['run'] = datakey
+        kwcopy['filekey'] = self._task.config.infilekey
 
         rafts = AnalysisIterator.get_raft_list(butler, datakey)
         out_dict = {}
 
         formatter = self._task.intablename_format
-        insuffix = self._task.get_config_param('insuffix', '')
 
         for raft in rafts:
 
@@ -813,8 +815,8 @@ class TableAnalysisBySlot(AnalysisBySlot):
 
             for slot in ALL_SLOTS:
                 kwcopy['slot'] = slot
-                datapath = self._task.get_filename_from_format(formatter, insuffix, **kwcopy)
-                slot_dict[slot] = [datapath + '.fits']
+                datapath = self._task.get_filename_from_format(formatter, '.fits', **kwcopy)
+                slot_dict[slot] = [datapath]
 
             out_dict[raft] = slot_dict
 
@@ -823,6 +825,8 @@ class TableAnalysisBySlot(AnalysisBySlot):
 
 class TableAnalysisByRaft(AnalysisByRaft):
     """Small class to iterate an analysis function over all the slots in a raft"""
+
+    level = 'Raft Table'
 
     def __init__(self, task, **kwargs):
         """C'tor
@@ -855,6 +859,7 @@ class TableAnalysisByRaft(AnalysisByRaft):
         """
         kwcopy = kwargs.copy()
         kwcopy['run'] = datakey
+        kwcopy['filekey'] = self._task.config.infilekey
 
         out_dict = {}
         if self.config.rafts is not None:
@@ -863,7 +868,6 @@ class TableAnalysisByRaft(AnalysisByRaft):
             raft_list = AnalysisIterator.get_raft_list(butler, datakey)
 
         formatter = self._task.intablename_format
-        insuffix = self._task.get_config_param('insuffix', '')
 
         slot_list = kwcopy.get('slots', None)
         if slot_list is None:
@@ -874,8 +878,8 @@ class TableAnalysisByRaft(AnalysisByRaft):
             slot_dict = {}
             for slot in slot_list:
                 kwcopy['slot'] = slot
-                datapath = self._task.get_filename_from_format(formatter, insuffix, **kwcopy)
-                slot_dict[slot] = datapath + '.fits'
+                datapath = self._task.get_filename_from_format(formatter, '.fits', **kwcopy)
+                slot_dict[slot] = datapath
             out_dict[raft] = slot_dict
         return out_dict
 
@@ -953,6 +957,66 @@ class AnalysisByRun(AnalysisIterator):
 
 
 
+class TableAnalysisByRun(AnalysisByRun):
+    """Small class to iterate an analysis function over all the slots in a raft"""
+
+    level = 'Run Table'
+
+    def __init__(self, task, **kwargs):
+        """C'tor
+
+        Parameters
+        ----------
+        task : `AnalysisTask`
+            Task that this handler will run
+        kwargs
+            Used to override configuration defaults
+        """
+        AnalysisByRun.__init__(self, task, **kwargs)
+
+    def get_data(self, butler, datakey, **kwargs):
+        """Get the data to analyze
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        datakey : `str`
+            Run number or other id that defines the data to analyze
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        retval : `dict`
+            Dictionary mapping input data by raft, slot and file type
+        """
+        kwcopy = kwargs.copy()
+        kwcopy['run'] = datakey
+        kwargs.setdefault('handler_config', self.config)
+        kwcopy['filekey'] = self._task.config.infilekey
+
+        out_dict = {}
+        raft_list = AnalysisIterator.get_raft_list(butler, datakey)
+
+        formatter = self._task.intablename_format
+
+        slot_list = kwcopy.get('slots', None)
+        if slot_list is None:
+            slot_list = ALL_SLOTS
+
+        for raft in raft_list:
+            kwcopy['raft'] = raft
+            slot_dict = {}
+            for slot in slot_list:
+                kwcopy['slot'] = slot
+                datapath = self._task.get_filename_from_format(formatter, '.fits', **kwcopy)
+                slot_dict[slot] = datapath
+            out_dict[raft] = slot_dict
+        return out_dict
+
+
+
 class AnalysisByDatasetConfig(AnalysisHandlerConfig):
     """Additional configuration for EO analysis iterator for raft-based analysis
     """
@@ -1016,7 +1080,7 @@ class SummaryAnalysisIterator(AnalysisHandler):
 
     Sub-classes will be give a function to call,which they will call with the data to analyze
     """
-    level = 'Dataset'
+    level = 'Summary'
 
     def __init__(self, task, **kwargs):
         """C'tor
@@ -1049,6 +1113,7 @@ class SummaryAnalysisIterator(AnalysisHandler):
             self.log.warn("Ignoring butler in get_data")
 
         kwcopy = self._task.safe_update(**kwargs)
+        kwcopy['filekey'] = self._task.config.infilekey
 
         infile = '%s_runs.txt' % self._task.config.dataset
 
@@ -1058,15 +1123,19 @@ class SummaryAnalysisIterator(AnalysisHandler):
 
         filedict = {}
         for runinfo in run_list:
-            raft = runinfo[0].replace('-Dev', '')
+            hid = runinfo[0].replace('-Dev', '')
             run = runinfo[1]
-            run_key = "%s_%s" % (raft, run)
-            kwcopy['run'] = run
-            kwcopy['raft'] = raft
-            filepath = self._task.get_filename_from_format(formatter,
-                                                           "%s.fits" % self._task.config.insuffix,
-                                                           **kwcopy)
-            filedict[run_key] = filepath
+            if hid in ['Cryostat-0001']:
+                rafts = get_raft_names_dc(run)
+            else:
+                rafts = [hid]
+
+            for raft in rafts:
+                run_key = "%s_%s" % (raft, run)
+                kwcopy['run'] = run
+                kwcopy['raft'] = raft
+                filepath = self._task.get_filename_from_format(formatter, '.fits', **kwcopy)
+                filedict[run_key] = filepath
 
         return filedict
 

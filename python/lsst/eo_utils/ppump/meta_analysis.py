@@ -16,7 +16,7 @@ class PpumpRaftTableAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
-    insuffix = EOUtilOptions.clone_param('insuffix')
+    infilekey = EOUtilOptions.clone_param('infilekey')
 
 
 class PpumpRaftTableAnalysisTask(AnalysisTask):

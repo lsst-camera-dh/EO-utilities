@@ -33,10 +33,7 @@ from lsst.pex.exceptions import LengthError
 
 class DustLinearityAnalysisConfig(FlatAnalysisConfig):
     """Configuration for dustLinearityAnalysisTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='dust_linearity')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
-    mask = EOUtilOptions.clone_param('mask')
+    filekey = EOUtilOptions.clone_param('filekey', default='dust-lin')
 
 
 class DustLinearityAnalysisTask(FlatAnalysisTask):
@@ -45,6 +42,8 @@ class DustLinearityAnalysisTask(FlatAnalysisTask):
     ConfigClass = DustLinearityAnalysisConfig
     _DefaultName = "dustLinearityAnalysisTask"
     iteratorClass = AnalysisBySlot
+
+    plot_names = ['median']
 
     def __init__(self, **kwargs):
         """C'tor
@@ -76,6 +75,7 @@ class DustLinearityAnalysisTask(FlatAnalysisTask):
         self.safe_update(**kwargs)
 
         slot = self.config.slot
+        bias_type = self.get_bias_algo()
 
         flat1_files = data['FLAT1']
 
@@ -130,7 +130,7 @@ class DustLinearityAnalysisTask(FlatAnalysisTask):
             islot = slot_idx_dict[slot]
 
             unbiased_images = unbiased_ccd_image_dict(ccd,
-                                                      bias=self.config.bias,
+                                                      bias=bias_type,
                                                       superbias_frame=superbias_frame)
 
             for iamp, (amp, image) in enumerate(unbiased_images.items()):
@@ -258,7 +258,7 @@ class DustLinearityAnalysisTask(FlatAnalysisTask):
 
         fp_table = dtables['footprints']
 
-        figs.setup_amp_plots_grid('dust_linearity',
+        figs.setup_amp_plots_grid('median',
                                   title="Median signal at dust spot by amp median",
                                   xlabel="amp flux", ylabel="dust flux")
 

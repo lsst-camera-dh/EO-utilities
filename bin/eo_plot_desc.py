@@ -24,15 +24,10 @@ def main():
     args = parser.parse_args()
     if args.output is None:
         outfile = sys.stdout
-        outtype = '.csv'
     else:
         outfile = open(args.output, 'w')
-        outtype = os.path.splitext(args.output)[1]
 
-    if outtype in ['.csv', '.txt']:
-        EO_TASK_FACTORY.make_io_csv(outfile)
-    else:
-        EO_TASK_FACTORY.make_io_markdown(outfile)
+    EO_TASK_FACTORY.make_plot_names_txt(outfile)
 
 
 if __name__ == '__main__':

@@ -15,6 +15,8 @@ from .meta_analysis import SflatSlotTableAnalysisConfig,\
 from .superflat import SuperflatConfig, SuperflatTask,\
     SuperflatRaftConfig, SuperflatRaftTask
 
+from .stability import StabilityConfig, StabilityTask
+
 from .sflat_ratio import SflatRatioConfig, SflatRatioTask
 
 from .sflat_cte import CTEConfig, CTETask

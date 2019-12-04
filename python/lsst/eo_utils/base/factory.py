@@ -143,5 +143,42 @@ class EOTaskFactory:
                 for task_name, task in task_dict.items():
                     task.markdown_line(task_name, stream)
 
+    def make_io_csv(self, stream):
+        """Generate a markdown table describing all the tasks"""
+        stream.write("%-25s %-60s %-60s %-60s\n" % ('Task', 'Inputfile', 'Outputfile', 'Plots'))
+        level_dict = self.sort_tasks()
+
+        for data_level, datatype_dict in level_dict.items():
+            stream.write("\n")
+            for t_d, task_dict in datatype_dict.items():
+                stream.write("-------------------- %-35s --------------------\n" % (data_level + ' ' + t_d))
+                for task_name, task in task_dict.items():
+                    if hasattr(task, 'io_csv_line'):
+                        task.io_csv_line(task_name, stream)
+                    else:
+                        stream.write("%s: No io\n" % task_name)
+
+
+    def make_io_markdown(self, stream):
+        """Generate a markdown table describing all the tasks"""
+        stream.write("|| Task || Inputfile || Outputfile || Plots ||\n")
+        level_dict = self.sort_tasks()
+        for _, datatype_dict in level_dict.items():
+            for _, task_dict in datatype_dict.items():
+                for task_name, task in task_dict.items():
+                    if hasattr(task, 'io_markdown_line'):
+                        task.io_markdown_line(task_name, stream)
+
+    def make_plot_names_txt(self, stream):
+        """Generate a text file with list of plot names"""
+        level_dict = self.sort_tasks()
+
+        for data_level, datatype_dict in level_dict.items():
+            for t_d, task_dict in datatype_dict.items():
+                stream.write("-------------------- %-35s --------------------\n" % (data_level + ' ' + t_d))
+                for task_name, task in task_dict.items():
+                    if hasattr(task, 'print_plot_names'):
+                        task.print_plot_names(task_name, stream)
+
 
 EO_TASK_FACTORY = EOTaskFactory()

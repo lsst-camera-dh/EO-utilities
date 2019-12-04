@@ -29,10 +29,7 @@ from .meta_analysis import BiasRaftTableAnalysisConfig, BiasRaftTableAnalysisTas
 
 class OscanAmpStackConfig(BiasAnalysisConfig):
     """Configuration for OscanAmpStackTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasosstack')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
-    mask = EOUtilOptions.clone_param('mask')
+    filekey = EOUtilOptions.clone_param('filekey', default='biasosstack')
 
 
 class OscanAmpStackTask(BiasAnalysisTask):
@@ -41,6 +38,8 @@ class OscanAmpStackTask(BiasAnalysisTask):
     ConfigClass = OscanAmpStackConfig
     _DefaultName = "OscanAmpStackTask"
     iteratorClass = AnalysisBySlot
+
+    plot_names = ['mean', 'std', 'signif']
 
     def extract(self, butler, data, **kwargs):
         """Stack the overscan region from all the amps on a sensor
@@ -63,6 +62,7 @@ class OscanAmpStackTask(BiasAnalysisTask):
         self.safe_update(**kwargs)
 
         bias_files = data['BIAS']
+        bias_type = self.get_bias_algo()
 
         mask_files = self.get_mask_files()
         superbias_frame = self.get_superbias_frame(mask_files=mask_files)
@@ -85,7 +85,7 @@ class OscanAmpStackTask(BiasAnalysisTask):
                     stack_arrays[key] = np.zeros((nfiles, 16, len(val)))
 
             stack_by_amps(stack_arrays, ccd,
-                          ifile=ifile, bias_type=self.config.bias,
+                          ifile=ifile, bias_type=bias_type,
                           superbias_frame=superbias_frame)
 
         self.log_progress("Done!")
@@ -118,7 +118,7 @@ class OscanAmpStackTask(BiasAnalysisTask):
         for skey, slabel in zip(stats, stats_labels):
             y_name = "stack_%s" % skey
             figkey = "biasosstack-%s" % skey
-            figs.setup_region_plots_grid(figkey, title="Amplifier Stacked Overscan Data",
+            figs.setup_region_plots_grid(skey, title="Amplifier Stacked Overscan Data",
                                          xlabel="Channel", ylabel=slabel)
 
             idx = 0
@@ -126,7 +126,7 @@ class OscanAmpStackTask(BiasAnalysisTask):
                 for dkey in ['row', 'col']:
                     xkey = "%s_%s" % (dkey, rkey)
                     datakey = "stack-%s" % xkey
-                    figs.plot_xy_axs_from_tabledict(dtables, datakey, idx, figkey,
+                    figs.plot_xy_axs_from_tabledict(dtables, datakey, idx, skey,
                                                     x_name=xkey, y_name=y_name,
                                                     ymin=-10., ymax=10.)
                     idx += 1
@@ -134,10 +134,8 @@ class OscanAmpStackTask(BiasAnalysisTask):
 
 class OscanAmpStackStatsConfig(BiasRaftTableAnalysisConfig):
     """Configuration for OscanAmpStackStatsTask"""
-    insuffix = EOUtilOptions.clone_param('insuffix', default='biasosstack')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasosstack_stats')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
+    infilekey = EOUtilOptions.clone_param('infilekey', default='biasosstack')
+    filekey = EOUtilOptions.clone_param('filekey', default='biasosstack-stats')
 
 
 class OscanAmpStackStatsTask(BiasRaftTableAnalysisTask):
@@ -145,6 +143,8 @@ class OscanAmpStackStatsTask(BiasRaftTableAnalysisTask):
 
     ConfigClass = OscanAmpStackStatsConfig
     _DefaultName = "OscanAmpStackStatsTask"
+
+    plot_names = []
 
     def extract(self, butler, data, **kwargs):
         """Extract the summary statistics about the fluctuations
@@ -270,10 +270,8 @@ class OscanAmpStackStatsTask(BiasRaftTableAnalysisTask):
 
 class OscanAmpStackSummaryConfig(BiasSummaryAnalysisConfig):
     """Configuration for CorrelWRTOScanSummaryTask"""
-    insuffix = EOUtilOptions.clone_param('insuffix', default='biasosstack_stats')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasosstack_sum')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
+    infilekey = EOUtilOptions.clone_param('infilekey', default='biasosstack-stats')
+    filekey = EOUtilOptions.clone_param('filekey', default='biasosstack-sum')
 
 
 class OscanAmpStackSummaryTask(BiasSummaryAnalysisTask):
@@ -281,6 +279,8 @@ class OscanAmpStackSummaryTask(BiasSummaryAnalysisTask):
 
     ConfigClass = OscanAmpStackSummaryConfig
     _DefaultName = "OscanAmpStackSummaryTask"
+
+    plot_names = ['s-row', 'p-col']
 
     def extract(self, butler, data, **kwargs):
         """Make a summary table
@@ -348,9 +348,9 @@ class OscanAmpStackSummaryTask(BiasSummaryAnalysisTask):
         yvals_p_diff = (yvals_p_max_mean - yvals_p_min_mean).clip(0, 100)
         yvals_p_err = np.sqrt(yvals_p_min_std**2 + yvals_p_max_std**2).clip(0, 10)
 
-        figs.plot_run_chart("s_row_diff", runs, yvals_s_diff,
+        figs.plot_run_chart("s-row", runs, yvals_s_diff,
                             yerrs=yvals_s_err, ylabel="Amplitude of Row-wise amp stack [ADU]")
-        figs.plot_run_chart("p_col_diff", runs, yvals_p_diff,
+        figs.plot_run_chart("p-col", runs, yvals_p_diff,
                             yerrs=yvals_p_err, ylabel="Amplitude of Col-wise amp stack [ADU]")
 
 

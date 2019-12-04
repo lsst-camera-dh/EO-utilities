@@ -15,11 +15,8 @@ from .meta_analysis import QeSlotTableAnalysisConfig, QeSlotTableAnalysisTask
 
 class QEConfig(QeSlotTableAnalysisConfig):
     """Configuration for QETask"""
-    insuffix = EOUtilOptions.clone_param('insuffix', default='qe_med')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='qe')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
-    mask = EOUtilOptions.clone_param('mask')
+    infilekey = EOUtilOptions.clone_param('infilekey', default='qe-med')
+    filekey = EOUtilOptions.clone_param('filekey', default='qe')
 
 
 class QETask(QeSlotTableAnalysisTask):
@@ -27,6 +24,8 @@ class QETask(QeSlotTableAnalysisTask):
 
     ConfigClass = QEConfig
     _DefaultName = "QETask"
+
+    plot_names = []
 
     def extract(self, butler, data, **kwargs):
         """Extract data

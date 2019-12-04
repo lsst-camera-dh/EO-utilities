@@ -1,0 +1,31 @@
+defaults : 
+  bias : spline
+  superbias : normal
+  gain : eotest
+  nonlin : False
+  mask : False
+normal :
+  FlatPair : 
+    mask : True
+  BiasStruct :
+    bias : None
+    superbias : None
+  BiasOscanCorrel :
+    bias : None
+    superbias : None
+nonlin :  
+  default :
+    nonlin : normal
+  FlatPair : 
+    nonlin : normal
+    mask : True
+eotest :
+  FlatPair : 
+    mask : True
+normal_l : {}
+normal_h : {}
+normal_r : {}
+
+
+
+  

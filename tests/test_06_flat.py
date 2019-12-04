@@ -65,15 +65,15 @@ def test_flat_bf():
         task.run(slots=['S00'], **RUN_OPTIONS)
 
 @requires_site('slac')
-def test_flat_ptc():
+def test_flat_ptc_task():
     """Test the PTCTask"""
     task = flat.PTCTask()
     if RUN_TASKS:
-        task.run(slots=['S00'], **RUN_OPTIONS_NOPLOT)
+        task.run(slots=['S00'], calib='eotest', **RUN_OPTIONS_NOPLOT)
 
 @requires_site('slac')
 def test_flat_ptc_sum():
     """Test the PTCSummaryTask"""
     task = flat.PTCSummaryTask()
     if RUN_TASKS:
-        task.run(**SUMMARY_OPTIONS)
+        task.run(calib='eotest', **SUMMARY_OPTIONS)

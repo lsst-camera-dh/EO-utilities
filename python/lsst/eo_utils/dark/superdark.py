@@ -30,24 +30,22 @@ from lsst.eo_utils.base.iter_utils import AnalysisBySlot,\
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from lsst.eo_utils.dark.file_utils import RAFT_SDARK_TABLE_FORMATTER,\
-    RAFT_SDARK_PLOT_FORMATTER, SUPERDARK_FORMATTER
+    RAFT_SDARK_PLOT_FORMATTER, SUPERDARK_FORMATTER, RUN_SUPERDARK_FORMATTER
+
+from lsst.eo_utils.base.merge_utils import CameraMosaicConfig, CameraMosaicTask
 
 from lsst.eo_utils.dark.analysis import DarkAnalysisConfig,\
     DarkAnalysisTask
 
 
-
 class SuperdarkConfig(DarkAnalysisConfig):
     """Configuration for SuperdarkTask"""
-    mask = EOUtilOptions.clone_param('mask')
     stat = EOUtilOptions.clone_param('stat')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
     bitpix = EOUtilOptions.clone_param('bitpix')
     skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
     stats_hist = EOUtilOptions.clone_param('stats_hist')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
+    filekey = EOUtilOptions.clone_param('filekey')
 
 
 class SuperdarkTask(DarkAnalysisTask):
@@ -58,6 +56,8 @@ class SuperdarkTask(DarkAnalysisTask):
     iteratorClass = AnalysisBySlot
 
     tablename_format = SUPERDARK_FORMATTER
+
+    plot_names = ['img', 'hist']
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -106,7 +106,7 @@ class SuperdarkTask(DarkAnalysisTask):
             raise ValueError("Can not convert %s to a valid statistic" % stat_type)
 
         sdark = stack_images(butler, dark_files, statistic=statistic,
-                             bias_type=self.config.bias, superbias_frame=superbias_frame)
+                             bias_type=self.get_bias_algo(), superbias_frame=superbias_frame)
         self.log_progress("Done!")
         return sdark
 
@@ -198,7 +198,7 @@ class SuperdarkTask(DarkAnalysisTask):
             The name of the file
         """
         self.safe_update(**kwargs)
-        return self.get_superdark_file('').replace('.fits', '')
+        return self.get_superdark_file().replace('.fits', '')
 
 
     def __call__(self, butler, slot_data, **kwargs):
@@ -221,11 +221,9 @@ class SuperdarkTask(DarkAnalysisTask):
 
 class SuperdarkRaftConfig(DarkAnalysisConfig):
     """Configuration for SuperdarkRaftTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='sdark')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
+    filekey = EOUtilOptions.clone_param('filekey', default='sdark')
+    infilekey = EOUtilOptions.clone_param('infilekey')
     slots = EOUtilOptions.clone_param('slots')
-    mask = EOUtilOptions.clone_param('mask')
     stats_hist = EOUtilOptions.clone_param('stats_hist')
     mosaic = EOUtilOptions.clone_param('mosaic')
 
@@ -241,6 +239,8 @@ class SuperdarkRaftTask(AnalysisTask):
     tablename_format = RAFT_SDARK_TABLE_FORMATTER
     plotname_format = RAFT_SDARK_PLOT_FORMATTER
 
+    plot_names = ['mosaic', 'stats', 'out-row', 'out-col', 'nbad', 'nbad-row', 'nbad-col']
+
     def __init__(self, **kwargs):
         """ C'tor
 
@@ -250,9 +250,9 @@ class SuperdarkRaftTask(AnalysisTask):
             Used to override configruation
         """
         AnalysisTask.__init__(self, **kwargs)
-        self._mask_file_dict = {}        
+        self._mask_file_dict = {}
         self._sdark_file_dict = {}
-        self._sdark_images = None      
+        self._sdark_images = None
         self._sdark_arrays = None
 
     @staticmethod
@@ -377,5 +377,26 @@ class SuperdarkRaftTask(AnalysisTask):
                                       range=(-100., 100.),
                                       histtype='step')
 
+
+
+class SuperdarkMosaicConfig(CameraMosaicConfig):
+    """Configuration for SuperbiasMosaicTask"""
+
+class SuperdarkMosaicTask(CameraMosaicTask):
+    """Make a mosaic from a superbias frames"""
+
+    ConfigClass = SuperdarkMosaicConfig
+    _DefaultName = "SuperdarkMosaicTask"
+
+    intablename_format = SUPERDARK_FORMATTER
+    tablename_format = RUN_SUPERDARK_FORMATTER
+    plotname_format = RUN_SUPERDARK_FORMATTER
+
+    datatype = 'superdark table'
+
+
+
+
 EO_TASK_FACTORY.add_task_class('Superdark', SuperdarkTask)
 EO_TASK_FACTORY.add_task_class('SuperdarkRaft', SuperdarkRaftTask)
+EO_TASK_FACTORY.add_task_class('SuperdarkMosaic', SuperdarkMosaicTask)

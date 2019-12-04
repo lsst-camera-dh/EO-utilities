@@ -21,8 +21,6 @@ class DefectAnalysisConfig(MetaConfig):
     runs = EOUtilOptions.clone_param('runs')
     rafts = EOUtilOptions.clone_param('rafts')
     slots = EOUtilOptions.clone_param('slots')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
     plot = EOUtilOptions.clone_param('plot')
     skip = EOUtilOptions.clone_param('skip')
     mosaic = EOUtilOptions.clone_param('mosaic')

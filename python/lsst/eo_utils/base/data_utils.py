@@ -2,11 +2,6 @@
 
 import os
 
-
-import sys
-
-import numpy as np
-
 import h5py
 
 from astropy.io import fits
@@ -251,18 +246,31 @@ def vstack_tables(filedict, **kwargs):
 
     tables = []
 
-    for irun, pair in enumerate(sorted(filedict.items())):
+    runs = {}
+
+    for key, val in sorted(filedict.items()):
         try:
-            dtables = TableDict(pair[1], [tablename])
-        except FileNotFoundError:
-            sys.stderr.write("Warning, failed to open: %s\n" % pair[1])
+            dtables = TableDict(val, [tablename])
+        except FileNotFoundError as msg:
+            print(msg)
             continue
         table = dtables[tablename]
         if keep_cols is not None:
             table.keep_columns(keep_cols)
         if remove_cols is not None:
             table.remove_columns(remove_cols)
-        table.add_column(Column(name='run', data=irun*np.ones((len(table)), int)))
+        run = key[4:]
+        raft = key[0:3]
+        if run in runs:
+            irun = runs[run]
+        else:
+            irun = len(runs)
+            runs[run] = irun
+
+        nrows = len(table)
+        table.add_column(Column(name='run', data=nrows*[run]))
+        table.add_column(Column(name='irun', data=nrows*[irun]))
+        table.add_column(Column(name='raft', data=nrows*[raft]))
         tables.append(table)
 
     outtable = vstack_table(tables)

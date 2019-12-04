@@ -24,10 +24,7 @@ from lsst.eo_utils.qe.analysis import QeAnalysisConfig, QeAnalysisTask
 
 class DustColorConfig(QeAnalysisConfig):
     """Configuration for DustColorTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='dust_color')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
-    mask = EOUtilOptions.clone_param('mask')
+    filekey = EOUtilOptions.clone_param('filekey', default='dust-color')
 
 
 class DustColorTask(QeAnalysisTask):
@@ -36,6 +33,8 @@ class DustColorTask(QeAnalysisTask):
     ConfigClass = DustColorConfig
     _DefaultName = "DustColorTask"
     iteratorClass = AnalysisBySlot
+
+    plot_names = []
 
     def __init__(self, **kwargs):
         """C'tor
@@ -75,6 +74,7 @@ class DustColorTask(QeAnalysisTask):
 
         mask_files = self.get_mask_files()
         superbias_frame = self.get_superbias_frame(mask_files)
+        bias_type = self.get_bias_algo()
 
         self.log_info_slot_msg(self.config, "%i files" % len(qe_files))
 
@@ -125,7 +125,7 @@ class DustColorTask(QeAnalysisTask):
                 else:
                     superbias_im = None
 
-                image = unbias_amp(img, serial_oscan, bias_type=self.config.bias,
+                image = unbias_amp(img, serial_oscan, bias_type=bias_type,
                                    superbias_im=superbias_im, region=imaging)
                 for bbox in bbox_list:
                     if ifile == 0:

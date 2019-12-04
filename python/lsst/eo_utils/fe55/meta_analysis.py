@@ -16,7 +16,7 @@ class Fe55RaftTableAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
-    insuffix = EOUtilOptions.clone_param('insuffix')
+    infilekey = EOUtilOptions.clone_param('infilekey')
 
 
 class Fe55RaftTableAnalysisTask(AnalysisTask):

@@ -29,10 +29,7 @@ from .analysis import BiasAnalysisTask, BiasAnalysisConfig
 
 class OscanCorrelConfig(BiasAnalysisConfig):
     """Configuration for OscanCorrelTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='oscorr')
-    bias = EOUtilOptions.clone_param('bias', default=None)
-    superbias = EOUtilOptions.clone_param('superbias', default=None)
-    mask = EOUtilOptions.clone_param('mask')
+    filekey = EOUtilOptions.clone_param('filekey', default='oscorr')
     std = EOUtilOptions.clone_param('std')
     covar = EOUtilOptions.clone_param('covar')
 
@@ -48,6 +45,8 @@ class OscanCorrelTask(BiasAnalysisTask):
     plotname_format = RAFT_BIAS_PLOT_FORMATTER
 
     boundry = 10
+
+    plot_names = ['matrix']
 
     def extract(self, butler, data, **kwargs):
         """Extract the correlations between the serial overscan for each amp on a raft
@@ -111,7 +110,7 @@ class OscanCorrelTask(BiasAnalysisTask):
         """
         self.safe_update(**kwargs)
         data = dtables.get_table('correl')['correl']
-        figs.plot_raft_correl_matrix("oscorr", data, title="Overscan Correlations", slots=ALL_SLOTS)
+        figs.plot_raft_correl_matrix("matrix", data, title="Overscan Correlations", slots=ALL_SLOTS)
 
 
     def get_ccd_data(self, butler, ccd, **kwargs):

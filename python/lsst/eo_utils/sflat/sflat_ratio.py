@@ -25,11 +25,8 @@ class SflatRatioConfig(SflatSlotTableAnalysisConfig):
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
-    insuffix = EOUtilOptions.clone_param('insuffix', default='')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='sflatratio')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
-    mask = EOUtilOptions.clone_param('mask')
+    infilekey = EOUtilOptions.clone_param('infilekey', default='')
+    filekey = EOUtilOptions.clone_param('filekey', default='sflatratio')
 
 
 class SflatRatioTask(SflatSlotTableAnalysisTask):
@@ -39,6 +36,8 @@ class SflatRatioTask(SflatSlotTableAnalysisTask):
     _DefaultName = "SflatRatio"
 
     intablename_format = SUPERFLAT_FORMATTER
+
+    plot_names = ['ratio-row', 'ratio-col', 'scatter', 'mask']
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -84,13 +83,13 @@ class SflatRatioTask(SflatSlotTableAnalysisTask):
         superflat_file = data[0]
 
         l_frame = self.get_ccd(None,
-                               superflat_file.replace('_l.fits', '_l.fits'),
+                               superflat_file.replace('.fits', '_l.fits'),
                                mask_files)
         h_frame = self.get_ccd(None,
-                               superflat_file.replace('_l.fits', '_h.fits'),
+                               superflat_file.replace('.fits', '_h.fits'),
                                mask_files)
         ratio_frame = self.get_ccd(None,
-                                   superflat_file.replace('_l.fits', '_ratio.fits'),
+                                   superflat_file.replace('.fits', '_r.fits'),
                                    mask_files)
 
         # This is a dictionary of dictionaries to store all the
@@ -172,12 +171,12 @@ class SflatRatioTask(SflatSlotTableAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        figs.setup_amp_plots_grid("ratio_row", title="sflat ratio by row",
+        figs.setup_amp_plots_grid("ratio-row", title="sflat ratio by row",
                                   xlabel="row", ylabel="Ratio")
         figs.plot_xy_amps_from_tabledict(dtables, 'row', 'ratio_row',
                                          x_name='row_i', y_name='r_med')
 
-        figs.setup_amp_plots_grid("ratio_col", title="sflat ratio by col",
+        figs.setup_amp_plots_grid("ratio-col", title="sflat ratio by col",
                                   xlabel="col", ylabel="Ratio")
         figs.plot_xy_amps_from_tabledict(dtables, 'col', 'ratio_col',
                                          x_name='col_i', y_name='r_med')

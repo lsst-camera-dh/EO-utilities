@@ -22,7 +22,7 @@ class BiasRaftTableAnalysisConfig(AnalysisConfig):
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slots = EOUtilOptions.clone_param('slots')
-    insuffix = EOUtilOptions.clone_param('insuffix')
+    infilekey = EOUtilOptions.clone_param('infilekey')
 
 
 class BiasRaftTableAnalysisTask(AnalysisTask):
@@ -66,7 +66,7 @@ class SuperbiasSlotTableAnalysisConfig(AnalysisConfig):
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
-    insuffix = EOUtilOptions.clone_param('insuffix')
+    infilekey = EOUtilOptions.clone_param('infilekey')
 
 
 class SuperbiasSlotTableAnalysisTask(AnalysisTask):
@@ -90,7 +90,7 @@ class SuperbiasRaftTableAnalysisConfig(AnalysisConfig):
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slots = EOUtilOptions.clone_param('slots')
-    insuffix = EOUtilOptions.clone_param('insuffix')
+    infilekey = EOUtilOptions.clone_param('infilekey')
 
 
 class SuperbiasRaftTableAnalysisTask(AnalysisTask):
@@ -107,6 +107,7 @@ class SuperbiasRaftTableAnalysisTask(AnalysisTask):
     plotname_format = RAFT_SBIAS_PLOT_FORMATTER
 
     datatype = 'superbias table'
+
 
 
 class SuperbiasSummaryAnalysisConfig(AnalysisConfig):

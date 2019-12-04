@@ -19,10 +19,8 @@ from lsst.eo_utils.fe55.meta_analysis import Fe55RaftTableAnalysisConfig,\
 
 class Fe55GainStatsConfig(Fe55RaftTableAnalysisConfig):
     """Configuration for Fe55GainStatsTask"""
-    insuffix = EOUtilOptions.clone_param('insuffix', default='fe55_clusters')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='fe55_gain_stats')
-    bias = EOUtilOptions.clone_param('bias', default='orig')
-    superbias = EOUtilOptions.clone_param('superbias', default='orig')
+    infilekey = EOUtilOptions.clone_param('infilekey', default='fe55-clusters')
+    filekey = EOUtilOptions.clone_param('filekey', default='fe55-gain-stats')
     use_all = EOUtilOptions.clone_param('use_all')
 
 
@@ -31,6 +29,8 @@ class Fe55GainStatsTask(Fe55RaftTableAnalysisTask):
 
     ConfigClass = Fe55GainStatsConfig
     _DefaultName = "Fe55GainStatsTask"
+
+    plot_names = ['gain']
 
     def extract(self, butler, data, **kwargs):
         """Extract the gains and widths from the f355 clusters
@@ -78,9 +78,8 @@ class Fe55GainStatsTask(Fe55RaftTableAnalysisTask):
             self.log_progress("  %s" % slot)
 
             basename = data[slot]
-            datapath = basename.replace('fe55_gain_stats.fits', 'fe55_clusters.fits')
 
-            dtables = TableDict(datapath)
+            dtables = TableDict(basename)
 
             for amp in range(16):
                 table = dtables['amp%02i' % (amp+1)]
@@ -145,16 +144,14 @@ class Fe55GainStatsTask(Fe55RaftTableAnalysisTask):
         """
         self.safe_update(**kwargs)
         sumtable = dtables['fe55_gain_stats']
-        figs.plot_stat_color('gain_array', sumtable['gain'].reshape(9, 16))
+        figs.plot_stat_color('gain', sumtable['gain'].reshape(9, 16))
 
 
 
 class Fe55GainSummaryConfig(Fe55SummaryAnalysisConfig):
     """Configuration for Fe55GainSummaryTask"""
-    insuffix = EOUtilOptions.clone_param('insuffix', default='fe55_gain_stats')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='fe55_gain_sum')
-    bias = EOUtilOptions.clone_param('bias', default='orig')
-    superbias = EOUtilOptions.clone_param('superbias', default='orig')
+    infilekey = EOUtilOptions.clone_param('infilekey', default='fe55-gain-stats')
+    filekey = EOUtilOptions.clone_param('filekey', default='fe55-gain-sum')
     use_all = EOUtilOptions.clone_param('use_all')
 
 
@@ -163,6 +160,8 @@ class Fe55GainSummaryTask(Fe55SummaryAnalysisTask):
 
     ConfigClass = Fe55GainSummaryConfig
     _DefaultName = "Fe55GainSummaryTask"
+
+    plot_names = ['gain', 'sigmax', 'fgood']
 
     def extract(self, butler, data, **kwargs):
         """Make a summry table of the fe55 data
@@ -187,7 +186,7 @@ class Fe55GainSummaryTask(Fe55SummaryAnalysisTask):
             self.log.warn("Ignoring butler")
 
         for key, val in data.items():
-            data[key] = val.replace('_fe55_gain_sum.fits', '_fe55_gain_stats.fits')
+            data[key] = val.replace('_fe55-gain-sum.fits', '_fe55-gain-stats.fits')
 
         remove_cols = ['fit_pars']
 
@@ -221,13 +220,13 @@ class Fe55GainSummaryTask(Fe55SummaryAnalysisTask):
         yerrs = sumtable['gain_error'].flatten().clip(0., 0.5)
         runs = runtable['runs']
 
-        figs.plot_run_chart("fe55_gain", runs, yvals, yerrs=yerrs, ylabel="Gain")
+        figs.plot_run_chart("gain", runs, yvals, yerrs=yerrs, ylabel="Gain")
 
         yvals = sumtable['sigmax_median'].flatten().clip(0., 2.)
-        figs.plot_run_chart("fe55_sigmax", runs, yvals, ylabel="Cluster width [pixels]")
+        figs.plot_run_chart("sigmax", runs, yvals, ylabel="Cluster width [pixels]")
 
         yvals = sumtable['ngood']/sumtable['ncluster']
-        figs.plot_run_chart("fe55_fgood", runs, yvals, ylabel="Fraction of good clusters")
+        figs.plot_run_chart("fgood", runs, yvals, ylabel="Fraction of good clusters")
 
 
 EO_TASK_FACTORY.add_task_class('Fe55GainStats', Fe55GainStatsTask)

@@ -34,13 +34,11 @@ class DarkAnalysisTask(AnalysisTask):
     datatype = 'dark'
     testtypes = ['DARK']
 
-    def get_superdark_file(self, suffix, **kwargs):
+    def get_superdark_file(self, **kwargs):
         """Get the name of the superdark file for a particular run, raft, ccd...
 
         Parameters
         ----------
-        suffix : `str`
-            The filename suffix
         kwargs
             Passed to the file name formatter
 
@@ -54,7 +52,7 @@ class DarkAnalysisTask(AnalysisTask):
         else:
             formatter = SUPERDARK_STAT_FORMATTER
 
-        return self.get_filename_from_format(formatter, suffix, **kwargs)
+        return self.get_filename_from_format(formatter, '.fits', **kwargs)
 
     def get_superdark_frame(self, mask_files, **kwargs):
         """Get the superdark frame for a particular run, raft, ccd...
@@ -74,5 +72,5 @@ class DarkAnalysisTask(AnalysisTask):
             Superdark frame
         """
         self.safe_update(**kwargs)
-        superdark_file = self.get_superdark_file('')
+        superdark_file = self.get_superdark_file()
         return self.get_ccd(None, superdark_file, mask_files)

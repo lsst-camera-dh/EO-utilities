@@ -31,10 +31,8 @@ def build_slitw_format_dict(slitw_vals):
 
 class NonlinearityConfig(FlatSlotTableAnalysisConfig):
     """Configuration for NonlinearityTask"""
-    insuffix = EOUtilOptions.clone_param('insuffix', default='flat')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='flat_lin')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
+    infilekey = EOUtilOptions.clone_param('infilekey', default='flat-pair')
+    filekey = EOUtilOptions.clone_param('filekey', default='flat-lin')
     nonlin_spline_ext = EOUtilOptions.clone_param('nonlin_spline_ext')
     nonlin_spline_smooth = EOUtilOptions.clone_param('nonlin_spline_smooth')
 
@@ -52,6 +50,9 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
     do_profiles = True
     null_point = 0.
     num_profile_points = 40
+
+    plot_names = ['fits', 'prof', 'nonlin', 'nonlin-log', 'nonlin-stack', 'nonlin-stack-log',
+                  'fits-inv', 'prof-inv', 'nonlin-inv', 'nonlin-log-inv', 'nonlin-stack-inv', 'nonlin-stack-log-inv']
 
     @staticmethod
     def _correct_null_point(profile_x, profile_y, null_point):
@@ -103,7 +104,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
         self.log_info_slot_msg(self.config, "")
 
         basename = data[0]
-        datapath = basename.replace('flat.fits', '%s.fits' % self.config.insuffix)
+        datapath = basename.replace('flat.fits', '%s.fits' % self.config.infilekey)
 
         try:
             dtables = TableDict(datapath)
@@ -113,8 +114,8 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
         try:
             tab = dtables['flat']
             exp_time = tab['EXPTIME']
-            md_1 = tab['MONDIODE1_avg']
-            md_2 = tab['MONDIODE2_avg']
+            md_1 = tab['MONDIODE1']
+            md_2 = tab['MONDIODE2']
 
             flux_1 = -1. * md_1 * exp_time
             flux_2 = -1. * md_2 * exp_time
@@ -286,21 +287,21 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
         inverse = kwargs.get('inverse', False)
 
         if inverse:
-            suffix = "_inv"
+            sfx = "-inv"
             xlabel_short = 'Flux [a.u.]'
             xlabel_full = "Photodiode Charge [nC]"
             ylabel = 'Mean [ADU]'
             ylabel_resid_short = 'Frac. Resid.'
             ylabel_resid_full = r'Frac. Resid. ($\frac{\mu - F(q)}{F(q)})$'
         else:
-            suffix = ""
+            sfx = ""
             xlabel_short = 'Mean [ADU]'
             xlabel_full = 'Mean [ADU]'
             ylabel = 'Flux [a.u.]'
             ylabel_resid_short = 'Frac. Resid.'
             ylabel_resid_full = r'Frac. Resid. ($\frac{q - F(\mu)}{F(\mu)})$'
 
-        tab_nonlin = dtables['nonlin%s' % suffix]
+        tab_nonlin = dtables['nonlin%s' % sfx]
         tab_flatlin = dtables['flat_lin']
 
         offsets = tab_nonlin['offset']
@@ -317,16 +318,16 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
 
         model_func = LINEARITY_FUNC_DICT[self.model_func_choice]
 
-        figs.setup_amp_resid_plots_grid('lin_fits%s' % suffix, xlabel=xlabel_short,
+        figs.setup_amp_resid_plots_grid('fits%s' % sfx, xlabel=xlabel_short,
                                         ylabel=ylabel, ylabel_resid=ylabel_resid_short,
                                         ymin_resid=-0.2, ymax_resid=0.2,
                                         xscale='log', yscale='log')
-        figs.setup_amp_plots_grid('prof_fits%s' % suffix, xlabel=xlabel_short,
+        figs.setup_amp_plots_grid('prof%s' % sfx, xlabel=xlabel_short,
                                   ylabel=ylabel_resid_full,
                                   ymin_resid=-0.2, ymax_resid=0.2,
                                   xscale='lin', yscale='log')
 
-        fig_nonlin_log = figs.setup_figure("non_lin_log%s" % suffix,
+        fig_nonlin_log = figs.setup_figure("nonlin-log%s" % sfx,
                                            xlabel=xlabel_full, ylabel=ylabel_resid_full,
                                            figsize=(7, 5))
         axes_nonlin_log = fig_nonlin_log['axes']
@@ -334,14 +335,14 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
         axes_nonlin_log.set_ylim(self.plot_resid_ymin, self.plot_resid_ymax)
         axes_nonlin_log.set_xscale('log')
 
-        fig_nonlin = figs.setup_figure("non_lin%s" % suffix,
+        fig_nonlin = figs.setup_figure("nonlin%s" % sfx,
                                        xlabel=xlabel_full, ylabel=ylabel_resid_full,
                                        figsize=(7, 5))
         axes_nonlin = fig_nonlin['axes']
         #axes_nonlin.set_xlim(0., 3000.)
         axes_nonlin.set_ylim(self.plot_resid_ymin, self.plot_resid_ymax)
 
-        fig_nonlin_log_stack = figs.setup_figure("non_lin_log_stack%s" % suffix,
+        fig_nonlin_log_stack = figs.setup_figure("nonlin-log-stack%s" % sfx,
                                                  xlabel=xlabel_full, ylabel=ylabel_resid_full,
                                                  figsize=(7, 5))
         axes_nonlin_log_stack = fig_nonlin_log_stack['axes']
@@ -349,7 +350,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
         axes_nonlin_log_stack.set_ylim(self.plot_resid_ymin, self.plot_resid_ymax)
         axes_nonlin_log_stack.set_xscale('log')
 
-        fig_nonlin_stack = figs.setup_figure("non_lin_stack%s" % suffix,
+        fig_nonlin_stack = figs.setup_figure("nonlin-stack%s" % sfx,
                                              xlabel=xlabel_full, ylabel=ylabel_resid_full,
                                              figsize=(7, 5))
         axes_nonlin_stack = fig_nonlin_stack['axes']
@@ -392,7 +393,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             amp_plot_data = dict(xvals=xvals, yvals=yvals, resid_vals=frac_resid_col[iamp],
                                  model_vals=model_yvals, resid_errors=frac_resid_err_col[iamp],
                                  body_mask=None, resid_mask=mask)
-            figs.plot_resid('lin_fits%s' % suffix, amp-1, amp_plot_data)
+            figs.plot_resid('fits%s' % sfx, amp-1, amp_plot_data)
 
             profile_x = tab_nonlin['prof_x'][amp-1]
             profile_y = tab_nonlin['prof_y'][amp-1]
@@ -400,7 +401,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             profile_yerr = tab_nonlin['prof_yerr'][amp-1]
             prof_mask = profile_yerr >= 0.
 
-            axs_prof = figs['prof_fits%s' % suffix]['axs'].flat[amp-1]
+            axs_prof = figs['prof%s' % sfx]['axs'].flat[amp-1]
             axs_prof.errorbar(profile_x[prof_mask], profile_y[prof_mask],
                               yerr=profile_yerr[prof_mask], fmt='.')
             axs_prof.errorbar(profile_x[prof_mask], profile_y_corr[prof_mask],

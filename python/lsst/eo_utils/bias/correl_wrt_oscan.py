@@ -26,9 +26,7 @@ from .meta_analysis import BiasRaftTableAnalysisConfig, BiasRaftTableAnalysisTas
 
 class CorrelWRTOscanConfig(BiasAnalysisConfig):
     """Configuration for CorrelWRTOscanTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasoscorr')
-    bias = EOUtilOptions.clone_param('bias', default=None)
-    mask = EOUtilOptions.clone_param('mask')
+    filekey = EOUtilOptions.clone_param('filekey', default='biasoscorr')
 
 
 class CorrelWRTOscanTask(BiasAnalysisTask):
@@ -40,6 +38,8 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
     iteratorClass = AnalysisBySlot
 
     clip_value = 50.
+
+    plot_names = ['row', 'col']
 
     def extract(self, butler, data, **kwargs):
         """Extract the correlations between the imaging section
@@ -119,11 +119,11 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
             Used to override default configuration
         """
         self.safe_update(**kwargs)
-        figs.setup_amp_plots_grid("oscorr-row",
+        figs.setup_amp_plots_grid("row",
                                   title="Correlation: imaging region and serial overscan",
                                   xlabel="Correlation",
                                   ylabel="Number of frames")
-        figs.setup_amp_plots_grid("oscorr-col",
+        figs.setup_amp_plots_grid("col",
                                   title="Correlation: imaging region and paralell overscan",
                                   xlabel="Correlation",
                                   ylabel="Number of frames")
@@ -132,8 +132,8 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
         for i in range(16):
             s_correl = dtab['s_correl_a%02i' % i]
             p_correl = dtab['p_correl_a%02i' % i]
-            figs.get_obj('oscorr-row', 'axs').flat[i].hist(s_correl, bins=100, range=(-1., 1.))
-            figs.get_obj('oscorr-col', 'axs').flat[i].hist(p_correl, bins=100, range=(-1., 1.))
+            figs.get_obj('row', 'axs').flat[i].hist(s_correl, bins=100, range=(-1., 1.))
+            figs.get_obj('col', 'axs').flat[i].hist(p_correl, bins=100, range=(-1., 1.))
 
 
     def get_ccd_data(self, ccd, ref_frames, **kwargs):
@@ -185,9 +185,8 @@ class CorrelWRTOscanTask(BiasAnalysisTask):
 
 class CorrelWRTOscanStatsConfig(BiasRaftTableAnalysisConfig):
     """Configuration for CorrelWRTOscanStatsTask"""
-    insuffix = EOUtilOptions.clone_param('insuffix', default='biasoscorr')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasoscorr_stats')
-    bias = EOUtilOptions.clone_param('bias', default=None)
+    infilekey = EOUtilOptions.clone_param('infilekey', default='biasoscorr')
+    filekey = EOUtilOptions.clone_param('filekey', default='biasoscorr-stats')
 
 class CorrelWRTOscanStatsTask(BiasRaftTableAnalysisTask):
     """Extract statistics about the correlation between
@@ -195,6 +194,8 @@ class CorrelWRTOscanStatsTask(BiasRaftTableAnalysisTask):
 
     ConfigClass = CorrelWRTOscanStatsConfig
     _DefaultName = "CorrelWRTOscanStatsTask"
+
+    plot_names = ['mean-s', 'mean-p']
 
     def extract(self, butler, data, **kwargs):
         """Extract the the summary statistics data
@@ -300,16 +301,15 @@ class CorrelWRTOscanStatsTask(BiasRaftTableAnalysisTask):
         """
         self.safe_update(**kwargs)
         sumtable = dtables['biasoscorr_stats']
-        figs.plot_stat_color('mean_oscorr_s', sumtable['s_correl_mean'].reshape(9, 16))
-        figs.plot_stat_color('mean_oscorr_p', sumtable['p_correl_mean'].reshape(9, 16))
+        figs.plot_stat_color('mean-s', sumtable['s_correl_mean'].reshape(9, 16))
+        figs.plot_stat_color('mean-p', sumtable['p_correl_mean'].reshape(9, 16))
 
 
 
 class CorrelWRTOscanSummaryConfig(BiasSummaryAnalysisConfig):
     """Configuration for CorrelWRTOscanSummaryTask"""
-    insuffix = EOUtilOptions.clone_param('insuffix', default='biasoscorr_stats')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasoscorr_sum')
-    bias = EOUtilOptions.clone_param('bias', default=None)
+    infilekey = EOUtilOptions.clone_param('infilekey', default='biasoscorr-stats')
+    filekey = EOUtilOptions.clone_param('filekey', default='biasoscorr-sum')
 
 
 class CorrelWRTOscanSummaryTask(BiasSummaryAnalysisTask):
@@ -318,6 +318,8 @@ class CorrelWRTOscanSummaryTask(BiasSummaryAnalysisTask):
 
     ConfigClass = CorrelWRTOscanSummaryConfig
     _DefaultName = "CorrelWRTOscanSummaryTask"
+
+    plot_names = ['mean-s', 'mean-p']
 
     def extract(self, butler, data, **kwargs):
         """Make a summry table
@@ -377,9 +379,9 @@ class CorrelWRTOscanSummaryTask(BiasSummaryAnalysisTask):
         yvals_p = sumtable['p_correl_mean'].flatten().clip(0., 1.)
         runs = runtable['runs']
 
-        figs.plot_run_chart("s_correl_mean", runs, yvals_s,
+        figs.plot_run_chart("mean-s", runs, yvals_s,
                             ylabel="Correlation between serial overscan and imaging")
-        figs.plot_run_chart("p_correl_mean", runs, yvals_p,
+        figs.plot_run_chart("mean-p", runs, yvals_p,
                             ylabel="Correlation between parallel overscan and imaging")
 
 
