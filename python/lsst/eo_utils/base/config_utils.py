@@ -55,25 +55,19 @@ class EOUtilOptions(pexConfig.Config):
     raft = pexConfig.Field("Raft Slot", str, default=None)
     rafts = pexConfig.ListField("Raft Slot(s)", str, default=None)
     nfiles = pexConfig.Field("Number of files to use", int, default=None)
-    insuffix = pexConfig.Field("Suffix for input files", str, default="")
+    infilekey = pexConfig.Field("Suffix for input files", str, default="")
     infile = pexConfig.Field("Input file name", str, default=None)
     indir = pexConfig.Field("Input directory name", str, default=DEFAULT_OUTDIR)
     outfile = pexConfig.Field("Output file name", str, default=None)
     overwrite = pexConfig.Field("Process even if output data already exists", bool, default=False)
 
     # Options for input data processing
-    bias = pexConfig.Field("Method to use for unbiasing", str, default='spline')
-    superbias = pexConfig.Field("Version of superbias frame to use", str,
-                                default='spline')
-    gain = pexConfig.Field("Use the gain correction", bool, default=False)
-    mask = pexConfig.Field("Use the mask files", bool, default=False)
-    nonlin = pexConfig.Field("Use the nonlinearity correction", bool, default=False)
+    calib = pexConfig.Field("Calibration flavor", str, default='normal')
 
     # Options for where to put output data and what to include
     outdir = pexConfig.Field("Output file path root", str,
                              default=DEFAULT_OUTDIR)
-    outsuffix = pexConfig.Field("Suffix for output files", str,
-                                default="")
+    filekey = pexConfig.Field("Suffix for output files", str, default="")
     plot = pexConfig.Field("Make plots", str,
                            default=None)
     skip = pexConfig.Field("Skip the main analysis and only make plots", bool,

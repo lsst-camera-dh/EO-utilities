@@ -1,5 +1,7 @@
 """Class to analyze the correlations between the overscans for all amplifiers on a raft"""
 
+import os
+
 import numpy as np
 
 from lsst.eo_utils.base.defaults import ALL_SLOTS
@@ -24,11 +26,8 @@ from .meta_analysis import DarkRaftTableAnalysisConfig,\
 
 class DarkCurrentConfig(DarkRaftTableAnalysisConfig):
     """Configuration for DarkCurrentTask"""
-    insuffix = EOUtilOptions.clone_param('insuffix', default='')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='dark_current')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
-    mask = EOUtilOptions.clone_param('mask')
+    infilekey = EOUtilOptions.clone_param('infilekey', default='')
+    filekey = EOUtilOptions.clone_param('filekey', default='dark-current')
 
 
 class DarkCurrentTask(DarkRaftTableAnalysisTask):
@@ -38,6 +37,8 @@ class DarkCurrentTask(DarkRaftTableAnalysisTask):
     _DefaultName = "DarkCurrentTask"
 
     intablename_format = SUPERDARK_FORMATTER
+
+    plot_names = ['val']
 
     def extract(self, butler, data, **kwargs):
         """Extract data
@@ -85,6 +86,11 @@ class DarkCurrentTask(DarkRaftTableAnalysisTask):
 
             mask_files = self.get_mask_files(slot=slot)
             superdark_file = data[slot]
+
+            if not os.path.exists(superdark_file):
+                self.log.warn("  %s does not exist, skipping" % superdark_file)
+                continue
+
             superdark_frame = self.get_ccd(None, superdark_file, mask_files)
             exptime = get_exposure_time(superdark_frame)
 
@@ -134,7 +140,7 @@ class DarkCurrentTask(DarkRaftTableAnalysisTask):
         self.safe_update(**kwargs)
 
         dtable = dtables['dark_current']
-        figs.plot_raft_amp_values('dark_current',
+        figs.plot_raft_amp_values('val',
                                   dtable['current'],
                                   xlabel='Amplifier',
                                   ylabel='Current [ADU/s]',
@@ -143,10 +149,8 @@ class DarkCurrentTask(DarkRaftTableAnalysisTask):
 
 class DarkCurrentSummaryConfig(DarkSummaryAnalysisConfig):
     """Configuration for DarkCurrentSummaryTask"""
-    insuffix = EOUtilOptions.clone_param('insuffix', default='dark_current')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='dark_current_sum')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
+    infilekey = EOUtilOptions.clone_param('infilekey', default='dark-current')
+    filekey = EOUtilOptions.clone_param('filekey', default='dark-current-sum')
 
 
 class DarkCurrentSummaryTask(DarkSummaryAnalysisTask):
@@ -154,6 +158,8 @@ class DarkCurrentSummaryTask(DarkSummaryAnalysisTask):
 
     ConfigClass = DarkCurrentSummaryConfig
     _DefaultName = "DarkCurrentSummaryTask"
+
+    plot_names = ['val']
 
     def extract(self, butler, data, **kwargs):
         """Extract data
@@ -175,7 +181,7 @@ class DarkCurrentSummaryTask(DarkSummaryAnalysisTask):
         self.safe_update(**kwargs)
 
         for key, val in data.items():
-            data[key] = val.replace(self.config.outsuffix, self.config.insuffix)
+            data[key] = val.replace(self.config.filekey, self.config.infilekey)
 
         # Define the set of columns to keep and remove
         # keep_cols = []
@@ -209,8 +215,7 @@ class DarkCurrentSummaryTask(DarkSummaryAnalysisTask):
 
         runs = runtable['runs']
 
-        figs.plot_run_chart("stats", runs, yvals, yerrs=yerrs, ylabel="Dark Current [ADU/s]")
-        #figs.plot_run_chart("stats", runs, yvals, ylabel="Dark Current [ADU/s]")
+        figs.plot_run_chart("val", runs, yvals, yerrs=yerrs, ylabel="Dark Current [ADU/s]")
 
 
 EO_TASK_FACTORY.add_task_class('DarkCurrent', DarkCurrentTask)

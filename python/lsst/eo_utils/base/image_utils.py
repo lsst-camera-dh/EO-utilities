@@ -3,6 +3,8 @@ These functions will work both with Butlerized and un-Butlerized data.
 
 """
 
+import os
+
 import numpy as np
 
 from scipy import fftpack
@@ -793,6 +795,31 @@ def compute_mondiode_flux_from_txt(pd_file, factor=5):
     return integral
 
 
+def get_mondiode_data(filepath, factor=5):
+    """Get the monitoring diode data"""
+    if filepath.find('.txt') >= 0:
+        vals = np.recfromtxt(filepath)
+        xvals = vals[:, 0]
+        yvals = 1.0e9*vals[:, 1]
+    else:
+        with fits.open(filepath) as hdus:
+            hdu = hdus['AMP0.MEAS_TIMES']
+            xvals = hdu.data.field('AMP0_MEAS_TIMES')
+            yvals = -1.0e9*hdu.data.field('AMP0_A_CURRENT')
+    ythresh = (max(yvals) - min(yvals))/factor + min(yvals)
+    index = np.where(yvals < ythresh)
+    y_0 = np.median(yvals[index])
+    yvals -= y_0
+    return xvals, yvals
+
+
+def avg_sum(times, currents):
+    """Computing the photodiode charge as the product of the
+    bin widths and the bin values.
+    This is b/c the picoampmeter return the averaged time
+    for each interval"""
+    del_t = times[1:] - times[0:-1]
+    return (currents[1:] * del_t).sum()
 
 def get_mondiode_val(ccd):
     """Return the monitoring diode value
@@ -815,6 +842,46 @@ def get_mondiode_val(ccd):
             print(msg)
         return ccd.md.get('MONDIODE')
     return ccd.getMetadata()['MONDIODE']
+
+
+def get_monodiode_val_from_data_id(data_id, exp_time, teststand, butler):
+    """Return the monitoring diode value
+
+    Parameters
+    ----------
+    ccd : `ImageF` or `MaskedImageF`
+        CCD image object
+
+    exp_time : `float`
+        Exposure time
+
+    teststand : `str`
+        The teststand (value are stored in different ways)
+
+    butler : `Butler` or `None
+        Data Butler
+
+    Returns
+    -------
+    val : `float`
+        The value
+    """
+    if butler is None:
+        if teststand == 'ts8':
+            mondiode_file = data_id
+        elif teststand == 'bot':
+            mondiode_file = os.path.join(os.path.dirname(data_id), 'Photodiode_Readings.txt')
+    else:
+        mondiode_file = os.path.join('analysis', 'bot', 'pd_calib',
+                                     data_id['run'], "pd_calib_%s.txt" % data_id['visit'])
+
+    try:
+        mon_diode_x, mon_diode_y = get_mondiode_data(mondiode_file)
+    except Exception:
+        return None
+
+    mon_diode_avg = avg_sum(mon_diode_y, mon_diode_x) / exp_time
+    return mon_diode_avg
 
 
 def get_mono_wl(ccd):
@@ -882,6 +949,8 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
     bias_type = kwargs.get('bias_type', 'spline')
     superbias_frame = kwargs.get('superbias_frame', None)
     log = kwargs.get('log', None)
+    gains = kwargs.get('gains', None)
+    nlc = kwargs.get('nlc', None)
 
     amp_stack_dict = {}
     out_dict = {}
@@ -905,20 +974,23 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
         amps = get_amp_list(ccd)
 
         offset = get_amp_offset(ccd, superbias_frame)
-        for amp in amps:
+        for iamp, amp in enumerate(amps):
             regions = get_geom_regions(ccd, amp)
             serial_oscan = regions['serial_overscan']
             img = get_raw_image(ccd, amp)
             superbias_im = raw_amp_image(superbias_frame, amp + offset)
+            unbiased = unbias_amp(img, serial_oscan,
+                                  bias_type=bias_type,
+                                  superbias_im=superbias_im)
+            if gains is not None:
+                unbiased.image.array *= gains[iamp]
+            if nlc is not None:
+                unbiased.image.array = nlc(unbiased.image.array)
 
             if ifile == 0:
-                amp_stack_dict[amp] = [unbias_amp(img, serial_oscan,
-                                                  bias_type=bias_type,
-                                                  superbias_im=superbias_im)]
+                amp_stack_dict[amp] = [unbiased]
             else:
-                amp_stack_dict[amp].append(unbias_amp(img, serial_oscan,
-                                                      bias_type=bias_type,
-                                                      superbias_im=superbias_im))
+                amp_stack_dict[amp].append(unbiased)
 
     if in_files:
         exp_time /= float(used_files)

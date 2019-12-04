@@ -17,7 +17,7 @@ class DarkRaftTableAnalysisConfig(AnalysisConfig):
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slots = EOUtilOptions.clone_param('slots')
-    insuffix = EOUtilOptions.clone_param('insuffix')
+    infilekey = EOUtilOptions.clone_param('infilekey')
 
 
 class DarkRaftTableAnalysisTask(AnalysisTask):

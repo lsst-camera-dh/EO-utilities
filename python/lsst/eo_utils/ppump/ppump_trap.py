@@ -19,10 +19,7 @@ from lsst.eo_utils.ppump.analysis import PpumpAnalysisConfig, PpumpAnalysisTask
 
 class TrapConfig(PpumpAnalysisConfig):
     """Configuration for TrapTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='trap')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
-    mask = EOUtilOptions.clone_param('mask')
+    filekey = EOUtilOptions.clone_param('filekey', default='trap')
     cycles = EOUtilOptions.clone_param('cycles')
     threshold = EOUtilOptions.clone_param('threshold')
     C2_thresh = EOUtilOptions.clone_param('C2_thresh')
@@ -38,6 +35,8 @@ class TrapTask(PpumpAnalysisTask):
     ConfigClass = TrapConfig
     _DefaultName = "TrapTask"
     iteratorClass = AnalysisBySlot
+
+    plot_names = []
 
     def extract(self, butler, data, **kwargs):
         """Extract data

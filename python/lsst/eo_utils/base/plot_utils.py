@@ -1,5 +1,7 @@
 """Functions to help make plots and collect figures"""
 
+import os
+
 import sys
 
 import numpy as np
@@ -33,15 +35,21 @@ mpl_utils.set_plt_ioff()
 
 
 class FigureDict:
-    """Object to make and collect figures.
+    """Object to make and collect figures.1
 
     This is implemented as a dictionary of dictionaries,
 
     Each value is a dictionary with `matplotlib` objects for each figure
     """
-    def __init__(self):
+    def __init__(self, all_plots=None):
         """C'tor"""
         self._fig_dict = {}
+        self._all_plots = all_plots
+
+    @property
+    def all_plots(self):
+        """Return the list of all the expected plots"""
+        return self._all_plots
 
     def add_figure(self, key, fig):
         """Added a figure
@@ -74,6 +82,15 @@ class FigureDict:
     def __getitem__(self, key):
         """Return a particular sub-dictionary by name"""
         return self._fig_dict[key]
+
+    def check_all_plots_made(self):
+        """Check if all the expected plots exist"""
+        if self._all_plots is None:
+            return True
+        for a_plot in self._all_plots:
+            if a_plot not in self._fig_dict:
+                return False
+        return True
 
     def get_obj(self, key, key2):
         """Return some other `matplotlib` object besides a `Figure`
@@ -1247,6 +1264,71 @@ class FigureDict:
         return o_dict
 
 
+    def plot_run_chart_by_slot(self, key, dtable, ycol, **kwargs):
+        """Plot the data each amp in a set of runs in a single chart
+
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        runs : `array`
+            Aray of the run info
+        yvals : `list`
+            Values being plotted
+        kwargs
+            Passed to `matplotlib`
+
+        Keywords
+        --------
+        title : `str`
+            Figure title
+        figsize : `tuple`
+            Figure width, height in inches
+        ylabel : `str`
+            y-axis label
+        yextras : `list`
+            Additional quantities to plot on y-axis
+
+        Returns
+        -------
+        o_dict : `dict`
+            Dictionary of `matplotlib` object
+        """
+        kwcopy = kwargs.copy()
+        yerrs = kwcopy.pop('yerrs', None)
+
+        odict = self.setup_raft_plots_grid(key, **kwcopy)
+        fig = odict['fig']
+        axs = odict['axs']
+
+        nrun = dtable['irun'].max() + 1
+        runs = np.unique(dtable['run'])
+
+        slots = np.unique(dtable['slot'])
+        for islot, slot in enumerate(slots):
+
+            axes = axs.flat[islot]
+
+            mask = dtable['slot'] == slot
+            slot_table = dtable[mask]
+
+            #idxs = slot_table['irun']*16 + slot_table['amp']
+            yvals = slot_table[ycol]
+
+            n_data = yvals.size
+            n_amps = int(n_data / nrun)
+            locs = [n_amps//2 + i*n_amps for i in range(nrun)]
+            axes.set_xticks(locs)
+            axes.set_xticklabels(runs, rotation=90)
+            xvals = np.linspace(0, n_data-1, n_data)
+            if yerrs is None:
+                axes.plot(xvals, yvals, 'b.', **kwcopy)
+            else:
+                axes.errorbar(xvals, yvals, yerr=slot_table[yerrs], fmt='b.', **kwcopy)
+
+        fig.tight_layout()
+        return odict
+
     def plot_ccd_mosaic(self, key, ccd, **kwargs):
         """Combine amplifier image arrays into a single mosaic CCD image image
 
@@ -1389,6 +1471,43 @@ class FigureDict:
         return o_dict
 
 
+    def plot_reduced_focal_plane_mosaic(self, key, hdulist, **kwargs):
+        """Make a mosaic of the focal plane
+        """
+        title = kwargs.get('title', None)
+        xlabel = kwargs.get('xlabel', 'X [pixel]')
+        ylabel = kwargs.get('ylabel', 'Y [pixel]')
+        figsize = kwargs.get('figsize', (12, 12))
+        vmin = kwargs.get('vmin', -10.)
+        vmax = kwargs.get('vmax', 10.)
+
+        darray = np.zeros((3970, 3970))
+        for hdu in hdulist[1:]:
+            n_x = hdu.header['NAXIS1']
+            n_y = hdu.header['NAXIS2']
+            x_0 = int(hdu.header['CRVAL1Q'])
+            y_0 = int(hdu.header['CRVAL2Q'])
+            x_1 = x_0 + n_x
+            y_1 = y_0 + n_y
+            darray[y_0:y_1, x_0:x_1] = hdu.data
+
+        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+        if title is not None:
+            fig.suptitle(title)
+        if xlabel is not None:
+            axes.set_xlabel(xlabel)
+        if ylabel is not None:
+            axes.set_ylabel(ylabel)
+
+        norm = ImageNormalize(vmin=vmin, vmax=vmax)
+        img = axes.imshow(darray, extent=(0, 63500, 0, 63500), origin='low', interpolation='none', norm=norm)
+        cbar = plt.colorbar(img)
+
+        odict = dict(fig=fig, axes=axes, img=img, cbar=cbar)
+        self._fig_dict[key] = odict
+        return odict
+
+
     def make_raft_outlier_plots(self, dtable, prefix=""):
         """Make a set of plots of about the number of outlier pixels
 
@@ -1401,13 +1520,13 @@ class FigureDict:
         """
         if not dtable:
             return
-        self.plot_raft_vals_from_table(dtable, prefix + 'out_row',
+        self.plot_raft_vals_from_table(dtable, prefix + 'out-row',
                                        title='Outliers by row',
                                        y_name='row_data',
                                        xlabel='Row',
                                        ylabel='N bad pixels',
                                        ymin=0, ymax=50)
-        self.plot_raft_vals_from_table(dtable, prefix + 'out_col',
+        self.plot_raft_vals_from_table(dtable, prefix + 'out-col',
                                        title='Outliers by col',
                                        y_name='col_data',
                                        xlabel='Row',
@@ -1426,10 +1545,10 @@ class FigureDict:
         self.plot_stat_color(prefix + 'nbad',
                              nbad_total_array.reshape(9, 16).clip(0, 0.05),
                              title="Fraction of pixels")
-        self.plot_stat_color(prefix + 'nbad_row',
+        self.plot_stat_color(prefix + 'nbad-row',
                              nbad_row_array.reshape(9, 16).clip(0, 0.05),
                              title="Fraction of row with >= 10 outliers")
-        self.plot_stat_color(prefix + 'nbad_col',
+        self.plot_stat_color(prefix + 'nbad-col',
                              nbad_col_array.reshape(9, 16).clip(0, 0.05),
                              title="Fraction of cols with >= 10 outliers")
 
@@ -1470,3 +1589,34 @@ class FigureDict:
             fig = val['fig']
             fig.savefig("%s_%s.%s" % (basename, key, ftype))
             plt.close(fig)
+
+
+    def missing_plots(self, basename, ftype='png'):
+        """Save all the figures
+
+        The files will be named {basename}_{key}.png
+
+        If basename is None then the file will be shown on the display and not saved
+
+        Parameters
+        ----------
+        basename : `str` or `None`
+            Base of the output file names
+        ftype : `str`
+            File type to same, also filename extension
+
+        Returns
+        -------
+        out_list : `list` or `None`
+            List of missing plots
+        """
+        if basename is None:
+            return None
+        if self._all_plots is None:
+            return None
+        filepaths = ["%s_%s.%s" % (basename, key, ftype) for key in self._fig_dict]
+        out_list = []
+        for filepath in filepaths:
+            if not os.path.exists(filepath):
+                out_list.append(filepath)
+        return out_list

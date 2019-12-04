@@ -22,10 +22,7 @@ from .analysis import FlatAnalysisConfig, FlatAnalysisTask
 
 class BFConfig(FlatAnalysisConfig):
     """Configuration for BFTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='bf')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
-    mask = EOUtilOptions.clone_param('mask')
+    filekey = EOUtilOptions.clone_param('filekey', default='bf')
     maxLag = EOUtilOptions.clone_param('maxLag')
     nSigmaClip = EOUtilOptions.clone_param('nSigmaClip')
     backgroundBinSize = EOUtilOptions.clone_param('backgroundBinSize')
@@ -38,6 +35,7 @@ class BFTask(FlatAnalysisTask):
     _DefaultName = "BFTask"
     iteratorClass = AnalysisBySlot
 
+    plot_names = []
 
     def mean(self, img):
         """Return the mean of an image"""
@@ -65,6 +63,7 @@ class BFTask(FlatAnalysisTask):
         flat1_files = data['FLAT1']
         flat2_files = data['FLAT2']
 
+        bias_type = self.get_bias_algo()
         mask_files = self.get_mask_files()
         superbias_frame = self.get_superbias_frame(mask_files)
 
@@ -103,9 +102,9 @@ class BFTask(FlatAnalysisTask):
 
                 superbias_im = self.get_superbias_amp_image(butler, superbias_frame, amp)
 
-                image_1 = unbias_amp(im_1, serial_oscan, bias_type=self.config.bias,
+                image_1 = unbias_amp(im_1, serial_oscan, bias_type=bias_type,
                                      superbias_im=superbias_im, region=imaging).image
-                image_2 = unbias_amp(im_2, serial_oscan, bias_type=self.config.bias,
+                image_2 = unbias_amp(im_2, serial_oscan, bias_type=bias_type,
                                      superbias_im=superbias_im, region=imaging).image
 
                 avemean = (self.mean(image_1) + self.mean(image_2)) / 2.

@@ -27,8 +27,9 @@ class EOResultsRaftConfig(AnalysisConfig):
     teststand = EOUtilOptions.clone_param('teststand')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
-    insuffix = EOUtilOptions.clone_param('insuffix', default='_eotest_results')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='_eotest_results')
+    calib = EOUtilOptions.clone_param('calib', default='eotest')
+    infilekey = EOUtilOptions.clone_param('infilekey', default='results')
+    filekey = EOUtilOptions.clone_param('filekey', default='results')
 
 
 class EOResultsRaftTask(AnalysisTask):
@@ -41,6 +42,14 @@ class EOResultsRaftTask(AnalysisTask):
     intablename_format = TS8_EORESULTSIN_FORMATTER
     tablename_format = EORESULTS_TABLE_FORMATTER
     plotname_format = EORESULTS_PLOT_FORMATTER
+
+    datatype = 'eotest'
+
+    # This is the list of plots, used to make sure that they exist
+    plot_names = ['gain', 'ptc-gain', 'read-noise', 'full-well',
+                  'dark-current', 'cti-high-serial', 'cti-high-parallel',
+                  'cti-low-serial', 'cti-low-parallel', 'max-frac-dev',
+                  'psf-sigma']
 
     def __init__(self, **kwargs):
         """C'tor
@@ -114,57 +123,57 @@ class EOResultsRaftTask(AnalysisTask):
                                   yerrs=table['GAIN_ERROR'],
                                   ylabel='Gain Ne/DN',
                                   slots=ALL_SLOTS)
-        figs.plot_raft_amp_values('ptc_gain',
+        figs.plot_raft_amp_values('ptc-gain',
                                   table['PTC_GAIN'],
                                   title="PTC Gain",
                                   yerrs=table['PTC_GAIN_ERROR'],
                                   ylabel='Gain Ne/DN',
                                   slots=ALL_SLOTS)
-        figs.plot_raft_amp_values('read_noise',
+        figs.plot_raft_amp_values('read-noise',
                                   table['READ_NOISE'],
                                   title="Read Noise",
                                   ylabel='rms e-/pixel',
                                   slots=ALL_SLOTS)
-        figs.plot_raft_amp_values('full_well',
+        figs.plot_raft_amp_values('full-well',
                                   table['FULL_WELL'],
                                   title='Full well Measurment',
                                   ylabel='e-/pixel',
                                   slots=ALL_SLOTS)
-        figs.plot_raft_amp_values('dark_current',
+        figs.plot_raft_amp_values('dark-current',
                                   table['DARK_CURRENT_95'],
                                   title='Dark Current 95%',
                                   ylabel='e-/s/pixel',
                                   slots=ALL_SLOTS)
-        figs.plot_raft_amp_values('cti_high_serial',
+        figs.plot_raft_amp_values('cti-high-serial',
                                   table['CTI_HIGH_SERIAL'],
                                   title="CTI High Serial",
                                   yerrs=table['CTI_HIGH_SERIAL_ERROR'],
                                   ylabel='loss/pixel',
                                   slots=ALL_SLOTS)
-        figs.plot_raft_amp_values('cti_high_parallel',
+        figs.plot_raft_amp_values('cti-high-parallel',
                                   table['CTI_HIGH_PARALLEL'],
                                   title="CTI High Parallel",
                                   yerrs=table['CTI_HIGH_PARALLEL_ERROR'],
                                   ylabel='loss/pixel',
                                   slots=ALL_SLOTS)
-        figs.plot_raft_amp_values('cti_low_serial',
+        figs.plot_raft_amp_values('cti-low-serial',
                                   table['CTI_LOW_SERIAL'],
                                   title="CTI Low Serial",
                                   yerrs=table['CTI_LOW_SERIAL_ERROR'],
                                   ylabel='loss/pixel',
                                   slots=ALL_SLOTS)
-        figs.plot_raft_amp_values('cti_low_parallel',
+        figs.plot_raft_amp_values('cti-low-parallel',
                                   table['CTI_LOW_PARALLEL'],
                                   title="CTI Low Parallel",
                                   yerrs=table['CTI_LOW_PARALLEL_ERROR'],
                                   ylabel='loss/pixel',
                                   slots=ALL_SLOTS)
-        figs.plot_raft_amp_values('max_frac_dev',
+        figs.plot_raft_amp_values('max-frac-dev',
                                   table['MAX_FRAC_DEV'],
                                   title="Maximum fractional deviation",
                                   ylabel='Fraction',
                                   slots=ALL_SLOTS)
-        figs.plot_raft_amp_values('psf_sigma',
+        figs.plot_raft_amp_values('psf-sigma',
                                   table['PSF_SIGMA'],
                                   title="PSF Width",
                                   ylabel='pixels',
@@ -176,8 +185,9 @@ class EOResultsSummaryConfig(AnalysisConfig):
     outdir = EOUtilOptions.clone_param('outdir')
     teststand = EOUtilOptions.clone_param('teststand')
     dataset = EOUtilOptions.clone_param('dataset')
-    insuffix = EOUtilOptions.clone_param('insuffix', default='_eotest_results')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='_eotest_results_sum')
+    calib = EOUtilOptions.clone_param('calib', default='eotest')
+    infilekey = EOUtilOptions.clone_param('infilekey', default='results')
+    filekey = EOUtilOptions.clone_param('filekey', default='results_sum')
 
 
 class EOResultsSummaryTask(AnalysisTask):
@@ -190,6 +200,12 @@ class EOResultsSummaryTask(AnalysisTask):
     intablename_format = EORESULTS_TABLE_FORMATTER
     tablename_format = EORESULTS_SUMMARY_TABLE_FORMATTER
     plotname_format = EORESULTS_SUMMARY_PLOT_FORMATTER
+
+    # This is the list of plots, used to make sure that they exist
+    plot_names = ['gain', 'ptc-gain', 'read-noise', 'full-well',
+                  'dark-current', 'cti-high-serial', 'cti-high-parallel',
+                  'cti-low-serial', 'cti-low-parallel', 'max-frac-dev',
+                  'psf-sigma']
 
     def __init__(self, **kwargs):
         """C'tor
@@ -221,7 +237,7 @@ class EOResultsSummaryTask(AnalysisTask):
         self.safe_update(**kwargs)
 
         for key, val in data.items():
-            data[key] = val.replace(self.config.outsuffix, self.config.insuffix)
+            data[key] = val.replace(self.config.filekey, self.config.infilekey)
 
         # Define the set of columns to keep and remove
         # keep_cols = []
@@ -258,56 +274,56 @@ class EOResultsSummaryTask(AnalysisTask):
                             table['GAIN'],
                             yerrs=table['GAIN_ERROR'],
                             ylabel='Gain Ne/DN')
-        figs.plot_run_chart('ptc_gain',
+        figs.plot_run_chart('ptc-gain',
                             runs,
                             table['PTC_GAIN'],
                             yerrs=table['PTC_GAIN_ERROR'],
                             ylabel='Gain Ne/DN')
-        figs.plot_run_chart('read_noise',
+        figs.plot_run_chart('read-noise',
                             runs,
                             table['READ_NOISE'],
                             ylabel='rms e-/pixel')
-        figs.plot_run_chart('shot_noise',
+        figs.plot_run_chart('shot-noise',
                             runs,
                             table['DC95_SHOT_NOISE'],
                             ylabel='rms e-/pixel')
-        figs.plot_run_chart('total_noise',
+        figs.plot_run_chart('total-noise',
                             runs,
                             table['TOTAL_NOISE'],
                             ylabel='rms e-/pixel')
-        figs.plot_run_chart('full_well',
+        figs.plot_run_chart('full-well',
                             runs,
                             table['FULL_WELL'],
                             ylabel='e-/pixel')
-        figs.plot_run_chart('dark_current',
+        figs.plot_run_chart('dark-current',
                             runs,
                             table['DARK_CURRENT_95'],
                             ylabel='e-/s/pixel')
-        figs.plot_run_chart('cti_high_serial',
+        figs.plot_run_chart('cti-high-serial',
                             runs,
                             table['CTI_HIGH_SERIAL'],
                             yerrs=table['CTI_HIGH_SERIAL_ERROR'],
                             ylabel='loss/pixel')
-        figs.plot_run_chart('cti_high_parallel',
+        figs.plot_run_chart('cti-high-parallel',
                             runs,
                             table['CTI_HIGH_PARALLEL'],
                             yerrs=table['CTI_HIGH_PARALLEL_ERROR'],
                             ylabel='loss/pixel')
-        figs.plot_run_chart('cti_low_serial',
+        figs.plot_run_chart('cti-low-serial',
                             runs,
                             table['CTI_LOW_SERIAL'],
                             yerrs=table['CTI_LOW_SERIAL_ERROR'],
                             ylabel='loss/pixel')
-        figs.plot_run_chart('cti_low_parallel',
+        figs.plot_run_chart('cti-low-parallel',
                             runs,
                             table['CTI_LOW_PARALLEL'],
                             yerrs=table['CTI_LOW_PARALLEL_ERROR'],
                             ylabel='loss/pixel')
-        figs.plot_run_chart('max_frac_dev',
+        figs.plot_run_chart('max-frac-dev',
                             runs,
                             table['MAX_FRAC_DEV'],
                             ylabel='Fraction')
-        figs.plot_run_chart('psf_sigma',
+        figs.plot_run_chart('psf-sigma',
                             runs,
                             table['PSF_SIGMA'],
                             ylabel='pixels')

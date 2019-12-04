@@ -12,7 +12,8 @@ from .meta_analysis import DarkRaftTableAnalysisConfig,\
     DarkSummaryAnalysisConfig, DarkSummaryAnalysisTask
 
 from .superdark import SuperdarkConfig, SuperdarkTask,\
-    SuperdarkRaftConfig, SuperdarkRaftTask
+    SuperdarkRaftConfig, SuperdarkRaftTask,\
+    SuperdarkMosaicConfig, SuperdarkMosaicTask
 
 from .dark_current import DarkCurrentConfig, DarkCurrentTask,\
     DarkCurrentSummaryConfig, DarkCurrentSummaryTask

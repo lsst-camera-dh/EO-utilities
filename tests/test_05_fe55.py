@@ -41,11 +41,11 @@ def test_fe55_gain_stats():
     """Test the Fe55GainStatsTask"""
     task = fe55.Fe55GainStatsTask()
     if RUN_TASKS:
-        task.run(**RUN_OPTIONS)
+        task.run(calib='eotest', **RUN_OPTIONS)
 
 @requires_site('slac')
 def test_fe55_gain_sum():
     """Test the Fe55GainSummaryTask"""
     task = fe55.Fe55GainSummaryTask()
     if RUN_TASKS:
-        task.run(**SUMMARY_OPTIONS)
+        task.run(calib='eotest', **SUMMARY_OPTIONS)

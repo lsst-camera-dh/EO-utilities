@@ -22,9 +22,7 @@ from .analysis import BiasAnalysisConfig, BiasAnalysisTask
 
 class BiasVRowConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasval')
-    bias = EOUtilOptions.clone_param('bias')
-    mask = EOUtilOptions.clone_param('mask')
+    filekey = EOUtilOptions.clone_param('filekey', default='biasval')
 
 
 class BiasVRowTask(BiasAnalysisTask):
@@ -32,6 +30,8 @@ class BiasVRowTask(BiasAnalysisTask):
     ConfigClass = BiasVRowConfig
     _DefaultName = "BiasVRowTask"
     iteratorClass = AnalysisBySlot
+
+    plot_names = ['val']
 
     def extract(self, butler, data, **kwargs):
         """Extract the bias as function of row
@@ -99,9 +99,9 @@ class BiasVRowTask(BiasAnalysisTask):
             Used to override default configuration
         """
         self.safe_update(**kwargs)
-        figs.setup_amp_plots_grid("biasval", title="Bias by row",
+        figs.setup_amp_plots_grid("val", title="Bias by row",
                                   xlabel="row", ylabel="Magnitude [ADU]")
-        figs.plot_xy_amps_from_tabledict(dtables, 'biasval', 'biasval',
+        figs.plot_xy_amps_from_tabledict(dtables, 'biasval', 'val',
                                          x_name='row_s', y_name='biasval')
 
 
@@ -125,7 +125,7 @@ class BiasVRowTask(BiasAnalysisTask):
             Total number of files
         """
         slot = self.config.slot
-        bias_type = self.config.bias
+        bias_type = self.get_bias_algo()
         ifile = kwargs['ifile']
         nfiles = kwargs['nfiles']
 

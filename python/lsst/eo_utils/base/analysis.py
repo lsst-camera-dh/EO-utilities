@@ -9,8 +9,6 @@ import os
 
 import glob
 
-import numpy as np
-
 import lsst.pex.config as pexConfig
 
 from lsst.eotest.sensor import NonlinearityCorrection
@@ -23,6 +21,8 @@ from .file_utils import makedir_safe,\
     NONLIN_FORMATTER, EORESULTS_TABLE_FORMATTER
 
 from .config_utils import EOUtilOptions, Configurable
+
+from .calib_utils import DEFAULT_CALIB_DICT
 
 from .data_utils import TableDict
 
@@ -37,7 +37,7 @@ from .data_access import get_data_for_run, LOCATION_INFO_DICT
 
 class BaseConfig(pexConfig.Config):
     """Configuration for EO analysis tasks"""
-
+    calib = EOUtilOptions.clone_param('calib')
 
 class BaseTask(Configurable):
     """Base class for EO testing tasks
@@ -126,6 +126,21 @@ class BaseTask(Configurable):
             return getattr(self.config, key)
         return default
 
+    def get_calib_param_from_flavor(self, key):
+        """Gets the value of a calibration parameter for a particular flavor
+
+        Parameters
+        ----------
+        key : `str`
+            The calibration parameter name
+
+        Returns
+        -------
+        The parameter value
+        """
+        return DEFAULT_CALIB_DICT.get_calib_value_task(self.config.calib, self._name, key)
+
+
     @classmethod
     def add_parser_arguments(cls, parser):
         """Add parser arguments for this class
@@ -195,7 +210,6 @@ class BaseTask(Configurable):
                                                   self.__doc__.replace('\n', '')))
 
 
-
 class BaseAnalysisConfig(BaseConfig):
     """Configuration for EO analysis tasks"""
 
@@ -251,20 +265,16 @@ class BaseAnalysisTask(BaseTask):
         format_key_dict = formatter.key_dict()
         format_vals = self.extract_config_vals(format_key_dict)
         format_vals.update(**kwargs)
+        ret_val = formatter(**format_vals)
         if suffix is not None:
-            format_vals['suffix'] = suffix
-        if self.get_config_param('stat', None) in [DEFAULT_STAT_TYPE, None]:
-            format_vals['stat'] = 'superbias'
-        return formatter(**format_vals)
+            ret_val += suffix
+        return ret_val
 
-
-    def get_superbias_file(self, suffix, **kwargs):
+    def get_superbias_file(self, **kwargs):
         """Get the name of the superbias file for a particular run, raft, ccd...
 
         Parameters
         ----------
-        suffix : `str`
-            Appended to the filename
         kwargs
             Used to override default configuration
 
@@ -278,7 +288,7 @@ class BaseAnalysisTask(BaseTask):
         else:
             formatter = SUPERBIAS_STAT_FORMATTER
 
-        return self.get_filename_from_format(formatter, suffix, **kwargs)
+        return self.get_filename_from_format(formatter, '.fits', **kwargs)
 
 
     def get_mask_files(self, **kwargs):
@@ -295,7 +305,8 @@ class BaseAnalysisTask(BaseTask):
             The resulting list of mask files
         """
         self.safe_update(**kwargs)
-        if self.config.mask:
+
+        if self.get_calib_param_from_flavor('mask'):
             mask_files = glob.glob(self.get_filename_from_format(MASK_FORMATTER, "*_mask.fits"))
             return mask_files
         return []
@@ -314,13 +325,22 @@ class BaseAnalysisTask(BaseTask):
         gains : `array`
             The gains
         """
+        #FIXME, do this right
         self.safe_update(**kwargs)
-        if self.config.gain:
-            gain_file = self.get_filename_from_format(EORESULTS_TABLE_FORMATTER, '_eotest_results.fits')
+        gain_type = self.get_calib_param_from_flavor('gain')
+        if gain_type in [None, 'none', 'None', False]:
+            return None
+
+        gain_file = self.get_filename_from_format(EORESULTS_TABLE_FORMATTER, '.fits',
+                                                  calib=gain_type, filekey='results',
+                                                  **kwargs)
+        try:
             tables = TableDict(gain_file)
-            gain_table = tables['eo_results']
-            return gain_table['GAIN'].reshape(9, 16)
-        return np.ones((9, 16), float)
+        except FileNotFoundError:
+            return None
+        gain_table = tables['amplifier_results']
+        return gain_table['GAIN']
+
 
     def get_nonlinearirty_correction(self, **kwargs):
         """Get the gains for a specific set of input parameters.
@@ -336,11 +356,24 @@ class BaseAnalysisTask(BaseTask):
             The object that implements the correction
         """
         self.safe_update(**kwargs)
-        if self.config.nonlin:
-            nonlin_file = self.get_filename_from_format(NONLIN_FORMATTER, "flat_lin.fits")
-            nlc = NonlinearityCorrection.create_from_fits_file(nonlin_file)
-            return nlc
-        return None
+        nonlin = self.get_calib_param_from_flavor('nonlin')
+        if nonlin in [False, None, 'none', 'None']:
+            return None
+
+        nonlin_file = self.get_filename_from_format(NONLIN_FORMATTER, '.fits',
+                                                    calib=nonlin, filekey='flat_lin')
+
+        nonlin_key_dict = dict(nonlin_spline_ext=None, nonlin_spline_smooth=None)
+        nonlin_vals = self.extract_config_vals(nonlin_key_dict)
+        kw_spline = {}
+        if 'nonlin_spline_ext' in nonlin_vals:
+            kw_spline['ext'] = nonlin_vals['nonlin_spline_ext']
+        if 'nonlin_spline_smooth' in nonlin_vals:
+            kw_spline['s'] = nonlin_vals['nonlin_spline_smooth']
+
+        nlc = NonlinearityCorrection.create_from_fits_file(nonlin_file, **kw_spline)
+        return nlc
+
 
     def log_info_slot_msg(self, config, msg):
         """Make an info message that we are running a particular slot
@@ -443,7 +476,7 @@ class AnalysisConfig(BaseAnalysisConfig):
     skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
     overwrite = EOUtilOptions.clone_param('overwrite')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
+    filekey = EOUtilOptions.clone_param('filekey')
 
 
 class AnalysisTask(BaseAnalysisTask):
@@ -465,7 +498,7 @@ class AnalysisTask(BaseAnalysisTask):
     plotname_format : a `FilenameFormat` object that builds the base of the filenames
                       for the figures made by plot()
 
-    Note that the ConfigClass.outsuffix parameter will be used in the construction
+    Note that the ConfigClass.filekey parameter will be used in the construction
     of both types of filenames.
 
     Finally, this class provides static data members should be overridden by sub-classes
@@ -492,6 +525,8 @@ class AnalysisTask(BaseAnalysisTask):
     testtypes = None
     # This is used to override the default image type
     imagetype = None
+    # This is the list of plots, used to make sure that they exist
+    plot_names = None
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -503,22 +538,6 @@ class AnalysisTask(BaseAnalysisTask):
         """
         BaseAnalysisTask.__init__(self, **kwargs)
         self._handler_config = None
-
-    def get_suffix(self, **kwargs):
-        """Get the suffix to add to table and plot filenames
-
-        Parameters
-        ----------
-        kwargs
-            Used to override default configuration
-
-        Returns
-        -------
-        ret_val : `str`
-            The suffix
-        """
-        self.safe_update(**kwargs)
-        return self.config.outsuffix
 
     def tablefile_name(self, **kwargs):
         """Get the name of the file for the output tables for a particular
@@ -534,9 +553,7 @@ class AnalysisTask(BaseAnalysisTask):
         ret_val : `str`
             The name of the file
         """
-        return self.get_filename_from_format(self.tablename_format,
-                                             self.get_suffix(),
-                                             **kwargs)
+        return self.get_filename_from_format(self.tablename_format, '', **kwargs)
 
     def plotfile_name(self, **kwargs):
         """Get the basename for the plot files for a particular run, raft, ccd...
@@ -551,9 +568,7 @@ class AnalysisTask(BaseAnalysisTask):
         ret_val : `str`
             The name of the file
         """
-        return self.get_filename_from_format(self.plotname_format,
-                                             self.get_suffix(),
-                                             **kwargs)
+        return self.get_filename_from_format(self.plotname_format, '', **kwargs)
 
 
     def get_superbias_amp_image(self, butler, superbias_frame, amp):
@@ -584,6 +599,10 @@ class AnalysisTask(BaseAnalysisTask):
             superbias_im = None
         return superbias_im
 
+    def get_bias_algo(self):
+        """Get the name of the algorithm to remove bias with the overscan"""
+        return self.get_calib_param_from_flavor('bias')
+
 
     def get_superbias_frame(self, mask_files, **kwargs):
         """Get the superbias frame for a particular run, raft, ccd...
@@ -601,9 +620,11 @@ class AnalysisTask(BaseAnalysisTask):
             The superbias frame
         """
         self.safe_update(**kwargs)
-        if self.config.superbias in [None, 'none', 'None']:
+
+
+        if self.get_calib_param_from_flavor('superbias') in [False, None, 'none', 'None']:
             return None
-        superbias_file = self.get_superbias_file('.fits')
+        superbias_file = self.get_superbias_file()
         try:
             ccd = get_ccd_from_id(None, superbias_file, mask_files)
         except Exception:
@@ -824,3 +845,52 @@ class AnalysisTask(BaseAnalysisTask):
                                 imagetype=imagetype,
                                 outkey=cls.datatype.upper(),
                                 **kwargs)
+
+
+    def io_csv_line(self, taskname, stream):
+        """Write a line of comma-seperated values, used to build a table of task types"""
+
+        md_dict = dict(raft="<RAFT>", run="<RUN>", slot="<SLOT>", dataset="<DATASET>")
+
+        try:
+            infilekey = self.config.infilekey
+            infilename = self.tablefile_name(filekey=infilekey, **md_dict).replace('analysis/bot/', '')
+        except Exception:
+            infilename = None
+
+        table_file = self.tablefile_name(**md_dict).replace('analysis/bot/', '')
+        plot_file = self.plotfile_name(**md_dict).replace('analysis/bot/', '')
+
+        stream.write("%-25s %-60s %-60s %-60s\n" % (taskname,
+                                                    infilename,
+                                                    table_file,
+                                                    plot_file))
+
+
+    def io_markdown_line(self, taskname, stream):
+        """Write a line of markdown, used to build a table of task types"""
+        md_dict = dict(raft="<RAFT>", run="<RUN>", slot="<SLOT>", dataset="<DATASET>")
+
+        try:
+            infilekey = self.config.infilekey
+            infilename = self.tablefile_name(filekey=infilekey, **md_dict)
+        except Exception:
+            infilename = None
+
+        stream.write("| %s | %s | %s | %s |\n" % (taskname,
+                                                  infilename,
+                                                  self.tablefile_name(**md_dict),
+                                                  self.plotfile_name(**md_dict)))
+
+    def print_plot_names(self, taskname, stream):
+        """Write a few lines with the names of expected plots"""
+        md_dict = dict(raft="<RAFT>", run="<RUN>", slot="<SLOT>", dataset="<DATASET>")
+
+        plotbase = self.plotfile_name(**md_dict)
+        if self.plot_names is None:
+            stream.write('%s: plots not defined.\n' % taskname)
+            return
+
+        stream.write('%s\n' % taskname)
+        for plot_name in self.plot_names:
+            stream.write('  %s_%s.png\n' % (plotbase, plot_name))

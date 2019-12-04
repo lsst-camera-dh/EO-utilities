@@ -15,10 +15,8 @@ from .meta_analysis import FlatRaftTableAnalysisConfig, FlatRaftTableAnalysisTas
 
 class FlatLinearityConfig(FlatRaftTableAnalysisConfig):
     """Configuration for FlatLinearityTask"""
-    insuffix = EOUtilOptions.clone_param('insuffix', default='flat')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='flat_lin')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
+    infilekey = EOUtilOptions.clone_param('infilekey', default='flat-pair')
+    filekey = EOUtilOptions.clone_param('filekey', default='flat-lin')
 
 
 
@@ -27,6 +25,8 @@ class FlatLinearityTask(FlatRaftTableAnalysisTask):
 
     ConfigClass = FlatLinearityConfig
     _DefaultName = "FlatLinearityTask"
+
+    plot_names = []
 
     def extract(self, butler, data, **kwargs):
         """Extract data
@@ -64,7 +64,7 @@ class FlatLinearityTask(FlatRaftTableAnalysisTask):
             self.log_progress("  %s" % slot)
 
             basename = data[slot]
-            datapath = basename.replace(self.config.outsuffix, self.config.insuffix)
+            datapath = basename.replace(self.config.filekey, self.config.infilekey)
 
             detresp = DetectorResponse(datapath, hdu_name='flat')
 

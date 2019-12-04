@@ -24,10 +24,7 @@ from .analysis import BiasAnalysisTask, BiasAnalysisConfig
 
 class BiasStructConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='biasst')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
-    mask = EOUtilOptions.clone_param('mask')
+    filekey = EOUtilOptions.clone_param('filekey', default='biasst')
     std = EOUtilOptions.clone_param('std')
 
 
@@ -37,6 +34,8 @@ class BiasStructTask(BiasAnalysisTask):
     ConfigClass = BiasStructConfig
     _DefaultName = "BiasStructTask"
     iteratorClass = AnalysisBySlot
+
+    plot_names = ['row-i', 'row-s', 'row-p', 'col-i', 'col-s', 'col-p']
 
     def extract(self, butler, data, **kwargs):
         """Plot the row-wise and col-wise struture
@@ -105,9 +104,9 @@ class BiasStructTask(BiasAnalysisTask):
         for rkey, rlabel in zip(REGION_KEYS, REGION_LABELS):
             for dkey in ['row', 'col']:
                 datakey = "biasst-%s_%s" % (dkey, rkey)
-                figs.setup_amp_plots_grid(datakey, title="%s, profile by %s" % (rlabel, dkey),
+                figs.setup_amp_plots_grid("%s-%s" % (dkey, rkey), title="%s, profile by %s" % (rlabel, dkey),
                                           xlabel=dkey, ylabel="ADU")
-                figs.plot_xy_amps_from_tabledict(dtables, datakey, datakey,
+                figs.plot_xy_amps_from_tabledict(dtables, datakey, "%s-%s" % (dkey, rkey),
                                                  x_name="%s_%s" % (dkey, rkey),
                                                  y_name="biasst")
 
@@ -142,6 +141,7 @@ class BiasStructTask(BiasAnalysisTask):
         slot = kwargs.get('slot')
         superbias_frame = kwargs.get('superbias_frame', None)
         offset = get_amp_offset(ccd, superbias_frame)
+        bias_type = self.get_bias_algo()
 
         amps = get_amp_list(ccd)
         for i, amp in enumerate(amps):
@@ -153,7 +153,7 @@ class BiasStructTask(BiasAnalysisTask):
             else:
                 superbias_im = None
             image = unbias_amp(img, serial_oscan,
-                               bias_type=self.get_config_param('bias', None),
+                               bias_type=bias_type,
                                superbias_im=superbias_im)
             frames = get_image_frames_2d(image, regions)
 
@@ -174,10 +174,7 @@ class BiasStructTask(BiasAnalysisTask):
 
 class SuperbiasStructConfig(BiasAnalysisConfig):
     """Configuration for SuperbiasStructTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='sbiasst')
-    superbias = EOUtilOptions.clone_param('superbias')
-    bias = EOUtilOptions.clone_param('bias')
-    mask = EOUtilOptions.clone_param('mask')
+    filekey = EOUtilOptions.clone_param('filekey', default='sbiasst')
     std = EOUtilOptions.clone_param('std')
     stat = EOUtilOptions.clone_param('stat')
 

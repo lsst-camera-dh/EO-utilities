@@ -17,7 +17,7 @@ class FlatSlotTableAnalysisConfig(AnalysisConfig):
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
-    insuffix = EOUtilOptions.clone_param('insuffix')
+    infilekey = EOUtilOptions.clone_param('infilekey')
 
 
 class FlatSlotTableAnalysisTask(AnalysisTask):
@@ -40,7 +40,7 @@ class FlatRaftTableAnalysisConfig(AnalysisConfig):
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slots = EOUtilOptions.clone_param('slots')
-    insuffix = EOUtilOptions.clone_param('insuffix')
+    infilekey = EOUtilOptions.clone_param('infilekey')
 
 
 class FlatRaftTableAnalysisTask(AnalysisTask):

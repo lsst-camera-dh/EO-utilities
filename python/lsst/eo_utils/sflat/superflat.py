@@ -29,9 +29,11 @@ from lsst.eo_utils.base.image_utils import flip_data_in_place,\
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
+from lsst.eo_utils.base.merge_utils import CameraMosaicConfig, CameraMosaicTask
+
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from .file_utils import SUPERFLAT_FORMATTER
+from .file_utils import SUPERFLAT_FORMATTER, RUN_SUPERFLAT_FORMATTER
 
 from .analysis import SflatAnalysisConfig,\
     SflatAnalysisTask
@@ -42,15 +44,12 @@ from .meta_analysis import SflatRaftTableAnalysisConfig,\
 
 class SuperflatConfig(SflatAnalysisConfig):
     """Configuration for SuperflatTask"""
-    mask = EOUtilOptions.clone_param('mask')
     stat = EOUtilOptions.clone_param('stat')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
     bitpix = EOUtilOptions.clone_param('bitpix')
     skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
     stats_hist = EOUtilOptions.clone_param('stats_hist')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
+    filekey = EOUtilOptions.clone_param('filekey')
 
 
 class SuperflatTask(SflatAnalysisTask):
@@ -61,6 +60,10 @@ class SuperflatTask(SflatAnalysisTask):
     iteratorClass = AnalysisBySlot
 
     tablename_format = SUPERFLAT_FORMATTER
+
+    plot_names = ['img_l', 'img_h', 'img_r',
+                  'hist_l', 'hist_h', 'hist_r']
+
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -101,9 +104,14 @@ class SuperflatTask(SflatAnalysisTask):
         stat_type = self.config.stat
         if stat_type is None:
             stat_type = DEFAULT_STAT_TYPE
+        bias_type = self.get_bias_algo()
 
         mask_files = self.get_mask_files()
         superbias_frame = self.get_superbias_frame(mask_files)
+
+        gains = self.get_gains(run='6911D')
+        print("gains", gains)
+        nlc = self.get_nonlinearirty_correction()
 
         sflat_files = data['SFLAT']
 
@@ -132,9 +140,15 @@ class SuperflatTask(SflatAnalysisTask):
             raise ValueError("Can not convert %s to a valid statistic" % stat_type)
 
         sflat_l = stack_images(butler, sflat_files_l, statistic=statistic,
-                               bias_type=self.config.bias, superbias_frame=superbias_frame)
+                               bias_type=bias_type,
+                               superbias_frame=superbias_frame,
+                               gains=gains,
+                               nlc=nlc)
         sflat_h = stack_images(butler, sflat_files_h, statistic=statistic,
-                               bias_type=self.config.bias, superbias_frame=superbias_frame)
+                               bias_type=bias_type,
+                               superbias_frame=superbias_frame,
+                               gains=gains,
+                               nlc=nlc)
 
         ratio_images = {}
         for amp in range(1, 17):
@@ -170,14 +184,14 @@ class SuperflatTask(SflatAnalysisTask):
 
         mask_files = self.get_mask_files()
 
-        output_file = self.tablefile_name().replace('_l', '')
-        #output_file = self.get_superflat_file('').replace('.fits', '')
+        output_file = self.tablefile_name()
         makedir_safe(output_file)
+
 
         if not self.config.skip:
             sflats = self.extract(butler, data)
             if sflats is None:
-                return None
+                return
 
             if butler is None:
                 template_file = data['SFLAT'][0]
@@ -188,16 +202,16 @@ class SuperflatTask(SflatAnalysisTask):
                              template_file, self.config.bitpix)
             imutil.writeFits(sflats[1], output_file + '_h.fits',
                              template_file, self.config.bitpix)
-            imutil.writeFits(sflats[2], output_file + '_ratio.fits',
+            imutil.writeFits(sflats[2], output_file + '_r.fits',
                              template_file, self.config.bitpix)
             if butler is not None:
                 flip_data_in_place(output_file + '_l.fits')
                 flip_data_in_place(output_file + '_h.fits')
-                flip_data_in_place(output_file + '_ratio.fits')
+                flip_data_in_place(output_file + '_r.fits')
 
         self._superflat_frame_l = self.get_ccd(None, output_file + '_l.fits', mask_files)
         self._superflat_frame_h = self.get_ccd(None, output_file + '_h.fits', mask_files)
-        self._superflat_frame_r = self.get_ccd(None, output_file + '_ratio.fits', mask_files)
+        self._superflat_frame_r = self.get_ccd(None, output_file + '_r.fits', mask_files)
 
 
     def plot(self, dtables, figs, **kwargs):
@@ -221,7 +235,7 @@ class SuperflatTask(SflatAnalysisTask):
         if self.config.plot:
             figs.plot_sensor("img_l", self._superflat_frame_l)
             figs.plot_sensor("img_h", self._superflat_frame_h)
-            figs.plot_sensor("ratio", self._superflat_frame_r)
+            figs.plot_sensor("img_r", self._superflat_frame_r)
 
         default_array_kw = {}
         if self.config.stats_hist:
@@ -236,7 +250,7 @@ class SuperflatTask(SflatAnalysisTask):
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.1 ADU",
                                  subtract_mean=False, bins=100, range=(0., 100000,),
                                  **kwcopy)
-            figs.histogram_array("hist_ratio", self._superflat_frame_r,
+            figs.histogram_array("hist_r", self._superflat_frame_r,
                                  title="Historam of Ratio flat-images, per pixel",
                                  xlabel="RMS [ADU]", ylabel="Pixels / 0.02",
                                  subtract_mean=False, bins=100, range=(0.015, 0.025),
@@ -280,10 +294,7 @@ class SuperflatTask(SflatAnalysisTask):
 
 class SuperflatRaftConfig(SflatRaftTableAnalysisConfig):
     """Configuration for FlatSuperflatRaftTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='sflat')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
-    mask = EOUtilOptions.clone_param('mask')
+    filekey = EOUtilOptions.clone_param('filekey', default='sflat')
     stats_hist = EOUtilOptions.clone_param('stats_hist')
     mosaic = EOUtilOptions.clone_param('mosaic')
 
@@ -295,6 +306,10 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
     _DefaultName = "SuperflatRaftTask"
 
     intablename_format = SUPERFLAT_FORMATTER
+
+    plot_names = ['mosaic_l', 'stats_l', 'l_out-row', 'l_out-col', 'l_nbad', 'l_nbad-row', 'l_nbad-col',
+                  'mosaic_l', 'stats_h', 'h_out-row', 'h_out-col', 'h_nbad', 'h_nbad-row', 'h_nbad-col',
+                  'mosaic_r', 'stats_r', 'r_out-row', 'r_out-col', 'r_nbad', 'r_nbad-row', 'r_nbad-col']
 
     def __init__(self, **kwargs):
         """C'tor
@@ -384,13 +399,13 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
 
         for slot in slots:
             basename = data[slot]
-            if not os.path.exists(basename):
+            if not os.path.exists(basename.replace('.fits', '_l.fits')):
                 self.log.warn("Skipping %s:%s" % (self.config.raft, slot))
                 continue
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
-            self._sflat_file_dict_l[slot] = basename.replace('_l.fits', '_l.fits')
-            self._sflat_file_dict_h[slot] = basename.replace('_l.fits', '_h.fits')
-            self._sflat_file_dict_r[slot] = basename.replace('_l.fits', '_ratio.fits')
+            self._sflat_file_dict_l[slot] = basename.replace('.fits', '_l.fits')
+            self._sflat_file_dict_h[slot] = basename.replace('.fits', '_h.fits')
+            self._sflat_file_dict_r[slot] = basename.replace('.fits', '_r.fits')
 
         if not self._sflat_file_dict_l:
             self.log.warn("No files for %s, skipping" % (self.config.raft))
@@ -464,5 +479,24 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
                                       histtype='step')
 
 
+
+class SuperflatMosaicConfig(CameraMosaicConfig):
+    """Configuration for SuperbiasMosaicTask"""
+
+class SuperflatMosaicTask(CameraMosaicTask):
+    """Make a mosaic from a superbias frames"""
+
+    ConfigClass = SuperflatMosaicConfig
+    _DefaultName = "SuperflatMosaicTask"
+
+    intablename_format = SUPERFLAT_FORMATTER
+    tablename_format = RUN_SUPERFLAT_FORMATTER
+    plotname_format = RUN_SUPERFLAT_FORMATTER
+
+    datatype = 'superflat table'
+
+
+
 EO_TASK_FACTORY.add_task_class('Superflat', SuperflatTask)
 EO_TASK_FACTORY.add_task_class('SuperflatRaft', SuperflatRaftTask)
+EO_TASK_FACTORY.add_task_class('SuperflatMosaic', SuperflatMosaicTask)

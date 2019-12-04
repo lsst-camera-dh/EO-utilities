@@ -18,10 +18,7 @@ from .analysis import FlatAnalysisConfig, FlatAnalysisTask
 
 class FlatOverscanConfig(FlatAnalysisConfig):
     """Configuration for FlatFlatOverscanTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='flat_oscan')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
-    mask = EOUtilOptions.clone_param('mask')
+    filekey = EOUtilOptions.clone_param('filekey', default='flat-oscan')
     num_oscan_pixels = EOUtilOptions.clone_param('num_oscan_pixels')
     minflux = EOUtilOptions.clone_param('minflux')
     maxflux = EOUtilOptions.clone_param('maxflux')
@@ -36,6 +33,8 @@ class FlatOverscanTask(FlatAnalysisTask):
 
     maxflux = 150000.
     xmax = 512
+
+    plot_names = ['eper', 'overscan1', 'overscan2', 'summed', 'cti', 'noise']
 
     def extract(self, butler, data, **kwargs):
         """Extract the data from the overscan region

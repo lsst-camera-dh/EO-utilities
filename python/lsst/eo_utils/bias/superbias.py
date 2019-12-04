@@ -20,29 +20,30 @@ from lsst.eo_utils.base.config_utils import EOUtilOptions
 from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.image_utils import flip_data_in_place,\
-    stack_images,  extract_raft_unbiased_images, extract_raft_imaging_data,\
+    stack_images, extract_raft_unbiased_images, extract_raft_imaging_data,\
     outlier_raft_dict, fill_footprint_dict
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
+from lsst.eo_utils.base.merge_utils import CameraMosaicConfig, CameraMosaicTask
+
 from lsst.eo_utils.bias.analysis import BiasAnalysisConfig, BiasAnalysisTask
 
 from lsst.eo_utils.bias.meta_analysis import SuperbiasRaftTableAnalysisConfig,\
     SuperbiasRaftTableAnalysisTask
 
+from lsst.eo_utils.bias.file_utils import RUN_SUPERBIAS_FORMATTER
 
 class SuperbiasConfig(BiasAnalysisConfig):
     """Configuration for BiasVRowTask"""
-    mask = EOUtilOptions.clone_param('mask')
     stat = EOUtilOptions.clone_param('stat')
-    bias = EOUtilOptions.clone_param('bias')
     bitpix = EOUtilOptions.clone_param('bitpix')
     skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
     stats_hist = EOUtilOptions.clone_param('stats_hist')
-    outsuffix = EOUtilOptions.clone_param('outsuffix')
+    filekey = EOUtilOptions.clone_param('filekey')
     vmin = EOUtilOptions.clone_param('vmin')
     vmax = EOUtilOptions.clone_param('vmax')
     nbins = EOUtilOptions.clone_param('nbins')
@@ -56,6 +57,8 @@ class SuperbiasTask(BiasAnalysisTask):
     iteratorClass = AnalysisBySlot
 
     tablename_format = SUPERBIAS_FORMATTER
+
+    plot_names = ['img', 'hist']
 
     def __init__(self, **kwargs):
         """C'tor
@@ -86,19 +89,23 @@ class SuperbiasTask(BiasAnalysisTask):
             The superbias frames, keyed by amp
         """
         self.safe_update(**kwargs)
-        bias_type = self.config.bias
+        bias_type = self.get_bias_algo()
         stat_type = self.config.stat
         if stat_type is None:
             stat_type = DEFAULT_STAT_TYPE
 
         bias_files = data['BIAS']
-
-        self.log_info_slot_msg(self.config, "%i files" % len(bias_files))
+        nbias = len(bias_files)
 
         if stat_type.upper() in afwMath.__dict__:
             statistic = afwMath.__dict__[stat_type.upper()]
+            if nbias < 3:
+                self.log_warn_slot_msg(self.config, "Not enough files to stack %i < 3" % nbias)
+                return None
         else:
             raise ValueError("Can not convert %s to a valid statistic" % stat_type)
+
+        self.log_info_slot_msg(self.config, "%i files" % nbias)
 
         sbias = stack_images(butler, bias_files, statistic=statistic, bias_type=bias_type)
         self.log_progress("Done!")
@@ -124,6 +131,7 @@ class SuperbiasTask(BiasAnalysisTask):
             The resulting data
         """
         self.safe_update(**kwargs)
+        self._superbias_frame = None
 
         mask_files = self.get_mask_files()
 
@@ -135,8 +143,8 @@ class SuperbiasTask(BiasAnalysisTask):
             output_file = self.tablefile_name() + '.fits'
         else:
             output_file = self.get_filename_from_format(SUPERBIAS_STAT_FORMATTER,
-                                                        self.get_suffix(),
-                                                        **kwargs) + '.fits'
+                                                        '.fits',
+                                                        **kwargs)
         if not slot_data['BIAS']:
             return
 
@@ -144,6 +152,9 @@ class SuperbiasTask(BiasAnalysisTask):
 
         if not self.config.skip:
             out_data = self.extract(butler, slot_data)
+            if out_data is None:
+                self.log_warn_slot_msg(self.config, "extract() returned None.")
+                return
             if butler is None:
                 template_file = slot_data['BIAS'][0]
             else:
@@ -152,7 +163,6 @@ class SuperbiasTask(BiasAnalysisTask):
             imutil.writeFits(out_data, output_file, template_file, self.config.bitpix)
             if butler is not None:
                 flip_data_in_place(output_file)
-
 
         self._superbias_frame = self.get_ccd(None, output_file, mask_files)
 
@@ -208,7 +218,13 @@ class SuperbiasTask(BiasAnalysisTask):
             The name of the file
         """
         self.safe_update(**kwargs)
-        return self.get_superbias_file('', superbias=self.config.bias)
+        stat_type = self.config.stat
+        if stat_type in [None, DEFAULT_STAT_TYPE]:
+            formatter = SUPERBIAS_FORMATTER
+        else:
+            formatter = SUPERBIAS_STAT_FORMATTER
+        return self.get_filename_from_format(formatter, '', **kwargs)
+
 
     def __call__(self, butler, slot_data, **kwargs):
         """Tie together analysis functions
@@ -225,16 +241,16 @@ class SuperbiasTask(BiasAnalysisTask):
         self.safe_update(**kwargs)
         self.make_superbias(butler, slot_data)
         if self.config.plot is not None:
+            if self._superbias_frame is None:
+                self.log_info_slot_msg(self.config, "No superbias, skipping")
+                return
             self.make_plots(None)
 
 
 
 class SuperbiasRaftConfig(SuperbiasRaftTableAnalysisConfig):
     """Configuration for SuperbiasRaftTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='sbias')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
-    mask = EOUtilOptions.clone_param('mask')
+    filekey = EOUtilOptions.clone_param('filekey', default='sbias')
     stats_hist = EOUtilOptions.clone_param('stats_hist')
     mosaic = EOUtilOptions.clone_param('mosaic')
 
@@ -244,6 +260,8 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
 
     ConfigClass = SuperbiasRaftConfig
     _DefaultName = "SuperbiasRaftTask"
+
+    plot_names = ['mosaic', 'stats', 'out-row', 'out-col', 'nbad', 'nbad-row', 'nbad-col']
 
     def __init__(self, **kwargs):
         """C'tor
@@ -257,7 +275,7 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
         self._mask_file_dict = {}
         self._sbias_file_dict = {}
         self._sbias_arrays = None
-
+        self._sbias_images = None
 
     @staticmethod
     def build_defect_dict(dark_array, **kwargs):
@@ -382,5 +400,24 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
                                       histtype='step')
 
 
+
+class SuperbiasMosaicConfig(CameraMosaicConfig):
+    """Configuration for SuperbiasMosaicTask"""
+
+class SuperbiasMosaicTask(CameraMosaicTask):
+    """Make a mosaic from a superbias frames"""
+
+    ConfigClass = SuperbiasMosaicConfig
+    _DefaultName = "SuperbiasMosaicTask"
+
+    intablename_format = SUPERBIAS_FORMATTER
+    tablename_format = RUN_SUPERBIAS_FORMATTER
+    plotname_format = RUN_SUPERBIAS_FORMATTER
+
+    datatype = 'superbias table'
+
+
+
 EO_TASK_FACTORY.add_task_class('Superbias', SuperbiasTask)
 EO_TASK_FACTORY.add_task_class('SuperbiasRaft', SuperbiasRaftTask)
+EO_TASK_FACTORY.add_task_class('SuperbiasMosaic', SuperbiasMosaicTask)

@@ -23,10 +23,7 @@ from lsst.eo_utils.qe.analysis import QeAnalysisConfig, QeAnalysisTask
 
 class QEMedianConfig(QeAnalysisConfig):
     """Configuration for QEMedianTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='qe_med')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
-    mask = EOUtilOptions.clone_param('mask')
+    filekey = EOUtilOptions.clone_param('filekey', default='qe-med')
 
 
 class QEMedianTask(QeAnalysisTask):
@@ -35,6 +32,8 @@ class QEMedianTask(QeAnalysisTask):
     ConfigClass = QEMedianConfig
     _DefaultName = "QEMedianTask"
     iteratorClass = AnalysisBySlot
+
+    plot_names = []
 
     def median(self, img):
         """Return the median of an image"""
@@ -60,6 +59,7 @@ class QEMedianTask(QeAnalysisTask):
         self.safe_update(**kwargs)
 
         qe_files = data['LAMBDA']
+        bias_type = self.get_bias_algo()
 
         corrections = np.ones((17))
 
@@ -88,7 +88,7 @@ class QEMedianTask(QeAnalysisTask):
             data_dict['MONDIODE'].append(get_mondiode_val(ccd))
 
             unbiased_images = unbiased_ccd_image_dict(ccd,
-                                                      bias=self.config.bias,
+                                                      bias=bias_type,
                                                       superbias_frame=superbias_frame)
 
 

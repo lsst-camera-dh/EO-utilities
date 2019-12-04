@@ -21,7 +21,7 @@ class MaskAddConfig(BaseAnalysisConfig):
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='_mask.fits')
+    filekey = EOUtilOptions.clone_param('filekey', default='_mask')
 
 
 class MaskAddTask(BaseAnalysisTask):
@@ -84,7 +84,7 @@ class MaskAddTask(BaseAnalysisTask):
         if butler is not None:
             self.log.warn("Ignoring butler")
 
-        outfile = self.get_filename_from_format(MASK_FORMATTER, self.config.outsuffix)
+        outfile = self.get_filename_from_format(MASK_FORMATTER, '.fits')
         makedir_safe(outfile)
 
         add_mask_files(mask_files, outfile)

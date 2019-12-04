@@ -17,10 +17,7 @@ from .meta_analysis import SflatSlotTableAnalysisConfig,\
 
 class CTEConfig(SflatSlotTableAnalysisConfig):
     """Configuration for CTETask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='cte')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
-    mask = EOUtilOptions.clone_param('mask')
+    filekey = EOUtilOptions.clone_param('filekey', default='cte')
     overscans = EOUtilOptions.clone_param('overscans')
     nframes = EOUtilOptions.clone_param('nframes')
 
@@ -31,6 +28,8 @@ class CTETask(SflatSlotTableAnalysisTask):
     _DefaultName = "CTETask"
 
     intablename_format = SUPERFLAT_FORMATTER
+
+    plot_names = []
 
     def extract(self, butler, data, **kwargs):
         """Extract data
@@ -55,8 +54,8 @@ class CTETask(SflatSlotTableAnalysisTask):
         #superbias_frame = self.get_superbias_frame(mask_files)
 
         superflat_file = data[0]
-        superflat_lo_file = superflat_file.replace('_l.fits', '_l.fits')
-        superflat_hi_file = superflat_file.replace('_l.fits', '_h.fits')
+        superflat_lo_file = superflat_file.replace('.fits', '_l.fits')
+        superflat_hi_file = superflat_file.replace('.fits', '_h.fits')
 
         self.log_info_slot_msg(self.config, "")
 

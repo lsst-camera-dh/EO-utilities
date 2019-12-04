@@ -1,20 +1,12 @@
 """Analyze the flat pairs data"""
 
-import os
-
 import operator
 
-import numpy as np
-
 from astropy.io import fits
-
-from scipy.integrate import trapz, simps
 
 import lsst.afw.math as afwMath
 
 import lsst.afw.image as afwImage
-
-from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
@@ -23,8 +15,8 @@ from lsst.eo_utils.base.data_utils import TableDict
 from lsst.eo_utils.base.butler_utils import make_file_dict
 
 from lsst.eo_utils.base.image_utils import get_amp_list,\
-    get_exposure_time, get_mono_slit_b, unbiased_ccd_image_dict
-
+    get_exposure_time, get_mono_slit_b, unbiased_ccd_image_dict,\
+    get_monodiode_val_from_data_id
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
@@ -33,40 +25,13 @@ from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 from lsst.eo_utils.flat.analysis import FlatAnalysisConfig, FlatAnalysisTask
 
 
-def get_mondiode_data(filepath, factor=5):
-    """Get the monitoring diode data"""
-    if filepath.find('.txt') >= 0:
-        vals = np.recfromtxt(filepath)
-        xvals = vals[:, 0]
-        yvals = 1.0e9*vals[:, 1]
-    else:
-        with fits.open(filepath) as hdus:
-            hdu = hdus['AMP0.MEAS_TIMES']
-            xvals = hdu.data.field('AMP0_MEAS_TIMES')
-            yvals = -1.0e9*hdu.data.field('AMP0_A_CURRENT')
-    ythresh = (max(yvals) - min(yvals))/factor + min(yvals)
-    index = np.where(yvals < ythresh)
-    y_0 = np.median(yvals[index])
-    yvals -= y_0
-    return xvals, yvals
-
-def avg_sum(times, currents):
-    """Computing the photodiode charge as the product of the
-    bin widths and the bin values.
-    This is b/c the picoampmeter return the averaged time
-    for each interval"""
-    del_t = times[1:] - times[0:-1]
-    return (currents[1:] * del_t).sum()
 
 
 class FlatPairConfig(FlatAnalysisConfig):
     """Configuration for FlatPairTask"""
-    outsuffix = EOUtilOptions.clone_param('outsuffix', default='flat')
-    bias = EOUtilOptions.clone_param('bias')
-    superbias = EOUtilOptions.clone_param('superbias')
-    gain = EOUtilOptions.clone_param('gain')
-    mask = EOUtilOptions.clone_param('mask')
-    nonlin = EOUtilOptions.clone_param('nonlin')
+    filekey = EOUtilOptions.clone_param('filekey', default='flat-pair')
+    nonlin_spline_ext = EOUtilOptions.clone_param('nonlin_spline_ext')
+    nonlin_spline_smooth = EOUtilOptions.clone_param('nonlin_spline_smooth')
 
 
 class FlatPairTask(FlatAnalysisTask):
@@ -75,6 +40,8 @@ class FlatPairTask(FlatAnalysisTask):
     ConfigClass = FlatPairConfig
     _DefaultName = "FlatPairTask"
     iteratorClass = AnalysisBySlot
+
+    plot_names = []
 
     def mean(self, img):
         """Return the mean of an image"""
@@ -135,31 +102,25 @@ class FlatPairTask(FlatAnalysisTask):
             flat1_files = data['FLAT0']
             flat2_files = data['FLAT1']
 
+        bias_type = self.get_bias_algo()
         mask_files = self.get_mask_files()
         superbias_frame = self.get_superbias_frame(mask_files)
 
         nlc = self.get_nonlinearirty_correction()
-        gains = self.get_gains()
-        slot_idx = ALL_SLOTS.index(self.config.slot)
+        #gains = self.get_gains()
+        #slot_idx = ALL_SLOTS.index(self.config.slot)
+
+        if nlc is not None:
+            print("using linearity corrections")
 
         self.log_info_slot_msg(self.config, "%i %i files" % (len(flat1_files), len(flat2_files)))
 
         # This is a dictionary of dictionaries to store all the
         # data you extract from the flat_files
         data_dict = dict(FLUX=[],
-                         FLUX_trapz=[],
-                         FLUX_simps=[],
-                         FLUX_avg=[],
-                         FLUX_mondiode=[],
                          EXPTIME=[],
                          MONDIODE1=[],
-                         MONDIODE1_trapz=[],
-                         MONDIODE1_simps=[],
-                         MONDIODE1_avg=[],
                          MONDIODE2=[],
-                         MONDIODE2_trapz=[],
-                         MONDIODE2_simps=[],
-                         MONDIODE2_avg=[],
                          MONOCH_SLIT_B=[])
 
         for i in range(1, 17):
@@ -193,81 +154,32 @@ class FlatPairTask(FlatAnalysisTask):
                               % (id_1, id_2, exp_time_1, exp_time_2))
                 continue
 
-            if butler is None:
-                if self.config.teststand == 'ts8':
-                    mondiode_file_1 = id_1
-                    mondiode_file_2 = id_2
-                elif self.config.teststand == 'bot':
-                    mondiode_file_1 = os.path.join(os.path.dirname(id_1), 'Photodiode_Readings.txt')
-                    mondiode_file_2 = os.path.join(os.path.dirname(id_2), 'Photodiode_Readings.txt')
-            else:
-                mondiode_file_1 = os.path.join('analysis', 'bot', 'pd_calib',
-                                               id_1['run'], "pd_calib_%s.txt" % id_1['visit'])
-                mondiode_file_2 = os.path.join('analysis', 'bot', 'pd_calib',
-                                               id_2['run'], "pd_calib_%s.txt" % id_2['visit'])
+            mondiode_1 = get_monodiode_val_from_data_id(id_1, exp_time_1,
+                                                        self.config.teststand, butler)
+            mondiode_2 = get_monodiode_val_from_data_id(id_2, exp_time_2,
+                                                        self.config.teststand, butler)
 
-            try:
-                mon_diode_1_x, mon_diode_1_y = get_mondiode_data(mondiode_file_1)
-                mon_diode_2_x, mon_diode_2_y = get_mondiode_data(mondiode_file_2)
-            except Exception:
-                self.log.warn("Failed to get monitoring diode data %s %s\n" % (mondiode_file_1, mondiode_file_2))                            
+            if mondiode_1 is None or mondiode_2 is None:
+                self.log.warn("No monitoring data for:\n%s\n%s\n Skipping Pair\n"
+                              % (id_1, id_2))
                 continue
 
+            flux = (exp_time_1 * mondiode_1 + exp_time_2 * mondiode_2)/2.
 
             data_dict['EXPTIME'].append(exp_time_1)
-
-            mon_diode_trapz_1 = trapz(mon_diode_1_y, mon_diode_1_x) / exp_time_1
-            mon_diode_trapz_2 = trapz(mon_diode_2_y, mon_diode_2_x) / exp_time_2
-
-            mon_diode_simps_1 = simps(mon_diode_1_y, mon_diode_1_x) / exp_time_1
-            mon_diode_simps_2 = simps(mon_diode_2_y, mon_diode_2_x) / exp_time_2
-
-            mon_diode_avg_1 = avg_sum(mon_diode_1_y, mon_diode_1_x) / exp_time_1
-            mon_diode_avg_2 = avg_sum(mon_diode_2_y, mon_diode_2_x) / exp_time_2
-
-            mondiode_1 = mon_diode_avg_1
-            mondiode_2 = mon_diode_avg_2
-
-            flux_trapz = exp_time_1 * (mon_diode_trapz_1 + mon_diode_trapz_2)/2.
-            flux_simps = exp_time_1 * (mon_diode_simps_1 + mon_diode_simps_2)/2.
-            flux_avg = -1. * exp_time_1 * (mon_diode_avg_1 + mon_diode_avg_2)/2.
-
-            data_dict['MONDIODE1_trapz'].append(mon_diode_trapz_1)
-            data_dict['MONDIODE1_simps'].append(mon_diode_simps_1)
-            data_dict['MONDIODE1_avg'].append(mon_diode_avg_1)
-            data_dict['MONDIODE2_trapz'].append(mon_diode_trapz_2)
-            data_dict['MONDIODE2_simps'].append(mon_diode_simps_2)
-            data_dict['MONDIODE2_avg'].append(mon_diode_avg_2)
-
-            data_dict['FLUX_trapz'].append(flux_trapz)
-            data_dict['FLUX_simps'].append(flux_simps)
-            data_dict['FLUX_avg'].append(flux_avg)
-
-
-            if mondiode_1 is not None:
-                flux_1 = exp_time_1 * mondiode_1
-                data_dict['MONDIODE1'].append(mondiode_1)
-            else:
-                data_dict['MONDIODE1'].append(-1)
-            if mondiode_2 is not None:
-                flux_2 = exp_time_2 * mondiode_2
-                data_dict['MONDIODE2'].append(mondiode_2)
-            else:
-                data_dict['MONDIODE2'].append(-1)
-
-            flux = (flux_1 + flux_2)/2.
-            data_dict['FLUX'].append(flux_avg)
-            data_dict['FLUX_mondiode'].append(flux)
+            data_dict['MONDIODE1'].append(mondiode_1)
+            data_dict['MONDIODE2'].append(mondiode_2)
+            data_dict['FLUX'].append(flux)
 
             try:
                 data_dict['MONOCH_SLIT_B'].append(get_mono_slit_b(flat_1))
             except KeyError:
                 data_dict['MONOCH_SLIT_B'].append(0.)
 
-            ccd_1_ims = unbiased_ccd_image_dict(flat_1, bias=self.config.bias,
+            ccd_1_ims = unbiased_ccd_image_dict(flat_1, bias=bias_type,
                                                 superbias_frame=superbias_frame,
                                                 trim='imaging', nonlinearity=nlc)
-            ccd_2_ims = unbiased_ccd_image_dict(flat_2, bias=self.config.bias,
+            ccd_2_ims = unbiased_ccd_image_dict(flat_2, bias=bias_type,
                                                 superbias_frame=superbias_frame,
                                                 trim='imaging', nonlinearity=nlc)
 
@@ -277,8 +189,8 @@ class FlatPairTask(FlatAnalysisTask):
 
                 fstats = self.get_pair_stats(image_1, image_2)
                 signal = fstats[1]
-                if gains is not None:
-                    signal *= gains[slot_idx][i]
+                #if gains is not None:
+                #    signal *= gains[slot_idx][i]
 
                 data_dict['AMP%02i_RATIO' % (i+1)].append(fstats[0])
                 data_dict['AMP%02i_MEAN' % (i+1)].append(fstats[1])

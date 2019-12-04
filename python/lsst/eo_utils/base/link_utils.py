@@ -42,18 +42,18 @@ GLOB_FORMAT_DETRESP_BOT = os.path.join('{path}', 'LCA-10134_Cryostat-0001', '{ru
 GLOB_FORMAT_MASK_RAFT_BOT = os.path.join('{path}', 'LCA-10134_Cryostat-0001', '{run}',
                                          '*', 'v0', '*', '*_{mask}.fits')
 
-OUTFORMAT_EOTEST = os.path.join('{outdir}', '{teststand}', 'eotest_results',
+OUTFORMAT_EOTEST = os.path.join('{outdir}', '{teststand}', 'eotest',
                                 '{raft}', '{raft}-{run}-{slot}_eotest_results.fits')
 OUTFORMAT_FE55 = os.path.join('{outdir}', '{teststand}', 'tables', '{raft}',
-                              'fe55', '{raft}-{run}-{slot}_b-orig_s-orig_fe55_clusters.fits')
+                              'fe55', '{raft}-{run}-{slot}_eotest_fe55-clusters.fits')
 
-OUTFORMAT_PD_CALIB = os.path.join('{outdir}', '{teststand}', 'pd_calib',
+OUTFORMAT_PD_CALIB = os.path.join('{outdir}', '{teststand}', 'pdcalib',
                                   '{raft}', '{raft}-{run}-pd_calib.dat')
-OUTFORMAT_PTC = os.path.join('{outdir}', '{teststand}', 'flat', '{raft}',
-                             '{raft}-{run}-{slot}_b-orig_s-orig_ptc.fits')
+OUTFORMAT_PTC = os.path.join('{outdir}', '{teststand}', 'tables', '{raft}',
+                             'flat', '{raft}-{run}-{slot}_eotest_ptc.fits')
 OUTFORMAT_DETRESP = os.path.join('{outdir}', '{teststand}', 'tables', '{raft}',
-                                 'flat', '{raft}-{run}-{slot}_b-orig_s-orig_detresp.fits')
-OUTFORMAT_MASK = os.path.join('{outdir}', '{teststand}', 'masks_in', '{raft}',
+                                 'flat', '{raft}-{run}-{slot}_eotest_detresp.fits')
+OUTFORMAT_MASK = os.path.join('{outdir}', '{teststand}', 'masks', '{raft}',
                               '{raft}-{run}-{slot}_{mask}.fits')
 
 

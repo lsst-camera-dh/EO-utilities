@@ -1,5 +1,7 @@
 """Tasks to analyse sflat and superbias frames"""
 
+import lsst.afw.math as afwMath
+
 from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
@@ -34,6 +36,18 @@ class SflatAnalysisTask(AnalysisTask):
     plotname_format = SLOT_SFLAT_PLOT_FORMATTER
     datatype = 'sflat'
     testtypes = ['SFLAT']
+
+    def __init__(self, **kwargs):
+        """ C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
+        AnalysisTask.__init__(self, **kwargs)
+        self.stat_ctrl = afwMath.StatisticsControl()
+        self.stat_ctrl.setAndMask(0x7FF)
 
     def get_superflat_file(self, suffix, **kwargs):
         """Get the name of the superbias file for a particular run, raft, ccd...
@@ -77,9 +91,8 @@ class SflatAnalysisTask(AnalysisTask):
         self.safe_update(**kwargs)
 
         if types is None:
-            types = ['l', 'h', 'ratio']
-        superflat_file = self.get_superflat_file('').replace('.fits', '')
+            types = ['l', 'h', 'r']
 
-        o_dict = {key:self.get_ccd(None, superflat_file + '_%s.fits' % key, mask_files)
+        o_dict = {key:self.get_ccd(None, self.get_superflat_file('_%s.fits' % key), mask_files)
                   for key in types}
         return o_dict

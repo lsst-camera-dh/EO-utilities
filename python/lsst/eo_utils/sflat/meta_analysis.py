@@ -17,7 +17,7 @@ class SflatSlotTableAnalysisConfig(AnalysisConfig):
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
-    insuffix = EOUtilOptions.clone_param('insuffix')
+    infilekey = EOUtilOptions.clone_param('infilekey')
 
 
 class SflatSlotTableAnalysisTask(AnalysisTask):
@@ -37,7 +37,7 @@ class SflatSlotTableAnalysisTask(AnalysisTask):
 
 class SflatRaftTableAnalysisConfig(AnalysisConfig):
     """Configuration for superflat analyses"""
-    insuffix = EOUtilOptions.clone_param('insuffix')
+    infilekey = EOUtilOptions.clone_param('infilekey')
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slots = EOUtilOptions.clone_param('slots')
