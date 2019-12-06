@@ -32,7 +32,7 @@ def build_slitw_format_dict(slitw_vals):
 class NonlinearityConfig(FlatSlotTableAnalysisConfig):
     """Configuration for NonlinearityTask"""
     infilekey = EOUtilOptions.clone_param('infilekey', default='flat-pair')
-    filekey = EOUtilOptions.clone_param('filekey', default='flat-lin')
+    filekey = EOUtilOptions.clone_param('filekey', default='flat-nonlin')
     nonlin_spline_ext = EOUtilOptions.clone_param('nonlin_spline_ext')
     nonlin_spline_smooth = EOUtilOptions.clone_param('nonlin_spline_smooth')
 
@@ -51,8 +51,10 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
     null_point = 0.
     num_profile_points = 40
 
-    plot_names = ['fits', 'prof', 'nonlin', 'nonlin-log', 'nonlin-stack', 'nonlin-stack-log',
-                  'fits-inv', 'prof-inv', 'nonlin-inv', 'nonlin-log-inv', 'nonlin-stack-inv', 'nonlin-stack-log-inv']
+    plot_names = ['fits', 'prof', 'nonlin',
+                  'nonlin-log', 'nonlin-stack', 'nonlin-stack-log',
+                  'fits-inv', 'prof-inv', 'nonlin-inv',
+                  'nonlin-log-inv', 'nonlin-stack-inv', 'nonlin-stack-log-inv']
 
     @staticmethod
     def _correct_null_point(profile_x, profile_y, null_point):
@@ -260,7 +262,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
 
         outtables = TableDict()
         outtables.make_datatable("nonlin", data_dict)
-        outtables.make_datatable("nonlin_inv", data_dict_inv)
+        outtables.make_datatable("nonlin-inv", data_dict_inv)
         outtables.make_datatable("flat_lin", copy_dict)
         return outtables
 

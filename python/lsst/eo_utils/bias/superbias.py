@@ -2,6 +2,8 @@
 
 import os
 
+import numpy as np
+
 import lsst.afw.math as afwMath
 
 import lsst.eotest.image_utils as imutil
@@ -17,7 +19,7 @@ from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.data_utils import TableDict
+from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
 from lsst.eo_utils.base.image_utils import flip_data_in_place,\
     stack_images, extract_raft_unbiased_images, extract_raft_imaging_data,\
@@ -32,7 +34,7 @@ from lsst.eo_utils.base.merge_utils import CameraMosaicConfig, CameraMosaicTask
 from lsst.eo_utils.bias.analysis import BiasAnalysisConfig, BiasAnalysisTask
 
 from lsst.eo_utils.bias.meta_analysis import SuperbiasRaftTableAnalysisConfig,\
-    SuperbiasRaftTableAnalysisTask
+    SuperbiasRaftTableAnalysisTask, SuperbiasSummaryAnalysisConfig, SuperbiasSummaryAnalysisTask
 
 from lsst.eo_utils.bias.file_utils import RUN_SUPERBIAS_FORMATTER
 
@@ -338,16 +340,7 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
         if butler is not None:
             self.log.warn("Ignoring butler")
 
-        slot_list = self.config.slots
-        if slot_list is None:
-            slot_list = ALL_SLOTS
-        for slot in slot_list:
-            if not os.path.exists(data[slot]):
-                self.log.warn("Skipping missing file for %s:%s" % (self.config.raft, slot))
-                continue
-            self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
-            self._sbias_file_dict[slot] = data[slot]
-
+        self.set_local_data(butler, data, **kwargs)
 
         if not self._sbias_file_dict:
             self.log.warn("No files for %s, skipping" % (self.config.raft))
@@ -360,7 +353,7 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
         self._sbias_arrays = extract_raft_imaging_data(self._sbias_images, ccd_dict)
         fp_dict = SuperbiasRaftTask.build_defect_dict(self._sbias_images, fp_type='bright', abs_thresh=50)
 
-        out_data = outlier_raft_dict(self._sbias_arrays, 0., 10.)
+        out_data = outlier_raft_dict(self._sbias_arrays, 0., 50.)
         dtables = TableDict()
         dtables.make_datatable('defects', fp_dict)
         dtables.make_datatable('outliers', out_data)
@@ -388,7 +381,6 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
             return
 
         if self.config.mosaic:
-
             figs.plot_raft_mosaic('mosaic', self._sbias_file_dict, bias_subtract=False)
 
         if self.config.stats_hist:
@@ -399,6 +391,121 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
                                       range=(-100., 100.),
                                       histtype='step')
 
+
+    def set_local_data(self, butler, data, **kwargs):        
+        """Set local data members if extract fails
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+        """
+        self.safe_update(**kwargs)
+
+        slot_list = self.config.slots
+        if slot_list is None:
+            slot_list = ALL_SLOTS
+        for slot in slot_list:
+            if not os.path.exists(data[slot]):
+                self.log.warn("Skipping missing file for %s:%s" % (self.config.raft, slot))
+                continue
+            self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
+            self._sbias_file_dict[slot] = data[slot]
+  
+
+
+class SuperbiasOutlierSummaryConfig(SuperbiasSummaryAnalysisConfig):
+    """Configuration for SuperbiasOutlierSummaryTask"""
+    infilekey = EOUtilOptions.clone_param('infilekey', default='sbias')
+    filekey = EOUtilOptions.clone_param('filekey', default='sbias-sum')
+
+class SuperbiasOutlierSummaryTask(SuperbiasSummaryAnalysisTask):
+    """Summarize the results for the superbias outlier analysis"""
+
+    ConfigClass = SuperbiasOutlierSummaryConfig
+    _DefaultName = "SuperbiasOutlierSummaryTask"
+
+    plot_names = []
+
+    def extract(self, butler, data, **kwargs):
+        """Make a summry table of the bias FFT data
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
+        """
+        self.safe_update(**kwargs)
+
+        if butler is not None:
+            self.log.warn("Ignoring butler in extract()")
+
+        run_dict = dict(runs=[], rafts=[])
+        for key, val in data.items():
+            run_dict['runs'].append(key[4:])
+            run_dict['rafts'].append(key[0:3])
+            data[key] = val.replace(self.config.filekey, self.config.infilekey)
+
+        keep_cols = ['nbad_total', 'nbad_rows', 'nbad_cols', 'slot', 'amp']
+
+        outtable = vstack_tables(data, tablename='outliers', keep_cols=keep_cols)
+
+        dtables = TableDict()
+        dtables.add_datatable('outliers_sum', outtable)
+        dtables.make_datatable('runs', run_dict)
+        return dtables
+
+
+    def plot(self, dtables, figs, **kwargs):
+        """Plot the summary data from the superbias statistics study
+
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
+        """
+        self.safe_update(**kwargs)
+
+        sumtable = dtables['outliers_sum']
+        if self.config.teststand == 'ts8':
+            runtable = dtables['runs']
+            yvals = sumtable['nbad_total'].flatten().clip(0., 2.)
+            runs = runtable['runs']
+            figs.plot_run_chart("nbad-total", runs, yvals, ylabel="Maximum FFT Power [ADU]")
+        elif self.config.teststand == 'bot':
+            rafts = np.unique(sumtable['raft'])
+            for raft in rafts:
+                mask = sumtable['raft'] == raft
+                subtable = sumtable[mask]
+                figs.plot_run_chart_by_slot("nbad-total-%s" % raft, subtable,
+                                            "nbad_total", #yerrs="std",
+                                            ylabel="Fraction of outliers",
+                                            ymin=0., ymax=1.)
+                figs.plot_run_chart_by_slot("nbad-col-%s" % raft, subtable,
+                                            "nbad_cols", #yerrs="std",
+                                            ylabel="Fraction cols w/ > 10 outliers",
+                                            ymin=0., ymax=1.)
+                figs.plot_run_chart_by_slot("nbad-row-%s" % raft, subtable,
+                                            "nbad_rows", #yerrs="std",
+                                            ylabel="Fraction row w/ > 10 outliers",
+                                            ymin=0., ymax=1.)
 
 
 class SuperbiasMosaicConfig(CameraMosaicConfig):
@@ -414,10 +521,11 @@ class SuperbiasMosaicTask(CameraMosaicTask):
     tablename_format = RUN_SUPERBIAS_FORMATTER
     plotname_format = RUN_SUPERBIAS_FORMATTER
 
-    datatype = 'superbias table'
+    datatype = 'superbias'
 
 
 
 EO_TASK_FACTORY.add_task_class('Superbias', SuperbiasTask)
 EO_TASK_FACTORY.add_task_class('SuperbiasRaft', SuperbiasRaftTask)
+EO_TASK_FACTORY.add_task_class('SuperbiasOutlierSummary', SuperbiasOutlierSummaryTask)
 EO_TASK_FACTORY.add_task_class('SuperbiasMosaic', SuperbiasMosaicTask)

@@ -5,26 +5,23 @@ defaults :
   nonlin : False
   mask : False
 normal :
-  FlatPair : 
-    mask : True
-  BiasStruct :
+  FlatPairTask : 
+    mask : eotest
+  BiasStructTask :
     bias : None
     superbias : None
-  BiasOscanCorrel :
+  BiasOscanCorrelTask :
     bias : None
     superbias : None
 nonlin :  
   default :
     nonlin : normal
-  FlatPair : 
+  FlatPairTask : 
     nonlin : normal
     mask : True
 eotest :
-  FlatPair : 
+  FlatPairTask : 
     mask : True
-normal_l : {}
-normal_h : {}
-normal_r : {}
 
 
 

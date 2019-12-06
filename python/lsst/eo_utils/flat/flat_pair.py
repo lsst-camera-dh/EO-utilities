@@ -104,6 +104,7 @@ class FlatPairTask(FlatAnalysisTask):
 
         bias_type = self.get_bias_algo()
         mask_files = self.get_mask_files()
+
         superbias_frame = self.get_superbias_frame(mask_files)
 
         nlc = self.get_nonlinearirty_correction()

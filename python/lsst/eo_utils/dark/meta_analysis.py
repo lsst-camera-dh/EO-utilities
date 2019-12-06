@@ -9,7 +9,9 @@ from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
 from lsst.eo_utils.dark.file_utils import SLOT_DARK_TABLE_FORMATTER,\
     SUM_DARK_TABLE_FORMATTER, SUM_DARK_PLOT_FORMATTER,\
-    RAFT_DARK_TABLE_FORMATTER, RAFT_DARK_PLOT_FORMATTER
+    RAFT_DARK_TABLE_FORMATTER, RAFT_DARK_PLOT_FORMATTER,\
+    SUM_SDARK_TABLE_FORMATTER, SUM_SDARK_PLOT_FORMATTER,\
+    RAFT_SDARK_TABLE_FORMATTER, RAFT_SDARK_PLOT_FORMATTER
 
 
 class DarkRaftTableAnalysisConfig(AnalysisConfig):
@@ -33,7 +35,7 @@ class DarkRaftTableAnalysisTask(AnalysisTask):
     tablename_format = RAFT_DARK_TABLE_FORMATTER
     plotname_format = RAFT_DARK_PLOT_FORMATTER
 
-    datatype = 'dark table'
+    datatype = 'dark'
 
 
 class DarkSummaryAnalysisConfig(AnalysisConfig):
@@ -54,4 +56,25 @@ class DarkSummaryAnalysisTask(AnalysisTask):
     tablename_format = SUM_DARK_TABLE_FORMATTER
     plotname_format = SUM_DARK_PLOT_FORMATTER
 
-    datatype = 'dark table'
+    datatype = 'dark'
+
+
+class SuperdarkSummaryAnalysisConfig(AnalysisConfig):
+    """Configurate for bias analyses"""
+    dataset = EOUtilOptions.clone_param('dataset')
+
+
+class SuperdarkSummaryAnalysisTask(AnalysisTask):
+    """Simple functor class to tie together standard dark data analysis
+    """
+
+    # These can overridden by the sub-class
+    ConfigClass = SuperdarkSummaryAnalysisConfig
+    _DefaultName = "SuperdarkSummaryAnalysisTask"
+    iteratorClass = SummaryAnalysisIterator
+
+    intablename_format = RAFT_SDARK_TABLE_FORMATTER
+    tablename_format = SUM_SDARK_TABLE_FORMATTER
+    plotname_format = SUM_SDARK_PLOT_FORMATTER
+
+    datatype = 'dark'

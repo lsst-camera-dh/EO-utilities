@@ -2,6 +2,8 @@
 
 import os
 
+import numpy as np
+
 import lsst.afw.math as afwMath
 
 import lsst.eotest.image_utils as imutil
@@ -16,7 +18,7 @@ from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.data_utils import TableDict
+from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
 from lsst.eo_utils.base.image_utils import flip_data_in_place,\
     stack_images, extract_raft_unbiased_images, extract_raft_imaging_data,\
@@ -36,6 +38,8 @@ from lsst.eo_utils.base.merge_utils import CameraMosaicConfig, CameraMosaicTask
 
 from lsst.eo_utils.dark.analysis import DarkAnalysisConfig,\
     DarkAnalysisTask
+
+from lsst.eo_utils.dark.meta_analysis import SuperdarkSummaryAnalysisConfig, SuperdarkSummaryAnalysisTask
 
 
 class SuperdarkConfig(DarkAnalysisConfig):
@@ -241,6 +245,8 @@ class SuperdarkRaftTask(AnalysisTask):
 
     plot_names = ['mosaic', 'stats', 'out-row', 'out-col', 'nbad', 'nbad-row', 'nbad-col']
 
+    datatype = "dark"
+
     def __init__(self, **kwargs):
         """ C'tor
 
@@ -316,17 +322,7 @@ class SuperdarkRaftTask(AnalysisTask):
         if butler is not None:
             self.log.warn("Ignoring butler")
 
-        slots = self.config.slots
-        if slots is None:
-            slots = ALL_SLOTS
-
-        for slot in slots:
-            if not os.path.exists(data[slot]):
-                self.log.warn("skipping missing data for %s:%s" % (self.config.raft, slot))
-                continue
-            mask_files = self.get_mask_files(slot=slot)
-            self._mask_file_dict[slot] = mask_files
-            self._sdark_file_dict[slot] = data[slot]
+        self.set_local_data(butler, data, **kwargs)
 
         if not self._sdark_file_dict:
             self.log.warn("No files for %s, skipping" % (self.config.raft))
@@ -345,6 +341,34 @@ class SuperdarkRaftTask(AnalysisTask):
         dtables.make_datatable('defects', fp_dict)
         dtables.make_datatable('outliers', out_data)
         return dtables
+
+
+    def set_local_data(self, butler, data, **kwargs):        
+        """Set local data members if extract fails
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+        """
+        self.safe_update(**kwargs)
+        slots = self.config.slots
+        if slots is None:
+            slots = ALL_SLOTS
+
+        for slot in slots:
+            if not os.path.exists(data[slot]):
+                self.log.warn("skipping missing data for %s:%s" % (self.config.raft, slot))
+                continue
+            mask_files = self.get_mask_files(slot=slot)
+            self._mask_file_dict[slot] = mask_files
+            self._sdark_file_dict[slot] = data[slot]
+
+  
 
     def plot(self, dtables, figs, **kwargs):
         """Plot the raft-level mosaic and histrograms
@@ -378,9 +402,99 @@ class SuperdarkRaftTask(AnalysisTask):
                                       histtype='step')
 
 
+class SuperdarkOutlierSummaryConfig(SuperdarkSummaryAnalysisConfig):
+    """Configuration for SuperdarkOutlierSummaryTask"""
+    infilekey = EOUtilOptions.clone_param('infilekey', default='sdark')
+    filekey = EOUtilOptions.clone_param('filekey', default='sdark-sum')
+
+class SuperdarkOutlierSummaryTask(SuperdarkSummaryAnalysisTask):
+    """Summarize the results for the superbias outlier analysis"""
+
+    ConfigClass = SuperdarkOutlierSummaryConfig
+    _DefaultName = "SuperdarkOutlierSummaryTask"
+
+    plot_names = []
+
+    def extract(self, butler, data, **kwargs):
+        """Make a summry table of the bias FFT data
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
+        """
+        self.safe_update(**kwargs)
+
+        if butler is not None:
+            self.log.warn("Ignoring butler in extract()")
+
+        run_dict = dict(runs=[], rafts=[])
+        for key, val in data.items():
+            run_dict['runs'].append(key[4:])
+            run_dict['rafts'].append(key[0:3])
+            data[key] = val.replace(self.config.filekey, self.config.infilekey)
+
+        keep_cols = ['nbad_total', 'nbad_rows', 'nbad_cols', 'slot', 'amp']
+
+        outtable = vstack_tables(data, tablename='outliers', keep_cols=keep_cols)
+
+        dtables = TableDict()
+        dtables.add_datatable('outliers_sum', outtable)
+        dtables.make_datatable('runs', run_dict)
+        return dtables
+
+
+    def plot(self, dtables, figs, **kwargs):
+        """Plot the summary data from the superbias statistics study
+
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
+        """
+        self.safe_update(**kwargs)
+
+        sumtable = dtables['outliers_sum']
+        if self.config.teststand == 'ts8':
+            runtable = dtables['runs']
+            yvals = sumtable['nbad_total'].flatten().clip(0., 2.)
+            runs = runtable['runs']
+            figs.plot_run_chart("nbad-total", runs, yvals, ylabel="Maximum FFT Power [ADU]")
+        elif self.config.teststand == 'bot':
+            rafts = np.unique(sumtable['raft'])
+            for raft in rafts:
+                mask = sumtable['raft'] == raft
+                subtable = sumtable[mask]
+                figs.plot_run_chart_by_slot("nbad-total-%s" % raft, subtable,
+                                            "nbad_total", #yerrs="std",
+                                            ylabel="Fraction of outliers",
+                                            ymin=1e-7, ymax=1., logy=True)
+                figs.plot_run_chart_by_slot("nbad-col-%s" % raft, subtable,
+                                            "nbad_cols", #yerrs="std",
+                                            ylabel="Fraction cols w/ > 10 outliers",
+                                            ymin=1e-7, ymax=1., logy=True)
+                figs.plot_run_chart_by_slot("nbad-row-%s" % raft, subtable,
+                                            "nbad_rows", #yerrs="std",
+                                            ylabel="Fraction row w/ > 10 outliers",
+                                            ymin=1e-7, ymax=1., logy=True)
+
+
 
 class SuperdarkMosaicConfig(CameraMosaicConfig):
-    """Configuration for SuperbiasMosaicTask"""
+    """Configuration for SuperdarkMosaicTask"""
 
 class SuperdarkMosaicTask(CameraMosaicTask):
     """Make a mosaic from a superbias frames"""
@@ -392,11 +506,12 @@ class SuperdarkMosaicTask(CameraMosaicTask):
     tablename_format = RUN_SUPERDARK_FORMATTER
     plotname_format = RUN_SUPERDARK_FORMATTER
 
-    datatype = 'superdark table'
+    datatype = 'superdark'
 
 
 
 
 EO_TASK_FACTORY.add_task_class('Superdark', SuperdarkTask)
 EO_TASK_FACTORY.add_task_class('SuperdarkRaft', SuperdarkRaftTask)
+EO_TASK_FACTORY.add_task_class('SuperdarkOutlierSummary', SuperdarkOutlierSummaryTask)
 EO_TASK_FACTORY.add_task_class('SuperdarkMosaic', SuperdarkMosaicTask)

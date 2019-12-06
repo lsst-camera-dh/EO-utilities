@@ -180,7 +180,10 @@ class DarkCurrentSummaryTask(DarkSummaryAnalysisTask):
         """
         self.safe_update(**kwargs)
 
+        run_dict = dict(runs=[], rafts=[])
         for key, val in data.items():
+            run_dict['runs'].append(key[4:])
+            run_dict['rafts'].append(key[0:3])
             data[key] = val.replace(self.config.filekey, self.config.infilekey)
 
         # Define the set of columns to keep and remove
@@ -191,7 +194,7 @@ class DarkCurrentSummaryTask(DarkSummaryAnalysisTask):
 
         dtables = TableDict()
         dtables.add_datatable('stats', outtable)
-        dtables.make_datatable('runs', dict(runs=sorted(data.keys())))
+        dtables.make_datatable('runs', run_dict)
         return dtables
 
     def plot(self, dtables, figs, **kwargs):
@@ -210,12 +213,22 @@ class DarkCurrentSummaryTask(DarkSummaryAnalysisTask):
         sumtable = dtables['stats']
         runtable = dtables['runs']
 
-        yvals = sumtable['current']
-        yerrs = (sumtable['stdev'] / sumtable['exptime']).clip(0., 0.05)
-
-        runs = runtable['runs']
-
-        figs.plot_run_chart("val", runs, yvals, yerrs=yerrs, ylabel="Dark Current [ADU/s]")
+        if self.config.teststand == 'ts8':
+            yvals = sumtable['current']
+            yerrs = (sumtable['stdev'] / sumtable['exptime']).clip(0., 0.05)
+            runs = runtable['runs']
+            figs.plot_run_chart("val", runs, yvals, yerrs=yerrs, ylabel="Dark Current [ADU/s]")
+        elif self.config.teststand == 'bot':
+            rafts = np.unique(sumtable['raft'])
+            #nrun = sumtable['irun'].max() + 1
+            runs = np.unique(sumtable['run'])
+            for raft in rafts:
+                mask = sumtable['raft'] == raft
+                subtable = sumtable[mask]
+                figs.plot_run_chart_by_slot("val_%s" % raft, subtable,
+                                            "current", #yerrs="std",
+                                            ylabel="Dark Current [ADU/s]", 
+                                            ymin=0., ymax=0.05)
 
 
 EO_TASK_FACTORY.add_task_class('DarkCurrent', DarkCurrentTask)

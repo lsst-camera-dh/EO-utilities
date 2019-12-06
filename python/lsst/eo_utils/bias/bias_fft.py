@@ -116,7 +116,7 @@ class BiasFFTTask(BiasAnalysisTask):
         """Plot the FFT of the bias as function of row
 
         Parameters
-        ----2------
+        ----------
         dtables : `TableDict`
             The data produced by this task
         figs : `FigureDict`
@@ -138,7 +138,7 @@ class BiasFFTTask(BiasAnalysisTask):
             datakey_col = "biasfft-%s_col" % key
             figs.setup_amp_plots_grid("%s-col" % key, title="FFT of %s region columns" % region,
                                       xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]")
-            figs.plot_xy_amps_from_tabledict(dtables, datakey_col, "%s-col" % key, 
+            figs.plot_xy_amps_from_tabledict(dtables, datakey_col, "%s-col" % key,
                                              x_name='freqs', y_name='fftpow')
 
 
@@ -228,7 +228,7 @@ class SuperbiasFFTTask(SuperbiasSlotTableAnalysisTask):
     _DefaultName = "SuperbiasFFTTask"
 
     # This is the list of plots, used to make sure that they exist
-    plot_names = ['i', 'p', 's']
+    plot_names = ['i', 'p', 's', 'i-col', 's-col', 'p-col']
 
     def extract(self, butler, data, **kwargs):
         """Extract the FFTs of the row-wise and col-wise struture
@@ -255,8 +255,9 @@ class SuperbiasFFTTask(SuperbiasSlotTableAnalysisTask):
             self.log.warn("Ignoring butler.")
 
         mask_files = self.get_mask_files()
-        superbias_file = data[0]
-        superbias = self.get_ccd(None, superbias_file, mask_files)
+        superbias = self.get_superbias_frame(mask_files)
+        if superbias is None:
+            return None
 
         fft_data = {}
 
@@ -265,9 +266,11 @@ class SuperbiasFFTTask(SuperbiasSlotTableAnalysisTask):
         freqs_dict = get_readout_freqs_from_ccd(superbias)
         for key in REGION_KEYS:
             freqs = freqs_dict['freqs_%s' % key]
+            freqs_col = freqs_dict['freqs_%s_col' % key]
             nfreqs = len(freqs)
+            nfreqs_col = len(freqs_col)
             fft_data[key] = dict(freqs=freqs[0:int(nfreqs/2)])
-            fft_data['%s_col' % key] = dict(freqs=freqs[0:int(nfreqs/2)])
+            fft_data['%s_col' % key] = dict(freqs=freqs_col[0:int(nfreqs_col/2)])
 
         BiasFFTTask.get_ccd_data(self, superbias, fft_data,
                                  slot=slot, superbias_frame=None)
@@ -277,6 +280,7 @@ class SuperbiasFFTTask(SuperbiasSlotTableAnalysisTask):
         dtables.make_datatable('files', make_file_dict(None, [slot]))
         for key in REGION_KEYS:
             dtables.make_datatable('biasfft-%s' % key, fft_data[key])
+            dtables.make_datatable('biasfft-%s_col' % key, fft_data["%s_col" % key])
         return dtables
 
     def plot(self, dtables, figs, **kwargs):
@@ -301,6 +305,11 @@ class SuperbiasFFTTask(SuperbiasSlotTableAnalysisTask):
             figs.plot_xy_amps_from_tabledict(dtables, datakey, key,
                                              x_name='freqs', y_name='fftpow',
                                              ymin=0., ymax=3.)
+            datakey_col = "biasfft-%s_col" % key
+            figs.setup_amp_plots_grid("%s-col" % key, title="FFT of %s region columns" % region,
+                                      xlabel="Frequency [Hz]", ylabel="Magnitude [ADU]")
+            figs.plot_xy_amps_from_tabledict(dtables, datakey_col, "%s-col" % key,
+                                             x_name='freqs', y_name='fftpow')
 
 
 class BiasFFTStatsConfig(BiasRaftTableAnalysisConfig):
@@ -316,7 +325,7 @@ class BiasFFTStatsTask(BiasRaftTableAnalysisTask):
     _DefaultName = "BiasFFTStatsTask"
 
     # This is the list of plots, used to make sure that they exist
-    plot_names = ['max-fft-noise']
+    plot_names = ['max-fft', 'max-fft-col']
 
     def extract(self, butler, data, **kwargs):
         """Extract the FFT summary statistics
@@ -341,6 +350,7 @@ class BiasFFTStatsTask(BiasRaftTableAnalysisTask):
             self.log.warn("Ignoring butler in bias_fft_stats.extract")
 
         datakey = 'biasfft-s'
+        datakey_col = 'biasfft-i_col'
 
         data_dict = dict(fftpow_mean=[],
                          fftpow_median=[],
@@ -349,6 +359,13 @@ class BiasFFTStatsTask(BiasRaftTableAnalysisTask):
                          fftpow_max=[],
                          fftpow_maxval=[],
                          fftpow_argmax=[],
+                         fftpow_mean_col=[],
+                         fftpow_median_col=[],
+                         fftpow_std_col=[],
+                         fftpow_min_col=[],
+                         fftpow_max_col=[],
+                         fftpow_maxval_col=[],
+                         fftpow_argmax_col=[],
                          slot=[],
                          amp=[])
 
@@ -363,26 +380,32 @@ class BiasFFTStatsTask(BiasRaftTableAnalysisTask):
         for islot, slot in enumerate(slot_list):
 
             basename = data[slot]
-            datapath = basename.replace('_biasfft_stats.fits', '_biasfft.fits')
 
-            if not os.path.exists(datapath):
-                self.log.warn("No file %s" % datapath)
+            if not os.path.exists(basename):
+                self.log.warn("No file %s" % basename)
                 continue
 
-            dtables = TableDict(datapath, [datakey])
+            dtables = TableDict(basename, [datakey, datakey_col])
             if not dtables.keys():
                 self.log.warn("No tables")
                 continue
 
             self.log_progress("  %s" % slot)
             table = dtables[datakey]
+            table_col = dtables[datakey]
 
             if freqs is None:
                 freqs = table['freqs']
+                freqs_col = table_col['freqs']
 
             for amp in range(16):
                 tablevals = table['fftpow_%s_a%02i' % (slot, amp)]
+                tablevals_col = table_col['fftpow_%s_a%02i' % (slot, amp)]
+                if len(tablevals.shape) == 1:
+                    tablevals = tablevals.reshape(tablevals.shape[0], 1)
+                    tablevals_col = tablevals_col.reshape(tablevals_col.shape[0], 1)
                 meanvals = np.mean(tablevals, axis=1)
+                meanvals_col = np.mean(tablevals_col, axis=1)
                 data_dict['fftpow_mean'].append(meanvals)
                 data_dict['fftpow_median'].append(np.median(tablevals, axis=1))
                 data_dict['fftpow_std'].append(np.std(tablevals, axis=1))
@@ -390,6 +413,13 @@ class BiasFFTStatsTask(BiasRaftTableAnalysisTask):
                 data_dict['fftpow_max'].append(np.max(tablevals, axis=1))
                 data_dict['fftpow_maxval'].append(meanvals[100:].max())
                 data_dict['fftpow_argmax'].append(meanvals[100:].argmax())
+                data_dict['fftpow_mean_col'].append(meanvals_col)
+                data_dict['fftpow_median_col'].append(np.median(tablevals_col, axis=1))
+                data_dict['fftpow_std_col'].append(np.std(tablevals_col, axis=1))
+                data_dict['fftpow_min_col'].append(np.min(tablevals_col, axis=1))
+                data_dict['fftpow_max_col'].append(np.max(tablevals_col, axis=1))
+                data_dict['fftpow_maxval_col'].append(meanvals_col.max())
+                data_dict['fftpow_argmax_col'].append(meanvals_col.argmax())
                 data_dict['slot'].append(islot)
                 data_dict['amp'].append(amp)
 
@@ -402,6 +432,7 @@ class BiasFFTStatsTask(BiasRaftTableAnalysisTask):
         if freqs is None:
             freqs = np.zeros((1024), float)
         outtables.make_datatable("freqs", dict(freqs=freqs))
+        outtables.make_datatable("freqs_col", dict(freqs=freqs_col))
         outtables.make_datatable("biasfft_stats", data_dict)
         return outtables
 
@@ -423,8 +454,11 @@ class BiasFFTStatsTask(BiasRaftTableAnalysisTask):
 
         raft_array = np.zeros((144))
         raft_array[idxs] = sumtable['fftpow_maxval']
-        figs.plot_stat_color('max-fft-noise', raft_array.reshape(9, 16))
+        figs.plot_stat_color('max-fft', raft_array.reshape(9, 16))
 
+        raft_array = np.zeros((144))
+        raft_array[idxs] = sumtable['fftpow_maxval_col']
+        figs.plot_stat_color('max-fft-col', raft_array.reshape(9, 16))
 
 
 class BiasFFTSummaryConfig(BiasSummaryAnalysisConfig):
@@ -438,7 +472,7 @@ class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
     ConfigClass = BiasFFTSummaryConfig
     _DefaultName = "BiasFFTSummaryTask"
 
-    plot_names = ['fftpow-maxval']
+    plot_names = ['fftpow-maxval', 'fftpow-maxval-col']
 
     def extract(self, butler, data, **kwargs):
         """Make a summry table of the bias FFT data
@@ -462,16 +496,19 @@ class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
         if butler is not None:
             self.log.warn("Ignoring butler in extract()")
 
+        run_dict = dict(runs=[], rafts=[])
         for key, val in data.items():
-            data[key] = val.replace('_biasfft_sum.fits', '_biasfft_stats.fits')
+            run_dict['runs'].append(key[4:])
+            run_dict['rafts'].append(key[0:3])
+            data[key] = val.replace(self.config.filekey, self.config.infilekey)
 
-        keep_cols = ['fftpow_maxval', 'fftpow_argmax', 'slot', 'amp']
+        keep_cols = ['fftpow_maxval', 'fftpow_argmax', 'fftpow_maxval_col', 'fftpow_argmax_col', 'slot', 'amp']
 
         outtable = vstack_tables(data, tablename='biasfft_stats', keep_cols=keep_cols)
 
         dtables = TableDict()
         dtables.add_datatable('biasfft_sum', outtable)
-        dtables.make_datatable('runs', dict(runs=sorted(data.keys())))
+        dtables.make_datatable('runs', run_dict)
         return dtables
 
 
@@ -497,15 +534,18 @@ class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
             figs.plot_run_chart("fftpow-maxval", runs, yvals, ylabel="Maximum FFT Power [ADU]")
         elif self.config.teststand == 'bot':
             rafts = np.unique(sumtable['raft'])
-            nrun = sumtable['irun'].max() + 1
-            runs = np.unique(sumtable['run'])
             for raft in rafts:
                 mask = sumtable['raft'] == raft
                 subtable = sumtable[mask]
-                yvals = np.zeros((nrun*144))
-                idxs = subtable['irun']*144 + subtable['slot']*16 + subtable['amp']
-                yvals[idxs] = subtable['fftpow_maxval'].flatten().clip(0., 2.)
-                figs.plot_run_chart("fftpow-maxval-%s" % raft, runs, yvals, ylabel="Maximum FFT Power [ADU]")
+                figs.plot_run_chart_by_slot("fftpow-maxval-%s" % raft, subtable,
+                                            "fftpow_maxval", #yerrs="std",
+                                            ylabel="Maximum FFT Power [ADU]",
+                                            ymin=0., ymax=2.)
+                figs.plot_run_chart_by_slot("fftpow-maxval-col-%s" % raft, subtable,
+                                            "fftpow_maxval_col", #yerrs="std",
+                                            ylabel="Maximum FFT Power [ADU]",
+                                            ymin=0., ymax=2.)
+
 
 EO_TASK_FACTORY.add_task_class('BiasFFT', BiasFFTTask)
 EO_TASK_FACTORY.add_task_class('SuperbiasFFT', SuperbiasFFTTask)

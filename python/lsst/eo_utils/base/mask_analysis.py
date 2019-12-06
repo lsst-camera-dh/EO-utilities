@@ -21,7 +21,7 @@ class MaskAddConfig(BaseAnalysisConfig):
     run = EOUtilOptions.clone_param('run')
     raft = EOUtilOptions.clone_param('raft')
     slot = EOUtilOptions.clone_param('slot')
-    filekey = EOUtilOptions.clone_param('filekey', default='_mask')
+    filekey = EOUtilOptions.clone_param('filekey', default='merged-mask')
 
 
 class MaskAddTask(BaseAnalysisTask):
@@ -30,6 +30,8 @@ class MaskAddTask(BaseAnalysisTask):
     ConfigClass = MaskAddConfig
     _DefaultName = "MaskAdd"
     iteratorClass = AnalysisBySlot
+
+    datatype = "mask"
 
     def __init__(self, **kwargs):
         """C'tor
@@ -88,6 +90,21 @@ class MaskAddTask(BaseAnalysisTask):
         makedir_safe(outfile)
 
         add_mask_files(mask_files, outfile)
+
+
+    def io_csv_line(self, taskname, stream):
+        """Write a line of comma-seperated values, used to build a table of task types"""
+
+        md_dict = dict(raft="<RAFT>", run="<RUN>", slot="<SLOT>")
+        table_file = self.get_filename_from_format(MASK_FORMATTER, '', **md_dict).replace('analysis/bot/', '')
+        stream.write("%-25s %-60s %-60s %-60s\n" % (taskname, 'None', table_file, 'None'))
+
+
+    def io_markdown_line(self, taskname, stream):
+        """Write a line of markdown, used to build a table of task types"""
+        md_dict = dict(raft="<RAFT>", run="<RUN>", slot="<SLOT>")
+        table_file = self.get_filename_from_format(MASK_FORMATTER, '', **md_dict).replace('analysis/bot/', '')
+        stream.write("| %s | %s | %s | %s |\n" % (taskname, 'None', table_file, 'None'))
 
 
 EO_TASK_FACTORY.add_task_class('MaskAdd', MaskAddTask)

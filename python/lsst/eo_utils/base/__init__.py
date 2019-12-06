@@ -37,7 +37,7 @@ from .iter_utils import AnalysisHandlerConfig, AnalysisHandler,\
     AnalysisByRaftConfig, AnalysisByRaft,\
     TableAnalysisBySlot, TableAnalysisByRaft,\
     AnalysisByRunConfig, AnalysisByRun,\
-    SummaryAnalysisIterator
+    SummaryAnalysisIterator, SummaryAnalysisBySlotIterator
 
 from .pipeline import MetaConfig, MetaTask
 

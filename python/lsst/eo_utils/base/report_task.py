@@ -41,6 +41,8 @@ class ReportTask(BaseAnalysisTask):
 
     tablename_format = SLOT_REPORT_FORMATTER
 
+    datatype = 'report'
+
     def tablefile_name(self, **kwargs):
         """Get the name of the file for the output tables for a particular
         run, raft, ccd..
@@ -106,6 +108,22 @@ class ReportTask(BaseAnalysisTask):
         if butler is not None:
             self.log.warn("Ignoring butler")
         return make_dataids_for_run(datakey, **kwargs)
+
+    def io_csv_line(self, taskname, stream):
+        """Write a line of comma-seperated values, used to build a table of task types"""
+
+        md_dict = dict(raft="<RAFT>", run="<RUN>", slot="<SLOT>", dataset="<DATASET>")
+        table_file = self.get_filename_from_format(self.tablename_format, '',
+                                                   **md_dict).replace('None/bot/', '')
+        stream.write("%-25s %-60s %-60s %-60s\n" % (taskname, 'None', table_file, 'None'))
+
+
+    def io_markdown_line(self, taskname, stream):
+        """Write a line of markdown, used to build a table of task types"""
+        md_dict = dict(raft="<RAFT>", run="<RUN>", slot="<SLOT>", dataset="<DATASET>")
+        table_file = self.get_filename_from_format(self.tablename_format, '',
+                                                   **md_dict).replace('None/bot/', '')
+        stream.write("| %s | %s | %s | %s |\n" % (taskname, 'None', table_file, 'None'))
 
 
 class ReportSlotConfig(ReportConfig):
@@ -178,7 +196,6 @@ class ReportRaftTask(ReportTask):
 class ReportRunConfig(ReportConfig):
     """Configuration for report analyses"""
     run = EOUtilOptions.clone_param('run')
-    teststand = EOUtilOptions.clone_param('teststand')
 
 
 class ReportRunTask(ReportTask):

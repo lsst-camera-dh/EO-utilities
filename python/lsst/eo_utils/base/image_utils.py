@@ -968,6 +968,7 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
         except Exception:
             if log is not None:
                 log.warn("  Failed to read %s, skipping" % (str(in_file)))
+                continue
 
         used_files += 1
         exp_time += get_exposure_time(ccd)
@@ -992,7 +993,7 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
             else:
                 amp_stack_dict[amp].append(unbiased)
 
-    if in_files:
+    if used_files:
         exp_time /= float(used_files)
     out_dict['METADATA'] = dict(EXPTIME=exp_time)
 

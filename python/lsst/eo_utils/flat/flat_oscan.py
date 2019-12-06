@@ -69,8 +69,7 @@ class FlatOverscanTask(FlatAnalysisTask):
         fitter = OverscanFit(num_oscan_pixels=self.config.num_oscan_pixels,
                              minflux=self.config.minflux, maxflux=self.config.maxflux)
 
-        # FIXME
-        gains = np.ones((17))
+        gains = self.get_gains()
 
         # Analysis goes here, you should fill data_dict with data extracted
         # by the analysis

@@ -53,11 +53,15 @@ class BiasVRowTask(BiasAnalysisTask):
         self.safe_update(**kwargs)
 
         bias_files = data['BIAS']
+        if not bias_files:
+            return None
+
         mask_files = self.get_mask_files()
 
         self.log_info_slot_msg(self.config, "%i files" % len(bias_files))
 
         biasval_data = {}
+        
 
         for ifile, bias_file in enumerate(bias_files):
             if ifile % 10 == 0:

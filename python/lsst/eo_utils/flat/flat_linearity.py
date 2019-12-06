@@ -2,25 +2,23 @@
 
 from lsst.eotest.sensor.DetectorResponse import DetectorResponse
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS
-
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.data_utils import TableDict
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from .meta_analysis import FlatRaftTableAnalysisConfig, FlatRaftTableAnalysisTask
+from .meta_analysis import FlatSlotTableAnalysisConfig, FlatSlotTableAnalysisTask
 
 
-class FlatLinearityConfig(FlatRaftTableAnalysisConfig):
+class FlatLinearityConfig(FlatSlotTableAnalysisConfig):
     """Configuration for FlatLinearityTask"""
     infilekey = EOUtilOptions.clone_param('infilekey', default='flat-pair')
     filekey = EOUtilOptions.clone_param('filekey', default='flat-lin')
 
 
 
-class FlatLinearityTask(FlatRaftTableAnalysisTask):
+class FlatLinearityTask(FlatSlotTableAnalysisTask):
     """Measue the linearity using data extracted from the flat-pair data"""
 
     ConfigClass = FlatLinearityConfig
@@ -48,38 +46,30 @@ class FlatLinearityTask(FlatRaftTableAnalysisTask):
         self.safe_update(**kwargs)
 
         # You should expand this to include space for the data you want to extract
-        data_dict = dict(slot=[],
-                         amp=[],
+        data_dict = dict(amp=[],
                          full_well=[],
                          max_dev=[])
 
         self.log_info_raft_msg(self.config, "")
 
-        slots = self.config.slots
-        if slots is None:
-            slots = ALL_SLOTS
+        slot = self.config.slot
 
-        for islot, slot in enumerate(slots):
+        basename = data[slot]
+        datapath = basename.replace(self.config.filekey, self.config.infilekey)
 
-            self.log_progress("  %s" % slot)
+        detresp = DetectorResponse(datapath, hdu_name='flat')
 
-            basename = data[slot]
-            datapath = basename.replace(self.config.filekey, self.config.infilekey)
+        for amp in range(1, 17):
 
-            detresp = DetectorResponse(datapath, hdu_name='flat')
+            # Here you can get the data out for each amp and append it to the
+            # data_dict
 
-            for amp in range(1, 17):
+            data_dict['amp'].append(amp)
+            linearity_data = detresp.linearity(amp)
+            full_well_data = detresp.full_well(amp)
 
-                # Here you can get the data out for each amp and append it to the
-                # data_dict
-
-                data_dict['slot'].append(islot)
-                data_dict['amp'].append(amp)
-                linearity_data = detresp.linearity(amp)
-                full_well_data = detresp.full_well(amp)
-
-                data_dict['full_well'].append(full_well_data[0])
-                data_dict['max_dev'].append(linearity_data[0])
+            data_dict['full_well'].append(full_well_data[0])
+            data_dict['max_dev'].append(linearity_data[0])
 
         self.log_progress("Done!")
 

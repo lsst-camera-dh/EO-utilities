@@ -10,7 +10,7 @@ from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.base.file_utils import TS8_EORESULTSIN_FORMATTER,\
+from lsst.eo_utils.base.file_utils import EORESULTSIN_FORMATTER,\
     EORESULTS_TABLE_FORMATTER, EORESULTS_PLOT_FORMATTER,\
     EORESULTS_SUMMARY_TABLE_FORMATTER, EORESULTS_SUMMARY_PLOT_FORMATTER
 
@@ -39,7 +39,7 @@ class EOResultsRaftTask(AnalysisTask):
     _DefaultName = "EOResultsRaftTask"
     iteratorClass = TableAnalysisByRaft
 
-    intablename_format = TS8_EORESULTSIN_FORMATTER
+    intablename_format = EORESULTSIN_FORMATTER
     tablename_format = EORESULTS_TABLE_FORMATTER
     plotname_format = EORESULTS_PLOT_FORMATTER
 

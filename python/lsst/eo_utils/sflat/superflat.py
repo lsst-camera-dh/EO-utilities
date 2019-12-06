@@ -33,7 +33,7 @@ from lsst.eo_utils.base.merge_utils import CameraMosaicConfig, CameraMosaicTask
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from .file_utils import SUPERFLAT_FORMATTER, RUN_SUPERFLAT_FORMATTER
+from .file_utils import SUPERFLAT_FORMATTER, SUPERFLAT_SPEC_FORMATTER, RUN_SUPERFLAT_FORMATTER
 
 from .analysis import SflatAnalysisConfig,\
     SflatAnalysisTask
@@ -366,6 +366,7 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
                 fill_footprint_dict(image.image, fp_dict, iamp, islot, **kwargs)
         return fp_dict
 
+
     def extract(self, butler, data, **kwargs):
         """Extract the outliers in the superflat frames for the raft
 
@@ -393,19 +394,7 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
         if butler is not None:
             self.log.warn("Ignoring butler")
 
-        slots = self.config.slots
-        if slots is None:
-            slots = ALL_SLOTS
-
-        for slot in slots:
-            basename = data[slot]
-            if not os.path.exists(basename.replace('.fits', '_l.fits')):
-                self.log.warn("Skipping %s:%s" % (self.config.raft, slot))
-                continue
-            self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
-            self._sflat_file_dict_l[slot] = basename.replace('.fits', '_l.fits')
-            self._sflat_file_dict_h[slot] = basename.replace('.fits', '_h.fits')
-            self._sflat_file_dict_r[slot] = basename.replace('.fits', '_r.fits')
+        self.set_local_data(butler, data, **kwargs)
 
         if not self._sflat_file_dict_l:
             self.log.warn("No files for %s, skipping" % (self.config.raft))
@@ -479,6 +468,35 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
                                       histtype='step')
 
 
+    def set_local_data(self, butler, data, **kwargs):        
+        """Set local data members if extract fails
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+        """
+        self.safe_update(**kwargs)
+
+        slots = self.config.slots
+        if slots is None:
+            slots = ALL_SLOTS
+
+        for slot in slots:
+            basename = data[slot]
+            if not os.path.exists(basename.replace('.fits', '_l.fits')):
+                self.log.warn("Skipping %s:%s" % (self.config.raft, slot))
+                continue
+            self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
+            self._sflat_file_dict_l[slot] = basename.replace('.fits', '_l.fits')
+            self._sflat_file_dict_h[slot] = basename.replace('.fits', '_h.fits')
+            self._sflat_file_dict_r[slot] = basename.replace('.fits', '_r.fits')
+
+
 
 class SuperflatMosaicConfig(CameraMosaicConfig):
     """Configuration for SuperbiasMosaicTask"""
@@ -489,11 +507,11 @@ class SuperflatMosaicTask(CameraMosaicTask):
     ConfigClass = SuperflatMosaicConfig
     _DefaultName = "SuperflatMosaicTask"
 
-    intablename_format = SUPERFLAT_FORMATTER
+    intablename_format = SUPERFLAT_SPEC_FORMATTER
     tablename_format = RUN_SUPERFLAT_FORMATTER
     plotname_format = RUN_SUPERFLAT_FORMATTER
 
-    datatype = 'superflat table'
+    datatype = 'superflat'
 
 
 

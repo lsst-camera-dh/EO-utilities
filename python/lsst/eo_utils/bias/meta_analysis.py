@@ -37,7 +37,7 @@ class BiasRaftTableAnalysisTask(AnalysisTask):
     intablename_format = SLOT_BIAS_TABLE_FORMATTER
     tablename_format = RAFT_BIAS_TABLE_FORMATTER
     plotname_format = RAFT_BIAS_PLOT_FORMATTER
-    datatype = 'bias table'
+    datatype = 'bias'
 
 
 
@@ -58,7 +58,7 @@ class BiasSummaryAnalysisTask(AnalysisTask):
     intablename_format = RAFT_BIAS_TABLE_FORMATTER
     tablename_format = SUM_BIAS_TABLE_FORMATTER
     plotname_format = SUM_BIAS_PLOT_FORMATTER
-    datatype = 'bias table'
+    datatype = 'bias'
 
 
 class SuperbiasSlotTableAnalysisConfig(AnalysisConfig):
@@ -106,7 +106,7 @@ class SuperbiasRaftTableAnalysisTask(AnalysisTask):
     tablename_format = RAFT_SBIAS_TABLE_FORMATTER
     plotname_format = RAFT_SBIAS_PLOT_FORMATTER
 
-    datatype = 'superbias table'
+    datatype = 'superbias'
 
 
 
@@ -121,11 +121,11 @@ class SuperbiasSummaryAnalysisTask(AnalysisTask):
 
     # These can overridden by the sub-class
     ConfigClass = SuperbiasSummaryAnalysisConfig
-    _DefaultName = "BiasSummaryAnalysisTask"
+    _DefaultName = "SuperbiasSummaryAnalysisTask"
     iteratorClass = SummaryAnalysisIterator
 
     intablename_format = RAFT_SBIAS_TABLE_FORMATTER
     tablename_format = SUM_SBIAS_TABLE_FORMATTER
     plotname_format = SUM_SBIAS_PLOT_FORMATTER
 
-    datatype = 'superbias table'
+    datatype = 'superbias'

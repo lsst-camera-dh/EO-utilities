@@ -26,7 +26,7 @@ TS8_GLOB_STRING =\
     '{archive}/LCA-11021_RTM/LCA-11021_{raft}*/{run}/{testName}/v0/*/{slot}/*{imgtype}*.fits'
 BOT_GLOB_STRING =\
     '{archive}/LCA-10134_Cryostat/LCA-10134_Cryostat-0001/{run}/' +\
-    'BOT_acq/v0/*/{testName}*{imgtype}*/MC_C*{raft}_{slot}.fits'
+    'BOT_acq*/v0/*/{testName}*{imgtype}*/MC_C*{raft}_{slot}.fits'
 
 # Photodiode calibration files
 PD_CALIB_FORMAT_STRING = '{outdir}/{teststand}/pdcalib/{raft}/{raft}-{run}-pd_calib.dat'
@@ -50,6 +50,8 @@ RUN_SUPERDARK_FORMAT_STRING = '{outdir}/{teststand}/superdark/FP/FP-{run}_superd
 SUPERFLAT_FORMAT_STRING = '{outdir}/{teststand}/superflat/{raft}/{raft}-{run}-{slot}_superflat_{calib}'
 SUPERFLAT_STAT_FORMAT_STRING = '{outdir}/{teststand}/superflat/{raft}/{raft}-{run}-{slot}_{stat}_{calib}'
 RUN_SUPERFLAT_FORMAT_STRING = '{outdir}/{teststand}/superflat/FP/FP-{run}_superflat_{calib}'
+
+SUPERFLAT_SPEC_FORMAT_STRING = '{outdir}/{teststand}/superflat/{raft}/{raft}-{run}-{slot}_superflat_{calib}{filekey}'
 
 
 # These strings define the report output filename
@@ -317,13 +319,13 @@ BOT_FORMATTER = FILENAME_FORMATS.add_format('bot_images',
                                             BOT_GLOB_STRING,
                                             archive=ARCHIVE_DIR)
 
-TS8_EORESULTSIN_FORMATTER = FILENAME_FORMATS.add_format('ts8_eoresults_in',
-                                                        SLOT_FORMAT_STRING,
-                                                        fileType='eotest',
-                                                        testType='',
-                                                        filekey='eotest_results')
+EORESULTSIN_FORMATTER = FILENAME_FORMATS.add_format('eoresults_in',
+                                                    SLOT_FORMAT_STRING,
+                                                    fileType='eotest',
+                                                    testType='',
+                                                    filekey='eotest_results')
 EORESULTS_TABLE_FORMATTER = FILENAME_FORMATS.add_format('eoresults_table',
-                                                        SLOT_FORMAT_STRING,
+                                                        RAFT_FORMAT_STRING,
                                                         fileType='eotest',
                                                         testType='',
                                                         filekey='results')

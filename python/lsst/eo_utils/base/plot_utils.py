@@ -1288,6 +1288,9 @@ class FigureDict:
             y-axis label
         yextras : `list`
             Additional quantities to plot on y-axis
+        ymin : `float` or `None`
+        ymax : `float` or `None`
+        logy : `bool` or `None`
 
         Returns
         -------
@@ -1296,24 +1299,36 @@ class FigureDict:
         """
         kwcopy = kwargs.copy()
         yerrs = kwcopy.pop('yerrs', None)
+        ymin = kwcopy.pop('ymin', None)
+        ymax = kwcopy.pop('ymax', None)
+        logy = kwcopy.pop('logy', False)
 
         odict = self.setup_raft_plots_grid(key, **kwcopy)
         fig = odict['fig']
         axs = odict['axs']
 
-        nrun = dtable['irun'].max() + 1
+        kwcopy.pop('ylabel', None)
+
         runs = np.unique(dtable['run'])
+        #nrun = dtable['irun'].max() + 1
+        nrun = len(runs)
 
         slots = np.unique(dtable['slot'])
         for islot, slot in enumerate(slots):
 
             axes = axs.flat[islot]
+            if logy:
+                axes.set_yscale('log')
 
             mask = dtable['slot'] == slot
             slot_table = dtable[mask]
 
             #idxs = slot_table['irun']*16 + slot_table['amp']
-            yvals = slot_table[ycol]
+            yvals = slot_table[ycol].flatten()
+
+            if ymin is not None and ymax is not None:
+                axes.set_ylim(ymin, ymax)
+                yvals = yvals.clip(ymin, ymax)
 
             n_data = yvals.size
             n_amps = int(n_data / nrun)
@@ -1324,7 +1339,7 @@ class FigureDict:
             if yerrs is None:
                 axes.plot(xvals, yvals, 'b.', **kwcopy)
             else:
-                axes.errorbar(xvals, yvals, yerr=slot_table[yerrs], fmt='b.', **kwcopy)
+                axes.errorbar(xvals, yvals, yerr=slot_table[yerrs].flatten(), fmt='b.', **kwcopy)
 
         fig.tight_layout()
         return odict

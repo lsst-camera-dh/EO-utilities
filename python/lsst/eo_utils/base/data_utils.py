@@ -248,11 +248,12 @@ def vstack_tables(filedict, **kwargs):
 
     runs = {}
 
+    nmissed = 0
     for key, val in sorted(filedict.items()):
         try:
             dtables = TableDict(val, [tablename])
         except FileNotFoundError as msg:
-            print(msg)
+            nmissed += 1
             continue
         table = dtables[tablename]
         if keep_cols is not None:
@@ -273,6 +274,8 @@ def vstack_tables(filedict, **kwargs):
         table.add_column(Column(name='raft', data=nrows*[raft]))
         tables.append(table)
 
+    print("Vstack has %i tables and missed %i files" % (len(tables), nmissed))
+    
     outtable = vstack_table(tables)
     return outtable
 

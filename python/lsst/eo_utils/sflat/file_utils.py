@@ -7,13 +7,15 @@
 from lsst.eo_utils.base.file_utils import FILENAME_FORMATS,\
     SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING,\
     SUPERFLAT_FORMAT_STRING, SUPERFLAT_STAT_FORMAT_STRING, RUN_SUPERFLAT_FORMAT_STRING,\
-    get_hardware_type_and_id, get_files_for_run
+    SUPERFLAT_SPEC_FORMAT_STRING,get_hardware_type_and_id, get_files_for_run
 
 
 SFLAT_DEFAULT_FIELDS = dict(testType='sflat')
 
 SUPERFLAT_FORMATTER = FILENAME_FORMATS.add_format('superflat',
                                                   SUPERFLAT_FORMAT_STRING)
+SUPERFLAT_SPEC_FORMATTER = FILENAME_FORMATS.add_format('superflat_spec',
+                                                       SUPERFLAT_SPEC_FORMAT_STRING)
 SUPERFLAT_STAT_FORMATTER = FILENAME_FORMATS.add_format('superflat_stat',
                                                        SUPERFLAT_STAT_FORMAT_STRING)
 RUN_SUPERFLAT_FORMATTER = FILENAME_FORMATS.add_format('run_superflat',

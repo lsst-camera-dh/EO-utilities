@@ -36,7 +36,10 @@ from .oscan_correl import OscanCorrelConfig, OscanCorrelTask
 
 from .superbias import SuperbiasConfig, SuperbiasTask,\
     SuperbiasRaftConfig, SuperbiasRaftTask,\
+    SuperbiasOutlierSummaryConfig, SuperbiasOutlierSummaryTask,\
     SuperbiasMosaicConfig, SuperbiasMosaicTask
 
 from .superbias_stats import SuperbiasStatsConfig, SuperbiasStatsTask,\
     SuperbiasSummaryConfig, SuperbiasSummaryTask
+
+from .superbias_stability import SuperbiasStabilityConfig, SuperbiasStabilityTask

@@ -27,7 +27,7 @@ class SuperbiasStatsConfig(SuperbiasRaftTableAnalysisConfig):
     """Configuration for SuperbiasStatsTask"""
     infilekey = EOUtilOptions.clone_param('infilekey', default='')
     filekey = EOUtilOptions.clone_param('filekey', default='stats')
-    stat = EOUtilOptions.clone_param('stat')
+    stat = EOUtilOptions.clone_param('stat', default='stdevclip')
 
 
 class SuperbiasStatsTask(SuperbiasRaftTableAnalysisTask):
@@ -165,7 +165,7 @@ class SuperbiasSummaryConfig(SuperbiasSummaryAnalysisConfig):
     infilekey = EOUtilOptions.clone_param('infilekey', default='stats')
     filekey = EOUtilOptions.clone_param('filekey', default='sum')
     dataset = EOUtilOptions.clone_param('dataset')
-    stat = EOUtilOptions.clone_param('stat')
+    stat = EOUtilOptions.clone_param('stat', default='stdevclip')
 
 
 class SuperbiasSummaryTask(SuperbiasSummaryAnalysisTask):
@@ -202,7 +202,7 @@ class SuperbiasSummaryTask(SuperbiasSummaryAnalysisTask):
         for key, val in sorted(data.items()):
             run_dict['runs'].append(key[4:])
             run_dict['rafts'].append(key[0:3])
-            data[key] = val.replace('_sum.fits', '_stats.fits')
+            data[key] = val.replace(self.config.filekey, self.config.infilekey)
 
         outtable = vstack_tables(data, tablename='stats')
 
@@ -235,14 +235,13 @@ class SuperbiasSummaryTask(SuperbiasSummaryAnalysisTask):
             figs.plot_run_chart("stats", runs, yvals, yerrs=yerrs, ylabel="Superbias STD [ADU]")
         elif self.config.teststand == 'bot':
             rafts = np.unique(sumtable['raft'])
-            #nrun = sumtable['irun'].max() + 1
-            runs = np.unique(sumtable['run'])
             for raft in rafts:
                 mask = sumtable['raft'] == raft
                 subtable = sumtable[mask]
                 figs.plot_run_chart_by_slot("stats_%s" % raft, subtable,
-                                            "mean", yerrs="std",
-                                            ylabel="Superbias STD [ADU]")
+                                            "mean", #yerrs="std",
+                                            ylabel="Superbias STD [ADU]", 
+                                            ymin=0., ymax=10.)
 
 
 EO_TASK_FACTORY.add_task_class('SuperbiasStats', SuperbiasStatsTask)

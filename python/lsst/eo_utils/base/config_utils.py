@@ -111,8 +111,10 @@ class EOUtilOptions(pexConfig.Config):
                                        int, default=10)
 
     # Options for Nonlinearity corrections
-    nonlin_spline_ext = pexConfig.Field("Method for extrapolating nonlinearity correction", int, default=0)
-    nonlin_spline_smooth = pexConfig.Field("Smoothing factor for nonlinearity correction", float, default=None)
+    nonlin_spline_ext = pexConfig.Field("Method for extrapolating nonlinearity correction",
+                                        int, default=0)
+    nonlin_spline_smooth = pexConfig.Field("Smoothing factor for nonlinearity correction",
+                                           float, default=None)
 
     # Options for BF Tasks
     maxLag = pexConfig.Field("Max lag for BF analysis", int, default=1)
