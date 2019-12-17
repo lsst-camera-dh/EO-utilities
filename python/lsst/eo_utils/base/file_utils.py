@@ -683,14 +683,14 @@ def get_raft_names_dc(run, teststand='bot'):
     ------
     ValueError : If the hardware type is not recognized
     """
-    if teststand in ['bot', 'bot_etu']:        
+    if teststand in ['bot', 'bot_etu']:
         htype = 'LCA-10134'
         return RAFT_NAMES_DICT[teststand]
 
     hinfo = get_hardware_type_and_id(run)
     htype = hinfo[0]
     hid = hinfo[1]
-            
+
     if htype == 'LCA-11021':
         return [hid]
     if htype == 'LCA-10134':

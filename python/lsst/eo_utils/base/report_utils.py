@@ -16,8 +16,7 @@ import yaml
 
 from .defaults import EO_PACKAGE_BASE, ALL_SLOTS, NINE_RAFTS
 
-from .file_utils import makedir_safe,\
-    get_raft_names_dc, read_runlist
+from .file_utils import makedir_safe, read_runlist
 
 
 def get_report_config_info(table_tag, **kwargs):
@@ -93,7 +92,7 @@ def handle_file(file_name, outdir, action, overwrite=True):
             os.unlink(outname)
         except FileNotFoundError:
             pass
-    else: 
+    else:
         if os.path.exists(outname):
             print("File %s exists, skipping" % outname)
             return basename
@@ -740,7 +739,7 @@ def write_run_report(data, inputbase, outbase, **kwargs):
         dataid_raft['raft'] = raft
         kwcopy.pop('dataid', None)
         write_raft_report(dataid_raft, inputbase, outbase, **kwcopy)
-    
+
     kwcopy['dataid'] = dataid
     raft_table_node = create_raft_table(body_node, **kwcopy)
 
@@ -853,7 +852,7 @@ def write_summary_report_by_raft(dataset, raft, inputbase, outbase, **kwargs):
     create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
 
     for slot in ALL_SLOTS:
-        write_summary_report_by_slot(dataset, raft, slot, inputbase, outbase, **kwargs)    
+        write_summary_report_by_slot(dataset, raft, slot, inputbase, outbase, **kwargs)
 
     create_slot_table(body_node, **kwcopy)
 
@@ -907,7 +906,7 @@ def write_summary_report(dataset, inputbase, outbase, **kwargs):
         kwcopy.pop('dataid', None)
         write_summary_report_by_raft(dataset, raft, inputbase, outbase,
                                      h3_text="Summary results by Raft",
-                                     **kwcopy)    
+                                     **kwcopy)
 
     kwcopy['rafts'] = rafts
     kwcopy['dataid'] = dict(dataset=dataset)

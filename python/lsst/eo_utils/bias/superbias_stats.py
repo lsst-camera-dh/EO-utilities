@@ -247,7 +247,7 @@ class SuperbiasSummaryTask(SuperbiasSummaryAnalysisTask):
                 subtable = sumtable[mask]
                 figs.plot_run_chart_by_slot("stats_%s" % raft, subtable,
                                             "mean", #yerrs="std",
-                                            ylabel="Superbias STD [ADU]", 
+                                            ylabel="Superbias STD [ADU]",
                                             ymin=0., ymax=10.,
                                             raft=raft,
                                             config_table=config_table)

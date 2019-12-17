@@ -675,7 +675,7 @@ class AnalysisBySlot(AnalysisIterator):
 
         kwargs['run'] = run
         kwargs.setdefault('handler_config', self.config)
-        
+
         if htype == "LCA-10134":
             iterate_over_rafts_slots(self._task, self._butler, data_files, **kwargs)
         elif htype == "LCA-11021":
@@ -1277,7 +1277,7 @@ class SummaryAnalysisBySlotIterator(AnalysisBySlot):
             for raft in raft_list:
                 try:
                     slot_dict = out_dict[raft]
-                except KeyError:                    
+                except KeyError:
                     slot_dict = {}
                     out_dict[raft] = slot_dict
 
@@ -1285,9 +1285,9 @@ class SummaryAnalysisBySlotIterator(AnalysisBySlot):
                 for slot in slot_list:
                     kwcopy['slot'] = slot
                     datapath = self._task.get_filename_from_format(formatter, '.fits', **kwcopy)
-                    try:                        
+                    try:
                         slot_dict[slot].append(datapath)
-                    except KeyError:                    
+                    except KeyError:
                         slot_dict[slot] = [datapath]
         return out_dict
 
@@ -1311,7 +1311,7 @@ class SummaryAnalysisBySlotIterator(AnalysisBySlot):
         """
         if self._task.config.teststand == 'ts8':
             return ('LCA-11021', run)
-        elif self._task.config.teststand == 'bot':
+        if self._task.config.teststand == 'bot':
             return ('LCA-10134', run)
         return None
 
@@ -1380,7 +1380,7 @@ class SummaryAnalysisBySlotIterator(AnalysisBySlot):
             try:
                 self.dispatch_dataset(dataset, **kw_remain)
             except Exception:
-                self._task.log.warn("Run %s failed, continue to next run" % run)
+                self._task.log.warn("Dataset %s failed" % dataset)
         else:
             self.dispatch_dataset(dataset, **kw_remain)
 

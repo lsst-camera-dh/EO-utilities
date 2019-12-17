@@ -344,7 +344,7 @@ class SuperdarkRaftTask(AnalysisTask):
         return dtables
 
 
-    def set_local_data(self, butler, data, **kwargs):        
+    def set_local_data(self, butler, data, **kwargs):
         """Set local data members if extract fails
 
         Parameters
@@ -369,7 +369,7 @@ class SuperdarkRaftTask(AnalysisTask):
             self._mask_file_dict[slot] = mask_files
             self._sdark_file_dict[slot] = data[slot]
 
-  
+
 
     def plot(self, dtables, figs, **kwargs):
         """Plot the raft-level mosaic and histrograms

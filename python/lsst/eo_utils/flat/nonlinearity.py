@@ -140,7 +140,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                                frac_resid=np.zeros((len(flux_vals))),
                                frac_resid_err=np.zeros((len(flux_vals))))
 
-        
+
 
         if self.config.num_profile_points > 0:
             do_profile = True
@@ -188,7 +188,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             mask = np.ones(amp_vals.shape, bool)
             if self.config.vmin is not None:
                 mask *= amp_vals > self.config.vmin
-            if self.config.vmax is not None:                
+            if self.config.vmax is not None:
                 mask *= amp_vals < self.config.vmax
 
             #mask = amp_vals <= amp_vals.max()
@@ -247,7 +247,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             data_dict['prof_y'].append(profile_y)
             data_dict['prof_y_corr'].append(profile_y_corr)
             data_dict['prof_yerr'].append(profile_yerr)
-            
+
             data_dict_inv['prof_x'].append(profile_x_inv)
             data_dict_inv['prof_y'].append(profile_y_inv)
             data_dict_inv['prof_y_corr'].append(profile_y_inv)
@@ -392,7 +392,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             mask = np.ones(amp_vals.shape, bool)
             if self.config.vmin is not None:
                 mask *= amp_vals > self.config.vmin
-            if self.config.vmax is not None:                
+            if self.config.vmax is not None:
                 mask *= amp_vals < self.config.vmax
 
 

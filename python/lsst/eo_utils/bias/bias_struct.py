@@ -83,7 +83,7 @@ class BiasStructTask(BiasAnalysisTask):
                               superbias_frame=superbias_frame)
 
         self.log_progress("Done!")
-        
+
         if not biasstruct_data:
             return None
 

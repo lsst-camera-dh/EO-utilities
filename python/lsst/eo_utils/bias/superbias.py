@@ -392,7 +392,7 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
                                       histtype='step')
 
 
-    def set_local_data(self, butler, data, **kwargs):        
+    def set_local_data(self, butler, data, **kwargs):
         """Set local data members if extract fails
 
         Parameters
@@ -415,7 +415,7 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
                 continue
             self._mask_file_dict[slot] = self.get_mask_files(slot=slot)
             self._sbias_file_dict[slot] = data[slot]
-  
+
 
 
 class SuperbiasOutlierSummaryConfig(SuperbiasSummaryAnalysisConfig):

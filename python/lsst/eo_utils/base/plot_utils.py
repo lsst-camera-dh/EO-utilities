@@ -1313,7 +1313,7 @@ class FigureDict:
         kwcopy = kwargs.copy()
         yerrs = kwcopy.pop('yerrs', None)
         ymin = kwcopy.pop('ymin', None)
-        ymax = kwcopy.pop('ymax', None)        
+        ymax = kwcopy.pop('ymax', None)
         logy = kwcopy.pop('logy', False)
         config_table = kwcopy.pop('config_table', None)
         raft = kwcopy.pop('raft', None)
@@ -1364,7 +1364,7 @@ class FigureDict:
                 if yerrs is None:
                     axes.plot(xvals, yvals, 'b.', **kwcopy)
                 else:
-                    axes.errorbar(xvals, yvals, yerr=slot_table[yerrs].flatten(), fmt='b.', **kwcopy)            
+                    axes.errorbar(xvals, yvals, yerr=slot_table[yerrs].flatten(), fmt='b.', **kwcopy)
             else:
                 for _config in configs:
 
@@ -1376,7 +1376,7 @@ class FigureDict:
                         axes.plot(xvals[config_mask], yvals[config_mask], '.', label=_config, **kwcopy)
                     else:
                         axes.errorbar(xvals[config_mask], yvals[config_mask],
-                                      yerr=slot_table[yerrs].flatten()[config_mask], fmt='.', label=_config, **kwcopy)            
+                                      yerr=slot_table[yerrs].flatten()[config_mask], fmt='.', label=_config, **kwcopy)
         fig.tight_layout()
         return odict
 

@@ -211,7 +211,7 @@ class StabilityTask(SflatAnalysisTask):
 
             norm_delta = tab_stab['AMP%02i_FLAT_MEAN' % amp] - refs
             norm_delta -= np.median(norm_delta)
-            
+
             norm_frac_resid = (tab_stab['AMP%02i_FLAT_MEAN' % amp] - refs) / refs
             norm_frac_resid -= np.median(norm_frac_resid)
             figs.plot_hist('delta-hist', amp-1, norm_delta[20:-20], xmin=-10, xmax=10., nbins=100)

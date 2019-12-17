@@ -234,7 +234,7 @@ class DarkCurrentSummaryTask(DarkSummaryAnalysisTask):
                 subtable = sumtable[mask]
                 figs.plot_run_chart_by_slot("val_%s" % raft, subtable,
                                             "current", #yerrs="std",
-                                            ylabel="Dark Current [ADU/s]", 
+                                            ylabel="Dark Current [ADU/s]",
                                             ymin=0., ymax=0.05,
                                             raft='config',
                                             config_table=config_table)

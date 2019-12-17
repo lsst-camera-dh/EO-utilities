@@ -1,14 +1,8 @@
 """Class to construct superbias frames"""
 
-import os
-
-import numpy as np
-
 import lsst.afw.math as afwMath
 
 import lsst.eotest.image_utils as imutil
-
-from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.file_utils import makedir_safe,\
     SUPERBIAS_FORMATTER, SUPERBIAS_STAT_FORMATTER
@@ -19,22 +13,15 @@ from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.data_utils import TableDict
-
 from lsst.eo_utils.base.image_utils import flip_data_in_place,\
-    stack_images, extract_raft_unbiased_images, extract_raft_imaging_data,\
-    outlier_raft_dict, fill_footprint_dict
+    stack_images
 
 from lsst.eo_utils.base.iter_utils import SummaryAnalysisBySlotIterator
 
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
-from lsst.eo_utils.base.merge_utils import CameraMosaicConfig, CameraMosaicTask
-
 from lsst.eo_utils.bias.meta_analysis import SuperbiasSlotTableAnalysisConfig,\
     SuperbiasSlotTableAnalysisTask
-
-from lsst.eo_utils.bias.file_utils import RUN_SUPERBIAS_FORMATTER
 
 class SuperbiasStabilityConfig(SuperbiasSlotTableAnalysisConfig):
     """Configuration for BiasVRowTask"""

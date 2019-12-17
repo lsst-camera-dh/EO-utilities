@@ -18,7 +18,7 @@ from .defaults import DEFAULT_STAT_TYPE
 from .file_utils import makedir_safe,\
     SLOT_BASE_FORMATTER, MASK_FORMATTER,\
     SUPERBIAS_FORMATTER, SUPERBIAS_STAT_FORMATTER,\
-    NONLIN_FORMATTER, EORESULTS_TABLE_FORMATTER, EORESULTSIN_FORMATTER
+    NONLIN_FORMATTER, EORESULTSIN_FORMATTER
 
 from .config_utils import EOUtilOptions, Configurable
 
@@ -327,7 +327,8 @@ class BaseAnalysisTask(BaseTask):
 
         val = self.get_calib_param_from_flavor('mask')
         if val not in [None, 'none', 'None', False]:
-            mask_files = glob.glob(self.get_filename_from_format(MASK_FORMATTER, ".fits", filekey='*-mask', calib=val))
+            mask_files = glob.glob(self.get_filename_from_format(MASK_FORMATTER, ".fits",
+                                                                 filekey='*-mask', calib=val))
             return mask_files
         return []
 

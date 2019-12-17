@@ -470,7 +470,7 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
                                       histtype='step')
 
 
-    def set_local_data(self, butler, data, **kwargs):        
+    def set_local_data(self, butler, data, **kwargs):
         """Set local data members if extract fails
 
         Parameters

@@ -107,7 +107,7 @@ class PTCTask(FlatSlotTableAnalysisTask):
                 #index = np.where(frac_resids < 0.2)
                 index = mean < 8.0e4
                 pars = (2.7e-6, med_gain, 25.)
-                #pars = (25., med_gain, 0.)                    
+                #pars = (25., med_gain, 0.)
 
                 results = scipy.optimize.leastsq(chi2_model, pars, full_output=1,
                                                  args=(mean[index], var[index], ptc_func))

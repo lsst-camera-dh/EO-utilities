@@ -252,7 +252,7 @@ def vstack_tables(filedict, **kwargs):
     for key, val in sorted(filedict.items()):
         try:
             dtables = TableDict(val, [tablename])
-        except FileNotFoundError as msg:
+        except FileNotFoundError:
             nmissed += 1
             continue
         table = dtables[tablename]
@@ -275,7 +275,7 @@ def vstack_tables(filedict, **kwargs):
         tables.append(table)
 
     print("Vstack has %i tables and missed %i files" % (len(tables), nmissed))
-    
+
     outtable = vstack_table(tables)
     return outtable
 
