@@ -107,7 +107,8 @@ class PTCTask(FlatSlotTableAnalysisTask):
                 #index = np.where(frac_resids < 0.2)
                 index = mean < 8.0e4
                 pars = (2.7e-6, med_gain, 25.)
-                #pars = (25., med_gain, 0.)
+                #pars = (25., med_gain, 0.)                    
+
                 results = scipy.optimize.leastsq(chi2_model, pars, full_output=1,
                                                  args=(mean[index], var[index], ptc_func))
                 pars, cov = results[:2]
@@ -149,6 +150,9 @@ class PTCTask(FlatSlotTableAnalysisTask):
 
         self.log_progress("Done!")
 
+        if nused == 0:
+            return None
+
         outtables = TableDict()
         outtables.make_datatable("ptc", data_dict)
         return outtables
@@ -186,7 +190,7 @@ class PTCTask(FlatSlotTableAnalysisTask):
         axes_nonlin_log = fig_nonlin_log['axes']
         axes_nonlin_log.set_xscale('log')
         axes_nonlin_log.set_ylim(-0.06, 0.05)
-        axes_nonlin_log.set_xlim(10., 80000)
+        axes_nonlin_log.set_xlim(1000, 80000)
 
         fig_nonlin = figs.setup_figure("nonlin", xlabel="Flux [a.u.]", ylabel='Frac. Resid',
                                        figsize=(7, 5))
@@ -210,7 +214,7 @@ class PTCTask(FlatSlotTableAnalysisTask):
 
             amp_plot_data = dict(xvals=xvals_sorted, yvals=yvals_sorted, resid_vals=frac_resid,
                                  model_vals=yvals_fit, body_mask=mask, resid_mask=mask)
-            figs.plot_resid('ptc_fits', amp, amp_plot_data)
+            figs.plot_resid('fits', amp, amp_plot_data)
             axes_nonlin.plot(x_masked, y_masked, '-', label="Amp %i" % amp)
             axes_nonlin_log.plot(x_masked, y_masked, '-', label="Amp %i" % amp)
 

@@ -1,9 +1,10 @@
 defaults : 
   bias : spline
   superbias : normal
-  gain : eotest
-  nonlin : False
-  mask : False
+  gain : None
+  gain_run : None
+  nonlin : None
+  mask : None
 normal :
   FlatPairTask : 
     mask : eotest
@@ -18,10 +19,20 @@ nonlin :
     nonlin : normal
   FlatPairTask : 
     nonlin : normal
-    mask : True
+    mask : eotest
 eotest :
   FlatPairTask : 
-    mask : True
+    mask : eotest
+gains :
+  default :
+    bias : spline
+    superbias : normal
+    gain : eotest
+    gain_run : 6911D
+    nonlin : None
+    mask : None
+  FlatPairTask : 
+    mask : eotest
 
 
 

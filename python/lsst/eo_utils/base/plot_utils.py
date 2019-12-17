@@ -9,6 +9,8 @@ import numpy as np
 import astropy.visualization as viz
 from astropy.visualization.mpl_normalize import ImageNormalize
 
+from astropy.table import join
+
 from lsst.eotest.raft import RaftMosaic
 
 from lsst.eotest.sensor import MaskedCCD, parse_geom_kwd
@@ -194,6 +196,10 @@ class FigureDict:
             Y-axis minimum value
         ymax : `float` or `None`
             Y-axis maximum value
+        xcale : `str` or `None`
+            X-axis scale
+        yscale : `str` or `None`
+            Y-axis scae
 
         Returns
         -------
@@ -207,6 +213,8 @@ class FigureDict:
         ylabel = kwargs.get('ylabel', None)
         ymin = kwargs.get('ymin', None)
         ymax = kwargs.get('ymax', None)
+        xscale = kwargs.get('xscale', None)
+        yscale = kwargs.get('yscale', None)
 
         figsize = kwargs.get('figsize', (15, 10))
 
@@ -230,6 +238,11 @@ class FigureDict:
         if ymin is not None or ymax is not None:
             for i_row in range(fig_nrow):
                 for i_col in range(fig_ncol):
+                    if xscale is not None:
+                        axs[i_row, i_col].set_xscale(xscale)
+                    if yscale is not None:
+                        axs[i_row, i_col].set_yscale(yscale)
+
                     axs[i_row, i_col].set_ylim(ymin, ymax)
 
         o_dict = dict(fig=fig, axs=axs)
@@ -1300,8 +1313,10 @@ class FigureDict:
         kwcopy = kwargs.copy()
         yerrs = kwcopy.pop('yerrs', None)
         ymin = kwcopy.pop('ymin', None)
-        ymax = kwcopy.pop('ymax', None)
+        ymax = kwcopy.pop('ymax', None)        
         logy = kwcopy.pop('logy', False)
+        config_table = kwcopy.pop('config_table', None)
+        raft = kwcopy.pop('raft', None)
 
         odict = self.setup_raft_plots_grid(key, **kwcopy)
         fig = odict['fig']
@@ -1313,17 +1328,25 @@ class FigureDict:
         #nrun = dtable['irun'].max() + 1
         nrun = len(runs)
 
-        slots = np.unique(dtable['slot'])
+        if config_table is not None:
+            configs = np.unique(config_table[raft])
+            use_table = join(dtable, config_table, 'run')
+        else:
+            configs = None
+            use_table = dtable
+
+        slots = np.unique(use_table['slot'].flatten())
         for islot, slot in enumerate(slots):
 
             axes = axs.flat[islot]
             if logy:
                 axes.set_yscale('log')
 
-            mask = dtable['slot'] == slot
-            slot_table = dtable[mask]
+            mask = use_table['slot'] == slot
+            slot_table = use_table[mask]
 
             #idxs = slot_table['irun']*16 + slot_table['amp']
+            ndim = len(slot_table[ycol].shape)
             yvals = slot_table[ycol].flatten()
 
             if ymin is not None and ymax is not None:
@@ -1336,11 +1359,24 @@ class FigureDict:
             axes.set_xticks(locs)
             axes.set_xticklabels(runs, rotation=90)
             xvals = np.linspace(0, n_data-1, n_data)
-            if yerrs is None:
-                axes.plot(xvals, yvals, 'b.', **kwcopy)
-            else:
-                axes.errorbar(xvals, yvals, yerr=slot_table[yerrs].flatten(), fmt='b.', **kwcopy)
 
+            if configs is None:
+                if yerrs is None:
+                    axes.plot(xvals, yvals, 'b.', **kwcopy)
+                else:
+                    axes.errorbar(xvals, yvals, yerr=slot_table[yerrs].flatten(), fmt='b.', **kwcopy)            
+            else:
+                for _config in configs:
+
+                    config_mask = slot_table[raft].flatten() == _config
+                    if ndim == 2:
+                        config_mask = np.array(16*[config_mask]).T.flatten()
+
+                    if yerrs is None:
+                        axes.plot(xvals[config_mask], yvals[config_mask], '.', label=_config, **kwcopy)
+                    else:
+                        axes.errorbar(xvals[config_mask], yvals[config_mask],
+                                      yerr=slot_table[yerrs].flatten()[config_mask], fmt='.', label=_config, **kwcopy)            
         fig.tight_layout()
         return odict
 

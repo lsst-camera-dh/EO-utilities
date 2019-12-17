@@ -41,8 +41,6 @@ class CalibDict:
     def get_calib_value_task(self, flavor, task_name, key):
         """Get the value for calibration parameter from a particular task and flavor"""
         
-        print (flavor, task_name, key)
-
         if flavor not in self._calib_dict:
             raise KeyError("Calibration flavor %s not defined.  Options are %s" %\
                                (flavor, str(self._calib_dict.keys())))

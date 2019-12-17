@@ -136,8 +136,8 @@ def merge_fp(in_dict, for_whom=None):
             try:
                 # Trim the overscan and assemble the image
                 image = _assemble_clean(infile)
-            except Exception:
-                print("Skipping %s %s" % (slot, infile))
+            except Exception as msg:
+                print("Skipping %s %s %s" % (slot, infile, msg))
                 continue
 
             # Regrid to 4000x4064

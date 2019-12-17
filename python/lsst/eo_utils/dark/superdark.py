@@ -32,7 +32,8 @@ from lsst.eo_utils.base.iter_utils import AnalysisBySlot,\
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from lsst.eo_utils.dark.file_utils import RAFT_SDARK_TABLE_FORMATTER,\
-    RAFT_SDARK_PLOT_FORMATTER, SUPERDARK_FORMATTER, RUN_SUPERDARK_FORMATTER
+    RAFT_SDARK_PLOT_FORMATTER, SUPERDARK_FORMATTER, SUPERDARK_STAT_FORMATTER,\
+    RUN_SUPERDARK_FORMATTER, RUN_SUPERDARK_STAT_FORMATTER
 
 from lsst.eo_utils.base.merge_utils import CameraMosaicConfig, CameraMosaicTask
 
@@ -509,9 +510,28 @@ class SuperdarkMosaicTask(CameraMosaicTask):
     datatype = 'superdark'
 
 
+class SuperdarkStatMosaicConfig(CameraMosaicConfig):
+    """Configuration for SuperdarkMosaicTask"""
+    stat = EOUtilOptions.clone_param('stat', default='stdevclip')
+
+
+class SuperdarkStatMosaicTask(CameraMosaicTask):
+    """Make a mosaic from a superbias frames"""
+
+    ConfigClass = SuperdarkStatMosaicConfig
+    _DefaultName = "SuperdarkMosaicTask"
+
+    intablename_format = SUPERDARK_STAT_FORMATTER
+    tablename_format = RUN_SUPERDARK_STAT_FORMATTER
+    plotname_format = RUN_SUPERDARK_STAT_FORMATTER
+
+    datatype = 'superdark'
+
+
 
 
 EO_TASK_FACTORY.add_task_class('Superdark', SuperdarkTask)
 EO_TASK_FACTORY.add_task_class('SuperdarkRaft', SuperdarkRaftTask)
 EO_TASK_FACTORY.add_task_class('SuperdarkOutlierSummary', SuperdarkOutlierSummaryTask)
 EO_TASK_FACTORY.add_task_class('SuperdarkMosaic', SuperdarkMosaicTask)
+EO_TASK_FACTORY.add_task_class('SuperdarkStatMosaic', SuperdarkStatMosaicTask)

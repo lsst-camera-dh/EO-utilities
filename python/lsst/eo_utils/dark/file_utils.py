@@ -6,7 +6,8 @@
 
 from lsst.eo_utils.base.file_utils import FILENAME_FORMATS,\
     SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING,\
-    SUPERDARK_FORMAT_STRING, SUPERDARK_STAT_FORMAT_STRING, RUN_SUPERDARK_FORMAT_STRING
+    SUPERDARK_FORMAT_STRING, SUPERDARK_STAT_FORMAT_STRING,\
+    RUN_SUPERDARK_FORMAT_STRING, RUN_SUPERDARK_STAT_FORMAT_STRING
 
 
 DARK_DEFAULT_FIELDS = dict(testType='dark')
@@ -19,6 +20,8 @@ SUPERDARK_STAT_FORMATTER = FILENAME_FORMATS.add_format('superdark_stat',
                                                        SUPERDARK_STAT_FORMAT_STRING)
 RUN_SUPERDARK_FORMATTER = FILENAME_FORMATS.add_format('run_superdark',
                                                       RUN_SUPERDARK_FORMAT_STRING)
+RUN_SUPERDARK_STAT_FORMATTER = FILENAME_FORMATS.add_format('run_superdark_stat',
+                                                           RUN_SUPERDARK_STAT_FORMAT_STRING)
 
 RAFT_DARK_TABLE_FORMATTER = FILENAME_FORMATS.add_format('raft_dark_table',
                                                         RAFT_FORMAT_STRING,

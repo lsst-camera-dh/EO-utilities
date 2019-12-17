@@ -62,7 +62,7 @@ def get_report_config_info(table_tag, **kwargs):
                 defaults=template_dict['defaults'])
 
 
-def handle_file(file_name, outdir, action):
+def handle_file(file_name, outdir, action, overwrite=True):
     """Move, copy or link a file to an output directory
 
     Parameters
@@ -73,6 +73,8 @@ def handle_file(file_name, outdir, action):
         The output directory
     action : `str`
         What to do with the file, of `copy`, `move`, or `link`
+    overwrite : `bool`
+        Overwrite existing files
 
     Returns
     -------
@@ -85,10 +87,16 @@ def handle_file(file_name, outdir, action):
 
     inname = os.path.abspath(file_name)
     outname = os.path.abspath(os.path.join(outdir, basename))
-    try:
-        os.unlink(outname)
-    except FileNotFoundError:
-        pass
+
+    if overwrite:
+        try:
+            os.unlink(outname)
+        except FileNotFoundError:
+            pass
+    else: 
+        if os.path.exists(outname):
+            print("File %s exists, skipping" % outname)
+            return basename
 
     makedir_safe(outname)
     if action in ['copy', 'cp']:
@@ -200,6 +208,8 @@ def create_plot_table_row(tbody_node, desc, plot_file, outdir, **kwargs):
     --------
     plot_report_action : `str`
         What to do with the plot file, of `copy`, `move`, or `link`
+    overwrite : `bool`
+        Overwrite existing files
     row_class : `str`
         The style class to use for the row node
     col_desc_class : `str`
@@ -219,7 +229,9 @@ def create_plot_table_row(tbody_node, desc, plot_file, outdir, **kwargs):
         sys.stdout.write("Warning, skipping missing plot %s\n" % plot_file)
         return None
 
-    basename = handle_file(plot_file, outdir, kwargs.get('plot_report_action', 'link'))
+    basename = handle_file(plot_file, outdir,
+                           kwargs.get('plot_report_action', 'link'),
+                           kwargs.get('overwrite', False))
 
     row_node = make_child_node(tbody_node, 'tr', node_class=kwargs.get('row_class', None))
     make_child_node(row_node, 'td',
@@ -334,12 +346,13 @@ def create_raft_table(parent_node, **kwargs):
 
     html_file = kwargs.get('html_file', None)
     rafts = kwargs.get('rafts', NINE_RAFTS)
+    h3_text = kwargs.get('h3_text', 'List of rafts')
     if html_file is not None:
         basedir = os.path.dirname(html_file)
     else:
         basedir = None
 
-    h3_node = make_child_node(parent_node, 'h3', text="List of RAFTS")
+    h3_node = make_child_node(parent_node, 'h3', text=h3_text)
 
     table_node = make_child_node(parent_node, 'table')
     tbody_node = make_child_node(table_node, 'tbody')
@@ -510,8 +523,15 @@ def create_run_table(parent_node, dataset, **kwargs):
         row_node = make_child_node(tbody_node, 'tr',
                                    node_class=kwcopy.get('table_row_class', None))
         col_run_node = make_child_node(row_node, 'td',
-                                       node_class=kwcopy.get('table_col_class', None),
-                                       text=run_info[1])
+                                       node_class=kwcopy.get('table_col_class', None))
+
+        run_url = os.path.join(run_info[1], 'index.html')
+        if basedir is None or os.path.exists(os.path.join(basedir, run_url)):
+            make_child_node(col_run_node, 'a',
+                            href=run_url,
+                            text=run_info[1])
+
+
         col_rafts_node = make_child_node(row_node, 'td',
                                          node_class=kwcopy.get('table_col_class', None))
 
@@ -524,10 +544,10 @@ def create_run_table(parent_node, dataset, **kwargs):
 
         nrafts = 0
         for _raft in rafts:
-            run_url = os.path.join(run_info[1], _raft, 'index.html')
-            if basedir is None or os.path.exists(os.path.join(basedir, run_url)):
+            raft_run_url = os.path.join(run_info[1], _raft, 'index.html')
+            if basedir is None or os.path.exists(os.path.join(basedir, raft_run_url)):
                 make_child_node(col_rafts_node, 'a',
-                                href=run_url,
+                                href=raft_run_url,
                                 text=_raft)
                 nrafts += 1
 
@@ -653,15 +673,16 @@ def write_raft_report(dataid, inputbase, outbase, **kwargs):
 
     ntables = create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
 
-    for slot in all_slots:
+    for slot in ALL_SLOTS:
         dataid_slot = dataid.copy()
         dataid_slot['slot'] = slot
-        kwcopy['dataid'] = dataid_slot
-        write_slot_report(dataid, inputbase, outbase, **kwcopy)
+        kwcopy.pop('dataid', None)
+        write_slot_report(dataid_slot, inputbase, outbase, **kwcopy)
 
-    ntables += create_slot_table(body_node, **kwcopy)
+    kwcopy['dataid'] = dataid
+    slot_table_node = create_slot_table(body_node, **kwcopy)
 
-    if ntables:
+    if ntables or slot_table_node is not None:
         makedir_safe(html_file)
         _ = handle_file(config_info['cssfile'], outdir, action='copy')
         write_tree_to_html(html_node, html_file)
@@ -671,7 +692,7 @@ def write_raft_report(dataid, inputbase, outbase, **kwargs):
 
 
 
-def write_run_report(dataid, inputbase, outbase, **kwargs):
+def write_run_report(data, inputbase, outbase, **kwargs):
     """Create table with descriptions and a plots
 
     Parameters
@@ -692,13 +713,14 @@ def write_run_report(dataid, inputbase, outbase, **kwargs):
     config_info = get_report_config_info('run_plot_tables', **kwcopy)
 
     kwcopy.update(config_info['defaults'])
+    dataid = dict(run=data)
     kwcopy['dataid'] = dataid
 
     if outbase is None:
         outdir = None
         html_file = None
     else:
-        outdir = os.path.join(outbase, dataid['run'], dataid['raft'])
+        outdir = os.path.join(outbase, dataid['run'])
         html_file = os.path.join(outdir, 'index.html')
 
     kwcopy['html_file'] = html_file
@@ -716,12 +738,13 @@ def write_run_report(dataid, inputbase, outbase, **kwargs):
     for raft in NINE_RAFTS:
         dataid_raft = dataid.copy()
         dataid_raft['raft'] = raft
-        kwcopy['dataid'] = dataid_raft
-        write_raft_report(dataid, inputbase, outbase, **kwcopy)
+        kwcopy.pop('dataid', None)
+        write_raft_report(dataid_raft, inputbase, outbase, **kwcopy)
     
-    ntables += create_raft_table(body_node, **kwcopy)
+    kwcopy['dataid'] = dataid
+    raft_table_node = create_raft_table(body_node, **kwcopy)
 
-    if ntables:
+    if ntables or raft_table_node is not None:
         makedir_safe(html_file)
         _ = handle_file(config_info['cssfile'], outdir, action='copy')
         write_tree_to_html(html_node, html_file)
@@ -755,7 +778,6 @@ def write_summary_report_by_slot(dataset, raft, slot, inputbase, outbase, **kwar
     config_info = get_report_config_info('summary_by_slot_plot_tables', **kwcopy)
 
     kwcopy.update(config_info['defaults'])
-    kwcopy['dataid'] = dict(dataset=dataset)
 
     if outbase is None:
         outdir = None
@@ -805,7 +827,6 @@ def write_summary_report_by_raft(dataset, raft, inputbase, outbase, **kwargs):
     config_info = get_report_config_info('summary_by_raft_plot_tables', **kwcopy)
 
     kwcopy.update(config_info['defaults'])
-    kwcopy['dataid'] = dict(dataset=dataset)
 
     if outbase is None:
         outdir = None
@@ -858,7 +879,6 @@ def write_summary_report(dataset, inputbase, outbase, **kwargs):
     config_info = get_report_config_info('summary_plot_tables', **kwcopy)
 
     kwcopy.update(config_info['defaults'])
-    kwcopy['dataid'] = dict(dataset=dataset)
     rafts = kwcopy.get('rafts', NINE_RAFTS)
 
     if outbase is None:
@@ -875,17 +895,22 @@ def write_summary_report(dataset, inputbase, outbase, **kwargs):
 
     html_node = ET.Element('html')
     create_report_header(html_node,
-                         title="%s results" % dataset,
+                         title="Summary results for dataset %s" % dataset,
                          stylesheet=kwcopy.pop('stylesheet', ccsfile_out))
 
     body_node = make_child_node(html_node, 'body')
 
+    kwcopy['dataid'] = dict(dataset=dataset)
     create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
 
     for raft in rafts:
-        write_summary_report_by_raft(dataset, raft, inputbase, outbase, **kwargs)    
+        kwcopy.pop('dataid', None)
+        write_summary_report_by_raft(dataset, raft, inputbase, outbase,
+                                     h3_text="Summary results by Raft",
+                                     **kwcopy)    
 
     kwcopy['rafts'] = rafts
+    kwcopy['dataid'] = dict(dataset=dataset)
     create_raft_table(body_node, **kwcopy)
 
     create_run_table(body_node, dataset, **kwcopy)

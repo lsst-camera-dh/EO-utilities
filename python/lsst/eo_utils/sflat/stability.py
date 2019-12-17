@@ -38,7 +38,7 @@ class StabilityTask(SflatAnalysisTask):
     _DefaultName = "StabilityTask"
     iteratorClass = AnalysisBySlot
 
-    plot_names = ['mean', 'std', 'row', 'col']
+    plot_names = ['delta-hist', 'delta', 'mean-ref', 'mean', 'std', 'row', 'col']
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -182,28 +182,46 @@ class StabilityTask(SflatAnalysisTask):
 
         xlabel = 'Seq. Num.'
         ylabel_resid = 'Frac. Resid'
-        ylabel_std = 'Std [ADU]'
+        ylabel_std = 'Var/Mean*Flux'
 
 
         tab_stab = dtables['stability']
+        figs.setup_amp_plots_grid('delta', xlabel=xlabel, ylabel="Delta [ADU]",
+                                  ymin=-10, ymax=10)
+        figs.setup_amp_plots_grid('delta-hist', xlabel="Delta [ADU]", ylabel="Frames/0.1ADU")
+        figs.setup_amp_plots_grid('mean-ref', xlabel=xlabel, ylabel=ylabel_resid,
+                                  ymin=-0.001, ymax=0.001)
         figs.setup_amp_plots_grid('mean', xlabel=xlabel, ylabel=ylabel_resid,
-                                  ymin=-0.05, ymax=0.05)
+                                  ymin=-0.01, ymax=0.01)
         figs.setup_amp_plots_grid('std', xlabel=xlabel, ylabel=ylabel_std)
         figs.setup_amp_plots_grid('row', xlabel="row", ylabel="Mean [ADU]")
         figs.setup_amp_plots_grid('col', xlabel="col", ylabel="Mean [ADU]")
 
+        flux = -1. * tab_stab['FLUX']
+
+        refs = np.mean(np.vstack([tab_stab['AMP%02i_FLAT_MEAN' % amp] for amp in range(1, 17)]), 0)
+
         for amp in range(1, 17):
-            amp_means = tab_stab['AMP%02i_FLAT_MEAN' % amp]
-            amp_vars = tab_stab['AMP%02i_FLAT_VAR' % amp]
+            amp_means = tab_stab['AMP%02i_FLAT_MEAN' % amp] / flux
+            amp_vars = tab_stab['AMP%02i_FLAT_VAR' % amp] / (tab_stab['AMP%02i_FLAT_MEAN' % amp] * flux)
             ymedian = np.median(amp_means)
             n_x = len(amp_means)
             xvals = np.linspace(0, n_x-1, n_x)
             frac_resid = (amp_means - ymedian) / ymedian
+
+            norm_delta = tab_stab['AMP%02i_FLAT_MEAN' % amp] - refs
+            norm_delta -= np.median(norm_delta)
+            
+            norm_frac_resid = (tab_stab['AMP%02i_FLAT_MEAN' % amp] - refs) / refs
+            norm_frac_resid -= np.median(norm_frac_resid)
+            figs.plot_hist('delta-hist', amp-1, norm_delta[20:-20], xmin=-10, xmax=10., nbins=100)
+            figs.plot('delta', amp-1, xvals, norm_delta)
+            figs.plot('mean-ref', amp-1, xvals, norm_frac_resid)
             figs.plot('mean', amp-1, xvals, frac_resid)
             figs.plot('std', amp-1, xvals, np.sqrt(amp_vars))
 
-            rows = tab_stab['AMP%02i_FLAT_ROWMEAN'  % amp]
-            cols = tab_stab['AMP%02i_FLAT_COLMEAN'  % amp]
+            rows = (tab_stab['AMP%02i_FLAT_ROWMEAN'  % amp].T / flux).T
+            cols = (tab_stab['AMP%02i_FLAT_COLMEAN'  % amp].T / flux).T
 
             nrow = len(rows[0])
             xrow = np.linspace(0, nrow-1, nrow)

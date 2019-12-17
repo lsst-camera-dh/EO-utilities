@@ -109,8 +109,7 @@ class SuperflatTask(SflatAnalysisTask):
         mask_files = self.get_mask_files()
         superbias_frame = self.get_superbias_frame(mask_files)
 
-        gains = self.get_gains(run='6911D')
-        print("gains", gains)
+        gains = self.get_gains()
         nlc = self.get_nonlinearirty_correction()
 
         sflat_files = data['SFLAT']
@@ -231,6 +230,9 @@ class SuperflatTask(SflatAnalysisTask):
 
         if dtables is not None:
             raise ValueError("dtables should not be set in SuperflatTask.plot")
+
+        if self._superflat_frame_l is None:
+            return
 
         if self.config.plot:
             figs.plot_sensor("img_l", self._superflat_frame_l)

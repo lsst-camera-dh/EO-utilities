@@ -35,7 +35,9 @@ class NonlinearityConfig(FlatSlotTableAnalysisConfig):
     filekey = EOUtilOptions.clone_param('filekey', default='flat-nonlin')
     nonlin_spline_ext = EOUtilOptions.clone_param('nonlin_spline_ext')
     nonlin_spline_smooth = EOUtilOptions.clone_param('nonlin_spline_smooth')
-
+    num_profile_points = EOUtilOptions.clone_param('num_profile_points')
+    vmin = EOUtilOptions.clone_param('vmin')
+    vmax = EOUtilOptions.clone_param('vmax')
 
 class NonlinearityTask(FlatSlotTableAnalysisTask):
     """Measue the linearity using data extracted from the flat-pair data"""
@@ -47,9 +49,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
     plot_resid_ymax = 0.02
 
     model_func_choice = 1
-    do_profiles = True
     null_point = 0.
-    num_profile_points = 40
 
     plot_names = ['fits', 'prof', 'nonlin',
                   'nonlin-log', 'nonlin-stack', 'nonlin-stack-log',
@@ -139,15 +139,19 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                                offset=0.,
                                frac_resid=np.zeros((len(flux_vals))),
                                frac_resid_err=np.zeros((len(flux_vals))))
-        if self.do_profiles:
-            if self.num_profile_points is not None:
-                np_bins = self.num_profile_points - 1
-            else:
-                np_bins = len(flux_vals)
-            guard_vals_dict['prof_x'] = np.zeros((np_bins))
-            guard_vals_dict['prof_y'] = np.zeros((np_bins))
-            guard_vals_dict['prof_y_corr'] = np.zeros((np_bins))
-            guard_vals_dict['prof_yerr'] = np.zeros((np_bins))
+
+        
+
+        if self.config.num_profile_points > 0:
+            do_profile = True
+            np_bins = self.config.num_profile_points - 1
+        else:
+            do_profile = False
+            np_bins = len(flux_vals)
+        guard_vals_dict['prof_x'] = np.zeros((np_bins))
+        guard_vals_dict['prof_y'] = np.zeros((np_bins))
+        guard_vals_dict['prof_y_corr'] = np.zeros((np_bins))
+        guard_vals_dict['prof_yerr'] = np.zeros((np_bins))
 
         data_dict = create_dict_from_guard_rows(guard_vals_dict)
         data_dict_inv = create_dict_from_guard_rows(guard_vals_dict)
@@ -157,6 +161,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                          flux_2=flux_2,
                          monoch_slit_b=slit_widths)
 
+        good_amps = 0
         for amp in range(1, 17):
 
             # Here you can get the data out for each amp and append it to the
@@ -180,7 +185,12 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                 append_guard_row(data_dict_inv, guard_vals_dict)
                 continue
 
-            mask = amp_vals < 0.8 * amp_vals.max()
+            mask = np.ones(amp_vals.shape, bool)
+            if self.config.vmin is not None:
+                mask *= amp_vals > self.config.vmin
+            if self.config.vmax is not None:                
+                mask *= amp_vals < self.config.vmax
+
             #mask = amp_vals <= amp_vals.max()
 
             if not mask.any():
@@ -189,6 +199,8 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                 append_guard_row(data_dict, guard_vals_dict)
                 append_guard_row(data_dict_inv, guard_vals_dict)
                 continue
+
+            good_amps += 1
 
             data_dict['amp'].append(amp)
             data_dict_inv['amp'].append(amp)
@@ -201,40 +213,45 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             results_inv, _, frac_resid_inv, frac_resid_err_inv =\
                 perform_linear_chisq_fit(flux_vals, amp_vals, mask, self.model_func_choice)
 
-            if self.do_profiles:
-                if self.num_profile_points is not None:
-                    profile_xbins = np.linspace(0., amp_vals[mask].max(), self.num_profile_points)
-                    profile_xbins_inv = np.linspace(0., flux_vals[mask].max(), self.num_profile_points)
+            if do_profile:
+                #profile_xbins = np.linspace(0., amp_vals[mask].max(), self.config.num_profile_points)
+                #profile_xbins_inv = np.linspace(0., flux_vals[mask].max(), self.config.num_profile_points)
+                profile_xbins = np.logspace(np.log10(amp_vals[mask].min()),
+                                            np.log10(amp_vals[mask].max()),
+                                            self.config.num_profile_points)
+                profile_xbins_inv = np.logspace(np.log10(flux_vals[mask].min()),
+                                                np.log10(flux_vals[mask].max()),
+                                                self.config.num_profile_points)
 
-                    profile_x, profile_y, profile_yerr =\
-                        make_profile_hist(profile_xbins, amp_vals, frac_resid,
-                                          yerrs=frac_resid_err, stderr=True)
-                    profile_x_inv, profile_y_inv, profile_yerr_inv =\
-                       make_profile_hist(profile_xbins_inv, flux_vals, frac_resid_inv,
-                                         yerrs=frac_resid_err_inv, stderr=True)
-                else:
-                    idx_sort = np.argsort(amp_vals)
-                    idx_sort_inv = np.argsort(flux_vals)
-                    profile_x, profile_y, profile_yerr =\
-                        amp_vals[idx_sort], frac_resid[idx_sort], frac_resid_err[idx_sort]
-                    profile_x_inv, profile_y_inv, profile_yerr_inv =\
-                        flux_vals[idx_sort_inv], frac_resid_inv[idx_sort_inv],\
-                        frac_resid_err_inv[idx_sort_inv]
+                profile_x, profile_y, profile_yerr =\
+                    make_profile_hist(profile_xbins, amp_vals, frac_resid,
+                                      yerrs=frac_resid_err, stderr=True)
+                profile_x_inv, profile_y_inv, profile_yerr_inv =\
+                    make_profile_hist(profile_xbins_inv, flux_vals, frac_resid_inv,
+                                      yerrs=frac_resid_err_inv, stderr=True)
+            else:
+                idx_sort = np.argsort(amp_vals)
+                idx_sort_inv = np.argsort(flux_vals)
+                profile_x, profile_y, profile_yerr =\
+                    amp_vals[idx_sort], frac_resid[idx_sort], frac_resid_err[idx_sort]
+                profile_x_inv, profile_y_inv, profile_yerr_inv =\
+                    flux_vals[idx_sort_inv], frac_resid_inv[idx_sort_inv],\
+                    frac_resid_err_inv[idx_sort_inv]
 
-                if self.null_point is not None:
-                    profile_y_corr = self._correct_null_point(profile_x, profile_y, self.null_point)
-                else:
-                    profile_y_corr = profile_y
+            if self.null_point is not None:
+                profile_y_corr = self._correct_null_point(profile_x, profile_y, self.null_point)
+            else:
+                profile_y_corr = profile_y
 
-                data_dict['prof_x'].append(profile_x)
-                data_dict['prof_y'].append(profile_y)
-                data_dict['prof_y_corr'].append(profile_y_corr)
-                data_dict['prof_yerr'].append(profile_yerr)
-
-                data_dict_inv['prof_x'].append(profile_x_inv)
-                data_dict_inv['prof_y'].append(profile_y_inv)
-                data_dict_inv['prof_y_corr'].append(profile_y_inv)
-                data_dict_inv['prof_yerr'].append(profile_yerr_inv)
+            data_dict['prof_x'].append(profile_x)
+            data_dict['prof_y'].append(profile_y)
+            data_dict['prof_y_corr'].append(profile_y_corr)
+            data_dict['prof_yerr'].append(profile_yerr)
+            
+            data_dict_inv['prof_x'].append(profile_x_inv)
+            data_dict_inv['prof_y'].append(profile_y_inv)
+            data_dict_inv['prof_y_corr'].append(profile_y_inv)
+            data_dict_inv['prof_yerr'].append(profile_yerr_inv)
 
             data_dict['slope'].append(results[0][0])
             data_dict_inv['slope'].append(results_inv[0][0])
@@ -259,6 +276,9 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             data_dict_inv['frac_resid_err'].append(frac_resid_err_inv)
 
         self.log_progress("Done!")
+
+        if not good_amps:
+            return None
 
         outtables = TableDict()
         outtables.make_datatable("nonlin", data_dict)
@@ -326,8 +346,8 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                                         xscale='log', yscale='log')
         figs.setup_amp_plots_grid('prof%s' % sfx, xlabel=xlabel_short,
                                   ylabel=ylabel_resid_full,
-                                  ymin_resid=-0.2, ymax_resid=0.2,
-                                  xscale='lin', yscale='log')
+                                  ymin=-0.2, ymax=0.2,
+                                  xscale='log')
 
         fig_nonlin_log = figs.setup_figure("nonlin-log%s" % sfx,
                                            xlabel=xlabel_full, ylabel=ylabel_resid_full,
@@ -369,8 +389,12 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             if amp_vals.size == 0:
                 continue
 
-            mask = amp_vals < 0.8 * amp_vals.max()
-            #mask = amp_vals <= amp_vals.max()
+            mask = np.ones(amp_vals.shape, bool)
+            if self.config.vmin is not None:
+                mask *= amp_vals > self.config.vmin
+            if self.config.vmax is not None:                
+                mask *= amp_vals < self.config.vmax
+
 
             full_mask *= mask
             if not mask.any():
@@ -390,7 +414,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                 yvals = flux
 
             model_yvals = model_func(pars, xvals)
-            xline = np.linspace(1., xvals[mask].max(), 1001)
+            xline = np.linspace(xvals[mask].min(), xvals[mask].max(), 1001)
 
             amp_plot_data = dict(xvals=xvals, yvals=yvals, resid_vals=frac_resid_col[iamp],
                                  model_vals=model_yvals, resid_errors=frac_resid_err_col[iamp],
@@ -408,6 +432,8 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                               yerr=profile_yerr[prof_mask], fmt='.')
             axs_prof.errorbar(profile_x[prof_mask], profile_y_corr[prof_mask],
                               yerr=profile_yerr[prof_mask], fmt='+')
+            axs_prof.set_xscale('log')
+            axs_prof.set_xlim(profile_x[prof_mask].min(), profile_x[prof_mask].max())
 
             x_masked = xvals[mask]
             y_resid_masked = frac_resid_col[iamp][mask]

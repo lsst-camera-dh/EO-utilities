@@ -18,11 +18,11 @@ from .defaults import DEFAULT_STAT_TYPE
 from .file_utils import makedir_safe,\
     SLOT_BASE_FORMATTER, MASK_FORMATTER,\
     SUPERBIAS_FORMATTER, SUPERBIAS_STAT_FORMATTER,\
-    NONLIN_FORMATTER, EORESULTS_TABLE_FORMATTER
+    NONLIN_FORMATTER, EORESULTS_TABLE_FORMATTER, EORESULTSIN_FORMATTER
 
 from .config_utils import EOUtilOptions, Configurable
 
-from .calib_utils import DEFAULT_CALIB_DICT
+from .calib_utils import CalibDict
 
 from .data_utils import TableDict
 
@@ -37,6 +37,7 @@ from .data_access import get_data_for_run, LOCATION_INFO_DICT
 
 class BaseConfig(pexConfig.Config):
     """Configuration for EO analysis tasks"""
+    calib_dict = EOUtilOptions.clone_param('calib_dict')
     calib = EOUtilOptions.clone_param('calib')
 
 class BaseTask(Configurable):
@@ -78,6 +79,18 @@ class BaseTask(Configurable):
             Used to override default configuration
         """
         Configurable.__init__(self, **kwargs)
+        self._calib_file = None
+        self._calib_dict = None
+        self._load_calibration_dict()
+
+
+    def _load_calibration_dict(self):
+        """Load the calibration dictionary
+        """
+        if self._calib_file == self.config.calib_dict:
+            return
+        self._calib_file = self.config.calib_dict
+        self._calib_dict = CalibDict(self._calib_file)
 
     @abc.abstractmethod
     def __call__(self, **kwargs):
@@ -138,7 +151,8 @@ class BaseTask(Configurable):
         -------
         The parameter value
         """
-        return DEFAULT_CALIB_DICT.get_calib_value_task(self.config.calib, self._name, key)
+        self._load_calibration_dict()
+        return self._calib_dict.get_calib_value_task(self.config.calib, self._name, key)
 
 
     @classmethod
@@ -283,12 +297,17 @@ class BaseAnalysisTask(BaseTask):
         ret_val : `str`
             The filename
         """
+        kwcopy = kwargs.copy()
         if self.get_config_param('stat', None) in [DEFAULT_STAT_TYPE, None]:
             formatter = SUPERBIAS_FORMATTER
         else:
             formatter = SUPERBIAS_STAT_FORMATTER
 
-        return self.get_filename_from_format(formatter, '.fits', **kwargs)
+        sbias = self.get_calib_param_from_flavor('superbias')
+        if sbias not in [None, 'none', 'None', False]:
+            kwcopy['calib'] = sbias
+
+        return self.get_filename_from_format(formatter, '.fits', **kwcopy)
 
 
     def get_mask_files(self, **kwargs):
@@ -307,7 +326,7 @@ class BaseAnalysisTask(BaseTask):
         self.safe_update(**kwargs)
 
         val = self.get_calib_param_from_flavor('mask')
-        if self.get_calib_param_from_flavor('mask'):
+        if val not in [None, 'none', 'None', False]:
             mask_files = glob.glob(self.get_filename_from_format(MASK_FORMATTER, ".fits", filekey='*-mask', calib=val))
             return mask_files
         return []
@@ -336,12 +355,13 @@ class BaseAnalysisTask(BaseTask):
         if gain_run not in [None, 'none', 'None']:
             kwcopy.setdefault('run', gain_run)
 
-        gain_file = self.get_filename_from_format(EORESULTS_TABLE_FORMATTER, '.fits',
+        gain_file = self.get_filename_from_format(EORESULTSIN_FORMATTER, '.fits',
                                                   calib=gain_type, filekey='results',
                                                   **kwcopy)
         try:
             tables = TableDict(gain_file)
         except FileNotFoundError:
+            print(gain_file)
             return None
         gain_table = tables['amplifier_results']
         return gain_table['GAIN']
@@ -376,6 +396,7 @@ class BaseAnalysisTask(BaseTask):
         if 'nonlin_spline_smooth' in nonlin_vals:
             kw_spline['s'] = nonlin_vals['nonlin_spline_smooth']
 
+        print(kw_spline)
         nlc = NonlinearityCorrection.create_from_fits_file(nonlin_file, **kw_spline)
         return nlc
 

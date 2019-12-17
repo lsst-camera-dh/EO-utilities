@@ -28,6 +28,7 @@ class ReportConfig(BaseAnalysisConfig):
     template_file = EOUtilOptions.clone_param('template_file')
     css_file = EOUtilOptions.clone_param('css_file')
     plot_report_action = EOUtilOptions.clone_param('plot_report_action')
+    overwrite = EOUtilOptions.clone_param('overwrite')
     teststand = EOUtilOptions.clone_param('teststand')
 
 class ReportTask(BaseAnalysisTask):
@@ -154,7 +155,8 @@ class ReportSlotTask(ReportTask):
         """
         config_kw = self.extract_config_vals(dict(template_file=None,
                                                   css_file=None,
-                                                  plot_report_action=None))
+                                                  plot_report_action=None,
+                                                  overwrite=None))
         full_input = os.path.join(self.config.indir, self.config.teststand)
         write_slot_report(data, full_input, self.config.htmldir, **config_kw)
 
@@ -188,7 +190,8 @@ class ReportRaftTask(ReportTask):
         dataid.pop('slot')
         config_kw = self.extract_config_vals(dict(template_file=None,
                                                   css_file=None,
-                                                  plot_report_action=None))
+                                                  plot_report_action=None,
+                                                  overwrite=None))
         full_input = os.path.join(self.config.indir, self.config.teststand)
         write_raft_report(dataid, full_input, self.config.htmldir, **config_kw)
 
@@ -240,7 +243,8 @@ class ReportRunTask(ReportTask):
         """
         config_kw = self.extract_config_vals(dict(template_file=None,
                                                   css_file=None,
-                                                  plot_report_action=None))
+                                                  plot_report_action=None,
+                                                  overwrite=None))
         full_input = os.path.join(self.config.indir, self.config.teststand)
         write_run_report(data, full_input, self.config.htmldir, **config_kw)
 
@@ -270,7 +274,8 @@ class ReportSummaryTask(ReportTask):
         """
         config_kw = self.extract_config_vals(dict(template_file=None,
                                                   css_file=None,
-                                                  plot_report_action=None))
+                                                  plot_report_action=None,
+                                                  overwrite=None))
         full_input = os.path.join(self.config.indir, self.config.teststand)
         write_summary_report(data, full_input, self.config.htmldir, **config_kw)
 

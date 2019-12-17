@@ -392,7 +392,7 @@ class BiasFFTStatsTask(BiasRaftTableAnalysisTask):
 
             self.log_progress("  %s" % slot)
             table = dtables[datakey]
-            table_col = dtables[datakey]
+            table_col = dtables[datakey_col]
 
             if freqs is None:
                 freqs = table['freqs']
@@ -418,8 +418,8 @@ class BiasFFTStatsTask(BiasRaftTableAnalysisTask):
                 data_dict['fftpow_std_col'].append(np.std(tablevals_col, axis=1))
                 data_dict['fftpow_min_col'].append(np.min(tablevals_col, axis=1))
                 data_dict['fftpow_max_col'].append(np.max(tablevals_col, axis=1))
-                data_dict['fftpow_maxval_col'].append(meanvals_col.max())
-                data_dict['fftpow_argmax_col'].append(meanvals_col.argmax())
+                data_dict['fftpow_maxval_col'].append(meanvals_col[50:].max())
+                data_dict['fftpow_argmax_col'].append(meanvals_col[50:].argmax())
                 data_dict['slot'].append(islot)
                 data_dict['amp'].append(amp)
 
@@ -526,6 +526,13 @@ class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
         """
         self.safe_update(**kwargs)
 
+        config_table = kwargs.get('config_table', 'seq_list.fits')
+        if config_table is not None:
+            config_td = TableDict(config_table)
+            config_table = config_td['seq']
+        else:
+            config_table = None
+
         sumtable = dtables['biasfft_sum']
         if self.config.teststand == 'ts8':
             runtable = dtables['runs']
@@ -540,11 +547,15 @@ class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
                 figs.plot_run_chart_by_slot("fftpow-maxval-%s" % raft, subtable,
                                             "fftpow_maxval", #yerrs="std",
                                             ylabel="Maximum FFT Power [ADU]",
-                                            ymin=0., ymax=2.)
+                                            ymin=0., ymax=2.,
+                                            raft=raft,
+                                            config_table=config_table)
                 figs.plot_run_chart_by_slot("fftpow-maxval-col-%s" % raft, subtable,
                                             "fftpow_maxval_col", #yerrs="std",
                                             ylabel="Maximum FFT Power [ADU]",
-                                            ymin=0., ymax=2.)
+                                            ymin=0., ymax=2.,
+                                            raft=raft,
+                                            config_table=config_table)
 
 
 EO_TASK_FACTORY.add_task_class('BiasFFT', BiasFFTTask)

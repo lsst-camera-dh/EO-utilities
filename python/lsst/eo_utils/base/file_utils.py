@@ -42,16 +42,19 @@ SUMMARY_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/summary/{testType}/{dat
 SUPERBIAS_FORMAT_STRING = '{outdir}/{teststand}/superbias/{raft}/{raft}-{run}-{slot}_superbias_{calib}'
 SUPERBIAS_STAT_FORMAT_STRING = '{outdir}/{teststand}/superbias/{raft}/{raft}-{run}-{slot}_{stat}_{calib}'
 RUN_SUPERBIAS_FORMAT_STRING = '{outdir}/{teststand}/superbias/FP/FP-{run}_superbias_{calib}'
+RUN_SUPERBIAS_STAT_FORMAT_STRING = '{outdir}/{teststand}/superbias/FP/FP-{run}_{stat}_{calib}'
 
 SUPERDARK_FORMAT_STRING = '{outdir}/{teststand}/superdark/{raft}/{raft}-{run}-{slot}_superdark_{calib}'
 SUPERDARK_STAT_FORMAT_STRING = '{outdir}/{teststand}/superdark/{raft}/{raft}-{run}-{slot}_{stat}_{calib}'
 RUN_SUPERDARK_FORMAT_STRING = '{outdir}/{teststand}/superdark/FP/FP-{run}_superdark_{calib}'
+RUN_SUPERDARK_STAT_FORMAT_STRING = '{outdir}/{teststand}/superdark/FP/FP-{run}_{stat}_{calib}'
 
 SUPERFLAT_FORMAT_STRING = '{outdir}/{teststand}/superflat/{raft}/{raft}-{run}-{slot}_superflat_{calib}'
 SUPERFLAT_STAT_FORMAT_STRING = '{outdir}/{teststand}/superflat/{raft}/{raft}-{run}-{slot}_{stat}_{calib}'
-RUN_SUPERFLAT_FORMAT_STRING = '{outdir}/{teststand}/superflat/FP/FP-{run}_superflat_{calib}'
 
 SUPERFLAT_SPEC_FORMAT_STRING = '{outdir}/{teststand}/superflat/{raft}/{raft}-{run}-{slot}_superflat_{calib}{filekey}'
+RUN_SUPERFLAT_FORMAT_STRING = '{outdir}/{teststand}/superflat/FP/FP-{run}_superflat_{calib}{filekey}'
+RUN_SUPERFLAT_STAT_FORMAT_STRING = '{outdir}/{teststand}/superflat/FP/FP-{run}_{stat}_{calib}{filekey}'
 
 
 # These strings define the report output filename
@@ -680,10 +683,14 @@ def get_raft_names_dc(run, teststand='bot'):
     ------
     ValueError : If the hardware type is not recognized
     """
-    hinfo = get_hardware_type_and_id(run)
+    if teststand in ['bot', 'bot_etu']:        
+        htype = 'LCA-10134'
+        return RAFT_NAMES_DICT[teststand]
 
+    hinfo = get_hardware_type_and_id(run)
     htype = hinfo[0]
     hid = hinfo[1]
+            
     if htype == 'LCA-11021':
         return [hid]
     if htype == 'LCA-10134':

@@ -294,7 +294,10 @@ class AnalysisIterator(AnalysisHandler):
             The hardware id, e.g., RMT-004
         """
         if butler is None:
-            retval = get_hardware_type_and_id(run)
+            if self._task.config.teststand == 'bot':
+                retval = ('LCA-10134', 'Cryostat-0001')
+            else:
+                retval = get_hardware_type_and_id(run)
         else:
             retval = get_hardware_info(butler, run)
         return retval
@@ -673,8 +676,6 @@ class AnalysisBySlot(AnalysisIterator):
         kwargs['run'] = run
         kwargs.setdefault('handler_config', self.config)
         
-        print(data_files.keys())
-
         if htype == "LCA-10134":
             iterate_over_rafts_slots(self._task, self._butler, data_files, **kwargs)
         elif htype == "LCA-11021":

@@ -213,6 +213,13 @@ class DarkCurrentSummaryTask(DarkSummaryAnalysisTask):
         sumtable = dtables['stats']
         runtable = dtables['runs']
 
+        config_table = kwargs.get('config_table', 'dark_config.fits')
+        if config_table is not None:
+            config_td = TableDict(config_table)
+            config_table = config_td['config']
+        else:
+            config_table = None
+
         if self.config.teststand == 'ts8':
             yvals = sumtable['current']
             yerrs = (sumtable['stdev'] / sumtable['exptime']).clip(0., 0.05)
@@ -228,7 +235,9 @@ class DarkCurrentSummaryTask(DarkSummaryAnalysisTask):
                 figs.plot_run_chart_by_slot("val_%s" % raft, subtable,
                                             "current", #yerrs="std",
                                             ylabel="Dark Current [ADU/s]", 
-                                            ymin=0., ymax=0.05)
+                                            ymin=0., ymax=0.05,
+                                            raft='config',
+                                            config_table=config_table)
 
 
 EO_TASK_FACTORY.add_task_class('DarkCurrent', DarkCurrentTask)

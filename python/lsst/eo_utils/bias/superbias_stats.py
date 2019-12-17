@@ -226,6 +226,13 @@ class SuperbiasSummaryTask(SuperbiasSummaryAnalysisTask):
         """
         self.safe_update(**kwargs)
 
+        config_table = kwargs.get('config_table', 'seq_list.fits')
+        if config_table is not None:
+            config_td = TableDict(config_table)
+            config_table = config_td['seq']
+        else:
+            config_table = None
+
         sumtable = dtables['stats']
         if self.config.teststand == 'ts8':
             runtable = dtables['runs']
@@ -234,14 +241,17 @@ class SuperbiasSummaryTask(SuperbiasSummaryAnalysisTask):
             runs = runtable['runs']
             figs.plot_run_chart("stats", runs, yvals, yerrs=yerrs, ylabel="Superbias STD [ADU]")
         elif self.config.teststand == 'bot':
-            rafts = np.unique(sumtable['raft'])
+            rafts = np.unique(sumtable['raft'].flatten())
             for raft in rafts:
-                mask = sumtable['raft'] == raft
+                mask = sumtable['raft'].flatten() == raft
                 subtable = sumtable[mask]
                 figs.plot_run_chart_by_slot("stats_%s" % raft, subtable,
                                             "mean", #yerrs="std",
                                             ylabel="Superbias STD [ADU]", 
-                                            ymin=0., ymax=10.)
+                                            ymin=0., ymax=10.,
+                                            raft=raft,
+                                            config_table=config_table)
+
 
 
 EO_TASK_FACTORY.add_task_class('SuperbiasStats', SuperbiasStatsTask)
