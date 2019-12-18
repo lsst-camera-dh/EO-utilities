@@ -27,7 +27,7 @@ from lsst.eo_utils.dark.file_utils import SUPERDARK_FORMATTER, SUPERDARK_STAT_FO
 
 
 class SuperdarkStabilityConfig(SuperdarkSlotTableAnalysisConfig):
-    """Configuration for BiasVRowTask"""
+    """Configuration for SuperdarkStabilityTask"""
     stat = EOUtilOptions.clone_param('stat')
     skip = EOUtilOptions.clone_param('skip')
     plot = EOUtilOptions.clone_param('plot')
