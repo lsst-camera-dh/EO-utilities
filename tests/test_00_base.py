@@ -76,7 +76,7 @@ def test_file_utils_get_bot():
 
 def test_file_utils_get_names_dc():
     """Test the file_utils module"""
-    rafts_6106 = get_raft_names_dc('6106D', 'bot_etu')
+    rafts_6106 = get_raft_names_dc('6106D', 'ts8')
     assert len(rafts_6106) == 1
     assert rafts_6106[0] == 'RTM-004'
 
