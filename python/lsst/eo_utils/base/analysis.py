@@ -362,7 +362,6 @@ class BaseAnalysisTask(BaseTask):
         try:
             tables = TableDict(gain_file)
         except FileNotFoundError:
-            print(gain_file)
             return None
         gain_table = tables['amplifier_results']
         return gain_table['GAIN']
