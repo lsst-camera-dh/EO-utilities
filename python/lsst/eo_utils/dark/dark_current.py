@@ -215,8 +215,11 @@ class DarkCurrentSummaryTask(DarkSummaryAnalysisTask):
 
         config_table = kwargs.get('config_table', 'dark_config.fits')
         if config_table is not None:
-            config_td = TableDict(config_table)
-            config_table = config_td['config']
+            try:
+                config_td = TableDict(config_table)
+                config_table = config_td['config']
+            except FileNotFoundError:
+                config_table = None
         else:
             config_table = None
 
