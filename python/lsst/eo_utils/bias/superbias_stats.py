@@ -228,8 +228,11 @@ class SuperbiasSummaryTask(SuperbiasSummaryAnalysisTask):
 
         config_table = kwargs.get('config_table', 'seq_list.fits')
         if config_table is not None:
-            config_td = TableDict(config_table)
-            config_table = config_td['seq']
+            try:
+                config_td = TableDict(config_table)
+                config_table = config_td['seq']
+            except FileNotFoundError:
+                config_table = None
         else:
             config_table = None
 
