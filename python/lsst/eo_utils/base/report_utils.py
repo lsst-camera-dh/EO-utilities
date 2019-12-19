@@ -272,6 +272,7 @@ def create_slot_table(parent_node, **kwargs):
         The table node
     """
     kwcopy = kwargs.copy()
+    prefix = kwcopy.get('prefix', '')
 
     html_file = kwargs.get('html_file', None)
     if html_file is not None:
@@ -293,7 +294,7 @@ def create_slot_table(parent_node, **kwargs):
     nslot = 0
     for slot in ALL_SLOTS:
         if basedir is not None:
-            slot_path = os.path.join(basedir, "%s.html" % slot)
+            slot_path = os.path.join(basedir, "%s%s.html" % (prefix, slot))
             if not os.path.exists(slot_path):
                 continue
 
@@ -306,7 +307,7 @@ def create_slot_table(parent_node, **kwargs):
                                    node_class=kwcopy.get('table_col_class', None))
         make_child_node(col_node, 'a',
                         text=slot,
-                        href="%s.html" % slot)
+                        href="%s%s.html" % (prefix, slot))
 
     if not nslot:
         print("No slot data in %s, skipping" % basedir)
@@ -342,6 +343,7 @@ def create_raft_table(parent_node, **kwargs):
         The table node
     """
     kwcopy = kwargs.copy()
+    prefix = kwcopy.get('prefix', '')
 
     html_file = kwargs.get('html_file', None)
     rafts = kwargs.get('rafts', NINE_RAFTS)
@@ -365,7 +367,7 @@ def create_raft_table(parent_node, **kwargs):
     nraft = 0
     for raft in rafts:
         if basedir is not None:
-            raft_path = os.path.join(basedir, raft, "index.html")
+            raft_path = os.path.join(basedir, raft, "%sindex.html" % prefix)
             if not os.path.exists(raft_path):
                 continue
 
@@ -378,7 +380,7 @@ def create_raft_table(parent_node, **kwargs):
                                    node_class=kwcopy.get('table_col_class', None))
         make_child_node(col_node, 'a',
                         text=raft,
-                        href=os.path.join(raft, "index.html"))
+                        href=os.path.join(raft, "%sindex.html" % prefix))
 
     if not nraft:
         parent_node.remove(h3_node)
@@ -783,7 +785,7 @@ def write_summary_report_by_slot(dataset, raft, slot, inputbase, outbase, **kwar
         html_file = None
     else:
         outdir = os.path.join(outbase, raft)
-        html_file = os.path.join(outdir, '%s.html' % slot)
+        html_file = os.path.join(outdir, '%s_%s.html' % (dataset, slot))
         makedir_safe(html_file)
         ccsfile_out = handle_file(config_info['cssfile'], outdir, action='copy')
 
@@ -832,7 +834,7 @@ def write_summary_report_by_raft(dataset, raft, inputbase, outbase, **kwargs):
         html_file = None
     else:
         outdir = os.path.join(outbase, raft)
-        html_file = os.path.join(outdir, 'index.html')
+        html_file = os.path.join(outdir, '%s_index.html' % dataset)
         makedir_safe(html_file)
         ccsfile_out = handle_file(config_info['cssfile'], outdir, action='copy')
 
@@ -854,7 +856,7 @@ def write_summary_report_by_raft(dataset, raft, inputbase, outbase, **kwargs):
     for slot in ALL_SLOTS:
         write_summary_report_by_slot(dataset, raft, slot, inputbase, outbase, **kwargs)
 
-    create_slot_table(body_node, **kwcopy)
+    create_slot_table(body_node, prefix="%s_" % dataset, **kwcopy)
 
     write_tree_to_html(html_node, html_file)
 
@@ -910,7 +912,7 @@ def write_summary_report(dataset, inputbase, outbase, **kwargs):
 
     kwcopy['rafts'] = rafts
     kwcopy['dataid'] = dict(dataset=dataset)
-    create_raft_table(body_node, **kwcopy)
+    create_raft_table(body_node, prefix="%s_" % dataset, **kwcopy)
 
     create_run_table(body_node, dataset, **kwcopy)
 
