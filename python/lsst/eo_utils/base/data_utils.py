@@ -314,3 +314,63 @@ def construct_bbox_dict(defect_table):
         bbox = afwGeom.Box2I(corner, extent)
         bbox_list.append(bbox)
     return bbox_dict
+
+
+def stack_summary_table(data, for_whom, **kwargs):
+    """Stack together a bunch of tables into a summary table
+
+    Parameters
+    ----------
+    data : `dict`
+       Dictionary (or other structure) contain the input data
+    for_whom : `task`
+       Task we are stacking the tables for
+    kwargs
+       Used to override default configuration
+
+    Returns
+    -------
+    dtables : `TableDict`
+        The resulting data
+    """
+    kwcopy = kwargs.copy()
+    tablename = kwargs.pop('tablename')
+    outtable_name = tablename + '_sum'
+
+    run_dict = dict(runs=[], rafts=[])
+    for key, val in data.items():
+        run_dict['runs'].append(key[4:])
+        run_dict['rafts'].append(key[0:3])
+        data[key] = val.replace(for_whom.config.filekey, for_whom.config.infilekey)
+
+    outtable = vstack_tables(data, tablename=tablename, **kwcopy)
+    dtables = TableDict()
+    dtables.add_datatable(outtable_name, outtable)
+    dtables.make_datatable('runs', run_dict)
+    return dtables
+
+
+
+def get_run_config_table(filepath, tablename):
+    """Load a file with information about configurations
+
+    Parameters
+    ----------
+    filepath : `str`
+       Path to the table
+    tablename : `str`
+       Name of the HDU with the data
+
+    Returns
+    -------
+    config_table : `Table` or `None`
+        The resulting data data
+    """
+    if filepath is None:
+        return None
+    try:
+        config_td = TableDict(filepath)
+        config_table = config_td[tablename]
+    except (FileNotFoundError, KeyError):
+        config_table = None
+    return config_table

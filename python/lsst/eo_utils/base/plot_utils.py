@@ -1671,3 +1671,41 @@ class FigureDict:
             if not os.path.exists(filepath):
                 out_list.append(filepath)
         return out_list
+
+
+
+def plot_outlier_summary(for_whom, dtables, figs):
+    """Plot the summary data from the superbias statistics study
+
+    Parameters
+    ----------
+    for_whom : `Task`
+        The task we are plotting for
+    dtables : `TableDict`
+        The data produced by this task
+    figs : `FigureDict`
+        The resulting figures
+    """
+    sumtable = dtables['outliers_sum']
+    if for_whom.config.teststand == 'ts8':
+        runtable = dtables['runs']
+        yvals = sumtable['nbad_total'].flatten().clip(0., 2.)
+        runs = runtable['runs']
+        figs.plot_run_chart("nbad-total", runs, yvals, ylabel="Maximum FFT Power [ADU]")
+    elif for_whom.config.teststand == 'bot':
+        rafts = np.unique(sumtable['raft'])
+        for raft in rafts:
+            mask = sumtable['raft'] == raft
+            subtable = sumtable[mask]
+            figs.plot_run_chart_by_slot("nbad-total-%s" % raft, subtable,
+                                        "nbad_total", #yerrs="std",
+                                        ylabel="Fraction of outliers",
+                                        ymin=1e-7, ymax=1., logy=True)
+            figs.plot_run_chart_by_slot("nbad-col-%s" % raft, subtable,
+                                        "nbad_cols", #yerrs="std",
+                                        ylabel="Fraction cols w/ > 10 outliers",
+                                        ymin=1e-7, ymax=1., logy=True)
+            figs.plot_run_chart_by_slot("nbad-row-%s" % raft, subtable,
+                                        "nbad_rows", #yerrs="std",
+                                        ylabel="Fraction row w/ > 10 outliers",
+                                        ymin=1e-7, ymax=1., logy=True)

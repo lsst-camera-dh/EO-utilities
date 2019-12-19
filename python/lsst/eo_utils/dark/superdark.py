@@ -2,8 +2,6 @@
 
 import os
 
-import numpy as np
-
 import lsst.afw.math as afwMath
 
 import lsst.eotest.image_utils as imutil
@@ -18,11 +16,13 @@ from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
+from lsst.eo_utils.base.data_utils import TableDict, stack_summary_table
+
+from lsst.eo_utils.base.plot_utils import plot_outlier_summary
 
 from lsst.eo_utils.base.image_utils import flip_data_in_place,\
     stack_images, extract_raft_unbiased_images, extract_raft_imaging_data,\
-    outlier_raft_dict, fill_footprint_dict
+    outlier_raft_dict, build_defect_dict
 
 from lsst.eo_utils.bias.analysis import AnalysisTask
 
@@ -262,42 +262,6 @@ class SuperdarkRaftTask(AnalysisTask):
         self._sdark_images = None
         self._sdark_arrays = None
 
-    @staticmethod
-    def build_defect_dict(dark_array, **kwargs):
-        """Extract information about the defects into a dictionary
-
-        Parameters
-        ----------
-        dark_array : `dict`
-            The images, keyed by slot, amp
-        kwargs
-            Used to override default configuration
-
-        Returns
-        -------
-        out_dict : `dict`
-            The output dictionary
-        """
-        fp_dict = dict(slot=[],
-                       amp=[],
-                       x_corner=[],
-                       y_corner=[],
-                       x_peak=[],
-                       y_peak=[],
-                       x_size=[],
-                       y_size=[],
-                       mean_full=[])
-        for i in range(4):
-            fp_dict['mean_%i' % i] = []
-            fp_dict['npix_%i' % i] = []
-            fp_dict['npix_0p2_%i' % i] = []
-
-        for islot, (_, slot_data) in enumerate(sorted(dark_array.items())):
-            for iamp, (_, image) in enumerate(sorted(slot_data.items())):
-                fill_footprint_dict(image.image, fp_dict, iamp, islot, **kwargs)
-        return fp_dict
-
-
     def extract(self, butler, data, **kwargs):
         """Extract the utliers in the superdark frames for the raft
 
@@ -336,7 +300,7 @@ class SuperdarkRaftTask(AnalysisTask):
 
         out_data = outlier_raft_dict(self._sdark_arrays, 0., 25.)
 
-        fp_dict = SuperdarkRaftTask.build_defect_dict(self._sdark_images, fp_type='bright', abs_thresh=50)
+        fp_dict = build_defect_dict(self._sdark_images, fp_type='bright', abs_thresh=50)
 
         dtables = TableDict()
         dtables.make_datatable('defects', fp_dict)
@@ -438,19 +402,9 @@ class SuperdarkOutlierSummaryTask(SuperdarkSummaryAnalysisTask):
         if butler is not None:
             self.log.warn("Ignoring butler in extract()")
 
-        run_dict = dict(runs=[], rafts=[])
-        for key, val in data.items():
-            run_dict['runs'].append(key[4:])
-            run_dict['rafts'].append(key[0:3])
-            data[key] = val.replace(self.config.filekey, self.config.infilekey)
-
-        keep_cols = ['nbad_total', 'nbad_rows', 'nbad_cols', 'slot', 'amp']
-
-        outtable = vstack_tables(data, tablename='outliers', keep_cols=keep_cols)
-
-        dtables = TableDict()
-        dtables.add_datatable('outliers_sum', outtable)
-        dtables.make_datatable('runs', run_dict)
+        dtables = stack_summary_table(data, self,
+                                      tablename='outliers',
+                                      keep_cols=['nbad_total', 'nbad_rows', 'nbad_cols', 'slot', 'amp'])
         return dtables
 
 
@@ -467,31 +421,7 @@ class SuperdarkOutlierSummaryTask(SuperdarkSummaryAnalysisTask):
             Used to override default configuration
         """
         self.safe_update(**kwargs)
-
-        sumtable = dtables['outliers_sum']
-        if self.config.teststand == 'ts8':
-            runtable = dtables['runs']
-            yvals = sumtable['nbad_total'].flatten().clip(0., 2.)
-            runs = runtable['runs']
-            figs.plot_run_chart("nbad-total", runs, yvals, ylabel="Maximum FFT Power [ADU]")
-        elif self.config.teststand == 'bot':
-            rafts = np.unique(sumtable['raft'])
-            for raft in rafts:
-                mask = sumtable['raft'] == raft
-                subtable = sumtable[mask]
-                figs.plot_run_chart_by_slot("nbad-total-%s" % raft, subtable,
-                                            "nbad_total", #yerrs="std",
-                                            ylabel="Fraction of outliers",
-                                            ymin=1e-7, ymax=1., logy=True)
-                figs.plot_run_chart_by_slot("nbad-col-%s" % raft, subtable,
-                                            "nbad_cols", #yerrs="std",
-                                            ylabel="Fraction cols w/ > 10 outliers",
-                                            ymin=1e-7, ymax=1., logy=True)
-                figs.plot_run_chart_by_slot("nbad-row-%s" % raft, subtable,
-                                            "nbad_rows", #yerrs="std",
-                                            ylabel="Fraction row w/ > 10 outliers",
-                                            ymin=1e-7, ymax=1., logy=True)
-
+        plot_outlier_summary(self, dtables, figs)
 
 
 class SuperdarkMosaicConfig(CameraMosaicConfig):

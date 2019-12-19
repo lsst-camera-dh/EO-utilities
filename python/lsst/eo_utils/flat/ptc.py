@@ -392,7 +392,7 @@ class PTCSummaryTask(FlatSummaryAnalysisTask):
 
 
         if not self.config.skip:
-            outtable = vstack_tables(data, tablename='ptc')
+            outtable = vstack_tables(data, tablename='ptc_stats')
 
         dtables = TableDict()
         dtables.add_datatable('ptc_sum', outtable)

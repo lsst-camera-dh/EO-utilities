@@ -52,9 +52,7 @@ class FlatLinearityTask(FlatSlotTableAnalysisTask):
 
         self.log_info_raft_msg(self.config, "")
 
-        slot = self.config.slot
-
-        basename = data[slot]
+        basename = data[0]
         datapath = basename.replace(self.config.filekey, self.config.infilekey)
 
         detresp = DetectorResponse(datapath, hdu_name='flat')

@@ -70,6 +70,8 @@ class FlatOverscanTask(FlatAnalysisTask):
                              minflux=self.config.minflux, maxflux=self.config.maxflux)
 
         gains = self.get_gains()
+        if gains is None:
+            gains = np.ones((17))
 
         # Analysis goes here, you should fill data_dict with data extracted
         # by the analysis

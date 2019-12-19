@@ -64,6 +64,8 @@ class SuperflatTask(SflatAnalysisTask):
     plot_names = ['img_l', 'img_h', 'img_r',
                   'hist_l', 'hist_h', 'hist_r']
 
+    # Used to distinguish low from high flats in butlerized data
+    exptime_cut = 20.
 
     def __init__(self, **kwargs):
         """ C'tor
@@ -118,7 +120,7 @@ class SuperflatTask(SflatAnalysisTask):
             self.log_warn_slot_msg(self.config, "No superflat files")
             return None
 
-        sflat_files_l, sflat_files_h = sort_sflats(butler, sflat_files)
+        sflat_files_l, sflat_files_h = sort_sflats(butler, sflat_files, self.exptime_cut)
 
         if not sflat_files_l:
             self.log_warn_slot_msg(self.config, "No lo superflat files")

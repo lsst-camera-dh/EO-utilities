@@ -650,6 +650,8 @@ class AnalysisTask(BaseAnalysisTask):
         offset = 0
         if self._handler_config is not None:
             if self._handler_config.data_source == 'butler':
+                if butler is None:
+                    raise ValueError("Data source == butler, but no butler present")
                 offset = 1
 
         if superbias_frame is not None:
@@ -759,7 +761,7 @@ class AnalysisTask(BaseAnalysisTask):
         kwargs
             Used to override default configuration
         """
-        _ = (butler, data)
+        _ = (butler, data, kwargs)
         self.log.info("  set_local_data()")
 
 

@@ -21,6 +21,7 @@ from .flat_bf import BFConfig, BFTask
 from .nonlinearity import NonlinearityConfig, NonlinearityTask
 
 from .ptc import PTCConfig, PTCTask,\
+    PTCStatsConfig, PTCStatsTask,\
     PTCSummaryConfig, PTCSummaryTask
 
 from .dust_linearity_analysis import DustLinearityAnalysisConfig,\

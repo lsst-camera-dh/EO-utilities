@@ -1057,7 +1057,7 @@ def apply_masks(butler, ccd, maskfiles):
 
 
 
-def sort_sflats(butler, sflat_files):
+def sort_sflats(butler, sflat_files, exptime_cut=20.):
     """Sort a set of superflat image filenames into low and high exposures
 
     Parameters
@@ -1066,6 +1066,8 @@ def sort_sflats(butler, sflat_files):
         Data Butler (or none)
     sflat_files : `list`
         List of superflat files
+    exptime_cute : `float`
+        Cut between low and high exposures
 
     Returns
     -------
@@ -1089,8 +1091,7 @@ def sort_sflats(butler, sflat_files):
                 sflats_h.append(sflat)
         else:
             exp_time = butler.queryMetadata('raw', 'EXPTIME', sflat)[0]
-            #FIXME, this should not be hardcoded
-            if exp_time < 20.:
+            if exp_time < exptime_cut:
                 sflats_l.append(sflat)
             else:
                 sflats_h.append(sflat)
@@ -1307,3 +1308,38 @@ def fill_footprint_dict(image, fp_dict, amp, slot, **kwargs):
             fp_dict['%s_%i' % (keystr, i)].append(means_cumul[i])
             fp_dict['npix_%i' % i].append(over_thresh_cumul[i])
             fp_dict['npix_0p2_%i' % i].append(over_0p2_thresh_cumul[i])
+
+
+def build_defect_dict(dark_array, **kwargs):
+    """Extract information about the defects into a dictionary
+
+    Parameters
+    ----------
+    dark_array : `dict`
+        The images, keyed by slot, amp
+    kwargs
+        Used to override default configuration
+
+    Returns
+    -------
+    out_dict : `dict`
+        The output dictionary
+    """
+    fp_dict = dict(slot=[],
+                   amp=[],
+                   x_corner=[],
+                   y_corner=[],
+                   x_peak=[],
+                   y_peak=[],
+                   x_size=[],
+                   y_size=[],
+                   mean_full=[])
+    for i in range(4):
+        fp_dict['mean_%i' % i] = []
+        fp_dict['npix_%i' % i] = []
+        fp_dict['npix_0p2_%i' % i] = []
+
+    for islot, (_, slot_data) in enumerate(sorted(dark_array.items())):
+        for iamp, (_, image) in enumerate(sorted(slot_data.items())):
+            fill_footprint_dict(image.image, fp_dict, iamp, islot, **kwargs)
+    return fp_dict

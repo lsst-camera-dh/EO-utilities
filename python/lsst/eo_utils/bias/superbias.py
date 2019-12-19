@@ -2,8 +2,6 @@
 
 import os
 
-import numpy as np
-
 import lsst.afw.math as afwMath
 
 import lsst.eotest.image_utils as imutil
@@ -19,11 +17,13 @@ from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
+from lsst.eo_utils.base.data_utils import TableDict, stack_summary_table
+
+from lsst.eo_utils.base.plot_utils import plot_outlier_summary
 
 from lsst.eo_utils.base.image_utils import flip_data_in_place,\
     stack_images, extract_raft_unbiased_images, extract_raft_imaging_data,\
-    outlier_raft_dict, fill_footprint_dict
+    outlier_raft_dict, build_defect_dict
 
 from lsst.eo_utils.base.iter_utils import AnalysisBySlot
 
@@ -73,6 +73,21 @@ class SuperbiasTask(BiasAnalysisTask):
         BiasAnalysisTask.__init__(self, **kwargs)
         self._superbias_frame = None
 
+    @staticmethod
+    def get_input_files(data):
+        """Get the input files
+        This is useful to specialize sub-classes that do slightly different things
+
+        Parameters
+        ----------
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+
+        Returns
+        -------
+        """
+        return data['BIAS']
+
     def extract(self, butler, data, **kwargs):
         """Make superbias frame for one slot
 
@@ -96,7 +111,7 @@ class SuperbiasTask(BiasAnalysisTask):
         if stat_type is None:
             stat_type = DEFAULT_STAT_TYPE
 
-        bias_files = data['BIAS']
+        bias_files = self.get_input_files(data)
         nbias = len(bias_files)
 
         if stat_type.upper() in afwMath.__dict__:
@@ -112,6 +127,7 @@ class SuperbiasTask(BiasAnalysisTask):
         sbias = stack_images(butler, bias_files, statistic=statistic, bias_type=bias_type)
         self.log_progress("Done!")
         return sbias
+
 
     def make_superbias(self, butler, slot_data, **kwargs):
         """Stack the input data to make superbias frames
@@ -147,7 +163,8 @@ class SuperbiasTask(BiasAnalysisTask):
             output_file = self.get_filename_from_format(SUPERBIAS_STAT_FORMATTER,
                                                         '.fits',
                                                         **kwargs)
-        if not slot_data['BIAS']:
+        data_files = self.get_input_files(slot_data)
+        if not data_files:
             return
 
         makedir_safe(output_file)
@@ -158,15 +175,18 @@ class SuperbiasTask(BiasAnalysisTask):
                 self.log_warn_slot_msg(self.config, "extract() returned None.")
                 return
             if butler is None:
-                template_file = slot_data['BIAS'][0]
+                template_file = data_files[0]
             else:
-                template_file = get_filename_from_id(butler, slot_data['BIAS'][0])
+                template_file = get_filename_from_id(butler, data_files[0])
 
             imutil.writeFits(out_data, output_file, template_file, self.config.bitpix)
             if butler is not None:
                 flip_data_in_place(output_file)
 
-        self._superbias_frame = self.get_ccd(None, output_file, mask_files)
+        try:
+            self._superbias_frame = self.get_ccd(None, output_file, mask_files)
+        except Exception:
+            self._superbias_frame = None
 
 
     def plot(self, dtables, figs, **kwargs):
@@ -186,6 +206,9 @@ class SuperbiasTask(BiasAnalysisTask):
 
         if dtables is not None:
             raise ValueError("dtables should not be set in SuperbiasTask.plot")
+
+        if self._superbias_frame is None:
+            return
 
         subtract_mean = self.config.stat == DEFAULT_STAT_TYPE
         if self.config.vmin is None or self.config.vmax is None:
@@ -279,41 +302,6 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
         self._sbias_arrays = None
         self._sbias_images = None
 
-    @staticmethod
-    def build_defect_dict(dark_array, **kwargs):
-        """Extract information about the defects into a dictionary
-
-        Parameters
-        ----------
-        dark_array : `dict`
-            The images, keyed by slot, amp
-        kwargs
-            Used to override default configuration
-
-        Returns
-        -------
-        out_dict : `dict`
-            The output dictionary
-        """
-        fp_dict = dict(slot=[],
-                       amp=[],
-                       x_corner=[],
-                       y_corner=[],
-                       x_peak=[],
-                       y_peak=[],
-                       x_size=[],
-                       y_size=[],
-                       mean_full=[])
-        for i in range(4):
-            fp_dict['mean_%i' % i] = []
-            fp_dict['npix_%i' % i] = []
-            fp_dict['npix_0p2_%i' % i] = []
-
-        for islot, (_, slot_data) in enumerate(sorted(dark_array.items())):
-            for iamp, (_, image) in enumerate(sorted(slot_data.items())):
-                fill_footprint_dict(image.image, fp_dict, iamp, islot, **kwargs)
-        return fp_dict
-
 
     def extract(self, butler, data, **kwargs):
         """Extract the outliers in the superbias frames for the raft
@@ -351,7 +339,7 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
 
 
         self._sbias_arrays = extract_raft_imaging_data(self._sbias_images, ccd_dict)
-        fp_dict = SuperbiasRaftTask.build_defect_dict(self._sbias_images, fp_type='bright', abs_thresh=50)
+        fp_dict = build_defect_dict(self._sbias_images, fp_type='bright', abs_thresh=50)
 
         out_data = outlier_raft_dict(self._sbias_arrays, 0., 50.)
         dtables = TableDict()
@@ -453,19 +441,9 @@ class SuperbiasOutlierSummaryTask(SuperbiasSummaryAnalysisTask):
         if butler is not None:
             self.log.warn("Ignoring butler in extract()")
 
-        run_dict = dict(runs=[], rafts=[])
-        for key, val in data.items():
-            run_dict['runs'].append(key[4:])
-            run_dict['rafts'].append(key[0:3])
-            data[key] = val.replace(self.config.filekey, self.config.infilekey)
-
-        keep_cols = ['nbad_total', 'nbad_rows', 'nbad_cols', 'slot', 'amp']
-
-        outtable = vstack_tables(data, tablename='outliers', keep_cols=keep_cols)
-
-        dtables = TableDict()
-        dtables.add_datatable('outliers_sum', outtable)
-        dtables.make_datatable('runs', run_dict)
+        dtables = stack_summary_table(data, self,
+                                      tablename='outliers',
+                                      keep_cols=['nbad_total', 'nbad_rows', 'nbad_cols', 'slot', 'amp'])
         return dtables
 
 
@@ -482,30 +460,7 @@ class SuperbiasOutlierSummaryTask(SuperbiasSummaryAnalysisTask):
             Used to override default configuration
         """
         self.safe_update(**kwargs)
-
-        sumtable = dtables['outliers_sum']
-        if self.config.teststand == 'ts8':
-            runtable = dtables['runs']
-            yvals = sumtable['nbad_total'].flatten().clip(0., 2.)
-            runs = runtable['runs']
-            figs.plot_run_chart("nbad-total", runs, yvals, ylabel="Maximum FFT Power [ADU]")
-        elif self.config.teststand == 'bot':
-            rafts = np.unique(sumtable['raft'])
-            for raft in rafts:
-                mask = sumtable['raft'] == raft
-                subtable = sumtable[mask]
-                figs.plot_run_chart_by_slot("nbad-total-%s" % raft, subtable,
-                                            "nbad_total", #yerrs="std",
-                                            ylabel="Fraction of outliers",
-                                            ymin=0., ymax=1.)
-                figs.plot_run_chart_by_slot("nbad-col-%s" % raft, subtable,
-                                            "nbad_cols", #yerrs="std",
-                                            ylabel="Fraction cols w/ > 10 outliers",
-                                            ymin=0., ymax=1.)
-                figs.plot_run_chart_by_slot("nbad-row-%s" % raft, subtable,
-                                            "nbad_rows", #yerrs="std",
-                                            ylabel="Fraction row w/ > 10 outliers",
-                                            ymin=0., ymax=1.)
+        plot_outlier_summary(self, dtables, figs)
 
 
 class SuperbiasMosaicConfig(CameraMosaicConfig):

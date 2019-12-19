@@ -8,7 +8,8 @@ from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
+from lsst.eo_utils.base.data_utils import TableDict, vstack_tables,\
+    get_run_config_table
 
 from lsst.eo_utils.base.file_utils import SUPERBIAS_STAT_FORMATTER
 
@@ -226,15 +227,7 @@ class SuperbiasSummaryTask(SuperbiasSummaryAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        config_table = kwargs.get('config_table', 'seq_list.fits')
-        if config_table is not None:
-            try:
-                config_td = TableDict(config_table)
-                config_table = config_td['seq']
-            except FileNotFoundError:
-                config_table = None
-        else:
-            config_table = None
+        config_table = get_run_config_table(kwargs.get('config_table', 'seq_list.fits'), 'seq')
 
         sumtable = dtables['stats']
         if self.config.teststand == 'ts8':

@@ -61,7 +61,7 @@ def get_report_config_info(table_tag, **kwargs):
                 defaults=template_dict['defaults'])
 
 
-def handle_file(file_name, outdir, action, overwrite=True):
+def handle_file(file_name, outdir, action, overwrite=False):
     """Move, copy or link a file to an output directory
 
     Parameters
