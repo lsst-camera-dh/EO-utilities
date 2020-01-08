@@ -180,22 +180,24 @@ class StabilityTask(SflatAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        xlabel = 'Seq. Num.'
-        ylabel_resid = 'Frac. Resid'
-        ylabel_std = 'Var/Mean*Flux'
+        label_seq = 'Seq. Num.'
+        label_delta = "Delta [ADU]"
+        label_resid = 'Frac. Resid'
+        label_std = 'Std. [ADU]'
 
 
         tab_stab = dtables['stability']
-        figs.setup_amp_plots_grid('delta', xlabel=xlabel, ylabel="Delta [ADU]",
+        figs.setup_amp_plots_grid('delta', xlabel=label_seq, ylabel=label_delta,
                                   ymin=-10, ymax=10)
-        figs.setup_amp_plots_grid('delta-hist', xlabel="Delta [ADU]", ylabel="Frames/0.1ADU")
-        figs.setup_amp_plots_grid('mean-ref', xlabel=xlabel, ylabel=ylabel_resid,
+        figs.setup_amp_plots_grid('delta-hist', xlabel=label_delta, ylabel="Frames/0.1ADU")
+        figs.setup_amp_plots_grid('mean-ref', xlabel=label_seq, ylabel=label_resid,
                                   ymin=-0.001, ymax=0.001)
-        figs.setup_amp_plots_grid('mean', xlabel=xlabel, ylabel=ylabel_resid,
+        figs.setup_amp_plots_grid('mean', xlabel=label_seq, ylabel=label_resid,
                                   ymin=-0.01, ymax=0.01)
-        figs.setup_amp_plots_grid('std', xlabel=xlabel, ylabel=ylabel_std)
-        figs.setup_amp_plots_grid('row', xlabel="row", ylabel="Mean [ADU]")
-        figs.setup_amp_plots_grid('col', xlabel="col", ylabel="Mean [ADU]")
+        figs.setup_amp_plots_grid('std', xlabel=label_seq, ylabel=label_std)
+        figs.setup_amp_plots_grid('row', xlabel="row", ylabel=label_seq)
+        figs.setup_amp_plots_grid('col', xlabel="col", ylabel=label_seq)
+        figs.setup_amp_plots_grid('delta-v-std', xlabel=label_delta, ylabel=label_std)
 
         flux = -1. * tab_stab['FLUX']
 
@@ -205,6 +207,8 @@ class StabilityTask(SflatAnalysisTask):
             amp_means = tab_stab['AMP%02i_FLAT_MEAN' % amp] / flux
             amp_vars = tab_stab['AMP%02i_FLAT_VAR' % amp] / (tab_stab['AMP%02i_FLAT_MEAN' % amp] * flux)
             ymedian = np.median(amp_means)
+            ymedian_std = np.sqrt(np.median(amp_vars))
+            std_delta = np.sqrt(amp_vars) - ymedian_std
             n_x = len(amp_means)
             xvals = np.linspace(0, n_x-1, n_x)
             frac_resid = (amp_means - ymedian) / ymedian
@@ -218,19 +222,28 @@ class StabilityTask(SflatAnalysisTask):
             figs.plot('delta', amp-1, xvals, norm_delta)
             figs.plot('mean-ref', amp-1, xvals, norm_frac_resid)
             figs.plot('mean', amp-1, xvals, frac_resid)
-            figs.plot('std', amp-1, xvals, np.sqrt(amp_vars))
+            figs.plot('std', amp-1, xvals, std_delta)
 
-            rows = (tab_stab['AMP%02i_FLAT_ROWMEAN'  % amp].T / flux).T
-            cols = (tab_stab['AMP%02i_FLAT_COLMEAN'  % amp].T / flux).T
+            rows = ((tab_stab['AMP%02i_FLAT_ROWMEAN'  % amp].T - refs) / flux).T
+            cols = ((tab_stab['AMP%02i_FLAT_COLMEAN'  % amp].T - refs) / flux).T 
 
-            nrow = len(rows[0])
-            xrow = np.linspace(0, nrow-1, nrow)
-            ncol = len(cols[0])
-            xcol = np.linspace(0, ncol-1, ncol)
-            for row in rows:
-                figs.plot('row', amp-1, xrow, row)
-            for col in cols:
-                figs.plot('col', amp-1, xcol, col)
+            axes_scat = figs.get_amp_axes('delta-v-std', amp-1)
+            axes_scat.set_xlim(-5., 5.)
+            axes_scat.set_ylim(-0.005, 0.005)
 
+            axes_scat.scatter(norm_delta, std_delta)
+
+            #nrow = len(rows[0])
+            #xrow = np.linspace(0, nrow-1, nrow)
+            #ncol = len(cols[0])
+            #xcol = np.linspace(0, ncol-1, ncol)
+
+            med_row = np.median(rows, axis=0)
+            med_col = np.median(cols, axis=0)
+
+            figs.plot_2d_color("row", amp-1, rows-med_row, 
+                               origin='low', interpolation='none')
+            figs.plot_2d_color("col", amp-1, cols-med_col,
+                               origin='low', interpolation='none')
 
 EO_TASK_FACTORY.add_task_class('Stability', StabilityTask)

@@ -8,7 +8,8 @@ from lsst.eo_utils.base.defaults import ALL_SLOTS
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.data_utils import TableDict, vstack_tables
+from lsst.eo_utils.base.data_utils import TableDict, vstack_tables,\
+    get_run_config_table
 
 from lsst.eo_utils.base.stat_utils import gauss_fit
 
@@ -213,15 +214,7 @@ class DarkCurrentSummaryTask(DarkSummaryAnalysisTask):
         sumtable = dtables['stats']
         runtable = dtables['runs']
 
-        config_table = kwargs.get('config_table', 'dark_config.fits')
-        if config_table is not None:
-            try:
-                config_td = TableDict(config_table)
-                config_table = config_td['config']
-            except FileNotFoundError:
-                config_table = None
-        else:
-            config_table = None
+        config_table = get_run_config_table(kwargs.get('config_table', 'dark_config.fits'), 'config')
 
         if self.config.teststand == 'ts8':
             yvals = sumtable['current']

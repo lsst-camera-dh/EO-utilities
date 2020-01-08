@@ -45,6 +45,10 @@ if os.environ.get('EO_PRINT_OPTS', False):
 BUTLER_REPO_DICT = dict(ts8=BUTLER_TS8_REPO,
                         bot=BUTLER_BOT_REPO)
 
+# The amps
+ALL_AMPS = ['C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16', 'C17',
+            'C07', 'C06', 'C05', 'C04', 'C03', 'C02', 'C01', 'C00']
+
 # The slots
 ALL_SLOTS = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
 CORNER_SLOTS = ['SG0', 'SG1', 'SW0', 'SW1']

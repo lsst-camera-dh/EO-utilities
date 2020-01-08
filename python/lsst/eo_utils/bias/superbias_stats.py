@@ -227,7 +227,8 @@ class SuperbiasSummaryTask(SuperbiasSummaryAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        config_table = get_run_config_table(kwargs.get('config_table', 'seq_list.fits'), 'seq')
+        #config_table = get_run_config_table(kwargs.get('config_table', 'seq_list.fits'), 'seq')
+        config_table = get_run_config_table(kwargs.get('config_table', 'nbias_full_bot.fits'), 'nbias')
 
         sumtable = dtables['stats']
         if self.config.teststand == 'ts8':
@@ -245,9 +246,8 @@ class SuperbiasSummaryTask(SuperbiasSummaryAnalysisTask):
                                             "mean", #yerrs="std",
                                             ylabel="Superbias STD [ADU]",
                                             ymin=0., ymax=10.,
-                                            raft=raft,
+                                            raft='nbias',
                                             config_table=config_table)
-
 
 
 EO_TASK_FACTORY.add_task_class('SuperbiasStats', SuperbiasStatsTask)

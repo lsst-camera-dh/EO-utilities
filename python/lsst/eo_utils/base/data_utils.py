@@ -334,7 +334,7 @@ def stack_summary_table(data, for_whom, **kwargs):
         The resulting data
     """
     kwcopy = kwargs.copy()
-    tablename = kwargs.pop('tablename')
+    tablename = kwcopy.pop('tablename')
     outtable_name = tablename + '_sum'
 
     run_dict = dict(runs=[], rafts=[])

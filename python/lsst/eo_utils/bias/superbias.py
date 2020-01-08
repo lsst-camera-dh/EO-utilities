@@ -17,7 +17,8 @@ from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.data_utils import TableDict, stack_summary_table
+from lsst.eo_utils.base.data_utils import TableDict, stack_summary_table,\
+    get_run_config_table
 
 from lsst.eo_utils.base.plot_utils import plot_outlier_summary
 
@@ -113,18 +114,24 @@ class SuperbiasTask(BiasAnalysisTask):
 
         bias_files = self.get_input_files(data)
         nbias = len(bias_files)
+        
+        if nbias < 3:
+            self.log_warn_slot_msg(self.config, "Not enough files to stack %i < 3" % nbias)
+            return None
 
         if stat_type.upper() in afwMath.__dict__:
             statistic = afwMath.__dict__[stat_type.upper()]
-            if nbias < 3:
-                self.log_warn_slot_msg(self.config, "Not enough files to stack %i < 3" % nbias)
-                return None
         else:
             raise ValueError("Can not convert %s to a valid statistic" % stat_type)
 
         self.log_info_slot_msg(self.config, "%i files" % nbias)
 
-        sbias = stack_images(butler, bias_files, statistic=statistic, bias_type=bias_type)
+        # Note that we are deliberately skipping the first bias frame
+        stat_ctrl = afwMath.StatisticsControl()
+        stat_ctrl.setNumSigmaClip(10)
+        sbias = stack_images(butler, bias_files[1:],
+                             statistic=statistic, bias_type=bias_type, 
+                             stat_ctrl=stat_ctrl)
         self.log_progress("Done!")
         return sbias
 
@@ -460,7 +467,8 @@ class SuperbiasOutlierSummaryTask(SuperbiasSummaryAnalysisTask):
             Used to override default configuration
         """
         self.safe_update(**kwargs)
-        plot_outlier_summary(self, dtables, figs)
+        config_table = get_run_config_table(kwargs.get('config_table', 'seq_list.fits'), 'seq')
+        plot_outlier_summary(self, dtables, figs, config_table)
 
 
 class SuperbiasMosaicConfig(CameraMosaicConfig):

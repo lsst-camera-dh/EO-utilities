@@ -951,6 +951,7 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
     log = kwargs.get('log', None)
     gains = kwargs.get('gains', None)
     nlc = kwargs.get('nlc', None)
+    stat_ctrl = kwargs.get('stat_ctrl', None)
 
     amp_stack_dict = {}
     out_dict = {}
@@ -1005,7 +1006,7 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
             outkey = key
         else:
             outkey = key + 1
-        stackimage = imutil.stack(val, statistic)
+        stackimage = imutil.stack(val, statistic, stat_ctrl=stat_ctrl)
         out_dict[outkey] = stackimage.image
 
     if log is not None:

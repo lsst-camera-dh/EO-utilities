@@ -11,6 +11,8 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 
 from astropy.table import join
 
+from focal_plane_plotting import plot_focal_plane
+
 from lsst.eotest.raft import RaftMosaic
 
 from lsst.eotest.sensor import MaskedCCD, parse_geom_kwd
@@ -23,7 +25,7 @@ from .image_utils import get_raw_image, raw_amp_image,\
     get_amp_list, unbias_amp, get_geom_regions,\
     get_image_frames_2d, unbiased_ccd_image_dict, get_amp_offset
 
-from .defaults import TESTCOLORMAP
+from .defaults import TESTCOLORMAP, ALL_SLOTS, ALL_AMPS
 
 from . import mpl_utils
 
@@ -35,9 +37,45 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 mpl_utils.set_plt_ioff()
 
 
+def convert_amp_table_to_amp_dict(amp_data_table, colname, func):
+    """Convert a table with amp level data to a dictionary
+    
+    Parameters
+    ----------
+    amp_data_table : `Table`
+        Table with the amp level data
+    colname : `str`
+        name of the column to plot
+    func : `function` or 'None`
+        Function to apply to data
+
+    Returns
+    -------
+    o_dict : `dict`
+        Dictionary of amp-level data
+    """
+    o_dict = {}
+    rafts = np.unique(amp_data_table['raft'])
+    if func is None:
+        func = lambda x : x
+    for raft in rafts:
+        raft_mask = amp_data_table['raft'] == raft
+        raft_table = amp_data_table[raft_mask]
+        slots = np.unique(amp_data_table['slot'])
+        for slot in slots:
+            if isinstance(slot, str):
+                key = "%s_%s" % (raft, slot)
+            else:
+                key = "%s_%s" % (raft, ALL_SLOTS[slot])
+            slot_mask = raft_table['slot'] == slot
+            slot_table = raft_table[slot_mask]
+            amps = np.unique(slot_table['amp'])
+            o_dict[key] = {ALL_AMPS[amp] : func(slot_table[slot_table['amp'] == amp][colname]) for amp in amps}
+    return o_dict
+
 
 class FigureDict:
-    """Object to make and collect figures.1
+    """Object to make and collect figures.
 
     This is implemented as a dictionary of dictionaries,
 
@@ -551,6 +589,32 @@ class FigureDict:
         if ymin is not None and ymax is not None:
             axs.set_ylim(ymin, ymax)
 
+
+    def plot_2d_color(self, key, iamp, zvals, **kwargs):
+        """Plot x versus y data for one amp
+
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        iamp : `int`
+            Amp index
+        zvals : `numpy.ndarray`
+            z-axis data
+        kwargs
+            Passed to matplotlib
+        """
+        kwcopy = kwargs.copy()
+        axs = self._fig_dict[key]['axs'].flat[iamp]
+        vmin = kwcopy.pop('vmin', None)
+        vmax = kwcopy.pop('vmax', None)
+        if vmin is not None and vmax is not None:
+            vrange = (vmin, vmax)
+        else:
+            interval = viz.PercentileInterval(98.)
+            vrange = interval.get_limits(zvals.flatten())
+        norm = ImageNormalize(vmin=vrange[0], vmax=vrange[1])
+        axs.imshow(zvals, norm=norm, **kwcopy)
 
     def plot_resid(self, key, iamp, data_struct, **kwargs):
         """Plot x versus y data for one amp
@@ -1559,6 +1623,28 @@ class FigureDict:
         return odict
 
 
+    def plot_amps_data_fp_dict(self, key, amp_data, **kwargs):
+        """Make a mosaic of the focal plane using amp-level data
+        """
+        kwcopy = kwargs.copy()
+        title = kwcopy.pop('title', None)
+        figsize = kwcopy.pop('figsize', (12, 12))
+        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+        if title is not None:
+            fig.suptitle(title)
+        plot_focal_plane(axes, amp_data, **kwcopy)
+        odict = dict(fig=fig, axes=axes)
+        self._fig_dict[key] = odict
+        return odict
+
+
+    def plot_amps_data_fp_table(self, key, amp_data_table, colname, func=None, **kwargs):
+        """Make a mosaic of the focal plane using amp-level data
+        """
+        amp_dict = convert_amp_table_to_amp_dict(amp_data_table, colname, func)
+        print(amp_dict)
+        return self.plot_amps_data_fp_dict(key, amp_dict, **kwargs)
+
     def make_raft_outlier_plots(self, dtable, prefix=""):
         """Make a set of plots of about the number of outlier pixels
 
@@ -1674,7 +1760,7 @@ class FigureDict:
 
 
 
-def plot_outlier_summary(for_whom, dtables, figs):
+def plot_outlier_summary(for_whom, dtables, figs, config_table, config_key=None):
     """Plot the summary data from the superbias statistics study
 
     Parameters
@@ -1685,6 +1771,10 @@ def plot_outlier_summary(for_whom, dtables, figs):
         The data produced by this task
     figs : `FigureDict`
         The resulting figures
+    config_table : `Table`
+        With configuration data
+    config_key : `str`
+        Column to used in config table
     """
     sumtable = dtables['outliers_sum']
     if for_whom.config.teststand == 'ts8':
@@ -1697,15 +1787,25 @@ def plot_outlier_summary(for_whom, dtables, figs):
         for raft in rafts:
             mask = sumtable['raft'] == raft
             subtable = sumtable[mask]
+            if config_key is None:
+                use_key = raft
+            else:
+                use_key = config_key
             figs.plot_run_chart_by_slot("nbad-total-%s" % raft, subtable,
                                         "nbad_total", #yerrs="std",
                                         ylabel="Fraction of outliers",
-                                        ymin=1e-7, ymax=1., logy=True)
+                                        ymin=1e-7, ymax=1., logy=True,
+                                        raft=use_key,
+                                        config_table=config_table)
             figs.plot_run_chart_by_slot("nbad-col-%s" % raft, subtable,
                                         "nbad_cols", #yerrs="std",
                                         ylabel="Fraction cols w/ > 10 outliers",
-                                        ymin=1e-7, ymax=1., logy=True)
+                                        ymin=1e-7, ymax=1., logy=True,
+                                        raft=use_key,
+                                        config_table=config_table)
             figs.plot_run_chart_by_slot("nbad-row-%s" % raft, subtable,
                                         "nbad_rows", #yerrs="std",
                                         ylabel="Fraction row w/ > 10 outliers",
-                                        ymin=1e-7, ymax=1., logy=True)
+                                        ymin=1e-7, ymax=1., logy=True,
+                                        raft=use_key,
+                                        config_table=config_table)

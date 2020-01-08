@@ -16,7 +16,8 @@ from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.data_utils import TableDict, stack_summary_table
+from lsst.eo_utils.base.data_utils import TableDict, stack_summary_table,\
+    get_run_config_table
 
 from lsst.eo_utils.base.plot_utils import plot_outlier_summary
 
@@ -421,7 +422,8 @@ class SuperdarkOutlierSummaryTask(SuperdarkSummaryAnalysisTask):
             Used to override default configuration
         """
         self.safe_update(**kwargs)
-        plot_outlier_summary(self, dtables, figs)
+        config_table = get_run_config_table(kwargs.get('config_table', 'dark_config.fits'), 'config')
+        plot_outlier_summary(self, dtables, figs, config_table, "config")
 
 
 class SuperdarkMosaicConfig(CameraMosaicConfig):

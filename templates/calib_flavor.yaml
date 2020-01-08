@@ -9,7 +9,7 @@ normal :
   FlatPairTask : 
     mask : eotest
   BiasStructTask :
-    bias : None
+    bias : spline
     superbias : None
   BiasOscanCorrelTask :
     bias : None

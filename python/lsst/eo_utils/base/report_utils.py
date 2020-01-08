@@ -57,7 +57,7 @@ def get_report_config_info(table_tag, **kwargs):
         table_desc = {}
 
     return dict(cssfile=cssfile,
-                table_desc=template_dict.get(table_tag, {}),
+                table_desc=table_desc,
                 defaults=template_dict['defaults'])
 
 
