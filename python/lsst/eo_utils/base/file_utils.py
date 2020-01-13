@@ -34,7 +34,7 @@ PD_CALIB_FORMAT_STRING = '{outdir}/{teststand}/pdcalib/{raft}/{raft}-{run}-pd_ca
 # These strings define the standard output filenames
 SLOT_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}_{calib}_{filekey}'
 RAFT_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{raft}/{testType}/{raft}-{run}-RFT_{calib}_{filekey}'
-RUN_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{run}'
+RUN_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{run}/{testType}/{run}_{calib}_{filekey}'
 
 SUMMARY_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/summary/{testType}/{dataset}_{calib}_{filekey}'
 
@@ -337,6 +337,16 @@ EORESULTS_PLOT_FORMATTER = FILENAME_FORMATS.add_format('eoresults_plot',
                                                        fileType='plots',
                                                        testType='eotest',
                                                        filekey='results')
+EORESULTS_RUNTABLE_FORMATTER = FILENAME_FORMATS.add_format('eoresults_runtable',
+                                                           RUN_FORMAT_STRING,
+                                                           fileType='eotest',
+                                                           testType='',
+                                                           filekey='results')
+EORESULTS_RUNPLOT_FORMATTER = FILENAME_FORMATS.add_format('eoresults_runplot',
+                                                          RUN_FORMAT_STRING,
+                                                          fileType='plots',
+                                                          testType='eotest',
+                                                          filekey='results')
 EORESULTS_SUMMARY_TABLE_FORMATTER = FILENAME_FORMATS.add_format('eoresults_sum_table',
                                                                 SUMMARY_FORMAT_STRING,
                                                                 fileType='tables',
@@ -827,6 +837,7 @@ def link_eo_calib(fname, outformat, **kwargs):
     """Link eo results to the analysis area
 
     Parameters
+
     ----------
     fname : `str`
         Input file name

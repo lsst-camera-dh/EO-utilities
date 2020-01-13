@@ -1024,8 +1024,24 @@ class TableAnalysisByRun(AnalysisByRun):
         if slot_list is None:
             slot_list = ALL_SLOTS
 
+
+        raft_level = False
         for raft in raft_list:
             kwcopy['raft'] = raft
+            
+            try:
+                datapath = self._task.get_filename_from_format(formatter, '.fits', **kwcopy)
+                if os.path.exists(datapath):                
+                    out_dict[raft] = datapath
+                    raft_level = True
+                    continue
+                else:
+                    if raft_level:
+                        print("Skipping missing raft %s" % raft)
+                        continue
+            except Exception:
+                print("Could not make filename from ", formatter, kwcopy)
+                pass
             slot_dict = {}
             for slot in slot_list:
                 kwcopy['slot'] = slot

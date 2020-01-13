@@ -66,11 +66,18 @@ def convert_amp_table_to_amp_dict(amp_data_table, colname, func):
             if isinstance(slot, str):
                 key = "%s_%s" % (raft, slot)
             else:
-                key = "%s_%s" % (raft, ALL_SLOTS[slot])
+                key = "%s_%s" % (raft, ALL_SLOTS[int(slot)])
             slot_mask = raft_table['slot'] == slot
             slot_table = raft_table[slot_mask]
-            amps = np.unique(slot_table['amp'])
-            o_dict[key] = {ALL_AMPS[amp] : func(slot_table[slot_table['amp'] == amp][colname]) for amp in amps}
+            if 'amp' in slot_table.columns:
+                amps = np.unique(slot_table['amp'])
+                amp_str = 'amp'
+                offset = 0
+            elif 'AMP' in slot_table.columns:
+                amps = np.unique(slot_table['AMP'])
+                amp_str = 'AMP'
+                offset = 1
+            o_dict[key] = {ALL_AMPS[int(amp)-offset] : func(slot_table[slot_table[amp_str] == amp][colname])[0] for amp in amps}
     return o_dict
 
 
@@ -772,7 +779,6 @@ class FigureDict:
                 continue
             valarray = dtab[col]
             for row, test_type in zip(valarray.T, file_data['testtype']):
-                print(y_name, row.max())
                 self.plot(plotkey, idx, xcol, row,
                           color=TESTCOLORMAP.get(test_type, 'gray'),
                           **kwcopy)
@@ -1298,6 +1304,8 @@ class FigureDict:
             y-axis label
         yextras : `list`
             Additional quantities to plot on y-axis
+        ymin : `float`
+        ymax ; `float`
 
         Returns
         -------
@@ -1308,6 +1316,8 @@ class FigureDict:
         yerrs = kwcopy.pop('yerrs', None)
         title = kwcopy.pop('title', None)
         yextras = kwcopy.pop('yextras', None)
+        ymin = kwcopy.pop('ymin', None)
+        ymax = kwcopy.pop('ymax', None)
         fig = plt.figure(figsize=kwcopy.pop('figsize', (14, 8)))
         axes = fig.add_subplot(111)
 
@@ -1321,6 +1331,10 @@ class FigureDict:
         n_amps = int(n_data / n_runs)
 
         xvals = np.linspace(0, n_data-1, n_data)
+
+        if ymin is not None and ymax is not None:
+            axes.set_ylim(ymin, ymax)
+            yvals = yvals.clip(ymin, ymax)
 
         if yerrs is None:
             axes.plot(xvals, yvals, 'b.', **kwcopy)
@@ -1410,8 +1424,11 @@ class FigureDict:
             slot_table = use_table[mask]
 
             #idxs = slot_table['irun']*16 + slot_table['amp']
-            ndim = len(slot_table[ycol].shape)
-            yvals = slot_table[ycol].flatten()
+            try:
+                ndim = len(slot_table[ycol].shape)
+                yvals = slot_table[ycol].flatten()
+            except KeyError:
+                continue
 
             if ymin is not None and ymax is not None:
                 axes.set_ylim(ymin, ymax)
@@ -1632,7 +1649,11 @@ class FigureDict:
         fig, axes = plt.subplots(nrows=1, ncols=1, figsize=figsize)
         if title is not None:
             fig.suptitle(title)
-        plot_focal_plane(axes, amp_data, **kwcopy)
+        try:
+            plot_focal_plane(axes, amp_data, **kwcopy)
+        except ValueError as msg:
+            print(msg)
+            return None
         odict = dict(fig=fig, axes=axes)
         self._fig_dict[key] = odict
         return odict
@@ -1642,7 +1663,6 @@ class FigureDict:
         """Make a mosaic of the focal plane using amp-level data
         """
         amp_dict = convert_amp_table_to_amp_dict(amp_data_table, colname, func)
-        print(amp_dict)
         return self.plot_amps_data_fp_dict(key, amp_dict, **kwargs)
 
     def make_raft_outlier_plots(self, dtable, prefix=""):
