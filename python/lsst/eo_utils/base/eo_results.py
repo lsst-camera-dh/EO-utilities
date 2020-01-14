@@ -120,7 +120,7 @@ class EOResultsRaftTask(AnalysisTask):
         """
         self.safe_update(**kwargs)
         table = dtables['eo_results']
-        
+
         try:
             figs.plot_raft_amp_values('gain',
                                       table['GAIN'],
@@ -279,7 +279,7 @@ class EOResultsRunTask(AnalysisTask):
         """
         self.safe_update(**kwargs)
         table = dtables['eo_results_run']
-        
+
         try:
             figs.plot_amps_data_fp_table('gain',
                                          table, 'GAIN',
@@ -443,7 +443,6 @@ class EOResultsSummaryTask(AnalysisTask):
         return dtables
 
 
-
     def plot_ts8(self, dtables, figs, **kwargs):
         """Plot the summary data for ts8 runs
 
@@ -456,6 +455,7 @@ class EOResultsSummaryTask(AnalysisTask):
         kwargs
             Used to override default configuration
         """
+        self.safe_update(**kwargs)
         table = dtables['eo_results_sum']
         runtable = dtables['runs']
         runs = runtable['runs']
@@ -489,7 +489,7 @@ class EOResultsSummaryTask(AnalysisTask):
         except KeyError:
             pass
 
-        
+
         try:
             figs.plot_run_chart('shot-noise',
                                 runs,
@@ -504,7 +504,7 @@ class EOResultsSummaryTask(AnalysisTask):
                                 runs,
                                 table['TOTAL_NOISE'],
                                 ylabel='rms e-/pixel',
-                                ymin=0, ymax=10.)        
+                                ymin=0, ymax=10.)
         except KeyError:
             pass
 
@@ -584,14 +584,14 @@ class EOResultsSummaryTask(AnalysisTask):
         except KeyError:
             pass
 
-        
+
 
     def plot_by_raft(self, raft, raft_table, figs, **kwargs):
         """Plot the summary data
 
         Parameters
         ----------
-        raft : `str` 
+        raft : `str`
             The raft name
         raft_table : `TableDict`
             The data produced by this task
@@ -599,7 +599,8 @@ class EOResultsSummaryTask(AnalysisTask):
             The resulting figures
         kwargs
             Used to override default configuration
-        """        
+        """
+        self.safe_update(**kwargs)
         figs.plot_run_chart_by_slot('gain-%s' % raft,
                                     raft_table, 'GAIN',
                                     yerrs='GAIN_ERROR',
@@ -678,7 +679,7 @@ class EOResultsSummaryTask(AnalysisTask):
         self.safe_update(**kwargs)
 
         if self.config.teststand == 'ts8':
-            self.plot_ts8(self, dtables, figs, **kwargs)
+            self.plot_ts8(dtables, figs, **kwargs)
         elif self.config.teststand == 'bot':
             sumtable = dtables['eo_results_sum']
             rafts = np.unique(sumtable['raft'])

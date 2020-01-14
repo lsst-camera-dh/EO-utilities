@@ -225,7 +225,7 @@ class StabilityTask(SflatAnalysisTask):
             figs.plot('std', amp-1, xvals, std_delta)
 
             rows = ((tab_stab['AMP%02i_FLAT_ROWMEAN'  % amp].T - refs) / flux).T
-            cols = ((tab_stab['AMP%02i_FLAT_COLMEAN'  % amp].T - refs) / flux).T 
+            cols = ((tab_stab['AMP%02i_FLAT_COLMEAN'  % amp].T - refs) / flux).T
 
             axes_scat = figs.get_amp_axes('delta-v-std', amp-1)
             axes_scat.set_xlim(-5., 5.)
@@ -241,7 +241,7 @@ class StabilityTask(SflatAnalysisTask):
             med_row = np.median(rows, axis=0)
             med_col = np.median(cols, axis=0)
 
-            figs.plot_2d_color("row", amp-1, rows-med_row, 
+            figs.plot_2d_color("row", amp-1, rows-med_row,
                                origin='low', interpolation='none')
             figs.plot_2d_color("col", amp-1, cols-med_col,
                                origin='low', interpolation='none')

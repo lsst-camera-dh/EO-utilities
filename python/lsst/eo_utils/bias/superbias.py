@@ -114,7 +114,7 @@ class SuperbiasTask(BiasAnalysisTask):
 
         bias_files = self.get_input_files(data)
         nbias = len(bias_files)
-        
+
         if nbias < 3:
             self.log_warn_slot_msg(self.config, "Not enough files to stack %i < 3" % nbias)
             return None
@@ -130,7 +130,7 @@ class SuperbiasTask(BiasAnalysisTask):
         stat_ctrl = afwMath.StatisticsControl()
         stat_ctrl.setNumSigmaClip(10)
         sbias = stack_images(butler, bias_files[1:],
-                             statistic=statistic, bias_type=bias_type, 
+                             statistic=statistic, bias_type=bias_type,
                              stat_ctrl=stat_ctrl)
         self.log_progress("Done!")
         return sbias

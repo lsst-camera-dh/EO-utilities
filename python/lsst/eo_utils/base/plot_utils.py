@@ -39,7 +39,7 @@ mpl_utils.set_plt_ioff()
 
 def convert_amp_table_to_amp_dict(amp_data_table, colname, func):
     """Convert a table with amp level data to a dictionary
-    
+
     Parameters
     ----------
     amp_data_table : `Table`
@@ -57,7 +57,7 @@ def convert_amp_table_to_amp_dict(amp_data_table, colname, func):
     o_dict = {}
     rafts = np.unique(amp_data_table['raft'])
     if func is None:
-        func = lambda x : x
+        func = lambda x: x
     for raft in rafts:
         raft_mask = amp_data_table['raft'] == raft
         raft_table = amp_data_table[raft_mask]
@@ -77,7 +77,8 @@ def convert_amp_table_to_amp_dict(amp_data_table, colname, func):
                 amps = np.unique(slot_table['AMP'])
                 amp_str = 'AMP'
                 offset = 1
-            o_dict[key] = {ALL_AMPS[int(amp)-offset] : func(slot_table[slot_table[amp_str] == amp][colname])[0] for amp in amps}
+            o_dict[key] = {ALL_AMPS[int(amp)-offset] :\
+                               func(slot_table[slot_table[amp_str] == amp][colname])[0] for amp in amps}
     return o_dict
 
 
