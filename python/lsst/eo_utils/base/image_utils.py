@@ -952,6 +952,8 @@ def stack_images(butler, in_files, statistic=afwMath.MEDIAN, **kwargs):
     gains = kwargs.get('gains', None)
     nlc = kwargs.get('nlc', None)
     stat_ctrl = kwargs.get('stat_ctrl', None)
+    if stat_ctrl is None:
+        stat_ctrl = afwMath.StatisticsControl()
 
     amp_stack_dict = {}
     out_dict = {}

@@ -15,7 +15,7 @@ SITE = os.environ.get('EO_UTILS_SITE', 'slac')
 
 if SITE == 'slac':
     BUTLER_TS8_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/ts8'
-    BUTLER_BOT_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/bot'
+    BUTLER_BOT_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/bot_etu'
     ARCHIVE_DIR = '/gpfs/slac/lsst/fs*/g/data/jobHarness/jh_archive*'
     DEFAULT_DATA_SOURCE = os.environ.get('EO_DATA_SOURCE', 'glob')
     DEFAULT_BATCH_ARGS = '-W 1200 -R bubble'
