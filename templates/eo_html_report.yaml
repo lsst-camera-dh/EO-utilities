@@ -1,0 +1,174 @@
+defaults :
+  action : copy
+  header_row_class : header_row
+  table_row_class : table_row
+  row_class : plot_row
+  table_col_class : table_col
+  col_desc_class : plot_col_desc
+  col_fig_class : plot_col_fig
+  col_img_class : plot
+slot_plot_tables :
+  read_noise: 
+    header_text : "Read noise"
+    rows :
+      - text : "Read noise" 
+        figure : "{run}/read_noise_BOT/v0/*/{raft}_{slot}_{run}_correlated_noise.png"
+  nonlinearity:
+    header_text : "Nonlinearity"
+    rows :
+      - text : "Linearity"
+        figure : "{run}/flat_pairs_BOT/v0/*/{raft}_{slot}_{run}_linearity.png"
+      - text : "Linearity residual"
+        figure : "{run}/flat_pairs_BOT/v0/*/{raft}_{slot}_{run}_linearity_resid.png"
+  mean_bias:
+    header_text : "Mean bias"
+  defects:
+    header_text : "Bright and dark defect frames"
+    rows :
+       - text : "Medianed Dark"
+         figure : "{run}/pixel_defects_BOT/v0/*/{raft}_{slot}_{run}_medianed_dark.png"
+       - text : "Superflat Dark Defects"
+         figure : "{run}/pixel_defects_BOT/v0/*/{raft}_{slot}_{run}_superflat_dark_defects.png"
+  cte:
+    header_text : "Charge Transfer Efficiency"
+    rows :
+      - text : "Superflat: high flux"
+        figure : "{run}/cti_BOT/v0/*/{raft}_{slot}_{run}_superflat_high.png"
+      - text : "Superflat: low flux"
+        figure : "{run}/cti_BOT/v0/*/{raft}_{slot}_{run}_superflat_low.png"
+      - text : "Serial overscan: high flux"
+        figure : "{run}/cti_BOT/v0/*/{raft}_{slot}_{run}_serial_oscan_high.png"
+      - text : "Serial overscan: low flux"
+        figure : "{run}/cti_BOT/v0/*/{raft}_{slot}_{run}_serial_oscan_low.png"
+      - text : "Parallel overscan: high flux"
+        figure : "{run}/cti_BOT/v0/*/{raft}_{slot}_{run}_parallel_oscan_high.png"
+  qe: 
+    header_text : "Quantum Efficiency"
+  nonuniformity:
+    header_text : "Photoresponse Non-uniformity"
+  psf : 
+    header_text : "Point spread function"
+  fe55_zoom:
+    header_text : "Fe55 zoom on segment 1"
+  fe55_aperature:
+    header_text : "Fe55 aperature flux vs. pixel number"
+  fe55_p3p5:
+    header_text : "Fe55 p3-p5 statistics" 
+  ptc: 
+    header_text : "System Gain and Photon Transfer Curves"
+    rows :
+      - text : "Photon Transfer Curves"
+        figure : "{run}/ptc_BOT/v0/*/{raft}_{slot}_{run}_ptcs.png"
+  dark_current:
+    header_text : "Dark current"
+    rows :
+      - text : "Dark current"
+        figure : "{run}/ptc_BOT/v0/*/{raft}_{slot}_{run}_noise.png"  
+  bf:
+    header_text : "Brighter Fatter"
+    rows : 
+      - text : "Brighter fatter"
+        figure : "{run}/brighter_fatter_BOT/v0/*/{raft}_{slot}_{run}_brighter-fatter.png"
+raft_plot_tables:
+  noise :
+    header_text : "Electronic noise"
+    rows : 
+      - text : "Noise"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_total_noise.png"
+      - text : "Overscan Correlations"
+        figure : "{run}/read_noise_BOT/v0/*/{raft}_{run}_overscan_correlations.png"
+  mean_bias: 
+    header_text : "Mean bias frame"
+  image_quality:
+    header_text : "Image quality"
+    rows : 
+      - text : "Dark Frame"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_medianed_dark.png"
+      - text : "Superflat: high flux"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_superflat_high.png"
+      - text : "Superflat: low flux"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_superflat_low.png"
+  defects:
+    header_text : "Bright and dark defect raft"
+    rows : 
+      - text : "Defects"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_dark_current.png"
+  linearity:
+    header_text : "Linearity"
+    rows : 
+      - text : "Maximum fractional deviation"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_linearity.png"
+  cte: 
+    header_text : "Charge transfer efficiency"
+    rows : 
+      - text : "Serial CTI"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_serial_cti.png"
+      - text : "Parallel CTI"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_parallel_cti.png"
+  qe:
+    header_text : "Quantum efficiency"
+  fe55: 
+    header_text : "Fe55 analysis: PSF and system gain"
+    rows:
+      - text : "System Gain"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_system_gain.png"
+run_plot_tables:
+  mosaics:
+    header_text : "Summary Mosaics"
+    rows : 
+      - text : "Bright columns"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_bright_columns.png" 
+      - text : "Bright pixels"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_bright_pixels.png"
+      - text : "CTI high, parallel"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_cti_high_parallel.png"
+      - text : "CTI high, serial"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_cti_high_serial.png"
+      - text : "CIT low, parallel"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_cti_low_parallel.png"
+      - text : "CTI_low, serial"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_cti_low_serial.png"
+      - text : "Dark columns"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_dark_columns.png"
+      - text : "Dark current"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_dark_current_95CL.png"
+      - text : "Dark pixels"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_dark_pixels.png"
+      - text : "PTC gain"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_ptc_gain.png"
+      - text : "Max. fractional deviation"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_max_frac_dev.png"
+      - text : "PTC a00"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_ptc_a00.png"
+      - text : "Read noise"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_read_noise.png"
+  histograms:
+    header_text : "Summary histograms"
+    rows :
+      - text : "Bright columns"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_bright_columns_hist.png"
+      - text : "Bright pixels"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_bright_pixels_hist.png"
+      - text : "CTI high, parallel"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_cti_high_parallel_hist.png"
+      - text : "CTI high, serial"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_cti_high_serial_hist.png"
+      - text : "CIT low, parallel"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_cti_low_parallel_hist.png"
+      - text : "CTI_low, serial"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_cti_low_serial_hist.png"
+      - text : "Dark columns"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_dark_columns_hist.png"
+      - text : "Dark current"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_dark_current_95CL_hist.png"
+      - text : "Dark pixels"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_dark_pixels_hist.png"
+      - text : "PTC gain"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_ptc_gain_hist.png"
+      - text : "Max. fractional deviation"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_max_frac_dev_hist.png"
+      - text : "PTC a00"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_ptc_a00_hist.png"
+      - text : "Read noise"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_read_noise_hist.png"    
+summary_plot_tables :

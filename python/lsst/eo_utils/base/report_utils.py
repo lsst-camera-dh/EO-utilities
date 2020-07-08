@@ -4,6 +4,8 @@
 
 import sys
 
+import glob
+
 import os
 
 import shutil
@@ -223,12 +225,12 @@ def create_plot_table_row(tbody_node, desc, plot_file, outdir, **kwargs):
     row_node : `xml.etree.ElementTree.SubElement`
         The row node
     """
-
-    if not os.path.exists(plot_file):
+    plot_files = glob.glob(plot_file)
+    if not plot_files:
         sys.stdout.write("Warning, skipping missing plot %s\n" % plot_file)
         return None
 
-    basename = handle_file(plot_file, outdir,
+    basename = handle_file(plot_files[0], outdir,
                            kwargs.get('plot_report_action', 'link'),
                            kwargs.get('overwrite', False))
 
@@ -431,7 +433,7 @@ def create_plot_table(parent_node, table_desc, inputdir, outdir, **kwargs):
                     text="Plot",
                     node_class=header_col_class)
 
-    rowlist = table_desc['rows']
+    rowlist = table_desc.get('rows', [])
     nrows = 0
     for row_desc in rowlist:
         plotfile = os.path.join(inputdir, row_desc['figure'].format(**dataid))
