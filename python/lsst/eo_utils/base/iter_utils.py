@@ -5,7 +5,7 @@ import os
 
 import lsst.pex.config as pexConfig
 
-from .defaults import ALL_SLOTS, RAFT_NAMES_DICT
+from .defaults import ALL_SLOTS, NINE_RAFTS, RAFT_NAMES_DICT
 
 from .config_utils import EOUtilOptions, Configurable,\
     setup_parser, add_pex_arguments,\
@@ -136,6 +136,9 @@ class SimpleAnalysisHandler(AnalysisHandler):
 
     This class just calls the analysis a single time
     """
+
+    level = 'Simple'
+
     def __init__(self, task, **kwargs):
         """C'tor
 
@@ -168,11 +171,13 @@ class SimpleAnalysisHandler(AnalysisHandler):
             return None
         return self._task(**kwargs)
 
-    def get_dispatch_args(self, **kwargs):
+    def get_dispatch_args(self, key, **kwargs):
         """Get the arguments to use to dispatch a sub-job
 
         Parameters
         ----------
+        key : `str`
+            Unique id for this job
         kwargs
             Passed to make_argstring()
 
@@ -187,7 +192,8 @@ class SimpleAnalysisHandler(AnalysisHandler):
         ret_dict = dict(optstring=optstring,
                         batch_args=self.config.batch_args,
                         batch=self.config.batch,
-                        dry_run=self.config.dry_run)
+                        dry_run=self.config.dry_run,
+                        key=key)
         try:
             ret_dict['dataset'] = self.config.dataset
         except AttributeError:
@@ -213,11 +219,12 @@ class SimpleAnalysisHandler(AnalysisHandler):
             Used to update both the handler and `Task` configurations
         """
         kwremain = self.safe_update(**kwargs)
+        kwremain.update(kwargs)
         if self.config.batch in ['None', 'none', None]:
             self.call_analysis_task(**kwremain)
         else:
             jobname = os.path.basename(sys.argv[0])
-            dispatch_kw = self.get_dispatch_args(**kwremain)
+            dispatch_kw = self.get_dispatch_args(None, **kwremain)
             dispatch_job(jobname, self.config.logfile, **dispatch_kw)
 
 
@@ -273,8 +280,7 @@ class AnalysisIterator(AnalysisHandler):
         """
         raise NotImplementedError("AnalysisIterator.call_analysis_task")
 
-    @staticmethod
-    def get_hardware(butler, run):
+    def get_hardware(self, butler, run):
         """return the hardware type and hardware id for a given run
 
         Parameters
@@ -292,13 +298,16 @@ class AnalysisIterator(AnalysisHandler):
             The hardware id, e.g., RMT-004
         """
         if butler is None:
-            retval = get_hardware_type_and_id(run)
+            if self._task.config.teststand == 'bot':
+                retval = ('LCA-10134', 'Cryostat-0001')
+            else:
+                retval = get_hardware_type_and_id(run)
         else:
             retval = get_hardware_info(butler, run)
         return retval
 
     @staticmethod
-    def get_raft_list(butler, run):
+    def get_raft_list(butler, run, teststand='bot'):
         """return the list of raft id for a given run
 
         Parameters
@@ -307,6 +316,8 @@ class AnalysisIterator(AnalysisHandler):
             The data Butler or `None` (to use data catalog)
         run : `str`
             The run number we are analyzing
+        teststand : `str`
+            Default value for the teststand
 
         Returns
         -------
@@ -314,13 +325,13 @@ class AnalysisIterator(AnalysisHandler):
             List of raft names
         """
         if butler is None:
-            retval = get_raft_names_dc(run)
+            retval = get_raft_names_dc(run, teststand)
         else:
             retval = get_raft_names_butler(butler, run)
         return retval
 
 
-    def get_dispatch_args(self, run, **kwargs):
+    def get_dispatch_args(self, key, **kwargs):
         """Get the arguments to use to dispatch a sub-job
 
         Parameters
@@ -342,7 +353,7 @@ class AnalysisIterator(AnalysisHandler):
                         batch_args=self.config.batch_args,
                         batch=self.config.batch,
                         dry_run=self.config.dry_run,
-                        run=run)
+                        run=key)
         try:
             ret_dict['dataset'] = self.config.dataset
         except AttributeError:
@@ -400,6 +411,7 @@ class AnalysisIterator(AnalysisHandler):
             Passed to dispatch_single_run to define slots to run over
         """
         kw_remain = self.safe_update(**kwargs)
+
         kw_remain['slots'] = kwargs.get('slots', None)
         kw_remain['rafts'] = kwargs.get('rafts', None)
         kw_remain['dry_run'] = kwargs.get('dry_run', False)
@@ -445,7 +457,7 @@ def dispatch_by_slot(handler, taskname, run, slots, **kwargs):
     if slots is None:
         slots = ALL_SLOTS
     for slot in slots:
-        logfile_slot = handler.config.logfile.replace('.log', '%s_%s_%s.log' % (taskname, run, slot))
+        logfile_slot = handler.config.logfile.replace('.log', '_%s_%s_%s.log' % (taskname, run, slot))
         kwcopy['slots'] = slot
         kw_remain = handler.get_dispatch_args(run, **kwcopy)
         dispatch_job(jobname, logfile_slot, **kw_remain)
@@ -477,7 +489,7 @@ def dispatch_by_raft_slot(handler, taskname, run, rafts, slots, **kwargs):
         kwcopy['rafts'] = raft
         for slot in slots:
             logfile_slot = handler.config.logfile.replace('.log',
-                                                          '%s_%s_%s_%s.log' % (taskname, run, raft, slot))
+                                                          '_%s_%s_%s_%s.log' % (taskname, run, raft, slot))
             kwcopy['slots'] = slot
             kw_remain = handler.get_dispatch_args(run, **kwcopy)
             dispatch_job(jobname, logfile_slot, **kw_remain)
@@ -501,7 +513,7 @@ def dispatch_by_raft(handler, taskname, run, rafts, **kwargs):
     if rafts is None:
         rafts = RAFT_NAMES_DICT[kwcopy.get('teststand', 'bot')]
     for raft in rafts:
-        logfile_raft = handler.config.logfile.replace('.log', '%s_%s_%s.log' % (taskname, run, raft))
+        logfile_raft = handler.config.logfile.replace('.log', '_%s_%s_%s.log' % (taskname, run, raft))
         kwcopy['rafts'] = raft
         kw_remain = handler.get_dispatch_args(run, **kwcopy)
         dispatch_job(jobname, logfile_raft, **kw_remain)
@@ -662,7 +674,8 @@ class AnalysisBySlot(AnalysisIterator):
         ------
         ValueError : If the hardware type (raft or focal plane) is not recognized
         """
-        kwdata = kwargs.copy()
+        kwdata = self._task.safe_update(**kwargs)
+        kwdata.update(kwargs)
         kwdata['nfiles'] = self._task.config.toDict().get('nfiles', None)
         kwdata['data_source'] = self.config.data_source
         htype, hid = self.get_hardware(self._butler, run)
@@ -748,7 +761,8 @@ class AnalysisByRaft(AnalysisIterator):
         ValueError : If the hardware type (raft or focal plane) is not recognized
         """
         htype, hid = self.get_hardware(self._butler, run)
-        kwdata = kwargs.copy()
+        kwdata = self._task.safe_update(**kwargs)
+        kwdata.update(kwargs)
         kwdata['data_source'] = self.config.data_source
         data_files = self.get_data(self._butler, run, **kwdata)
 
@@ -768,7 +782,7 @@ class AnalysisByRaft(AnalysisIterator):
 class TableAnalysisBySlot(AnalysisBySlot):
     """Small class to iterate an analysis function over slots"""
 
-    level = 'Slot table'
+    level = 'Slot Table'
 
     def __init__(self, task, **kwargs):
         """C'tor
@@ -799,11 +813,12 @@ class TableAnalysisBySlot(AnalysisBySlot):
         retval : `dict`
             Dictionary mapping input data by raft, slot and file type
         """
-        kwcopy = kwargs.copy()
+        kwcopy = self._task.safe_update(**kwargs)
+        kwcopy.update(kwargs)
         kwcopy['run'] = datakey
         kwcopy['filekey'] = self._task.config.infilekey
 
-        rafts = AnalysisIterator.get_raft_list(butler, datakey)
+        rafts = AnalysisIterator.get_raft_list(butler, datakey, self._task.config.teststand)
         out_dict = {}
 
         formatter = self._task.intablename_format
@@ -857,7 +872,8 @@ class TableAnalysisByRaft(AnalysisByRaft):
         retval : `dict`
             Dictionary mapping input data by raft, slot and file type
         """
-        kwcopy = kwargs.copy()
+        kwcopy = self._task.safe_update(**kwargs)
+        kwcopy.update(kwargs)
         kwcopy['run'] = datakey
         kwcopy['filekey'] = self._task.config.infilekey
 
@@ -865,7 +881,7 @@ class TableAnalysisByRaft(AnalysisByRaft):
         if self.config.rafts is not None:
             raft_list = self.config.rafts
         else:
-            raft_list = AnalysisIterator.get_raft_list(butler, datakey)
+            raft_list = AnalysisIterator.get_raft_list(butler, datakey, self._task.config.teststand)
 
         formatter = self._task.intablename_format
 
@@ -991,13 +1007,16 @@ class TableAnalysisByRun(AnalysisByRun):
         retval : `dict`
             Dictionary mapping input data by raft, slot and file type
         """
-        kwcopy = kwargs.copy()
+        kwcopy = self._task.safe_update(**kwargs)
+        kwcopy.update(kwargs)
+
         kwcopy['run'] = datakey
         kwargs.setdefault('handler_config', self.config)
-        kwcopy['filekey'] = self._task.config.infilekey
+        kwcopy['filekey'] = kwargs.get('infilekey', '')
 
         out_dict = {}
-        raft_list = AnalysisIterator.get_raft_list(butler, datakey)
+
+        raft_list = AnalysisIterator.get_raft_list(butler, datakey, self._task.config.teststand)
 
         formatter = self._task.intablename_format
 
@@ -1005,8 +1024,22 @@ class TableAnalysisByRun(AnalysisByRun):
         if slot_list is None:
             slot_list = ALL_SLOTS
 
+
+        raft_level = False
         for raft in raft_list:
             kwcopy['raft'] = raft
+
+            try:
+                datapath = self._task.get_filename_from_format(formatter, '.fits', **kwcopy)
+                if os.path.exists(datapath):
+                    out_dict[raft] = datapath
+                    raft_level = True
+                    continue
+                if raft_level:
+                    print("Skipping missing raft %s" % raft)
+                    continue
+            except Exception:
+                pass
             slot_dict = {}
             for slot in slot_list:
                 kwcopy['slot'] = slot
@@ -1113,6 +1146,7 @@ class SummaryAnalysisIterator(AnalysisHandler):
             self.log.warn("Ignoring butler in get_data")
 
         kwcopy = self._task.safe_update(**kwargs)
+        kwcopy.update(**kwargs)
         kwcopy['filekey'] = self._task.config.infilekey
 
         infile = '%s_runs.txt' % self._task.config.dataset
@@ -1154,11 +1188,13 @@ class SummaryAnalysisIterator(AnalysisHandler):
         data_files = self.get_data(None, **kwargs)
         self._task(None, data_files, **kwargs)
 
-    def get_dispatch_args(self, **kwargs):
+    def get_dispatch_args(self, key, **kwargs):
         """Get the arguments to use to dispatch a sub-job
 
         Parameters
         ----------
+        key : `str`
+            Unique id for this job
         kwargs
             Passed to make_argstring()
 
@@ -1173,7 +1209,8 @@ class SummaryAnalysisIterator(AnalysisHandler):
         ret_dict = dict(optstring=optstring,
                         batch_args=self.config.batch_args,
                         batch=self.config.batch,
-                        dry_run=self.config.dry_run)
+                        dry_run=self.config.dry_run,
+                        key=key)
         return ret_dict
 
 
@@ -1201,5 +1238,206 @@ class SummaryAnalysisIterator(AnalysisHandler):
             self.call_analysis_task(**kw_remain)
         else:
             jobname = os.path.basename(sys.argv[0])
-            dispatch_kw = self.get_dispatch_args(**kw_remain)
+            dispatch_kw = self.get_dispatch_args(None, **kw_remain)
             dispatch_job(jobname, self.config.logfile, **dispatch_kw)
+
+
+
+class SummaryAnalysisBySlotIterator(AnalysisBySlot):
+    """Class to iterate an analysis
+
+    Sub-classes will need to specify a get_data function to get the data to analyze.
+
+    This class will call get_data to get the available data and then call self._task() with
+    that data.
+
+    Sub-classes will be give a function to call,which they will call with the data to analyze
+    """
+    level = 'Summary'
+
+    def __init__(self, task, **kwargs):
+        """C'tor
+
+        Parameters
+        ----------
+        task : `AnalysisTask`
+            Task that this handler will run
+        kwargs
+            Used to override configuration defaults
+        """
+        AnalysisBySlot.__init__(self, task, **kwargs)
+
+
+    def get_data(self, butler, datakey, **kwargs):
+        """Get the data to analyze
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        datakey : `str`
+            Run number or other id that defines the data to analyze
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        retval : `dict`
+            Dictionary mapping input data by raft, slot and file type
+        """
+        kwcopy = kwargs.copy()
+        kwargs.setdefault('handler_config', self.config)
+        kwcopy['filekey'] = kwargs.get('infilekey', '')
+
+        if self.config.dataset is not None:
+            runlist = read_runlist("%s_runs.txt" % self.config.dataset)
+            runs = [pair[1] for pair in runlist]
+        else:
+            raise ValueError("Dataset must be set")
+
+        out_dict = {}
+
+        formatter = self._task.intablename_format
+
+        slot_list = kwcopy.get('slots', None)
+        if slot_list is None:
+            slot_list = ALL_SLOTS
+
+        for run in runs:
+            raft_list = NINE_RAFTS
+            kwcopy['run'] = run
+            for raft in raft_list:
+                try:
+                    slot_dict = out_dict[raft]
+                except KeyError:
+                    slot_dict = {}
+                    out_dict[raft] = slot_dict
+
+                kwcopy['raft'] = raft
+                for slot in slot_list:
+                    kwcopy['slot'] = slot
+                    datapath = self._task.get_filename_from_format(formatter, '.fits', **kwcopy)
+                    try:
+                        slot_dict[slot].append(datapath)
+                    except KeyError:
+                        slot_dict[slot] = [datapath]
+        return out_dict
+
+
+    def get_hardware(self, butler, run):
+        """return the hardware type and hardware id for a given run
+
+        Parameters
+        ----------
+        bulter : `Butler`
+            The data Butler or `None` (to use data catalog)
+        run : `str`
+            The run number we are analyzing
+
+        Returns
+        -------
+        htype : `str`
+            The hardware type, either 'LCA-10134' (aka full camera) or 'LCA-11021' (single raft)
+        hid : `str`
+            The hardware id, e.g., RMT-004
+        """
+        if self._task.config.teststand == 'ts8':
+            return ('LCA-11021', run)
+        if self._task.config.teststand == 'bot':
+            return ('LCA-10134', run)
+        return None
+
+
+    def dispatch_dataset(self, dataset, **kwargs):
+        """Run the analysis over all of the requested objects.
+
+        Parameters
+        ----------
+        dataset : `str`
+            The ID of the run we will analyze
+        kwargs
+            Used to update `Task` configuration
+        """
+        taskname = self._task.getName().replace('Task', '')
+
+        htype, _ = self.get_hardware(self._butler, dataset)
+
+        kwcopy = kwargs.copy()
+        if self.config.batch in ['None', 'none', None]:
+            self.call_analysis_task(dataset, **kwcopy)
+        elif 'slot' in self.config.batch:
+            if htype == "LCA-10134":
+                rafts = kwcopy.pop('rafts')
+                slots = kwcopy.pop('slots')
+                dispatch_by_raft_slot(self, taskname, dataset, rafts, slots, **kwcopy)
+            elif htype == "LCA-11021":
+                slots = kwcopy.pop('slots')
+                dispatch_by_slot(self, taskname, dataset, slots, **kwcopy)
+        elif 'raft' in self.config.batch:
+            rafts = kwcopy.pop('rafts')
+            dispatch_by_raft(self, taskname, dataset, rafts, **kwcopy)
+        else:
+            jobname = "eo_task.py %s" % self._task.getName().replace('Task', '')
+            kw_remain = self.get_dispatch_args(dataset, **kwcopy)
+            dispatch_job(jobname,
+                         self.config.logfile.replace('.log', '_%s_%s.log' % (taskname, dataset)),
+                         **kw_remain)
+
+
+    def run_with_args(self, **kwargs):
+        """Run the analysis over all of the requested objects.
+
+        Parameters
+        ----------
+        kwargs
+            Used to update the configuration of this handler and the associated `Task`
+
+        Keywords
+        --------
+        rafts : `list` or None
+            Passed to dispatch_single_run to define rafts to run over
+        slots : `list` or None
+            Passed to dispatch_single_run to define slots to run over
+        """
+        kw_remain = self.safe_update(**kwargs)
+        kw_remain['slots'] = kwargs.get('slots', None)
+        kw_remain['rafts'] = kwargs.get('rafts', None)
+        kw_remain['dry_run'] = kwargs.get('dry_run', False)
+
+        self.get_butler(**kw_remain)
+
+        dataset = self.config.dataset
+
+        if self.config.nofail:
+            try:
+                self.dispatch_dataset(dataset, **kw_remain)
+            except Exception:
+                self._task.log.warn("Dataset %s failed" % dataset)
+        else:
+            self.dispatch_dataset(dataset, **kw_remain)
+
+
+    def get_dispatch_args(self, key, **kwargs):
+        """Get the arguments to use to dispatch a sub-job
+
+        Parameters
+        ----------
+        key : `str`
+            The ID of the run we will analyze
+        kwargs
+            Passed to make_argstring()
+
+        Returns
+        -------
+        ret_dict : `dict`
+            Dictionary of argument name : value pairs
+        """
+        kwcopy = kwargs.copy()
+        kwcopy.pop('task', None)
+        kwcopy['dataset'] = key
+        optstring = make_argstring(self.config, **kwcopy)
+        ret_dict = dict(optstring=optstring,
+                        batch_args=self.config.batch_args,
+                        batch=self.config.batch,
+                        dry_run=self.config.dry_run)
+        return ret_dict

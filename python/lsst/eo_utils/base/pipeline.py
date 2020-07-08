@@ -47,6 +47,8 @@ class MetaTask(BaseTask):
     _DefaultName = "MetaTask"
     iteratorClass = SimpleAnalysisHandler
 
+    datatype = 'meta'
+
     def __init__(self, **kwargs):
         """ C'tor
 

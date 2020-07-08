@@ -9,11 +9,17 @@ from .analysis import DarkAnalysisConfig, DarkAnalysisTask
 
 from .meta_analysis import DarkRaftTableAnalysisConfig,\
     DarkRaftTableAnalysisTask,\
-    DarkSummaryAnalysisConfig, DarkSummaryAnalysisTask
+    DarkSummaryAnalysisConfig, DarkSummaryAnalysisTask,\
+    SuperdarkSlotTableAnalysisConfig, SuperdarkSlotTableAnalysisTask,\
+    SuperdarkSummaryAnalysisConfig, SuperdarkSummaryAnalysisTask
 
 from .superdark import SuperdarkConfig, SuperdarkTask,\
     SuperdarkRaftConfig, SuperdarkRaftTask,\
-    SuperdarkMosaicConfig, SuperdarkMosaicTask
+    SuperdarkOutlierSummaryConfig, SuperdarkOutlierSummaryTask,\
+    SuperdarkMosaicConfig, SuperdarkMosaicTask,\
+    SuperdarkStatMosaicConfig, SuperdarkStatMosaicTask
 
 from .dark_current import DarkCurrentConfig, DarkCurrentTask,\
     DarkCurrentSummaryConfig, DarkCurrentSummaryTask
+
+from .superdark_stability import SuperdarkStabilityConfig, SuperdarkStabilityTask

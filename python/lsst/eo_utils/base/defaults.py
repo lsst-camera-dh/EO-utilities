@@ -15,7 +15,7 @@ SITE = os.environ.get('EO_UTILS_SITE', 'slac')
 
 if SITE == 'slac':
     BUTLER_TS8_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/ts8'
-    BUTLER_BOT_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/bot'
+    BUTLER_BOT_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/bot_etu'
     ARCHIVE_DIR = '/gpfs/slac/lsst/fs*/g/data/jobHarness/jh_archive*'
     DEFAULT_DATA_SOURCE = os.environ.get('EO_DATA_SOURCE', 'glob')
     DEFAULT_BATCH_ARGS = '-W 1200 -R bubble'
@@ -44,6 +44,10 @@ if os.environ.get('EO_PRINT_OPTS', False):
 # Map the Butler repos to simple names
 BUTLER_REPO_DICT = dict(ts8=BUTLER_TS8_REPO,
                         bot=BUTLER_BOT_REPO)
+
+# The amps
+ALL_AMPS = ['C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16', 'C17',
+            'C07', 'C06', 'C05', 'C04', 'C03', 'C02', 'C01', 'C00']
 
 # The slots
 ALL_SLOTS = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']

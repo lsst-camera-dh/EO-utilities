@@ -36,7 +36,7 @@ class QeSlotTableAnalysisTask(AnalysisTask):
     tablename_format = SLOT_QE_TABLE_FORMATTER
     plotname_format = SLOT_QE_PLOT_FORMATTER
 
-    datatype = 'lambda table'
+    datatype = 'lambda'
 
     def get_pd_calib_file(self, **kwargs):
         """Get the name of the pd_calib for a particular run, raft...
@@ -94,4 +94,4 @@ class QeSummaryAnalysisTask(AnalysisTask):
     tablename_format = SUM_QE_TABLE_FORMATTER
     plotname_format = SUM_QE_PLOT_FORMATTER
 
-    datatype = 'lambda table'
+    datatype = 'lambda'

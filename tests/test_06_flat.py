@@ -72,6 +72,13 @@ def test_flat_ptc_task():
         task.run(slots=['S00'], calib='eotest', **RUN_OPTIONS_NOPLOT)
 
 @requires_site('slac')
+def test_flat_ptc_stats_task():
+    """Test the PTCTask"""
+    task = flat.PTCStatsTask()
+    if RUN_TASKS:
+        task.run(slots=['S00'], calib='eotest', **RUN_OPTIONS_NOPLOT)
+
+@requires_site('slac')
 def test_flat_ptc_sum():
     """Test the PTCSummaryTask"""
     task = flat.PTCSummaryTask()

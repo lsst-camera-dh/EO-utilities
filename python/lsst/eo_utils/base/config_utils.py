@@ -13,7 +13,7 @@ import lsst.pipe.base as pipeBase
 
 from .defaults import DEFAULT_OUTDIR, DEFAULT_LOGFILE,\
     DEFAULT_NBINS, DEFAULT_BATCH_ARGS, DEFAULT_BITPIX,\
-    DEFAULT_DATA_SOURCE, DEFAULT_TESTSTAND
+    DEFAULT_DATA_SOURCE, DEFAULT_TESTSTAND, DEFAULT_CALIB_FILE
 
 
 
@@ -62,6 +62,7 @@ class EOUtilOptions(pexConfig.Config):
     overwrite = pexConfig.Field("Process even if output data already exists", bool, default=False)
 
     # Options for input data processing
+    calib_dict = pexConfig.Field("Calibration Dictionary", str, default=DEFAULT_CALIB_FILE)
     calib = pexConfig.Field("Calibration flavor", str, default='normal')
 
     # Options for where to put output data and what to include
@@ -111,8 +112,13 @@ class EOUtilOptions(pexConfig.Config):
                                        int, default=10)
 
     # Options for Nonlinearity corrections
-    nonlin_spline_ext = pexConfig.Field("Method for extrapolating nonlinearity correction", int, default=0)
-    nonlin_spline_smooth = pexConfig.Field("Smoothing factor for nonlinearity correction", float, default=None)
+    nonlin_spline_ext = pexConfig.Field("Method for extrapolating nonlinearity correction",
+                                        int, default=0)
+    nonlin_spline_smooth = pexConfig.Field("Smoothing factor for nonlinearity correction",
+                                           float, default=None)
+    num_profile_points = pexConfig.Field("Number of bins for profile plots",
+                                         int, default=40)
+
 
     # Options for BF Tasks
     maxLag = pexConfig.Field("Max lag for BF analysis", int, default=1)

@@ -28,6 +28,7 @@ class ReportConfig(BaseAnalysisConfig):
     template_file = EOUtilOptions.clone_param('template_file')
     css_file = EOUtilOptions.clone_param('css_file')
     plot_report_action = EOUtilOptions.clone_param('plot_report_action')
+    overwrite = EOUtilOptions.clone_param('overwrite')
     teststand = EOUtilOptions.clone_param('teststand')
 
 class ReportTask(BaseAnalysisTask):
@@ -40,6 +41,8 @@ class ReportTask(BaseAnalysisTask):
     iteratorClass = SimpleAnalysisHandler
 
     tablename_format = SLOT_REPORT_FORMATTER
+
+    datatype = 'report'
 
     def tablefile_name(self, **kwargs):
         """Get the name of the file for the output tables for a particular
@@ -107,6 +110,22 @@ class ReportTask(BaseAnalysisTask):
             self.log.warn("Ignoring butler")
         return make_dataids_for_run(datakey, **kwargs)
 
+    def io_csv_line(self, taskname, stream):
+        """Write a line of comma-seperated values, used to build a table of task types"""
+
+        md_dict = dict(raft="<RAFT>", run="<RUN>", slot="<SLOT>", dataset="<DATASET>")
+        table_file = self.get_filename_from_format(self.tablename_format, '',
+                                                   **md_dict).replace('None/bot/', '')
+        stream.write("%-25s %-60s %-60s %-60s\n" % (taskname, 'None', table_file, 'None'))
+
+
+    def io_markdown_line(self, taskname, stream):
+        """Write a line of markdown, used to build a table of task types"""
+        md_dict = dict(raft="<RAFT>", run="<RUN>", slot="<SLOT>", dataset="<DATASET>")
+        table_file = self.get_filename_from_format(self.tablename_format, '',
+                                                   **md_dict).replace('None/bot/', '')
+        stream.write("| %s | %s | %s | %s |\n" % (taskname, 'None', table_file, 'None'))
+
 
 class ReportSlotConfig(ReportConfig):
     """Configuration for report analyses"""
@@ -136,7 +155,8 @@ class ReportSlotTask(ReportTask):
         """
         config_kw = self.extract_config_vals(dict(template_file=None,
                                                   css_file=None,
-                                                  plot_report_action=None))
+                                                  plot_report_action=None,
+                                                  overwrite=None))
         full_input = os.path.join(self.config.indir, self.config.teststand)
         write_slot_report(data, full_input, self.config.htmldir, **config_kw)
 
@@ -170,7 +190,8 @@ class ReportRaftTask(ReportTask):
         dataid.pop('slot')
         config_kw = self.extract_config_vals(dict(template_file=None,
                                                   css_file=None,
-                                                  plot_report_action=None))
+                                                  plot_report_action=None,
+                                                  overwrite=None))
         full_input = os.path.join(self.config.indir, self.config.teststand)
         write_raft_report(dataid, full_input, self.config.htmldir, **config_kw)
 
@@ -178,7 +199,6 @@ class ReportRaftTask(ReportTask):
 class ReportRunConfig(ReportConfig):
     """Configuration for report analyses"""
     run = EOUtilOptions.clone_param('run')
-    teststand = EOUtilOptions.clone_param('teststand')
 
 
 class ReportRunTask(ReportTask):
@@ -223,7 +243,8 @@ class ReportRunTask(ReportTask):
         """
         config_kw = self.extract_config_vals(dict(template_file=None,
                                                   css_file=None,
-                                                  plot_report_action=None))
+                                                  plot_report_action=None,
+                                                  overwrite=None))
         full_input = os.path.join(self.config.indir, self.config.teststand)
         write_run_report(data, full_input, self.config.htmldir, **config_kw)
 
@@ -253,7 +274,8 @@ class ReportSummaryTask(ReportTask):
         """
         config_kw = self.extract_config_vals(dict(template_file=None,
                                                   css_file=None,
-                                                  plot_report_action=None))
+                                                  plot_report_action=None,
+                                                  overwrite=None))
         full_input = os.path.join(self.config.indir, self.config.teststand)
         write_summary_report(data, full_input, self.config.htmldir, **config_kw)
 

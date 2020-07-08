@@ -16,11 +16,14 @@ from lsst.eo_utils.base.defaults import DEFAULT_STAT_TYPE
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
-from lsst.eo_utils.base.data_utils import TableDict
+from lsst.eo_utils.base.data_utils import TableDict, stack_summary_table,\
+    get_run_config_table
+
+from lsst.eo_utils.base.plot_utils import plot_outlier_summary
 
 from lsst.eo_utils.base.image_utils import flip_data_in_place,\
     stack_images, extract_raft_unbiased_images, extract_raft_imaging_data,\
-    outlier_raft_dict, fill_footprint_dict
+    outlier_raft_dict, build_defect_dict
 
 from lsst.eo_utils.bias.analysis import AnalysisTask
 
@@ -30,12 +33,15 @@ from lsst.eo_utils.base.iter_utils import AnalysisBySlot,\
 from lsst.eo_utils.base.factory import EO_TASK_FACTORY
 
 from lsst.eo_utils.dark.file_utils import RAFT_SDARK_TABLE_FORMATTER,\
-    RAFT_SDARK_PLOT_FORMATTER, SUPERDARK_FORMATTER, RUN_SUPERDARK_FORMATTER
+    RAFT_SDARK_PLOT_FORMATTER, SUPERDARK_FORMATTER, SUPERDARK_STAT_FORMATTER,\
+    RUN_SUPERDARK_FORMATTER, RUN_SUPERDARK_STAT_FORMATTER
 
 from lsst.eo_utils.base.merge_utils import CameraMosaicConfig, CameraMosaicTask
 
 from lsst.eo_utils.dark.analysis import DarkAnalysisConfig,\
     DarkAnalysisTask
+
+from lsst.eo_utils.dark.meta_analysis import SuperdarkSummaryAnalysisConfig, SuperdarkSummaryAnalysisTask
 
 
 class SuperdarkConfig(DarkAnalysisConfig):
@@ -241,6 +247,8 @@ class SuperdarkRaftTask(AnalysisTask):
 
     plot_names = ['mosaic', 'stats', 'out-row', 'out-col', 'nbad', 'nbad-row', 'nbad-col']
 
+    datatype = "dark"
+
     def __init__(self, **kwargs):
         """ C'tor
 
@@ -254,42 +262,6 @@ class SuperdarkRaftTask(AnalysisTask):
         self._sdark_file_dict = {}
         self._sdark_images = None
         self._sdark_arrays = None
-
-    @staticmethod
-    def build_defect_dict(dark_array, **kwargs):
-        """Extract information about the defects into a dictionary
-
-        Parameters
-        ----------
-        dark_array : `dict`
-            The images, keyed by slot, amp
-        kwargs
-            Used to override default configuration
-
-        Returns
-        -------
-        out_dict : `dict`
-            The output dictionary
-        """
-        fp_dict = dict(slot=[],
-                       amp=[],
-                       x_corner=[],
-                       y_corner=[],
-                       x_peak=[],
-                       y_peak=[],
-                       x_size=[],
-                       y_size=[],
-                       mean_full=[])
-        for i in range(4):
-            fp_dict['mean_%i' % i] = []
-            fp_dict['npix_%i' % i] = []
-            fp_dict['npix_0p2_%i' % i] = []
-
-        for islot, (_, slot_data) in enumerate(sorted(dark_array.items())):
-            for iamp, (_, image) in enumerate(sorted(slot_data.items())):
-                fill_footprint_dict(image.image, fp_dict, iamp, islot, **kwargs)
-        return fp_dict
-
 
     def extract(self, butler, data, **kwargs):
         """Extract the utliers in the superdark frames for the raft
@@ -316,17 +288,7 @@ class SuperdarkRaftTask(AnalysisTask):
         if butler is not None:
             self.log.warn("Ignoring butler")
 
-        slots = self.config.slots
-        if slots is None:
-            slots = ALL_SLOTS
-
-        for slot in slots:
-            if not os.path.exists(data[slot]):
-                self.log.warn("skipping missing data for %s:%s" % (self.config.raft, slot))
-                continue
-            mask_files = self.get_mask_files(slot=slot)
-            self._mask_file_dict[slot] = mask_files
-            self._sdark_file_dict[slot] = data[slot]
+        self.set_local_data(butler, data, **kwargs)
 
         if not self._sdark_file_dict:
             self.log.warn("No files for %s, skipping" % (self.config.raft))
@@ -339,12 +301,40 @@ class SuperdarkRaftTask(AnalysisTask):
 
         out_data = outlier_raft_dict(self._sdark_arrays, 0., 25.)
 
-        fp_dict = SuperdarkRaftTask.build_defect_dict(self._sdark_images, fp_type='bright', abs_thresh=50)
+        fp_dict = build_defect_dict(self._sdark_images, fp_type='bright', abs_thresh=50)
 
         dtables = TableDict()
         dtables.make_datatable('defects', fp_dict)
         dtables.make_datatable('outliers', out_data)
         return dtables
+
+
+    def set_local_data(self, butler, data, **kwargs):
+        """Set local data members if extract fails
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+        """
+        self.safe_update(**kwargs)
+        slots = self.config.slots
+        if slots is None:
+            slots = ALL_SLOTS
+
+        for slot in slots:
+            if not os.path.exists(data[slot]):
+                self.log.warn("skipping missing data for %s:%s" % (self.config.raft, slot))
+                continue
+            mask_files = self.get_mask_files(slot=slot)
+            self._mask_file_dict[slot] = mask_files
+            self._sdark_file_dict[slot] = data[slot]
+
+
 
     def plot(self, dtables, figs, **kwargs):
         """Plot the raft-level mosaic and histrograms
@@ -378,9 +368,66 @@ class SuperdarkRaftTask(AnalysisTask):
                                       histtype='step')
 
 
+class SuperdarkOutlierSummaryConfig(SuperdarkSummaryAnalysisConfig):
+    """Configuration for SuperdarkOutlierSummaryTask"""
+    infilekey = EOUtilOptions.clone_param('infilekey', default='sdark')
+    filekey = EOUtilOptions.clone_param('filekey', default='sdark-sum')
+
+class SuperdarkOutlierSummaryTask(SuperdarkSummaryAnalysisTask):
+    """Summarize the results for the superbias outlier analysis"""
+
+    ConfigClass = SuperdarkOutlierSummaryConfig
+    _DefaultName = "SuperdarkOutlierSummaryTask"
+
+    plot_names = []
+
+    def extract(self, butler, data, **kwargs):
+        """Make a summry table of the bias FFT data
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            The resulting data
+        """
+        self.safe_update(**kwargs)
+
+        if butler is not None:
+            self.log.warn("Ignoring butler in extract()")
+
+        dtables = stack_summary_table(data, self,
+                                      tablename='outliers',
+                                      keep_cols=['nbad_total', 'nbad_rows', 'nbad_cols', 'slot', 'amp'])
+        return dtables
+
+
+    def plot(self, dtables, figs, **kwargs):
+        """Plot the summary data from the superbias statistics study
+
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
+        """
+        self.safe_update(**kwargs)
+        config_table = get_run_config_table(kwargs.get('config_table', 'dark_config.fits'), 'config')
+        plot_outlier_summary(self, dtables, figs, config_table, "config")
+
 
 class SuperdarkMosaicConfig(CameraMosaicConfig):
-    """Configuration for SuperbiasMosaicTask"""
+    """Configuration for SuperdarkMosaicTask"""
 
 class SuperdarkMosaicTask(CameraMosaicTask):
     """Make a mosaic from a superbias frames"""
@@ -392,11 +439,31 @@ class SuperdarkMosaicTask(CameraMosaicTask):
     tablename_format = RUN_SUPERDARK_FORMATTER
     plotname_format = RUN_SUPERDARK_FORMATTER
 
-    datatype = 'superdark table'
+    datatype = 'superdark'
+
+
+class SuperdarkStatMosaicConfig(CameraMosaicConfig):
+    """Configuration for SuperdarkMosaicTask"""
+    stat = EOUtilOptions.clone_param('stat', default='stdevclip')
+
+
+class SuperdarkStatMosaicTask(CameraMosaicTask):
+    """Make a mosaic from a superbias frames"""
+
+    ConfigClass = SuperdarkStatMosaicConfig
+    _DefaultName = "SuperdarkMosaicTask"
+
+    intablename_format = SUPERDARK_STAT_FORMATTER
+    tablename_format = RUN_SUPERDARK_STAT_FORMATTER
+    plotname_format = RUN_SUPERDARK_STAT_FORMATTER
+
+    datatype = 'superdark'
 
 
 
 
 EO_TASK_FACTORY.add_task_class('Superdark', SuperdarkTask)
 EO_TASK_FACTORY.add_task_class('SuperdarkRaft', SuperdarkRaftTask)
+EO_TASK_FACTORY.add_task_class('SuperdarkOutlierSummary', SuperdarkOutlierSummaryTask)
 EO_TASK_FACTORY.add_task_class('SuperdarkMosaic', SuperdarkMosaicTask)
+EO_TASK_FACTORY.add_task_class('SuperdarkStatMosaic', SuperdarkStatMosaicTask)

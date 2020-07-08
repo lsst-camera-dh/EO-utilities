@@ -26,7 +26,7 @@ TS8_GLOB_STRING =\
     '{archive}/LCA-11021_RTM/LCA-11021_{raft}*/{run}/{testName}/v0/*/{slot}/*{imgtype}*.fits'
 BOT_GLOB_STRING =\
     '{archive}/LCA-10134_Cryostat/LCA-10134_Cryostat-0001/{run}/' +\
-    'BOT_acq/v0/*/{testName}*{imgtype}*/MC_C*{raft}_{slot}.fits'
+    'BOT_acq*/v0/*/{testName}*{imgtype}*/MC_C*{raft}_{slot}.fits'
 
 # Photodiode calibration files
 PD_CALIB_FORMAT_STRING = '{outdir}/{teststand}/pdcalib/{raft}/{raft}-{run}-pd_calib.dat'
@@ -34,7 +34,7 @@ PD_CALIB_FORMAT_STRING = '{outdir}/{teststand}/pdcalib/{raft}/{raft}-{run}-pd_ca
 # These strings define the standard output filenames
 SLOT_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{raft}/{testType}/{raft}-{run}-{slot}_{calib}_{filekey}'
 RAFT_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{raft}/{testType}/{raft}-{run}-RFT_{calib}_{filekey}'
-RUN_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{run}'
+RUN_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/{run}/{testType}/{run}_{calib}_{filekey}'
 
 SUMMARY_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/summary/{testType}/{dataset}_{calib}_{filekey}'
 
@@ -42,14 +42,19 @@ SUMMARY_FORMAT_STRING = '{outdir}/{teststand}/{fileType}/summary/{testType}/{dat
 SUPERBIAS_FORMAT_STRING = '{outdir}/{teststand}/superbias/{raft}/{raft}-{run}-{slot}_superbias_{calib}'
 SUPERBIAS_STAT_FORMAT_STRING = '{outdir}/{teststand}/superbias/{raft}/{raft}-{run}-{slot}_{stat}_{calib}'
 RUN_SUPERBIAS_FORMAT_STRING = '{outdir}/{teststand}/superbias/FP/FP-{run}_superbias_{calib}'
+RUN_SUPERBIAS_STAT_FORMAT_STRING = '{outdir}/{teststand}/superbias/FP/FP-{run}_{stat}_{calib}'
 
 SUPERDARK_FORMAT_STRING = '{outdir}/{teststand}/superdark/{raft}/{raft}-{run}-{slot}_superdark_{calib}'
 SUPERDARK_STAT_FORMAT_STRING = '{outdir}/{teststand}/superdark/{raft}/{raft}-{run}-{slot}_{stat}_{calib}'
 RUN_SUPERDARK_FORMAT_STRING = '{outdir}/{teststand}/superdark/FP/FP-{run}_superdark_{calib}'
+RUN_SUPERDARK_STAT_FORMAT_STRING = '{outdir}/{teststand}/superdark/FP/FP-{run}_{stat}_{calib}'
 
 SUPERFLAT_FORMAT_STRING = '{outdir}/{teststand}/superflat/{raft}/{raft}-{run}-{slot}_superflat_{calib}'
 SUPERFLAT_STAT_FORMAT_STRING = '{outdir}/{teststand}/superflat/{raft}/{raft}-{run}-{slot}_{stat}_{calib}'
-RUN_SUPERFLAT_FORMAT_STRING = '{outdir}/{teststand}/superflat/FP/FP-{run}_superflat_{calib}'
+
+SUPERFLAT_SPEC_FORMAT_STRING = '{outdir}/{teststand}/superflat/{raft}/{raft}-{run}-{slot}_superflat_{calib}{filekey}'
+RUN_SUPERFLAT_FORMAT_STRING = '{outdir}/{teststand}/superflat/FP/FP-{run}_superflat_{calib}{filekey}'
+RUN_SUPERFLAT_STAT_FORMAT_STRING = '{outdir}/{teststand}/superflat/FP/FP-{run}_{stat}_{calib}{filekey}'
 
 
 # These strings define the report output filename
@@ -317,13 +322,13 @@ BOT_FORMATTER = FILENAME_FORMATS.add_format('bot_images',
                                             BOT_GLOB_STRING,
                                             archive=ARCHIVE_DIR)
 
-TS8_EORESULTSIN_FORMATTER = FILENAME_FORMATS.add_format('ts8_eoresults_in',
-                                                        SLOT_FORMAT_STRING,
-                                                        fileType='eotest',
-                                                        testType='',
-                                                        filekey='eotest_results')
+EORESULTSIN_FORMATTER = FILENAME_FORMATS.add_format('eoresults_in',
+                                                    SLOT_FORMAT_STRING,
+                                                    fileType='eotest',
+                                                    testType='',
+                                                    filekey='eotest_results')
 EORESULTS_TABLE_FORMATTER = FILENAME_FORMATS.add_format('eoresults_table',
-                                                        SLOT_FORMAT_STRING,
+                                                        RAFT_FORMAT_STRING,
                                                         fileType='eotest',
                                                         testType='',
                                                         filekey='results')
@@ -332,6 +337,16 @@ EORESULTS_PLOT_FORMATTER = FILENAME_FORMATS.add_format('eoresults_plot',
                                                        fileType='plots',
                                                        testType='eotest',
                                                        filekey='results')
+EORESULTS_RUNTABLE_FORMATTER = FILENAME_FORMATS.add_format('eoresults_runtable',
+                                                           RUN_FORMAT_STRING,
+                                                           fileType='eotest',
+                                                           testType='',
+                                                           filekey='results')
+EORESULTS_RUNPLOT_FORMATTER = FILENAME_FORMATS.add_format('eoresults_runplot',
+                                                          RUN_FORMAT_STRING,
+                                                          fileType='plots',
+                                                          testType='eotest',
+                                                          filekey='results')
 EORESULTS_SUMMARY_TABLE_FORMATTER = FILENAME_FORMATS.add_format('eoresults_sum_table',
                                                                 SUMMARY_FORMAT_STRING,
                                                                 fileType='tables',
@@ -678,10 +693,14 @@ def get_raft_names_dc(run, teststand='bot'):
     ------
     ValueError : If the hardware type is not recognized
     """
-    hinfo = get_hardware_type_and_id(run)
+    if teststand in ['bot', 'bot_etu']:
+        htype = 'LCA-10134'
+        return RAFT_NAMES_DICT[teststand]
 
+    hinfo = get_hardware_type_and_id(run)
     htype = hinfo[0]
     hid = hinfo[1]
+
     if htype == 'LCA-11021':
         return [hid]
     if htype == 'LCA-10134':
@@ -818,6 +837,7 @@ def link_eo_calib(fname, outformat, **kwargs):
     """Link eo results to the analysis area
 
     Parameters
+
     ----------
     fname : `str`
         Input file name

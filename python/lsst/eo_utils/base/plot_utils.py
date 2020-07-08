@@ -9,6 +9,10 @@ import numpy as np
 import astropy.visualization as viz
 from astropy.visualization.mpl_normalize import ImageNormalize
 
+from astropy.table import join
+
+from focal_plane_plotting import plot_focal_plane
+
 from lsst.eotest.raft import RaftMosaic
 
 from lsst.eotest.sensor import MaskedCCD, parse_geom_kwd
@@ -21,7 +25,7 @@ from .image_utils import get_raw_image, raw_amp_image,\
     get_amp_list, unbias_amp, get_geom_regions,\
     get_image_frames_2d, unbiased_ccd_image_dict, get_amp_offset
 
-from .defaults import TESTCOLORMAP
+from .defaults import TESTCOLORMAP, ALL_SLOTS, ALL_AMPS
 
 from . import mpl_utils
 
@@ -33,9 +37,53 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 mpl_utils.set_plt_ioff()
 
 
+def convert_amp_table_to_amp_dict(amp_data_table, colname, func):
+    """Convert a table with amp level data to a dictionary
+
+    Parameters
+    ----------
+    amp_data_table : `Table`
+        Table with the amp level data
+    colname : `str`
+        name of the column to plot
+    func : `function` or 'None`
+        Function to apply to data
+
+    Returns
+    -------
+    o_dict : `dict`
+        Dictionary of amp-level data
+    """
+    o_dict = {}
+    rafts = np.unique(amp_data_table['raft'])
+    if func is None:
+        func = lambda x: x
+    for raft in rafts:
+        raft_mask = amp_data_table['raft'] == raft
+        raft_table = amp_data_table[raft_mask]
+        slots = np.unique(amp_data_table['slot'])
+        for slot in slots:
+            if isinstance(slot, str):
+                key = "%s_%s" % (raft, slot)
+            else:
+                key = "%s_%s" % (raft, ALL_SLOTS[int(slot)])
+            slot_mask = raft_table['slot'] == slot
+            slot_table = raft_table[slot_mask]
+            if 'amp' in slot_table.columns:
+                amps = np.unique(slot_table['amp'])
+                amp_str = 'amp'
+                offset = 0
+            elif 'AMP' in slot_table.columns:
+                amps = np.unique(slot_table['AMP'])
+                amp_str = 'AMP'
+                offset = 1
+            o_dict[key] = {ALL_AMPS[int(amp)-offset] :\
+                               func(slot_table[slot_table[amp_str] == amp][colname])[0] for amp in amps}
+    return o_dict
+
 
 class FigureDict:
-    """Object to make and collect figures.1
+    """Object to make and collect figures.
 
     This is implemented as a dictionary of dictionaries,
 
@@ -194,6 +242,10 @@ class FigureDict:
             Y-axis minimum value
         ymax : `float` or `None`
             Y-axis maximum value
+        xcale : `str` or `None`
+            X-axis scale
+        yscale : `str` or `None`
+            Y-axis scae
 
         Returns
         -------
@@ -207,6 +259,8 @@ class FigureDict:
         ylabel = kwargs.get('ylabel', None)
         ymin = kwargs.get('ymin', None)
         ymax = kwargs.get('ymax', None)
+        xscale = kwargs.get('xscale', None)
+        yscale = kwargs.get('yscale', None)
 
         figsize = kwargs.get('figsize', (15, 10))
 
@@ -230,6 +284,11 @@ class FigureDict:
         if ymin is not None or ymax is not None:
             for i_row in range(fig_nrow):
                 for i_col in range(fig_ncol):
+                    if xscale is not None:
+                        axs[i_row, i_col].set_xscale(xscale)
+                    if yscale is not None:
+                        axs[i_row, i_col].set_yscale(yscale)
+
                     axs[i_row, i_col].set_ylim(ymin, ymax)
 
         o_dict = dict(fig=fig, axs=axs)
@@ -539,6 +598,32 @@ class FigureDict:
             axs.set_ylim(ymin, ymax)
 
 
+    def plot_2d_color(self, key, iamp, zvals, **kwargs):
+        """Plot x versus y data for one amp
+
+        Parameters
+        ----------
+        key : `str`
+            Key for the figure.
+        iamp : `int`
+            Amp index
+        zvals : `numpy.ndarray`
+            z-axis data
+        kwargs
+            Passed to matplotlib
+        """
+        kwcopy = kwargs.copy()
+        axs = self._fig_dict[key]['axs'].flat[iamp]
+        vmin = kwcopy.pop('vmin', None)
+        vmax = kwcopy.pop('vmax', None)
+        if vmin is not None and vmax is not None:
+            vrange = (vmin, vmax)
+        else:
+            interval = viz.PercentileInterval(98.)
+            vrange = interval.get_limits(zvals.flatten())
+        norm = ImageNormalize(vmin=vrange[0], vmax=vrange[1])
+        axs.imshow(zvals, norm=norm, **kwcopy)
+
     def plot_resid(self, key, iamp, data_struct, **kwargs):
         """Plot x versus y data for one amp
 
@@ -695,7 +780,6 @@ class FigureDict:
                 continue
             valarray = dtab[col]
             for row, test_type in zip(valarray.T, file_data['testtype']):
-                print(y_name, row.max())
                 self.plot(plotkey, idx, xcol, row,
                           color=TESTCOLORMAP.get(test_type, 'gray'),
                           **kwcopy)
@@ -1221,6 +1305,8 @@ class FigureDict:
             y-axis label
         yextras : `list`
             Additional quantities to plot on y-axis
+        ymin : `float`
+        ymax ; `float`
 
         Returns
         -------
@@ -1231,6 +1317,8 @@ class FigureDict:
         yerrs = kwcopy.pop('yerrs', None)
         title = kwcopy.pop('title', None)
         yextras = kwcopy.pop('yextras', None)
+        ymin = kwcopy.pop('ymin', None)
+        ymax = kwcopy.pop('ymax', None)
         fig = plt.figure(figsize=kwcopy.pop('figsize', (14, 8)))
         axes = fig.add_subplot(111)
 
@@ -1244,6 +1332,10 @@ class FigureDict:
         n_amps = int(n_data / n_runs)
 
         xvals = np.linspace(0, n_data-1, n_data)
+
+        if ymin is not None and ymax is not None:
+            axes.set_ylim(ymin, ymax)
+            yvals = yvals.clip(ymin, ymax)
 
         if yerrs is None:
             axes.plot(xvals, yvals, 'b.', **kwcopy)
@@ -1288,6 +1380,9 @@ class FigureDict:
             y-axis label
         yextras : `list`
             Additional quantities to plot on y-axis
+        ymin : `float` or `None`
+        ymax : `float` or `None`
+        logy : `bool` or `None`
 
         Returns
         -------
@@ -1296,24 +1391,49 @@ class FigureDict:
         """
         kwcopy = kwargs.copy()
         yerrs = kwcopy.pop('yerrs', None)
+        ymin = kwcopy.pop('ymin', None)
+        ymax = kwcopy.pop('ymax', None)
+        logy = kwcopy.pop('logy', False)
+        config_table = kwcopy.pop('config_table', None)
+        raft = kwcopy.pop('raft', None)
 
         odict = self.setup_raft_plots_grid(key, **kwcopy)
         fig = odict['fig']
         axs = odict['axs']
 
-        nrun = dtable['irun'].max() + 1
-        runs = np.unique(dtable['run'])
+        kwcopy.pop('ylabel', None)
 
-        slots = np.unique(dtable['slot'])
+        runs = np.unique(dtable['run'])
+        #nrun = dtable['irun'].max() + 1
+        nrun = len(runs)
+
+        if config_table is not None:
+            configs = np.unique(config_table[raft])
+            use_table = join(dtable, config_table, 'run')
+        else:
+            configs = None
+            use_table = dtable
+
+        slots = np.unique(use_table['slot'].flatten())
         for islot, slot in enumerate(slots):
 
             axes = axs.flat[islot]
+            if logy:
+                axes.set_yscale('log')
 
-            mask = dtable['slot'] == slot
-            slot_table = dtable[mask]
+            mask = use_table['slot'] == slot
+            slot_table = use_table[mask]
 
             #idxs = slot_table['irun']*16 + slot_table['amp']
-            yvals = slot_table[ycol]
+            try:
+                ndim = len(slot_table[ycol].shape)
+                yvals = slot_table[ycol].flatten()
+            except KeyError:
+                continue
+
+            if ymin is not None and ymax is not None:
+                axes.set_ylim(ymin, ymax)
+                yvals = yvals.clip(ymin, ymax)
 
             n_data = yvals.size
             n_amps = int(n_data / nrun)
@@ -1321,11 +1441,24 @@ class FigureDict:
             axes.set_xticks(locs)
             axes.set_xticklabels(runs, rotation=90)
             xvals = np.linspace(0, n_data-1, n_data)
-            if yerrs is None:
-                axes.plot(xvals, yvals, 'b.', **kwcopy)
-            else:
-                axes.errorbar(xvals, yvals, yerr=slot_table[yerrs], fmt='b.', **kwcopy)
 
+            if configs is None:
+                if yerrs is None:
+                    axes.plot(xvals, yvals, 'b.', **kwcopy)
+                else:
+                    axes.errorbar(xvals, yvals, yerr=slot_table[yerrs].flatten(), fmt='b.', **kwcopy)
+            else:
+                for _config in configs:
+
+                    config_mask = slot_table[raft].flatten() == _config
+                    if ndim == 2:
+                        config_mask = np.array(16*[config_mask]).T.flatten()
+
+                    if yerrs is None:
+                        axes.plot(xvals[config_mask], yvals[config_mask], '.', label=_config, **kwcopy)
+                    else:
+                        axes.errorbar(xvals[config_mask], yvals[config_mask],
+                                      yerr=slot_table[yerrs].flatten()[config_mask], fmt='.', label=_config, **kwcopy)
         fig.tight_layout()
         return odict
 
@@ -1508,6 +1641,31 @@ class FigureDict:
         return odict
 
 
+    def plot_amps_data_fp_dict(self, key, amp_data, **kwargs):
+        """Make a mosaic of the focal plane using amp-level data
+        """
+        kwcopy = kwargs.copy()
+        title = kwcopy.pop('title', None)
+        figsize = kwcopy.pop('figsize', (12, 12))
+        fig, axes = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+        if title is not None:
+            fig.suptitle(title)
+        try:
+            plot_focal_plane(axes, amp_data, **kwcopy)
+        except ValueError as msg:
+            print(msg)
+            return None
+        odict = dict(fig=fig, axes=axes)
+        self._fig_dict[key] = odict
+        return odict
+
+
+    def plot_amps_data_fp_table(self, key, amp_data_table, colname, func=None, **kwargs):
+        """Make a mosaic of the focal plane using amp-level data
+        """
+        amp_dict = convert_amp_table_to_amp_dict(amp_data_table, colname, func)
+        return self.plot_amps_data_fp_dict(key, amp_dict, **kwargs)
+
     def make_raft_outlier_plots(self, dtable, prefix=""):
         """Make a set of plots of about the number of outlier pixels
 
@@ -1620,3 +1778,55 @@ class FigureDict:
             if not os.path.exists(filepath):
                 out_list.append(filepath)
         return out_list
+
+
+
+def plot_outlier_summary(for_whom, dtables, figs, config_table, config_key=None):
+    """Plot the summary data from the superbias statistics study
+
+    Parameters
+    ----------
+    for_whom : `Task`
+        The task we are plotting for
+    dtables : `TableDict`
+        The data produced by this task
+    figs : `FigureDict`
+        The resulting figures
+    config_table : `Table`
+        With configuration data
+    config_key : `str`
+        Column to used in config table
+    """
+    sumtable = dtables['outliers_sum']
+    if for_whom.config.teststand == 'ts8':
+        runtable = dtables['runs']
+        yvals = sumtable['nbad_total'].flatten().clip(0., 2.)
+        runs = runtable['runs']
+        figs.plot_run_chart("nbad-total", runs, yvals, ylabel="Maximum FFT Power [ADU]")
+    elif for_whom.config.teststand == 'bot':
+        rafts = np.unique(sumtable['raft'])
+        for raft in rafts:
+            mask = sumtable['raft'] == raft
+            subtable = sumtable[mask]
+            if config_key is None:
+                use_key = raft
+            else:
+                use_key = config_key
+            figs.plot_run_chart_by_slot("nbad-total-%s" % raft, subtable,
+                                        "nbad_total", #yerrs="std",
+                                        ylabel="Fraction of outliers",
+                                        ymin=1e-7, ymax=1., logy=True,
+                                        raft=use_key,
+                                        config_table=config_table)
+            figs.plot_run_chart_by_slot("nbad-col-%s" % raft, subtable,
+                                        "nbad_cols", #yerrs="std",
+                                        ylabel="Fraction cols w/ > 10 outliers",
+                                        ymin=1e-7, ymax=1., logy=True,
+                                        raft=use_key,
+                                        config_table=config_table)
+            figs.plot_run_chart_by_slot("nbad-row-%s" % raft, subtable,
+                                        "nbad_rows", #yerrs="std",
+                                        ylabel="Fraction row w/ > 10 outliers",
+                                        ymin=1e-7, ymax=1., logy=True,
+                                        raft=use_key,
+                                        config_table=config_table)

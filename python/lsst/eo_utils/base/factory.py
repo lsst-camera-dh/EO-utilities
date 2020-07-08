@@ -7,6 +7,13 @@ from collections import OrderedDict
 
 from .config_utils import setup_parser, parse_args_to_dict
 
+
+SORT_ORDER_LEVEL = ['Slot', 'Slot Table',
+                    'Raft', 'Raft Table',
+                    'Run', 'Run Table',
+                    'Summary', 'Dataset', 'Simple']
+
+
 class EOTaskFactory:
     """Small class to keep track of analysis tasks"""
 
@@ -148,7 +155,9 @@ class EOTaskFactory:
         stream.write("%-25s %-60s %-60s %-60s\n" % ('Task', 'Inputfile', 'Outputfile', 'Plots'))
         level_dict = self.sort_tasks()
 
-        for data_level, datatype_dict in level_dict.items():
+        #for data_level, datatype_dict in level_dict.items():
+        for data_level in SORT_ORDER_LEVEL:
+            datatype_dict = level_dict.get(data_level, {})
             stream.write("\n")
             for t_d, task_dict in datatype_dict.items():
                 stream.write("-------------------- %-35s --------------------\n" % (data_level + ' ' + t_d))
@@ -163,7 +172,9 @@ class EOTaskFactory:
         """Generate a markdown table describing all the tasks"""
         stream.write("|| Task || Inputfile || Outputfile || Plots ||\n")
         level_dict = self.sort_tasks()
-        for _, datatype_dict in level_dict.items():
+        #for _, datatype_dict in level_dict.items():
+        for data_level in SORT_ORDER_LEVEL:
+            datatype_dict = level_dict.get(data_level, {})
             for _, task_dict in datatype_dict.items():
                 for task_name, task in task_dict.items():
                     if hasattr(task, 'io_markdown_line'):

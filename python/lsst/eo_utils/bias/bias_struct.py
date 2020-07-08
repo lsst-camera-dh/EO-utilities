@@ -84,6 +84,9 @@ class BiasStructTask(BiasAnalysisTask):
 
         self.log_progress("Done!")
 
+        if not biasstruct_data:
+            return None
+
         dtables = TableDict()
         dtables.make_datatable('files', make_file_dict(butler, bias_files))
         for key, val in biasstruct_data.items():
@@ -217,6 +220,9 @@ class SuperbiasStructTask(BiasStructTask):
 
         mask_files = self.get_mask_files()
         superbias = self.get_superbias_frame(mask_files=mask_files)
+
+        if superbias is None:
+            return None
 
         self.log_info_slot_msg(self.config, "")
 

@@ -104,14 +104,11 @@ class FlatPairTask(FlatAnalysisTask):
 
         bias_type = self.get_bias_algo()
         mask_files = self.get_mask_files()
+
         superbias_frame = self.get_superbias_frame(mask_files)
 
         nlc = self.get_nonlinearirty_correction()
-        #gains = self.get_gains()
         #slot_idx = ALL_SLOTS.index(self.config.slot)
-
-        if nlc is not None:
-            print("using linearity corrections")
 
         self.log_info_slot_msg(self.config, "%i %i files" % (len(flat1_files), len(flat2_files)))
 

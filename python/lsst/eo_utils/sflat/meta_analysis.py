@@ -32,7 +32,7 @@ class SflatSlotTableAnalysisTask(AnalysisTask):
     intablename_format = SLOT_SFLAT_TABLE_FORMATTER
     tablename_format = SLOT_SFLAT_TABLE_FORMATTER
     plotname_format = SLOT_SFLAT_PLOT_FORMATTER
-    datatype = 'sflat table'
+    datatype = 'sflat'
 
 
 class SflatRaftTableAnalysisConfig(AnalysisConfig):
@@ -55,7 +55,7 @@ class SflatRaftTableAnalysisTask(AnalysisTask):
     intablename_format = SLOT_SFLAT_TABLE_FORMATTER
     tablename_format = RAFT_SFLAT_TABLE_FORMATTER
     plotname_format = RAFT_SFLAT_PLOT_FORMATTER
-    datatype = 'sflat table'
+    datatype = 'sflat'
 
 
 class SflatSummaryAnalysisConfig(AnalysisConfig):
@@ -75,4 +75,4 @@ class SflatSummaryAnalysisTask(AnalysisTask):
     intablename_format = RAFT_SFLAT_TABLE_FORMATTER
     tablename_format = SUM_SFLAT_TABLE_FORMATTER
     plotname_format = SUM_SFLAT_PLOT_FORMATTER
-    datatype = 'sflat table'
+    datatype = 'sflat'

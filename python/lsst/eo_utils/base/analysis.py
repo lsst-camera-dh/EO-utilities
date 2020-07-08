@@ -18,11 +18,11 @@ from .defaults import DEFAULT_STAT_TYPE
 from .file_utils import makedir_safe,\
     SLOT_BASE_FORMATTER, MASK_FORMATTER,\
     SUPERBIAS_FORMATTER, SUPERBIAS_STAT_FORMATTER,\
-    NONLIN_FORMATTER, EORESULTS_TABLE_FORMATTER
+    NONLIN_FORMATTER, EORESULTSIN_FORMATTER
 
 from .config_utils import EOUtilOptions, Configurable
 
-from .calib_utils import DEFAULT_CALIB_DICT
+from .calib_utils import CalibDict
 
 from .data_utils import TableDict
 
@@ -37,6 +37,7 @@ from .data_access import get_data_for_run, LOCATION_INFO_DICT
 
 class BaseConfig(pexConfig.Config):
     """Configuration for EO analysis tasks"""
+    calib_dict = EOUtilOptions.clone_param('calib_dict')
     calib = EOUtilOptions.clone_param('calib')
 
 class BaseTask(Configurable):
@@ -78,6 +79,18 @@ class BaseTask(Configurable):
             Used to override default configuration
         """
         Configurable.__init__(self, **kwargs)
+        self._calib_file = None
+        self._calib_dict = None
+        self._load_calibration_dict()
+
+
+    def _load_calibration_dict(self):
+        """Load the calibration dictionary
+        """
+        if self._calib_file == self.config.calib_dict:
+            return
+        self._calib_file = self.config.calib_dict
+        self._calib_dict = CalibDict(self._calib_file)
 
     @abc.abstractmethod
     def __call__(self, **kwargs):
@@ -138,7 +151,8 @@ class BaseTask(Configurable):
         -------
         The parameter value
         """
-        return DEFAULT_CALIB_DICT.get_calib_value_task(self.config.calib, self._name, key)
+        self._load_calibration_dict()
+        return self._calib_dict.get_calib_value_task(self.config.calib, self._name, key)
 
 
     @classmethod
@@ -283,12 +297,17 @@ class BaseAnalysisTask(BaseTask):
         ret_val : `str`
             The filename
         """
+        kwcopy = kwargs.copy()
         if self.get_config_param('stat', None) in [DEFAULT_STAT_TYPE, None]:
             formatter = SUPERBIAS_FORMATTER
         else:
             formatter = SUPERBIAS_STAT_FORMATTER
 
-        return self.get_filename_from_format(formatter, '.fits', **kwargs)
+        sbias = self.get_calib_param_from_flavor('superbias')
+        if sbias not in [None, 'none', 'None', False]:
+            kwcopy['calib'] = sbias
+
+        return self.get_filename_from_format(formatter, '.fits', **kwcopy)
 
 
     def get_mask_files(self, **kwargs):
@@ -306,8 +325,10 @@ class BaseAnalysisTask(BaseTask):
         """
         self.safe_update(**kwargs)
 
-        if self.get_calib_param_from_flavor('mask'):
-            mask_files = glob.glob(self.get_filename_from_format(MASK_FORMATTER, "*_mask.fits"))
+        val = self.get_calib_param_from_flavor('mask')
+        if val not in [None, 'none', 'None', False]:
+            mask_files = glob.glob(self.get_filename_from_format(MASK_FORMATTER, ".fits",
+                                                                 filekey='*-mask', calib=val))
             return mask_files
         return []
 
@@ -325,15 +346,19 @@ class BaseAnalysisTask(BaseTask):
         gains : `array`
             The gains
         """
-        #FIXME, do this right
         self.safe_update(**kwargs)
         gain_type = self.get_calib_param_from_flavor('gain')
         if gain_type in [None, 'none', 'None', False]:
             return None
+        gain_run = self.get_calib_param_from_flavor('gain_run')
 
-        gain_file = self.get_filename_from_format(EORESULTS_TABLE_FORMATTER, '.fits',
+        kwcopy = kwargs.copy()
+        if gain_run not in [None, 'none', 'None']:
+            kwcopy.setdefault('run', gain_run)
+
+        gain_file = self.get_filename_from_format(EORESULTSIN_FORMATTER, '.fits',
                                                   calib=gain_type, filekey='results',
-                                                  **kwargs)
+                                                  **kwcopy)
         try:
             tables = TableDict(gain_file)
         except FileNotFoundError:
@@ -361,7 +386,7 @@ class BaseAnalysisTask(BaseTask):
             return None
 
         nonlin_file = self.get_filename_from_format(NONLIN_FORMATTER, '.fits',
-                                                    calib=nonlin, filekey='flat_lin')
+                                                    calib=nonlin, filekey='flat-nonlin')
 
         nonlin_key_dict = dict(nonlin_spline_ext=None, nonlin_spline_smooth=None)
         nonlin_vals = self.extract_config_vals(nonlin_key_dict)
@@ -371,6 +396,7 @@ class BaseAnalysisTask(BaseTask):
         if 'nonlin_spline_smooth' in nonlin_vals:
             kw_spline['s'] = nonlin_vals['nonlin_spline_smooth']
 
+        print(kw_spline)
         nlc = NonlinearityCorrection.create_from_fits_file(nonlin_file, **kw_spline)
         return nlc
 
@@ -555,6 +581,39 @@ class AnalysisTask(BaseAnalysisTask):
         """
         return self.get_filename_from_format(self.tablename_format, '', **kwargs)
 
+    def intablefile_name(self, **kwargs):
+        """Get the name of the file for the output tables for a particular
+        run, raft, ccd..
+
+        Parameters
+        ----------
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        ret_val : `str`
+            The name of the file
+        """
+        kwcopy = kwargs.copy()
+
+        try:
+            kwcopy['filekey'] = self.config.infilekey
+            has_infilekey = True
+        except Exception:
+            kwcopy['filekey'] = self.config.filekey
+            has_infilekey = False
+
+        if hasattr(self, 'intablename_format'):
+            return self.get_filename_from_format(getattr(self, 'intablename_format'), '', **kwcopy)
+        if not has_infilekey:
+            return "None"
+        try:
+            return self.tablefile_name(**kwcopy)
+        except Exception:
+            pass
+        return "None"
+
     def plotfile_name(self, **kwargs):
         """Get the basename for the plot files for a particular run, raft, ccd...
 
@@ -591,6 +650,8 @@ class AnalysisTask(BaseAnalysisTask):
         offset = 0
         if self._handler_config is not None:
             if self._handler_config.data_source == 'butler':
+                if butler is None:
+                    raise ValueError("Data source == butler, but no butler present")
                 offset = 1
 
         if superbias_frame is not None:
@@ -628,6 +689,7 @@ class AnalysisTask(BaseAnalysisTask):
         try:
             ccd = get_ccd_from_id(None, superbias_file, mask_files)
         except Exception:
+            print("Failed to read", superbias_file)
             ccd = None
         return ccd
 
@@ -663,21 +725,45 @@ class AnalysisTask(BaseAnalysisTask):
         if self.config.skip:
             try:
                 dtables = TableDict(output_data)
-            except IOError:
+            except IOError as msg:
+                print(msg)
                 dtables = None
-        else:
-            if not self.config.overwrite:
-                if os.path.exists(output_data):
-                    self.log.info("Ouput file %s exists, skipping" % output_data)
-                    return None
-            dtables = self.extract(butler, data)
-            if dtables is not None:
-                try:
-                    dtables.save_datatables(output_data)
-                    self.log.info("Writing %s" % output_data)
-                except ValueError:
-                    self.log.warn("Failed to write table %s" % output_data)
+            return dtables
+
+        if not self.config.overwrite and os.path.exists(output_data):
+            self.log.info("Ouput file %s exists, skipping extract()" % output_data)
+            try:
+                dtables = TableDict(output_data)
+            except IOError as msg:
+                print(msg)
+                dtables = None
+            self.set_local_data(butler, data, **kwargs)
+            return dtables
+
+        dtables = self.extract(butler, data)
+        if dtables is not None:
+            try:
+                dtables.save_datatables(output_data)
+                self.log.info("Writing %s" % output_data)
+            except ValueError:
+                self.log.warn("Failed to write table %s" % output_data)
         return dtables
+
+    def set_local_data(self, butler, data, **kwargs):
+        """Set local data members if extract fails
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+        """
+        _ = (butler, data, kwargs)
+        self.log.info("  set_local_data()")
+
 
     def make_plots(self, dtables, **kwargs):
         """Make and save the files with the analysis plots
@@ -852,12 +938,7 @@ class AnalysisTask(BaseAnalysisTask):
 
         md_dict = dict(raft="<RAFT>", run="<RUN>", slot="<SLOT>", dataset="<DATASET>")
 
-        try:
-            infilekey = self.config.infilekey
-            infilename = self.tablefile_name(filekey=infilekey, **md_dict).replace('analysis/bot/', '')
-        except Exception:
-            infilename = None
-
+        infilename = self.intablefile_name(**md_dict).replace('analysis/bot/', '')
         table_file = self.tablefile_name(**md_dict).replace('analysis/bot/', '')
         plot_file = self.plotfile_name(**md_dict).replace('analysis/bot/', '')
 
@@ -871,20 +952,19 @@ class AnalysisTask(BaseAnalysisTask):
         """Write a line of markdown, used to build a table of task types"""
         md_dict = dict(raft="<RAFT>", run="<RUN>", slot="<SLOT>", dataset="<DATASET>")
 
-        try:
-            infilekey = self.config.infilekey
-            infilename = self.tablefile_name(filekey=infilekey, **md_dict)
-        except Exception:
-            infilename = None
+        infilename = self.intablefile_name(**md_dict).replace('analysis/bot/', '')
+        table_file = self.tablefile_name(**md_dict).replace('analysis/bot/', '')
+        plot_file = self.plotfile_name(**md_dict).replace('analysis/bot/', '')
 
         stream.write("| %s | %s | %s | %s |\n" % (taskname,
                                                   infilename,
-                                                  self.tablefile_name(**md_dict),
-                                                  self.plotfile_name(**md_dict)))
+                                                  table_file,
+                                                  plot_file))
+
 
     def print_plot_names(self, taskname, stream):
         """Write a few lines with the names of expected plots"""
-        md_dict = dict(raft="<RAFT>", run="<RUN>", slot="<SLOT>", dataset="<DATASET>")
+        md_dict = dict(raft="{raft}", run="{run}", slot="{slot}", dataset="{dataset}")
 
         plotbase = self.plotfile_name(**md_dict)
         if self.plot_names is None:

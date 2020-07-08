@@ -37,7 +37,7 @@ def test_bias_butler_utils():
     assert_data_dict(bias_files_6545, 'R10', 'BIAS', (2, 9, 1, 169))
 
 
-def test_superbias():
+def test_superbias_only():
     """Test the SuperbiasTask"""
     task = bias.SuperbiasTask()
     if RUN_TASKS:
