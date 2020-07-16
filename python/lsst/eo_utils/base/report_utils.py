@@ -545,11 +545,7 @@ def create_run_table(parent_node, dataset, **kwargs):
         raft = run_info[0].replace('-Dev', '')
 
         if raft in ['Cryostat-0001']:
-<<<<<<< HEAD
             rafts = BOT_RAFTS
-=======
-            rafts = NINE_RAFTS
->>>>>>> master
         else:
             rafts = [raft]
 
@@ -684,23 +680,15 @@ def write_raft_report(dataid, inputbase, outbase, **kwargs):
 
     ntables = create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
 
-<<<<<<< HEAD
     slots = getSlotList(dataid['raft'])
     for slot in slots:
-=======
-    for slot in ALL_SLOTS:
->>>>>>> master
         dataid_slot = dataid.copy()
         dataid_slot['slot'] = slot
         kwcopy.pop('dataid', None)
         write_slot_report(dataid_slot, inputbase, outbase, **kwcopy)
 
     kwcopy['dataid'] = dataid
-<<<<<<< HEAD
     slot_table_node = create_slot_table(body_node, dataid['raft'], **kwcopy)
-=======
-    slot_table_node = create_slot_table(body_node, **kwcopy)
->>>>>>> master
 
     if ntables or slot_table_node is not None:
         makedir_safe(html_file)
@@ -755,11 +743,7 @@ def write_run_report(data, inputbase, outbase, **kwargs):
 
     ntables = create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
 
-<<<<<<< HEAD
     for raft in BOT_RAFTS:
-=======
-    for raft in NINE_RAFTS:
->>>>>>> master
         dataid_raft = dataid.copy()
         dataid_raft['raft'] = raft
         kwcopy.pop('dataid', None)
