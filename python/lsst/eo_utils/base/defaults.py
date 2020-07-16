@@ -59,7 +59,13 @@ CORNER_RAFTS = ['R00', 'R04', 'R40', 'R44']
 NINE_RAFTS = ['R01', 'R02', 'R10',
               'R11', 'R12', 'R20',
               'R21', 'R22', 'R30']
+SCIENCE_RAFTS = ['R01', 'R02', 'R03',
+                 'R10', 'R11', 'R12', 'R13', 'R14',
+                 'R20', 'R21', 'R22', 'R23', 'R24',
+                 'R30', 'R31', 'R32', 'R33', 'R34',
+                 'R41', 'R42', 'R43']
 NINE_AND_CORNER_RAFTS = NINE_RAFTS + CORNER_RAFTS
+BOT_RAFTS = SCIENCE_RAFTS + CORNER_RAFTS
 
 RAFT_NAMES_DICT = dict(bot_etu=ALL_RAFTS_BOT_ETU,
                        bot_9=NINE_RAFTS,
@@ -96,3 +102,10 @@ DEFAULT_BIAS_TYPE = 'spline'
 DEFAULT_SUPERBIAS_TYPE = None
 DEFAULT_LOGFILE = 'eo_util_log/temp.log'
 DEFAULT_NBINS = 100
+
+
+# Get the list of slots for a given raft
+def getSlotList(raftName):
+    if raftName in CORNER_RAFTS:
+        return CORNER_SLOTS
+    return ALL_SLOTS

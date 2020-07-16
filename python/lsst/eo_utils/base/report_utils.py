@@ -16,7 +16,7 @@ from xml.dom import minidom
 
 import yaml
 
-from .defaults import EO_PACKAGE_BASE, ALL_SLOTS, NINE_RAFTS
+from .defaults import EO_PACKAGE_BASE, BOT_RAFTS, getSlotList
 
 from .file_utils import makedir_safe, read_runlist
 
@@ -249,13 +249,16 @@ def create_plot_table_row(tbody_node, desc, plot_file, outdir, **kwargs):
     return row_node
 
 
-def create_slot_table(parent_node, **kwargs):
+def create_slot_table(parent_node, raft_name, **kwargs):
     """Create table with descriptions and a plots
 
     Parameters
     ----------
     parent_node : `xml.etree.ElementTree.SubElement`
         The parent node
+    raft_name : `str`
+        Name of the raft in question
+
 
     Keywords
     --------
@@ -294,7 +297,8 @@ def create_slot_table(parent_node, **kwargs):
                     text='CCD')
 
     nslot = 0
-    for slot in ALL_SLOTS:
+    slots = getSlotList(raft_name)
+    for slot in slots:
         if basedir is not None:
             slot_path = os.path.join(basedir, "%s%s.html" % (prefix, slot))
             if not os.path.exists(slot_path):
@@ -348,7 +352,11 @@ def create_raft_table(parent_node, **kwargs):
     prefix = kwcopy.get('prefix', '')
 
     html_file = kwargs.get('html_file', None)
+<<<<<<< HEAD
+    rafts = kwargs.get('rafts', BOT_RAFTS)
+=======
     rafts = kwargs.get('rafts', NINE_RAFTS)
+>>>>>>> master
     h3_text = kwargs.get('h3_text', 'List of rafts')
     if html_file is not None:
         basedir = os.path.dirname(html_file)
@@ -541,7 +549,11 @@ def create_run_table(parent_node, dataset, **kwargs):
         raft = run_info[0].replace('-Dev', '')
 
         if raft in ['Cryostat-0001']:
+<<<<<<< HEAD
+            rafts = BOT_RAFTS
+=======
             rafts = NINE_RAFTS
+>>>>>>> master
         else:
             rafts = [raft]
 
@@ -676,14 +688,23 @@ def write_raft_report(dataid, inputbase, outbase, **kwargs):
 
     ntables = create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
 
+<<<<<<< HEAD
+    slots = getSlotList(dataid['raft'])
+    for slot in slots:
+=======
     for slot in ALL_SLOTS:
+>>>>>>> master
         dataid_slot = dataid.copy()
         dataid_slot['slot'] = slot
         kwcopy.pop('dataid', None)
         write_slot_report(dataid_slot, inputbase, outbase, **kwcopy)
 
     kwcopy['dataid'] = dataid
+<<<<<<< HEAD
+    slot_table_node = create_slot_table(body_node, dataid['raft'], **kwcopy)
+=======
     slot_table_node = create_slot_table(body_node, **kwcopy)
+>>>>>>> master
 
     if ntables or slot_table_node is not None:
         makedir_safe(html_file)
@@ -738,7 +759,11 @@ def write_run_report(data, inputbase, outbase, **kwargs):
 
     ntables = create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
 
+<<<<<<< HEAD
+    for raft in BOT_RAFTS:
+=======
     for raft in NINE_RAFTS:
+>>>>>>> master
         dataid_raft = dataid.copy()
         dataid_raft['raft'] = raft
         kwcopy.pop('dataid', None)
@@ -855,10 +880,11 @@ def write_summary_report_by_raft(dataset, raft, inputbase, outbase, **kwargs):
     kwcopy['dataid'] = dict(raft=raft, dataset=dataset)
     create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
 
-    for slot in ALL_SLOTS:
+    slots = getSlotList(raft)
+    for slot in slots:
         write_summary_report_by_slot(dataset, raft, slot, inputbase, outbase, **kwargs)
 
-    create_slot_table(body_node, prefix="%s_" % dataset, **kwcopy)
+    create_slot_table(body_node, prefix="%s_" % dataset, raft, **kwcopy)
 
     write_tree_to_html(html_node, html_file)
 
@@ -882,7 +908,7 @@ def write_summary_report(dataset, inputbase, outbase, **kwargs):
     config_info = get_report_config_info('summary_plot_tables', **kwcopy)
 
     kwcopy.update(config_info['defaults'])
-    rafts = kwcopy.get('rafts', NINE_RAFTS)
+    rafts = kwcopy.get('rafts', BOT_RAFTS)
 
     if outbase is None:
         outdir = None
