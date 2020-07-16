@@ -864,7 +864,7 @@ def write_summary_report_by_raft(dataset, raft, inputbase, outbase, **kwargs):
     for slot in slots:
         write_summary_report_by_slot(dataset, raft, slot, inputbase, outbase, **kwargs)
 
-    create_slot_table(body_node, prefix="%s_" % dataset, raft, **kwcopy)
+    create_slot_table(body_node, raft, prefix="%s_" % dataset, **kwcopy)
 
     write_tree_to_html(html_node, html_file)
 
