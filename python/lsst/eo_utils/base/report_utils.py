@@ -352,11 +352,7 @@ def create_raft_table(parent_node, **kwargs):
     prefix = kwcopy.get('prefix', '')
 
     html_file = kwargs.get('html_file', None)
-<<<<<<< HEAD
     rafts = kwargs.get('rafts', BOT_RAFTS)
-=======
-    rafts = kwargs.get('rafts', NINE_RAFTS)
->>>>>>> master
     h3_text = kwargs.get('h3_text', 'List of rafts')
     if html_file is not None:
         basedir = os.path.dirname(html_file)

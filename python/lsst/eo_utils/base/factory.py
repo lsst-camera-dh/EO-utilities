@@ -135,8 +135,9 @@ class EOTaskFactory:
         stream.write("Task, Level, Dataype, Description\n")
         level_dict = self.sort_tasks()
 
-        for _, datatype_dict in level_dict.items():
-            for _, task_dict in datatype_dict.items():
+        for data_level in SORT_ORDER_LEVEL:
+            datatype_dict = level_dict.get(data_level, {})
+            for t_d, task_dict in datatype_dict.items():
                 for task_name, task in task_dict.items():
                     task.csv_line(task_name, stream)
 

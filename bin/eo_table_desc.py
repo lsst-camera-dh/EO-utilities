@@ -30,9 +30,9 @@ def main():
         outtype = os.path.splitext(args.output)[1]
 
     if outtype in ['.csv', '.txt']:
-        EO_TASK_FACTORY.make_io_csv(outfile)
+        EO_TASK_FACTORY.make_csv(outfile)
     else:
-        EO_TASK_FACTORY.make_io_markdown(outfile)
+        EO_TASK_FACTORY.make_markdown(outfile)
 
 
 if __name__ == '__main__':
