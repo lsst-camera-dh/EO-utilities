@@ -353,6 +353,7 @@ def create_raft_table(parent_node, **kwargs):
 
     html_file = kwargs.get('html_file', None)
     rafts = kwargs.get('rafts', BOT_RAFTS)
+
     h3_text = kwargs.get('h3_text', 'List of rafts')
     if html_file is not None:
         basedir = os.path.dirname(html_file)
