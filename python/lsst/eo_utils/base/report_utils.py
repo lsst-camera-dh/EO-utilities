@@ -352,11 +352,8 @@ def create_raft_table(parent_node, **kwargs):
     prefix = kwcopy.get('prefix', '')
 
     html_file = kwargs.get('html_file', None)
-<<<<<<< HEAD
     rafts = kwargs.get('rafts', BOT_RAFTS)
-=======
-    rafts = kwargs.get('rafts', NINE_RAFTS)
->>>>>>> master
+
     h3_text = kwargs.get('h3_text', 'List of rafts')
     if html_file is not None:
         basedir = os.path.dirname(html_file)
@@ -549,11 +546,7 @@ def create_run_table(parent_node, dataset, **kwargs):
         raft = run_info[0].replace('-Dev', '')
 
         if raft in ['Cryostat-0001']:
-<<<<<<< HEAD
             rafts = BOT_RAFTS
-=======
-            rafts = NINE_RAFTS
->>>>>>> master
         else:
             rafts = [raft]
 
@@ -688,23 +681,15 @@ def write_raft_report(dataid, inputbase, outbase, **kwargs):
 
     ntables = create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
 
-<<<<<<< HEAD
     slots = getSlotList(dataid['raft'])
     for slot in slots:
-=======
-    for slot in ALL_SLOTS:
->>>>>>> master
         dataid_slot = dataid.copy()
         dataid_slot['slot'] = slot
         kwcopy.pop('dataid', None)
         write_slot_report(dataid_slot, inputbase, outbase, **kwcopy)
 
     kwcopy['dataid'] = dataid
-<<<<<<< HEAD
     slot_table_node = create_slot_table(body_node, dataid['raft'], **kwcopy)
-=======
-    slot_table_node = create_slot_table(body_node, **kwcopy)
->>>>>>> master
 
     if ntables or slot_table_node is not None:
         makedir_safe(html_file)
@@ -759,11 +744,7 @@ def write_run_report(data, inputbase, outbase, **kwargs):
 
     ntables = create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
 
-<<<<<<< HEAD
     for raft in BOT_RAFTS:
-=======
-    for raft in NINE_RAFTS:
->>>>>>> master
         dataid_raft = dataid.copy()
         dataid_raft['raft'] = raft
         kwcopy.pop('dataid', None)
@@ -884,7 +865,7 @@ def write_summary_report_by_raft(dataset, raft, inputbase, outbase, **kwargs):
     for slot in slots:
         write_summary_report_by_slot(dataset, raft, slot, inputbase, outbase, **kwargs)
 
-    create_slot_table(body_node, prefix="%s_" % dataset, raft, **kwcopy)
+    create_slot_table(body_node, raft, prefix="%s_" % dataset, **kwcopy)
 
     write_tree_to_html(html_node, html_file)
 

@@ -371,8 +371,10 @@ class AnalysisIterator(AnalysisHandler):
             Used to update `Task` configuration
         """
         taskname = self._task.getName().replace('Task', '')
+        self._task.safe_update(**kwargs)
 
         htype, _ = self.get_hardware(self._butler, run)
+        print(htype, run)
 
         if self.config.batch in ['None', 'none', None]:
             self.call_analysis_task(run, **kwargs)

@@ -15,10 +15,11 @@ from lsst.eo_utils.qe import QEMedianTask
 
 
 class SlotAnalysisConfig(MetaConfig):
-    """Configuration for SlotAna
-lysisTask"""
+    """Configuration for SlotAnalysisTask"""
     dataset = EOUtilOptions.clone_param('dataset')
     runs = EOUtilOptions.clone_param('runs')
+    teststand = EOUtilOptions.clone_param('teststand')
+    overwrite = EOUtilOptions.clone_param('overwrite')
     rafts = EOUtilOptions.clone_param('rafts')
     slots = EOUtilOptions.clone_param('slots')
     skip = EOUtilOptions.clone_param('skip')

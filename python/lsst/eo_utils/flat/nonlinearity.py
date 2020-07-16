@@ -28,6 +28,11 @@ def build_slitw_format_dict(slitw_vals):
             idx += 1
     return odict
 
+def get_filters_from_external_table(fname):
+    """Get a table with the filter names"""
+    td = TableDict(fname)
+    return td['filter']['FILTER'][1:]
+
 
 class NonlinearityConfig(FlatSlotTableAnalysisConfig):
     """Configuration for NonlinearityTask"""
@@ -36,8 +41,8 @@ class NonlinearityConfig(FlatSlotTableAnalysisConfig):
     nonlin_spline_ext = EOUtilOptions.clone_param('nonlin_spline_ext')
     nonlin_spline_smooth = EOUtilOptions.clone_param('nonlin_spline_smooth')
     num_profile_points = EOUtilOptions.clone_param('num_profile_points')
-    vmin = EOUtilOptions.clone_param('vmin')
-    vmax = EOUtilOptions.clone_param('vmax')
+    vmin = EOUtilOptions.clone_param('vmin', default=1e3)
+    vmax = EOUtilOptions.clone_param('vmax', default=1e5)
 
 class NonlinearityTask(FlatSlotTableAnalysisTask):
     """Measue the linearity using data extracted from the flat-pair data"""
@@ -82,7 +87,6 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             print(msg)
             offset = 0.
         return ((1 + profile_y) / (1 + offset)) - 1.
-
 
     def extract(self, butler, data, **kwargs):
         """Extract data
@@ -129,7 +133,8 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
             flux = tab['flux']
             flux_1 = flux
             flux_2 = flux
-            slit_widths = np.zeros(flux.shape)
+            slit_widths = get_filters_from_external_table('lin_filter_6819D.fits')
+
 
         flux_vals = np.hstack([flux_1, flux_2])
 
@@ -346,7 +351,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                                         xscale='log', yscale='log')
         figs.setup_amp_plots_grid('prof%s' % sfx, xlabel=xlabel_short,
                                   ylabel=ylabel_resid_full,
-                                  ymin=-0.2, ymax=0.2,
+                                  ymin=-0.01, ymax=0.01,
                                   xscale='log')
 
         fig_nonlin_log = figs.setup_figure("nonlin-log%s" % sfx,
@@ -379,7 +384,17 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
         #axes_nonlin_stack.set_xlim(0., 3000.)
         axes_nonlin_stack.set_ylim(self.plot_resid_ymin, self.plot_resid_ymax)
 
+        fig_nonlin_prof_pull = figs.setup_figure("prof-pull%s" % sfx,
+                                                 xlabel="Pull", ylabel="N points",
+                                                 figsize=(7, 5))
+        axes_nonlin_prof_pull = fig_nonlin_prof_pull['axes']
+        #axes_nonlin_stack.set_xlim(0., 3000.)
+        axes_nonlin_prof_pull.set_xlim(-10., 10.)
+
         full_mask = np.ones(2*len(tab_flatlin), bool)
+
+        
+        prof_pulls = []
 
         for amp in range(1, 17):
             amp_vals_1 = tab_flatlin['AMP%02i_MEAN1' % amp]
@@ -394,7 +409,6 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                 mask *= amp_vals > self.config.vmin
             if self.config.vmax is not None:
                 mask *= amp_vals < self.config.vmax
-
 
             full_mask *= mask
             if not mask.any():
@@ -411,6 +425,7 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                 yvals = amp_vals
             else:
                 xvals = amp_vals
+
                 yvals = flux
 
             model_yvals = model_func(pars, xvals)
@@ -450,11 +465,21 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
                                                    profile_y_corr[prof_mask],
                                                    **kw_spline)
                 axs_prof.plot(xline, uni_spline_corr(xline), 'g-')
+                pulls = (profile_y_corr[prof_mask] - uni_spline_corr(profile_x[prof_mask])) / profile_yerr[prof_mask]
+                prof_pulls.append(pulls)
             except Exception:
                 pass
 
             axes_nonlin.plot(x_masked[idx_sort], y_resid_masked[idx_sort], fmt, label="Amp %i" % amp)
             axes_nonlin_log.plot(x_masked[idx_sort], y_resid_masked[idx_sort], fmt, label="Amp %i" % amp)
+
+
+        stack_pulls = np.hstack(prof_pulls)
+        stack_pull_bins = np.linspace(-10., 10., 101)
+        stack_pull_xvals = (stack_pull_bins[0:-1] + stack_pull_bins[1:]) / 2.
+        stack_pulls_hist = np.histogram(stack_pulls, bins=stack_pull_bins)        
+        axes_nonlin_prof_pull.plot(stack_pull_xvals, stack_pulls_hist[0], '.')
+
 
         stack_means_a0 = frac_resid_col[0:8,].mean(0)
         stack_stds_a0 = frac_resid_col[0:8,].std(0)
@@ -464,16 +489,17 @@ class NonlinearityTask(FlatSlotTableAnalysisTask):
         slit_formats = build_slitw_format_dict(slit_widths)
 
         for slit_key, slit_format in slit_formats.items():
-            m_mask = np.fabs(slit_widths - slit_key) < 1
-            m_mask *= full_mask
+            #m_mask = np.fabs(slit_widths - slit_key) < 1
+            #m_mask *= full_mask
+            m_mask = slit_widths == slit_key
             axes_nonlin_log_stack.errorbar(xvals[m_mask], stack_means_a0[m_mask], yerr=stack_stds_a0[m_mask],
-                                           fmt=slit_format, label="%.0f ASPIC 0" % slit_key)
+                                           fmt=slit_format, label="%s ASPIC 0" % slit_key)
             axes_nonlin_log_stack.errorbar(xvals[m_mask], stack_means_a1[m_mask], yerr=stack_stds_a1[m_mask],
-                                           fmt=slit_format.replace('.', '+'), label="%.0f ASPIC 1" % slit_key)
+                                           fmt=slit_format.replace('.', '+'), label="%s ASPIC 1" % slit_key)
             axes_nonlin_stack.errorbar(xvals[m_mask], stack_means_a0[m_mask], yerr=stack_stds_a0[m_mask],
-                                       fmt=slit_format, label="%.0f ASPIC 0" % slit_key)
+                                       fmt=slit_format, label="%s ASPIC 0" % slit_key)
             axes_nonlin_stack.errorbar(xvals[m_mask], stack_means_a1[m_mask], yerr=stack_stds_a1[m_mask],
-                                       fmt=slit_format.replace('.', '+'), label="%.0f ASPIC 1" % slit_key)
+                                       fmt=slit_format.replace('.', '+'), label="%s ASPIC 1" % slit_key)
         axes_nonlin_log_stack.legend()
         axes_nonlin_stack.legend()
 
