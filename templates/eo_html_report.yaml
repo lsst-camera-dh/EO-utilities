@@ -171,4 +171,9 @@ run_plot_tables:
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_ptc_a00_hist.png"
       - text : "Read noise"
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_read_noise_hist.png"    
+  stability:
+    header_text: "Stability plot"
+    rows : 
+      - text : "Stability"
+        figure : "{run}/flat_gain_stability_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_flat_gain_stability.png"  
 summary_plot_tables :
