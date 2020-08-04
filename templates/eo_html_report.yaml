@@ -22,9 +22,10 @@ slot_plot_tables :
         figure : "{run}/flat_pairs_BOT/v0/*/{raft}_{slot}_{run}_linearity_resid.png"
   mean_bias:
     header_text : "Mean bias"
-  defects:
-    header_text : "Bright and dark defect frames"
+  header_text : "Bright and dark defect frames"
     rows :
+       - text : "Dark Noise"
+         figure : "{run}/pixel_defects_BOT/v0/*/{raft}_{slot}_{run}_noise.png"    
        - text : "Medianed Dark"
          figure : "{run}/pixel_defects_BOT/v0/*/{raft}_{slot}_{run}_medianed_dark.png"
        - text : "Superflat Dark Defects"
@@ -42,7 +43,9 @@ slot_plot_tables :
         figure : "{run}/cti_BOT/v0/*/{raft}_{slot}_{run}_serial_oscan_low.png"
       - text : "Parallel overscan: high flux"
         figure : "{run}/cti_BOT/v0/*/{raft}_{slot}_{run}_parallel_oscan_high.png"
-  qe: 
+      - text : "Parallel overscan: loflux"
+        figure : "{run}/cti_BOT/v0/*/{raft}_{slot}_{run}_parallel_oscan_lo.png"
+qe: 
     header_text : "Quantum Efficiency"
   nonuniformity:
     header_text : "Photoresponse Non-uniformity"
@@ -78,7 +81,23 @@ raft_plot_tables:
       - text : "Overscan Correlations"
         figure : "{run}/read_noise_BOT/v0/*/{raft}_{run}_overscan_correlations.png"
   mean_bias: 
-    header_text : "Mean bias frame"
+    header_text : "Median bias frame"
+      - text : "Median Bias Frame"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_median_bias.png"
+  flats_by_filter:
+     header_text : "Flat by filter"
+       - text : "SSDS U Band Flat"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_SDSSU_flat.png"
+       - text : "SSDS g Band Flat"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_SDSSg_flat.png"
+       - text : "SSDS r Band Flat"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_SDSSr_flat.png"
+       - text : "SSDS i Band Flat"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_SDSSi_flat.png"
+       - text : "SSDS z Band Flat"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_SDSSz_flat.png"
+       - text : "SSDS Y Band Flat"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_SDSSY_flat.png"   
   image_quality:
     header_text : "Image quality"
     rows : 
@@ -88,16 +107,21 @@ raft_plot_tables:
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_superflat_high.png"
       - text : "Superflat: low flux"
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_superflat_low.png"
-  defects:
-    header_text : "Bright and dark defect raft"
+  dark_current:
+    header_text : "Dark Current
     rows : 
-      - text : "Defects"
+      - text : "Dark Current"
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_dark_current.png"
   linearity:
     header_text : "Linearity"
     rows : 
       - text : "Maximum fractional deviation"
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_linearity.png"
+  tearing:
+    header_text : "Tearing"
+    rows : 
+      - text : "Divisdero Tearing"
+        figure : "{run}/tearing_BOT/v0/*/{raft}_{run}_divisidero.png"
   cte: 
     header_text : "Charge transfer efficiency"
     rows : 
@@ -142,6 +166,8 @@ run_plot_tables:
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_ptc_a00.png"
       - text : "Read noise"
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_read_noise.png"
+      - text : "PTC Full Well"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_full_well.png"    
   histograms:
     header_text : "Summary histograms"
     rows :
@@ -171,6 +197,8 @@ run_plot_tables:
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_ptc_a00_hist.png"
       - text : "Read noise"
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_read_noise_hist.png"    
+      - text : "PTC Full Well"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_full_well_hist.png"    
   stability:
     header_text: "Stability plot"
     rows : 

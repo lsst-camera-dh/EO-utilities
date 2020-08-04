@@ -625,7 +625,7 @@ def write_slot_report(dataid, inputbase, outbase, **kwargs):
 
     html_node = ET.Element('html')
     create_report_header(html_node,
-                         title="TS8 Results for {run}:{raft}:{slot}".format(**dataid),
+                         title="BOT Results for {run}:{raft}:{slot}".format(**dataid),
                          stylesheet=kwcopy.pop('stylesheet', os.path.basename(config_info['cssfile'])))
 
     body_node = make_child_node(html_node, 'body')
