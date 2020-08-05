@@ -25,7 +25,7 @@ slot_plot_tables :
   header_text : "Bright and dark defect frames"
     rows :
        - text : "Dark Noise"
-         figure : "{run}/pixel_defects_BOT/v0/*/{raft}_{slot}_{run}_noise2.png"    
+         figure : "{run}/pixel_defects_BOT/v0/*/{raft}_{slot}_{run}_noise.png"    
        - text : "Medianed Dark"
          figure : "{run}/pixel_defects_BOT/v0/*/{raft}_{slot}_{run}_medianed_dark.png"
        - text : "Superflat Dark Defects"
