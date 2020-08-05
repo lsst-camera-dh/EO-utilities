@@ -22,7 +22,8 @@ slot_plot_tables :
         figure : "{run}/flat_pairs_BOT/v0/*/{raft}_{slot}_{run}_linearity_resid.png"
   mean_bias:
     header_text : "Mean bias"
-  header_text : "Bright and dark defect frames"
+  darks:
+    header_text : "Bright and dark defect frames"
     rows :
        - text : "Dark Noise"
          figure : "{run}/pixel_defects_BOT/v0/*/{raft}_{slot}_{run}_noise.png"    
@@ -45,7 +46,7 @@ slot_plot_tables :
         figure : "{run}/cti_BOT/v0/*/{raft}_{slot}_{run}_parallel_oscan_high.png"
       - text : "Parallel overscan: loflux"
         figure : "{run}/cti_BOT/v0/*/{raft}_{slot}_{run}_parallel_oscan_lo.png"
-qe: 
+  qe: 
     header_text : "Quantum Efficiency"
   nonuniformity:
     header_text : "Photoresponse Non-uniformity"
@@ -80,23 +81,25 @@ raft_plot_tables:
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_total_noise.png"
       - text : "Overscan Correlations"
         figure : "{run}/read_noise_BOT/v0/*/{raft}_{run}_overscan_correlations.png"
-  mean_bias: 
+  mean_bias : 
     header_text : "Median bias frame"
+    rows: 
       - text : "Median Bias Frame"
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_median_bias.png"
   flats_by_filter:
-     header_text : "Flat by filter"
-       - text : "SSDS U Band Flat"
+    header_text : "Flat by filter"
+    rows:
+      - text : "SSDS U Band Flat"
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_SDSSU_flat.png"
-       - text : "SSDS g Band Flat"
+      - text : "SSDS g Band Flat"
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_SDSSg_flat.png"
-       - text : "SSDS r Band Flat"
+      - text : "SSDS r Band Flat"
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_SDSSr_flat.png"
-       - text : "SSDS i Band Flat"
+      - text : "SSDS i Band Flat"
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_SDSSi_flat.png"
-       - text : "SSDS z Band Flat"
+      - text : "SSDS z Band Flat"
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_SDSSz_flat.png"
-       - text : "SSDS Y Band Flat"
+      - text : "SSDS Y Band Flat"
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_SDSSY_flat.png"   
   image_quality:
     header_text : "Image quality"
@@ -108,7 +111,7 @@ raft_plot_tables:
       - text : "Superflat: low flux"
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_superflat_low.png"
   dark_current:
-    header_text : "Dark Current
+    header_text : "Dark Current"
     rows : 
       - text : "Dark Current"
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_dark_current.png"
