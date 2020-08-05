@@ -25,7 +25,7 @@ slot_plot_tables :
   header_text : "Bright and dark defect frames"
     rows :
        - text : "Dark Noise"
-         figure : "{run}/pixel_defects_BOT/v0/*/{raft}_{slot}_{run}_noise.png"    
+         figure : "{run}/pixel_defects_BOT/v0/*/{raft}_{slot}_{run}_noise2.png"    
        - text : "Medianed Dark"
          figure : "{run}/pixel_defects_BOT/v0/*/{raft}_{slot}_{run}_medianed_dark.png"
        - text : "Superflat Dark Defects"
@@ -167,7 +167,11 @@ run_plot_tables:
       - text : "Read noise"
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_read_noise.png"
       - text : "PTC Full Well"
-        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_full_well.png"    
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_full_well.png"   
+      - text : "PTC Turnoff"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_ptc_turnoff.png"   
+      - text : "Max observed signal"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_max_observed_signal.png"   
   histograms:
     header_text : "Summary histograms"
     rows :
@@ -198,7 +202,11 @@ run_plot_tables:
       - text : "Read noise"
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_read_noise_hist.png"    
       - text : "PTC Full Well"
-        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_full_well_hist.png"    
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_full_well_hist.png"  
+      - text : "PTC Turnoff"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_ptc_turnoff_hist.png"   
+      - text : "Max observed signal"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_max_observed_signal_hist.png"   
   stability:
     header_text: "Stability plot"
     rows : 
