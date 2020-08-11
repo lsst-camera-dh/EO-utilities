@@ -202,7 +202,7 @@ run_plot_tables:
       - text : "Max observed signal"
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_max_observed_signal.png"
       - text : "Slope of Rowwise-mean variance"
-        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_row_mean_var_slope.png"	
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_row_mean_var_slope.png"
   histograms:
     header_text : "Summary histograms"
     rows :
