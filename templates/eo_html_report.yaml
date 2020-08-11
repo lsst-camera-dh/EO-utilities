@@ -46,6 +46,32 @@ slot_plot_tables :
         figure : "{run}/cti_BOT/v0/*/{raft}_{slot}_{run}_parallel_oscan_high.png"
       - text : "Parallel overscan: loflux"
         figure : "{run}/cti_BOT/v0/*/{raft}_{slot}_{run}_parallel_oscan_lo.png"
+  serial:
+    header_text : "Serial overscan charge transfer"
+    rows :
+      - text : "Serial overscan EPER low flux"
+        figure : "{run}/overscan_BOT/v0/*/{raft}_{slot}_{run}_serial_eper_low.png"
+      - text : "Serial overscan EPER high flux"
+        figure : "{run}/overscan_BOT/v0/*/{raft}_{slot}_{run}_serial_eper_high.png"
+      - text : "Serial overscan CTI estimate"
+        figure : "{run}/overscan_BOT/v0/*/{raft}_{slot}_{run}_serial_cti.png"
+      - text : "Serial overscan EPER v. flux"
+        figure : "{run}/overscan_BOT/v0/*/{raft}_{slot}_{run}_serial_overscan_signal.png"
+      - text : "Serial overscan summed signal (pixels 5-25)"
+        figure : "{run}/overscan_BOT/v0/*/{raft}_{slot}_{run}_serial_overscan_sum.png"
+  parallel:
+    header_text : "Parallel overscan charge transfer"
+    rows :
+      - text : "Parallel overscan EPER low flux"
+        figure : "{run}/overscan_BOT/v0/*/{raft}_{slot}_{run}_parallel_eper_low.png"
+      - text : "Parallel overscan EPER high flux"
+        figure : "{run}/overscan_BOT/v0/*/{raft}_{slot}_{run}_parallel_eper_high.png"
+      - text : "Parallel overscan CTI estimate"
+        figure : "{run}/overscan_BOT/v0/*/{raft}_{slot}_{run}_parallel_cti.png"
+      - text : "Parallel overscan EPER v. flux"
+        figure : "{run}/overscan_BOT/v0/*/{raft}_{slot}_{run}_parallel_overscan_signal.png"
+      - text : "Parallel overscan summed signal (pixels 5-25)"
+        figure : "{run}/overscan_BOT/v0/*/{raft}_{slot}_{run}_parallel_overscan_sum.png"
   qe: 
     header_text : "Quantum Efficiency"
   nonuniformity:
@@ -174,7 +200,9 @@ run_plot_tables:
       - text : "PTC Turnoff"
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_ptc_turnoff.png"   
       - text : "Max observed signal"
-        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_max_observed_signal.png"   
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_max_observed_signal.png"
+      - text : "Slope of Rowwise-mean variance"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_row_mean_var_slope.png"
   histograms:
     header_text : "Summary histograms"
     rows :
@@ -210,6 +238,8 @@ run_plot_tables:
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_ptc_turnoff_hist.png"   
       - text : "Max observed signal"
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_max_observed_signal_hist.png"   
+      - text : "Slope of Rowwise-mean variance"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_row_mean_var_slope_hist.png"
   stability:
     header_text: "Stability plot"
     rows : 
