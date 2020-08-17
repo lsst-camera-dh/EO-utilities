@@ -22,6 +22,9 @@ slot_plot_tables :
         figure : "{run}/flat_pairs_BOT/v0/*/{raft}_{slot}_{run}_linearity_resid.png"
   mean_bias:
     header_text : "Mean bias"
+    rows :
+      - text : "Bias frame profiles in serial direction"
+        figure : "{run}/bias_frame_BOT/v0/*/{raft}_{slot}_{run}_bias_serial_profiles.png"
   darks:
     header_text : "Bright and dark defect frames"
     rows :
@@ -99,6 +102,11 @@ slot_plot_tables :
     rows : 
       - text : "Brighter fatter"
         figure : "{run}/brighter_fatter_BOT/v0/*/{raft}_{slot}_{run}_brighter-fatter.png"
+  scan:
+    header_text : "Scan mode"
+    rows :
+      - text : "Scan mode dispersion"
+        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{slot}_{run}_*_dispersion.png"
 raft_plot_tables:
   noise :
     header_text : "Electronic noise"
@@ -136,6 +144,13 @@ raft_plot_tables:
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_superflat_high.png"
       - text : "Superflat: low flux"
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_superflat_low.png"
+  bias_stability:
+    header_text : "Bias stability"
+    rows :
+      - text : "Bias frame amp-wise mean vs time"
+        figure : ""{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_bias_stability_mean.png"
+      - text : "Bias frame amp-wise mean vs time"
+        figure : ""{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_bias_stability_stdev.png"
   dark_current:
     header_text : "Dark Current"
     rows : 
@@ -165,6 +180,12 @@ raft_plot_tables:
     rows:
       - text : "System Gain"
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_system_gain.png"
+  scan:
+    header_text: "Scan mode"
+    rows:
+      - text : "Scan mode multiscope plots"
+        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{run}_*_multisope.png"
+
 run_plot_tables:
   mosaics:
     header_text : "Summary Mosaics"
