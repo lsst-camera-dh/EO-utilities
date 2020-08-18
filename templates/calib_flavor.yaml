@@ -1,10 +1,13 @@
 defaults : 
   bias : spline
-  superbias : normal
+  superbias : splinee
   gain : None
   gain_run : None
   nonlin : None
   mask : None
+nocalib :
+  default:
+    superbias : None
 normal :
   FlatPairTask : 
     mask : eotest
