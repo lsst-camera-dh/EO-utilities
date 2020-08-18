@@ -5,7 +5,7 @@
 """This module contains functions to find files of a particular type in the SLAC directory tree"""
 
 from lsst.eo_utils.base.file_utils import FILENAME_FORMATS,\
-    SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, SUMMARY_FORMAT_STRING,\
+    SLOT_FORMAT_STRING, RAFT_FORMAT_STRING, RUN_FORMAT_STRING, SUMMARY_FORMAT_STRING,\
     RUN_SUPERBIAS_FORMAT_STRING
 
 
@@ -24,7 +24,12 @@ SLOT_BIAS_TABLE_FORMATTER = FILENAME_FORMATS.add_format('slot_bias_table',
 SLOT_BIAS_PLOT_FORMATTER = FILENAME_FORMATS.add_format('slot_bias_plot',
                                                        SLOT_FORMAT_STRING,
                                                        fileType='plots', **BIAS_DEFAULT_FIELDS)
-
+BIAS_RUNTABLE_FORMATTER = FILENAME_FORMATS.add_format('run_bias_table',
+                                                       RUN_FORMAT_STRING,
+                                                       fileType='tables', **BIAS_DEFAULT_FIELDS)
+BIAS_RUNPLOT_FORMATTER = FILENAME_FORMATS.add_format('run_plot_table',
+                                                     RUN_FORMAT_STRING,
+                                                     fileType='plots', **BIAS_DEFAULT_FIELDS)
 RUN_SUPERBIAS_FORMATTER = FILENAME_FORMATS.add_format('run_superbias',
                                                       RUN_SUPERBIAS_FORMAT_STRING)
 RAFT_SBIAS_TABLE_FORMATTER = FILENAME_FORMATS.add_format('raft_sbias_table',

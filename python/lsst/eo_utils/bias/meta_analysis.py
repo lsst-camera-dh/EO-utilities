@@ -14,7 +14,8 @@ from .file_utils import SLOT_BIAS_TABLE_FORMATTER,\
     RAFT_SBIAS_TABLE_FORMATTER, RAFT_SBIAS_PLOT_FORMATTER,\
     SUM_BIAS_TABLE_FORMATTER, SUM_BIAS_PLOT_FORMATTER,\
     SLOT_SBIAS_TABLE_FORMATTER, SLOT_SBIAS_PLOT_FORMATTER,\
-    SUM_SBIAS_TABLE_FORMATTER, SUM_SBIAS_PLOT_FORMATTER
+    SUM_SBIAS_TABLE_FORMATTER, SUM_SBIAS_PLOT_FORMATTER,\
+    BIAS_RUNTABLE_FORMATTER, BIAS_RUNPLOT_FORMATTER
 
 
 class BiasRaftTableAnalysisConfig(AnalysisConfig):
@@ -41,6 +42,31 @@ class BiasRaftTableAnalysisTask(AnalysisTask):
 
 
 
+class BiasRunTableAnalysisConfig(AnalysisConfig):
+    """Configuration for BiasRunTableAnalysisTask"""
+    outdir = EOUtilOptions.clone_param('outdir')
+    teststand = EOUtilOptions.clone_param('teststand')
+    run = EOUtilOptions.clone_param('run')
+    calib = EOUtilOptions.clone_param('calib', default='defualt')
+    infilekey = EOUtilOptions.clone_param('infilekey')
+    filekey = EOUtilOptions.clone_param('filekey')
+
+
+class BiasRunTableAnalysisTask(AnalysisTask):
+    """Collect results from the production area"""
+
+    ConfigClass = BiasRunTableAnalysisConfig
+    _DefaultName = "BiasRunTableTask"x
+    iteratorClass = TableAnalysisByRun
+
+    intablename_format = RAFT_BIAS_TABLE_FORMATTER
+    tablename_format = BIAS_RUNTABLE_FORMATTER
+    plotname_format = BIAS_RUNPLOT_FORMATTER
+
+    datatype = 'bias'
+
+
+    
 class BiasSummaryAnalysisConfig(AnalysisConfig):
     """Configuration for bias analyses"""
     dataset = EOUtilOptions.clone_param('dataset')
