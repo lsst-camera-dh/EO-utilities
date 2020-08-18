@@ -97,9 +97,12 @@ def get_hardware_type_and_id(run):
         db_ = 'Dev'
     else:
         db_ = 'Prod'
-    ex_run = exploreRun(db=db_)
-    hsn = ex_run.hardware_sn(run=run)
-    tokens = hsn.split('_')
+    try:
+        ex_run = exploreRun(db=db_)
+        hsn = ex_run.hardware_sn(run=run)
+        tokens = hsn.split('_')
+    except:
+        tokens = ['LCA-10134', 'LCA-10134_Cryostat-000']
     if len(tokens) < 2:
         raise ValueError("Did not find hardware type for run %s, does this run exist?" % run)
     htype = tokens[0]
