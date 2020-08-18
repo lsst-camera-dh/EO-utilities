@@ -913,15 +913,19 @@ def write_summary_report(dataset, inputbase, outbase, **kwargs):
     kwcopy['dataid'] = dict(dataset=dataset)
     create_plot_tables(body_node, config_info['table_desc'], inputbase, outdir, **kwcopy)
 
-    for raft in rafts:
-        kwcopy.pop('dataid', None)
-        write_summary_report_by_raft(dataset, raft, inputbase, outbase,
-                                     h3_text="Summary results by Raft",
-                                     **kwcopy)
+    do_rafts = kwcopy.get('do_rafts', False)
+    
+    if do_rafts:
+        print("Doing rafts", do_rafts)
+        for raft in rafts:
+            kwcopy.pop('dataid', None)
+            write_summary_report_by_raft(dataset, raft, inputbase, outbase,
+                                        h3_text="Summary results by Raft",
+                                        **kwcopy)
 
-    kwcopy['rafts'] = rafts
-    kwcopy['dataid'] = dict(dataset=dataset)
-    create_raft_table(body_node, prefix="%s_" % dataset, **kwcopy)
+        kwcopy['rafts'] = rafts
+        kwcopy['dataid'] = dict(dataset=dataset)
+        create_raft_table(body_node, prefix="%s_" % dataset, **kwcopy)
 
     create_run_table(body_node, dataset, **kwcopy)
 

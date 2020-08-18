@@ -145,6 +145,7 @@ class EOUtilOptions(pexConfig.Config):
     css_file = pexConfig.Field("HTML report style file", str, default='style.css')
     plot_report_action = pexConfig.Field("How to deal with figures in repots", str,
                                          default='link')
+    do_rafts = pexConfig.Field("Do summary reports for rafts", bool, default=False)
 
     @classmethod
     def clone_param(cls, par_name, **kwargs):
