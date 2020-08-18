@@ -28,6 +28,7 @@ from .analysis import BiasAnalysisConfig, BiasAnalysisTask
 
 from .meta_analysis import BiasRaftTableAnalysisConfig, BiasRaftTableAnalysisTask,\
     BiasSummaryAnalysisConfig, BiasSummaryAnalysisTask,\
+    BiasRunTableAnalysisConfig, BiasRunTableAnalysisTask,\
     SuperbiasSlotTableAnalysisConfig, SuperbiasSlotTableAnalysisTask
 
 
@@ -462,6 +463,93 @@ class BiasFFTStatsTask(BiasRaftTableAnalysisTask):
         figs.plot_stat_color('max-fft-col', raft_array.reshape(9, 16))
 
 
+        
+class BiasFFTRunConfig(BiasRunTableAnalysisConfig):
+    """Configuration for BiasFFTRunTask"""
+    infilekey = EOUtilOptions.clone_param('infilekey', default='biasfft-stats')
+    filekey = EOUtilOptions.clone_param('filekey', default='biasfft-run')
+
+
+class BiasFFTRunTask(BiasRunTableAnalysisTask):
+    """Summarize the results for the analysis of the FFT of the bias frames"""
+
+    ConfigClass = BiasFFTRunConfig
+    _DefaultName = "BiasFFTRunTask"
+
+    plot_names = ['fftpow-maxval', 'fftpow-maxval-col']
+
+   def __init__(self, **kwargs):
+        """C'tor
+
+        Parameters
+        ----------
+        kwargs
+            Used to override configruation
+        """
+        BiasRunTableAnalysisTask.__init__(self, **kwargs)
+
+
+    def extract(self, butler, data, **kwargs):
+        """Extract data
+
+        Parameters
+        ----------
+        butler : `Butler`
+            The data butler
+        data : `dict`
+            Dictionary (or other structure) contain the input data
+        kwargs
+            Used to override default configuration
+
+        Returns
+        -------
+        dtables : `TableDict`
+            output data tables
+        """
+        self.safe_update(**kwargs)
+
+        for key, val in data.items():
+            data[key] = val.replace(self.config.filekey, self.config.infilekey)
+
+        # Define the set of columns to keep and remove
+        # keep_cols = []
+        # remove_cols = []
+
+        outtable = vstack_tables(data, tablename='biasfft_stats')
+
+        dtables = TableDict()
+        dtables.add_datatable('biasfft_run', outtable)
+        dtables.make_datatable('runs', dict(runs=[self.config.run]))
+        return dtables
+
+
+    def plot(self, dtables, figs, **kwargs):
+        """Make plots
+
+        Parameters
+        ----------
+        dtables : `TableDict`
+            The data produced by this task
+        figs : `FigureDict`
+            The resulting figures
+        kwargs
+            Used to override default configuration
+        """
+        self.safe_update(**kwargs)
+        table = dtables['fftpow-maxval']
+
+        try:
+            figs.plot_amps_data_fp_table('fftpow-maxval'
+                                         table, 'fftpow-maxval',
+                                         title="Max FFT-Power",
+                                         z_range=(0., 2.)) #, ylabel='Gain Ne/DN')
+        except KeyError:
+            pass
+
+    
+
+    
+        
 class BiasFFTSummaryConfig(BiasSummaryAnalysisConfig):
     """Configuration for BiasFFTSummaryTask"""
     infilekey = EOUtilOptions.clone_param('infilekey', default='biasfft-stats')
@@ -557,4 +645,5 @@ class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
 EO_TASK_FACTORY.add_task_class('BiasFFT', BiasFFTTask)
 EO_TASK_FACTORY.add_task_class('SuperbiasFFT', SuperbiasFFTTask)
 EO_TASK_FACTORY.add_task_class('BiasFFTStats', BiasFFTStatsTask)
+EO_TASK_FACTORY.add_task_class('BiasFFTRun', BiasFFTSRunTask)
 EO_TASK_FACTORY.add_task_class('BiasFFTSummary', BiasFFTSummaryTask)

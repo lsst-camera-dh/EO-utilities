@@ -251,7 +251,8 @@ class ReportRunTask(ReportTask):
 
 class ReportSummaryConfig(ReportConfig):
     """Configuration for report analyses"""
-
+    do_rafts = EOUtilOptions.clone_param('do_rafts')
+    
 
 class ReportSummaryTask(ReportTask):
     """Produce a static html report for all the summaries of a dataset
@@ -275,7 +276,8 @@ class ReportSummaryTask(ReportTask):
         config_kw = self.extract_config_vals(dict(template_file=None,
                                                   css_file=None,
                                                   plot_report_action=None,
-                                                  overwrite=None))
+                                                  overwrite=None,
+                                                  do_rafts=None))
         full_input = os.path.join(self.config.indir, self.config.teststand)
         write_summary_report(data, full_input, self.config.htmldir, **config_kw)
 
