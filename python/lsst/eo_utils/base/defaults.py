@@ -20,6 +20,13 @@ if SITE == 'slac':
     DEFAULT_DATA_SOURCE = os.environ.get('EO_DATA_SOURCE', 'glob')
     DEFAULT_BATCH_ARGS = '-W 1200 -R bubble'
     BATCH_SYSTEM = 'lsf'
+elif SITE == 'rd':
+    BUTLER_TS8_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/ts8'
+    BUTLER_BOT_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/bot_etu'
+    ARCHIVE_DIR = 'data_links'
+    DEFAULT_DATA_SOURCE = os.environ.get('EO_DATA_SOURCE', 'glob')
+    DEFAULT_BATCH_ARGS = '-W 1200 -R bubble'
+    BATCH_SYSTEM = 'lsf'
 elif SITE == 'ncsa':
     BUTLER_TS8_REPO = '/datasets/ts8/repo'
     BUTLER_BOT_REPO = '/project/production/tmpdataloc/BOT/gen2repo'
@@ -69,7 +76,7 @@ BOT_RAFTS = SCIENCE_RAFTS + CORNER_RAFTS
 
 RAFT_NAMES_DICT = dict(bot_etu=ALL_RAFTS_BOT_ETU,
                        bot_9=NINE_RAFTS,
-                       bot=NINE_RAFTS)
+                       bot=BOT_RAFTS)
 
 # Various types of tests
 TS8_MASK_TEST_TYPES = ['bright_pixel_mask',
