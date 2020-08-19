@@ -478,7 +478,7 @@ class BiasFFTRunTask(BiasRunTableAnalysisTask):
 
     plot_names = ['fftpow-maxval', 'fftpow-maxval-col']
 
-   def __init__(self, **kwargs):
+    def __init__(self, **kwargs):
         """C'tor
 
         Parameters
@@ -508,14 +508,18 @@ class BiasFFTRunTask(BiasRunTableAnalysisTask):
         """
         self.safe_update(**kwargs)
 
+        print(data)
         for key, val in data.items():
-            data[key] = val.replace(self.config.filekey, self.config.infilekey)
-
+            if isinstance(val, dict):
+                data[key] = val['S00'].replace(self.config.filekey, self.config.infilekey)
+            else:
+                data[key] = val.replace(self.config.filekey, self.config.infilekey)
+        print(data)
         # Define the set of columns to keep and remove
         # keep_cols = []
-        # remove_cols = []
+        remove_cols = ['fftpow_mean','fftpow_median','fftpow_std','fftpow_min','fftpow_max','fftpow_argmax','fftpow_mean_col','fftpow_median_col','fftpow_std_col','fftpow_min_col','fftpow_max_col','fftpow_maxval_col','fftpow_argmax_col']
 
-        outtable = vstack_tables(data, tablename='biasfft_stats')
+        outtable = vstack_tables(data, tablename='biasfft_stats', remove_cols=remove_cols)
 
         dtables = TableDict()
         dtables.add_datatable('biasfft_run', outtable)
@@ -536,18 +540,13 @@ class BiasFFTRunTask(BiasRunTableAnalysisTask):
             Used to override default configuration
         """
         self.safe_update(**kwargs)
-        table = dtables['fftpow-maxval']
+        table = dtables['biasfft_run']
 
-        try:
-            figs.plot_amps_data_fp_table('fftpow-maxval'
-                                         table, 'fftpow-maxval',
-                                         title="Max FFT-Power",
-                                         z_range=(0., 2.)) #, ylabel='Gain Ne/DN')
-        except KeyError:
-            pass
-
+        figs.plot_amps_data_fp_table('fftpow_maxval',
+                                     table, 'fftpow_maxval',
+                                     title="Max FFT-Power",
+                                     z_range=(0., 2.)) #, ylabel='Gain Ne/DN')
     
-
     
         
 class BiasFFTSummaryConfig(BiasSummaryAnalysisConfig):
@@ -645,5 +644,5 @@ class BiasFFTSummaryTask(BiasSummaryAnalysisTask):
 EO_TASK_FACTORY.add_task_class('BiasFFT', BiasFFTTask)
 EO_TASK_FACTORY.add_task_class('SuperbiasFFT', SuperbiasFFTTask)
 EO_TASK_FACTORY.add_task_class('BiasFFTStats', BiasFFTStatsTask)
-EO_TASK_FACTORY.add_task_class('BiasFFTRun', BiasFFTSRunTask)
+EO_TASK_FACTORY.add_task_class('BiasFFTRun', BiasFFTRunTask)
 EO_TASK_FACTORY.add_task_class('BiasFFTSummary', BiasFFTSummaryTask)
