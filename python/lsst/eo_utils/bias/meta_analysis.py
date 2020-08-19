@@ -3,7 +3,7 @@
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
 from lsst.eo_utils.base.iter_utils import TableAnalysisBySlot,\
-    TableAnalysisByRaft, SummaryAnalysisIterator
+    TableAnalysisByRaft, TableAnalysisByRun, SummaryAnalysisIterator
 
 from lsst.eo_utils.base.analysis import AnalysisConfig, AnalysisTask
 
@@ -56,7 +56,7 @@ class BiasRunTableAnalysisTask(AnalysisTask):
     """Collect results from the production area"""
 
     ConfigClass = BiasRunTableAnalysisConfig
-    _DefaultName = "BiasRunTableTask"x
+    _DefaultName = "BiasRunTableTask"
     iteratorClass = TableAnalysisByRun
 
     intablename_format = RAFT_BIAS_TABLE_FORMATTER

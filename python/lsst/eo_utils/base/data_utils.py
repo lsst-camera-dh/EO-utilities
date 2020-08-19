@@ -244,6 +244,8 @@ def vstack_tables(filedict, **kwargs):
     keep_cols = kwcopy.pop('keep_cols', None)
     remove_cols = kwcopy.pop('remove_cols', None)
 
+    print("xx", remove_cols)
+
     tables = []
 
     runs = {}
@@ -275,8 +277,13 @@ def vstack_tables(filedict, **kwargs):
         tables.append(table)
 
     print("Vstack has %i tables and missed %i files" % (len(tables), nmissed))
-
-    outtable = vstack_table(tables)
+    
+    try:
+        outtable = vstack_table(tables)
+    except Exception as msg:
+        for t in tables:
+            print (len(t), t.columns)
+        raise ValueError(msg)
     return outtable
 
 
