@@ -148,9 +148,9 @@ raft_plot_tables:
     header_text : "Bias stability"
     rows :
       - text : "Bias frame amp-wise mean vs time"
-        figure : ""{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_bias_stability_mean.png"
-      - text : "Bias frame amp-wise mean vs time"
-        figure : ""{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_bias_stability_stdev.png"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_bias_stability_mean.png"
+      - text : "Bias frame amp-wise std vs time"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_bias_stability_stdev.png"
   dark_current:
     header_text : "Dark Current"
     rows : 
