@@ -5,6 +5,10 @@ defaults :
   gain_run : None
   nonlin : None
   mask : None
+row :
+  default:
+    bias : row
+    superbias : row
 nocalib :
   default:
     superbias : None
