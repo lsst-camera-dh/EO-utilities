@@ -18,7 +18,7 @@ except ImportError:
     print("Warning, no datacat-utilities")
 
 
-from .defaults import ALL_SLOTS, ARCHIVE_DIR, RAFT_NAMES_DICT
+from .defaults import ALL_SLOTS, ARCHIVE_DIR, RAFT_NAMES_DICT, getSlotList
 
 
 # These are the standard input filenames
@@ -394,7 +394,8 @@ def get_bot_files_glob(**kwargs):
 
     for raft in rafts:
         raftdict = {}
-        for slot in ALL_SLOTS:
+        slots = getSlotList(raft)
+        for slot in slots:
             glob_string = BOT_FORMATTER(raft=raft, slot=slot, testName=test_name, **kwcopy)
             files = sorted(glob.glob(glob_string))
             if nfiles is None:
@@ -582,7 +583,8 @@ def get_run_files_from_formatter(run_id, formatter, **kwargs):
         kwcopy['raft'] = raft
         slotdict = {}
         outdict[raft] = slotdict
-        for slot in ALL_SLOTS:
+        slots = getAllSlots(raft)
+        for slot in slots:
             glob_string = formatter(slot=slot, run=run_id, **kwcopy) + suffix
             slotdict[slot] = dict(MASK=sorted(glob.glob(glob_string)))
     return outdict
@@ -624,7 +626,8 @@ def make_dataids_for_run(run_id, **kwargs):
         kwcopy['raft'] = raft
         slotdict = {}
         outdict[raft] = slotdict
-        for slot in ALL_SLOTS:
+        slots = getRaftSlots(raft)
+        for slot in slots:
             slotdict[slot] = dict(run=run_id, raft=raft, slot=slot)
     return outdict
 

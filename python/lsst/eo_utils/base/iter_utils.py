@@ -5,7 +5,7 @@ import os
 
 import lsst.pex.config as pexConfig
 
-from .defaults import ALL_SLOTS, NINE_RAFTS, RAFT_NAMES_DICT
+from .defaults import NINE_RAFTS, RAFT_NAMES_DICT, getSlotList
 
 from .config_utils import EOUtilOptions, Configurable,\
     setup_parser, add_pex_arguments,\
@@ -457,8 +457,10 @@ def dispatch_by_slot(handler, taskname, run, slots, **kwargs):
     jobname = "eo_task.py %s" % taskname
     kwcopy = kwargs.copy()
     if slots is None:
-        slots = ALL_SLOTS
-    for slot in slots:
+        slots_use = getSlotList(kwcopy['raft'])
+    else:
+        slots_use = slots
+    for slot in slots_use:
         logfile_slot = handler.config.logfile.replace('.log', '_%s_%s_%s.log' % (taskname, run, slot))
         kwcopy['slots'] = slot
         kw_remain = handler.get_dispatch_args(run, **kwcopy)
@@ -483,13 +485,15 @@ def dispatch_by_raft_slot(handler, taskname, run, rafts, slots, **kwargs):
     """
     jobname = "eo_task.py %s" % taskname
     kwcopy = kwargs.copy()
-    if slots is None:
-        slots = ALL_SLOTS
     if rafts is None:
         rafts = RAFT_NAMES_DICT[kwcopy.get('teststand', 'bot')]
     for raft in rafts:
         kwcopy['rafts'] = raft
-        for slot in slots:
+        if slots is None:
+            slots_use = getSlotList(raft)
+        else:
+            slots_use = slots
+        for slot in slots_use:
             logfile_slot = handler.config.logfile.replace('.log',
                                                           '_%s_%s_%s_%s.log' % (taskname, run, raft, slot))
             kwcopy['slots'] = slot
@@ -830,7 +834,8 @@ class TableAnalysisBySlot(AnalysisBySlot):
             kwcopy['raft'] = raft
             slot_dict = {}
 
-            for slot in ALL_SLOTS:
+            slots = getSlotList(raft)
+            for slot in slots:
                 kwcopy['slot'] = slot
                 datapath = self._task.get_filename_from_format(formatter, '.fits', **kwcopy)
                 slot_dict[slot] = [datapath]
@@ -888,12 +893,11 @@ class TableAnalysisByRaft(AnalysisByRaft):
         formatter = self._task.intablename_format
 
         slot_list = kwcopy.get('slots', None)
-        if slot_list is None:
-            slot_list = ALL_SLOTS
 
         for raft in raft_list:
             kwcopy['raft'] = raft
             slot_dict = {}
+            slot_list = getSlotList(slots)
             for slot in slot_list:
                 kwcopy['slot'] = slot
                 datapath = self._task.get_filename_from_format(formatter, '.fits', **kwcopy)
@@ -1023,14 +1027,14 @@ class TableAnalysisByRun(AnalysisByRun):
         formatter = self._task.intablename_format
 
         slot_list = kwcopy.get('slots', None)
-        if slot_list is None:
-            slot_list = ALL_SLOTS
-
 
         raft_level = False
         for raft in raft_list:
             kwcopy['raft'] = raft
-
+            if slot_list is None:
+                slot_list_use = getSlotList(raft)
+            else:
+                slot_list_use = slot_list
             try:
                 datapath = self._task.get_filename_from_format(formatter, '.fits', **kwcopy)
                 if os.path.exists(datapath):
@@ -1302,8 +1306,6 @@ class SummaryAnalysisBySlotIterator(AnalysisBySlot):
         formatter = self._task.intablename_format
 
         slot_list = kwcopy.get('slots', None)
-        if slot_list is None:
-            slot_list = ALL_SLOTS
 
         for run in runs:
             raft_list = NINE_RAFTS
@@ -1316,7 +1318,11 @@ class SummaryAnalysisBySlotIterator(AnalysisBySlot):
                     out_dict[raft] = slot_dict
 
                 kwcopy['raft'] = raft
-                for slot in slot_list:
+                if slot_list is None:
+                    slot_list_use = getSlotList(raft)
+                else:
+                    slot_list_use = slot_list
+                for slot in slot_list_use:
                     kwcopy['slot'] = slot
                     datapath = self._task.get_filename_from_format(formatter, '.fits', **kwcopy)
                     try:
