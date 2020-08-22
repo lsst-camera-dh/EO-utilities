@@ -53,11 +53,10 @@ def fitsarith(inputlist, output, expression):
     shutil.copyfile(inputlist[0], output)
 
     for j in range(n_hdu):
-        if type(hdus_in[0][j]) != fits.hdu.image.ImageHDU:
+        
+        if not isinstance(hdus_in[0][j], (fits.hdu.image.ImageHDU, fits.hdu.compressed.CompImageHDU)):
             continue
         h = [ hdus[j].data for hdus in hdus_in ]
-
-        print(use_expr)
         data_output = eval(use_expr)
         fits.update(output, data_output, j, header=hdus_in[0][j].header)
 
@@ -72,7 +71,6 @@ def get_files(arglist, raft, slot):
         if nfiles > 1:
             print("Warning, %i files match %s, taking first file" % (nfiles, fname))
         elif nfiles == 0:
-            print("Warning, no files match %s." % (fname))                    
             return None
         out.append(files[0])
     return out
@@ -81,22 +79,28 @@ def get_files(arglist, raft, slot):
 
 if __name__ == "__main__":
     # argument parser
-    parser = argparse.ArgumentParser(prog='fp_arith')
-    parser.add_argument('args', nargs='+', type=str, help="Patterns for image1files")
+    parser = argparse.ArgumentParser(prog='fp_eval.py')
+    parser.add_argument('args', nargs='+', type=str, help="Patterns for image1files.  Use {raft} and {slot} to define filename pattern.")
     parser.add_argument('-o', "--output", type=str, required=True, help="Pattern for output files")
-    parser.add_argument('-e', "--expression", type=str, required=True, help="Mathematical expression, use @0, @1 etc. to refer to images")
+    parser.add_argument('-e', "--expression", type=str, required=True, help="Mathematical expression, use @0, @1 etc. to refer to images.  Can include numpy functions, e.g., np.sqrt(@0).")
     # unpack options
     options = parser.parse_args()
 
     for raft in BOT_RAFTS:
+        sys.stdout.write("%s" % raft)
+        sys.stdout.flush()
         raft_dict = {}
         slots = getSlotList(raft)
         for slot in slots:
             files = get_files(options.args, raft, slot)
+            
             if files is None:
+                sys.stdout.write('x')
+                sys.stdout.flush()
                 continue
+            sys.stdout.write('.')
+            sys.stdout.flush()
             outfile = options.output.format(raft=raft, slot=slot)    
             fitsarith(files, outfile, options.expression)
-    
-    
+    sys.stdout.write('!\n')
     

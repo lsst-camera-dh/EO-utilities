@@ -41,7 +41,7 @@ def fitsarith(input1, input2, output, operation, const1=None, const2=None):
     for i in range(len(hdu1)):
         exten1 = hdu1[i]
         exten2 = hdu2[i]     
-        if type(exten1) != fits.hdu.image.ImageHDU:
+        if not isinstance(exten1, (fits.hdu.image.ImageHDU, fits.hdu.compressed.CompImageHDU)):
             continue
         if const1 is None:
             data1 = exten1.data
@@ -68,7 +68,7 @@ def fitsarith(input1, input2, output, operation, const1=None, const2=None):
 
 if __name__ == "__main__":
     # argument parser
-    parser = argparse.ArgumentParser(prog='fp_arith')
+    parser = argparse.ArgumentParser(prog='fp_arith.py')
     parser.add_argument('-i1', "--input1", type=str, required=True, help="Pattern for image1 files")
     parser.add_argument('-i2', "--input2", type=str, required=True, help="Pattern for image2 files")
     parser.add_argument('-c1', "--const1", type=float, default=None, help="Constant prefactor for image1")
