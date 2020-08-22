@@ -43,7 +43,8 @@ def fitsarith(inputlist, output, expression):
     use_expr += expression
     n_in = len(hdus_in)
 
-    for i in range(n_in):
+    # Do in reverse in case someone want 10 or more images
+    for i in range(n_in-1, -1, -1):
         from_string = "@%i" % i
         to_string = "h[%i]" % i
         use_expr = use_expr.replace(from_string, to_string)
@@ -83,14 +84,26 @@ if __name__ == "__main__":
     parser.add_argument('args', nargs='+', type=str, help="Patterns for image files.  Use {raft} and {slot} to define filename patterns.  Put each pattern in quotes.")
     parser.add_argument('-o', "--output", type=str, required=True, help="Pattern for output files")
     parser.add_argument('-e', "--expression", type=str, required=True, help="Mathematical expression, use @0, @1 etc. to refer to images.  Can include numpy functions, e.g., np.sqrt(@0).")
+
+    parser.add_argument('--rafts', type=str, action='append', default=None, help="Rafts to include [All], can be used multiple times")
+    parser.add_argument('--slots', type=str, action='append', default=None, help="Slots to include [All], can be used multiple times")
+
+
     # unpack options
     options = parser.parse_args()
 
-    for raft in BOT_RAFTS:
+    if options.rafts is None:
+        rafts = BOT_RAFTS
+    else:
+        rafts = options.rafts
+    for raft in rafts:
         sys.stdout.write("%s" % raft)
         sys.stdout.flush()
         raft_dict = {}
-        slots = getSlotList(raft)
+        if options.slots is None:
+            slots = getSlotList(raft)
+        else:
+            slots = options.slots
         for slot in slots:
             files = get_files(options.args, raft, slot)
             
