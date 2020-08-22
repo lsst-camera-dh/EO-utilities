@@ -80,7 +80,7 @@ def get_files(arglist, raft, slot):
 if __name__ == "__main__":
     # argument parser
     parser = argparse.ArgumentParser(prog='fp_eval.py')
-    parser.add_argument('args', nargs='+', type=str, help="Patterns for image1files.  Use {raft} and {slot} to define filename pattern.")
+    parser.add_argument('args', nargs='+', type=str, help="Patterns for image files.  Use {raft} and {slot} to define filename patterns.  Put each pattern in quotes.")
     parser.add_argument('-o', "--output", type=str, required=True, help="Pattern for output files")
     parser.add_argument('-e', "--expression", type=str, required=True, help="Mathematical expression, use @0, @1 etc. to refer to images.  Can include numpy functions, e.g., np.sqrt(@0).")
     # unpack options
