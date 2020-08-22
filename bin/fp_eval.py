@@ -10,6 +10,8 @@ import shutil
 
 import argparse
 
+import numpy as np
+
 from astropy.io import fits
 
 ALL_SLOTS = ['S00', 'S01', 'S02', 'S10', 'S11', 'S12', 'S20', 'S21', 'S22']
@@ -48,7 +50,6 @@ def fitsarith(inputlist, output, expression):
 
     n_hdu = len(hdus_in[0])
 
-    print(use_expr)
     shutil.copyfile(inputlist[0], output)
 
     for j in range(n_hdu):
@@ -65,7 +66,7 @@ def get_files(arglist, raft, slot):
 
     filenames = [ arg.format(raft=raft, slot=slot) for arg in arglist ]
     out = []
-    for fname in filename:
+    for fname in filenames:
         files = glob.glob(fname)
         nfiles = len(files)
         if nfiles > 1:
@@ -81,9 +82,9 @@ def get_files(arglist, raft, slot):
 if __name__ == "__main__":
     # argument parser
     parser = argparse.ArgumentParser(prog='fp_arith')
-    parser.add_argument('args', nargs='+', type=str, required=True, help="Patterns for image1files")
+    parser.add_argument('args', nargs='+', type=str, help="Patterns for image1files")
     parser.add_argument('-o', "--output", type=str, required=True, help="Pattern for output files")
-    parser.add_argument('-e', "--experssion", type=str, required=True, help="Mathematical expression, use @0, @1 etc. to refer to images")
+    parser.add_argument('-e', "--expression", type=str, required=True, help="Mathematical expression, use @0, @1 etc. to refer to images")
     # unpack options
     options = parser.parse_args()
 
@@ -92,6 +93,8 @@ if __name__ == "__main__":
         slots = getSlotList(raft)
         for slot in slots:
             files = get_files(options.args, raft, slot)
+            if files is None:
+                continue
             outfile = options.output.format(raft=raft, slot=slot)    
             fitsarith(files, outfile, options.expression)
     
