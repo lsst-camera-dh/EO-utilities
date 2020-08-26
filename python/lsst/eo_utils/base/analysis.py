@@ -664,6 +664,9 @@ class AnalysisTask(BaseAnalysisTask):
         """Get the name of the algorithm to remove bias with the overscan"""
         return self.get_calib_param_from_flavor('bias')
 
+    def get_bias_col_algo(self):
+        """Get the name of the algorithm to remove bias with the overscan"""
+        return self.get_calib_param_from_flavor('bias_col')        
 
     def get_superbias_frame(self, mask_files, **kwargs):
         """Get the superbias frame for a particular run, raft, ccd...

@@ -107,6 +107,7 @@ class SuperflatTask(SflatAnalysisTask):
         if stat_type is None:
             stat_type = DEFAULT_STAT_TYPE
         bias_type = self.get_bias_algo()
+        bias_type_col = self.get_bias_col_algo()
 
         mask_files = self.get_mask_files()
         superbias_frame = self.get_superbias_frame(mask_files)
@@ -141,12 +142,12 @@ class SuperflatTask(SflatAnalysisTask):
             raise ValueError("Can not convert %s to a valid statistic" % stat_type)
 
         sflat_l = stack_images(butler, sflat_files_l, statistic=statistic,
-                               bias_type=bias_type,
+                               bias_type=bias_type, bias_type_col=bias_type_col,
                                superbias_frame=superbias_frame,
                                gains=gains,
                                nlc=nlc)
         sflat_h = stack_images(butler, sflat_files_h, statistic=statistic,
-                               bias_type=bias_type,
+                               bias_type=bias_type, bias_type_col=bias_type_col,
                                superbias_frame=superbias_frame,
                                gains=gains,
                                nlc=nlc)

@@ -1490,6 +1490,7 @@ class FigureDict:
         """
         kwcopy = kwargs.copy()
         bias_type = kwcopy.pop('bias', None)
+        bias_type_col = kwcopy.pop('bias_col', None)
         superbias_frame = kwcopy.pop('superbias_frame', None)
         gains = kwcopy.pop('gains', None)
         figsize = kwcopy.pop('figsize', (10, 10))
@@ -1513,6 +1514,7 @@ class FigureDict:
                 amp = ypos*nx_segments + xpos + 1
                 regions = get_geom_regions(ccd, amp)
                 serial_oscan = regions['serial_overscan']
+                parallel_oscan = regions['parallel_overscan']
                 imaging = regions['imaging']
 
                 detsec = parse_geom_kwd(ccd.amp_geom[amp]['DETSEC'])
@@ -1526,7 +1528,9 @@ class FigureDict:
                 superbias_im = raw_amp_image(superbias_frame, amp + offset)
                 img = get_raw_image(ccd, amp)
                 segment_image = unbias_amp(img, serial_oscan,
-                                           bias_type=bias_type, superbias_im=superbias_im)
+                                           bias_type=bias_type, bias_type_col=bias_type_col,
+                                           superbias_im=superbias_im,
+                                           parallel_oscan=parallel_oscan)
                 subarr = segment_image[imaging].array
                 #
                 # Determine flips in x- and y- direction

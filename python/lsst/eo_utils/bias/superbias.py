@@ -108,6 +108,7 @@ class SuperbiasTask(BiasAnalysisTask):
         """
         self.safe_update(**kwargs)
         bias_type = self.get_bias_algo()
+        bias_type_col = self.get_bias_col_algo()
         stat_type = self.config.stat
         if stat_type is None:
             stat_type = DEFAULT_STAT_TYPE
@@ -130,7 +131,7 @@ class SuperbiasTask(BiasAnalysisTask):
         stat_ctrl = afwMath.StatisticsControl()
         stat_ctrl.setNumSigmaClip(10)
         sbias = stack_images(butler, bias_files[1:],
-                             statistic=statistic, bias_type=bias_type,
+                             statistic=statistic, bias_type=bias_type, bias_type_col=bias_type_col,
                              stat_ctrl=stat_ctrl)
         self.log_progress("Done!")
         return sbias

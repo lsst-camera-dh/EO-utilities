@@ -1,6 +1,7 @@
 defaults : 
   bias : spline
   superbias : normal
+  bias_col : None
   gain : None
   gain_run : None
   nonlin : None

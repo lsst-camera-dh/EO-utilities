@@ -112,7 +112,8 @@ class SuperdarkTask(DarkAnalysisTask):
             raise ValueError("Can not convert %s to a valid statistic" % stat_type)
 
         sdark = stack_images(butler, dark_files, statistic=statistic,
-                             bias_type=self.get_bias_algo(), superbias_frame=superbias_frame)
+                             bias_type=self.get_bias_algo(), bias_type_col=self.get_bias_col_algo(),
+                             superbias_frame=superbias_frame)
         self.log_progress("Done!")
         return sdark
 
