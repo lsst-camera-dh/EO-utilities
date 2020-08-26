@@ -497,7 +497,7 @@ def array_struct(i_array, clip=None, do_std=False):
     return o_dict
 
 
-def unbias_amp(img, serial_oscan, bias_type=None, superbias_im=None, region=None
+def unbias_amp(img, serial_oscan, bias_type=None, superbias_im=None, region=None,
                bias_type_col=None, parallel_oscan=None):
     """Unbias the data from a particular amp
 
@@ -524,8 +524,8 @@ def unbias_amp(img, serial_oscan, bias_type=None, superbias_im=None, region=None
                                        bias_method=bias_type,
                                        bias_frame=superbias_im,
                                        imaging=region,
-                                       bias_method=bias_type_col,
-                                       parallel_oscan=parallel_oscan)
+                                       bias_method_col=bias_type_col,
+                                       overscan_col=parallel_oscan)
     else:
         image = img
         if superbias_im is not None:
@@ -618,7 +618,7 @@ def unbiased_ccd_image_dict(ccd, **kwargs):
 
         image = unbias_amp(img, serial_oscan, bias_type=bias_type,
                            superbias_im=superbias_im, region=trim_region,
-                           bias_type_col=bias_type_col, parallel_overscan=parallel_overscan)
+                           bias_type_col=bias_type_col, parallel_oscan=parallel_oscan)
         if nlc is not None:
             image.getImage().array[:] = nlc(amp, image.getImage().array)
         o_dict[amp] = image
