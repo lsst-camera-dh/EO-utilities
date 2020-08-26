@@ -145,11 +145,12 @@ class BiasStructTask(BiasAnalysisTask):
         superbias_frame = kwargs.get('superbias_frame', None)
         offset = get_amp_offset(ccd, superbias_frame)
         bias_type = self.get_bias_algo()
-
+        bias_type_col = self.get_bias_col_algo()
         amps = get_amp_list(ccd)
         for i, amp in enumerate(amps):
             regions = get_geom_regions(ccd, amp)
             serial_oscan = regions['serial_overscan']
+            parallel_oscan = regions['parallel_overscan']
             img = get_raw_image(ccd, amp)
             if superbias_frame is not None:
                 superbias_im = get_raw_image(superbias_frame, amp + offset)
@@ -157,7 +158,9 @@ class BiasStructTask(BiasAnalysisTask):
                 superbias_im = None
             image = unbias_amp(img, serial_oscan,
                                bias_type=bias_type,
-                               superbias_im=superbias_im)
+                               bias_type_col=bias_type_col,
+                               superbias_im=superbias_im,
+                               parallel_oscan=parallel_oscan)
             frames = get_image_frames_2d(image, regions)
 
             for key, region in zip(REGION_KEYS, REGION_NAMES):

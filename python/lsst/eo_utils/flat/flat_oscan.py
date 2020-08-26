@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from lsst.eotest.sensor.overscan_fit import OverscanFit
+#from lsst.eotest.sensor.overscan_fit import OverscanFit
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
@@ -66,8 +66,8 @@ class FlatOverscanTask(FlatAnalysisTask):
 
         self.log_info_slot_msg(self.config, "%i files" % len(flat_files))
 
-        fitter = OverscanFit(num_oscan_pixels=self.config.num_oscan_pixels,
-                             minflux=self.config.minflux, maxflux=self.config.maxflux)
+        #fitter = OverscanFit(num_oscan_pixels=self.config.num_oscan_pixels,
+        #                     minflux=self.config.minflux, maxflux=self.config.maxflux)
 
         gains = self.get_gains()
         if gains is None:
