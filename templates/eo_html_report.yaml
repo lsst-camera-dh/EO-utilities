@@ -83,9 +83,7 @@ slot_plot_tables :
     header_text : "Point spread function"
     rows :
       - text : "Fe55 PSF distributions"
-        figures : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_psf_dists.png"
-      - text : "Fe55 PSF Results"
-        figures : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_psf_results_nsig4.png"
+        figure : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_psf_dists.png"
   fe55_zoom:
     header_text : "Fe55 zoom on segment 1"
   fe55_aperature:
