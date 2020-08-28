@@ -81,12 +81,31 @@ slot_plot_tables :
     header_text : "Photoresponse Non-uniformity"
   psf : 
     header_text : "Point spread function"
+    rows :
+      - text : "Fe55 PSF distributions"
+        figures : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_psf_dists.png"
+      - text : "Fe55 PSF Results"
+        figures : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_psf_results_nsig4.png"
   fe55_zoom:
     header_text : "Fe55 zoom on segment 1"
   fe55_aperature:
     header_text : "Fe55 aperature flux vs. pixel number"
   fe55_p3p5:
-    header_text : "Fe55 p3-p5 statistics" 
+    header_text : "Fe55 p3-p5 statistics"
+    rows :
+      - text : "Fe55 P3-P5 histograms"
+        figure : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_fe55_p3_p5_hists.png"
+      - text : "Fe55 P3-P5 profiles"
+        figure : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_fe55_p3_p5_profiles.png"
+  fe55:
+    header_text : "Fe55 Analysis"
+    rows :
+      - text : "Fe55 Gains"
+        figure : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_gains.png"
+      - text : "Fe55 Distributions"
+        figure : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_fe55_dists.png"
+      - text : "Fe55 Median bias"
+        figure : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_fe55_median_bias.png"
   ptc: 
     header_text : "System Gain and Photon Transfer Curves"
     rows :
