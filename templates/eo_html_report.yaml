@@ -81,12 +81,29 @@ slot_plot_tables :
     header_text : "Photoresponse Non-uniformity"
   psf : 
     header_text : "Point spread function"
+    rows :
+      - text : "Fe55 PSF distributions"
+        figure : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_psf_dists.png"
   fe55_zoom:
     header_text : "Fe55 zoom on segment 1"
   fe55_aperature:
     header_text : "Fe55 aperature flux vs. pixel number"
   fe55_p3p5:
-    header_text : "Fe55 p3-p5 statistics" 
+    header_text : "Fe55 p3-p5 statistics"
+    rows :
+      - text : "Fe55 P3-P5 histograms"
+        figure : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_fe55_p3_p5_hists.png"
+      - text : "Fe55 P3-P5 profiles"
+        figure : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_fe55_p3_p5_profiles.png"
+  fe55:
+    header_text : "Fe55 Analysis"
+    rows :
+      - text : "Fe55 Gains"
+        figure : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_gains.png"
+      - text : "Fe55 Distributions"
+        figure : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_fe55_dists.png"
+      - text : "Fe55 Median bias"
+        figure : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_fe55_median_bias.png"
   ptc: 
     header_text : "System Gain and Photon Transfer Curves"
     rows :
@@ -106,7 +123,9 @@ slot_plot_tables :
     header_text : "Scan mode"
     rows :
       - text : "Scan mode dispersion"
-        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{slot}_{run}_*_dispersion.png"
+        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{slot}_{run}_TM_OFF_000_dispersion.png"
+      - text : "Scan mode dispersion"
+        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{slot}_{run}_TM_ON_000_dispersion.png"	
 raft_plot_tables:
   noise :
     header_text : "Electronic noise"
@@ -184,7 +203,14 @@ raft_plot_tables:
     header_text: "Scan mode"
     rows:
       - text : "Scan mode multiscope plots"
-        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{run}_*_multisope.png"
+        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{run}_TM_OFF_multisope.png"
+      - text : "Scan mode multiscope plots"
+        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{run}_TM_ON_multisope.png"
+  fe55:
+    header_text: "Fe55"
+    rows: 
+      - text: "PSF width estimate from Fe55"
+        figure: "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_psf_sigma.png"
 
 run_plot_tables:
   mosaics:
@@ -224,6 +250,10 @@ run_plot_tables:
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_max_observed_signal.png"
       - text : "Slope of Rowwise-mean variance"
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_row_mean_var_slope.png"
+      - text : "PSF sigma"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_psf_sigma.png"
+      - text : "Fe55 gain"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_gain.png"
   histograms:
     header_text : "Summary histograms"
     rows :
@@ -261,6 +291,10 @@ run_plot_tables:
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_max_observed_signal_hist.png"   
       - text : "Slope of Rowwise-mean variance"
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_row_mean_var_slope_hist.png"
+      - text : "PSF sigma"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_psf_sigma_hist.png"
+      - text : "Fe55 gain"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_gain_hist.png"
   stability:
     header_text: "Stability plot"
     rows : 
