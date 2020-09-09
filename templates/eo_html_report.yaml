@@ -123,7 +123,9 @@ slot_plot_tables :
     header_text : "Scan mode"
     rows :
       - text : "Scan mode dispersion"
-        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{slot}_{run}_*_dispersion.png"
+        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{slot}_{run}_TM_OFF_000_dispersion.png"
+      - text : "Scan mode dispersion"
+        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{slot}_{run}_TM_ON_000_dispersion.png"	
 raft_plot_tables:
   noise :
     header_text : "Electronic noise"
@@ -201,7 +203,9 @@ raft_plot_tables:
     header_text: "Scan mode"
     rows:
       - text : "Scan mode multiscope plots"
-        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{run}_*_multisope.png"
+        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{run}_TM_OFF_multisope.png"
+      - text : "Scan mode multiscope plots"
+        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{run}_TM_ON_multisope.png"
   fe55:
     header_text: "Fe55"
     rows: 
