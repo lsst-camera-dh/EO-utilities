@@ -2,7 +2,7 @@
 
 import lsst.afw.math as afwMath
 
-from lsst.eotest.sensor.BFTask import crossCorrelate_images
+#from lsst.eotest.sensor.BFTask import crossCorrelate_images
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
