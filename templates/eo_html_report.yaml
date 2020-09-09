@@ -203,9 +203,9 @@ raft_plot_tables:
     header_text: "Scan mode"
     rows:
       - text : "Scan mode multiscope plots"
-        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{run}_TM_OFF_000_multisope.png"
+        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{run}_TM_OFF_000_multiscope.png"
       - text : "Scan mode multiscope plots"
-        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{run}_TM_ON_000_multisope.png"
+        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{run}_TM_ON_000_multiscope.png"
   fe55:
     header_text: "Fe55"
     rows: 
