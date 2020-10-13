@@ -100,6 +100,11 @@ slot_plot_tables :
         figure : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_fe55_p3_p5_hists.png"
       - text : "Fe55 P3-P5 profiles"
         figure : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_fe55_p3_p5_profiles.png"
+  persistence:
+    header_text : "Persistence analysis"
+    rows :
+      - text : "Persistence"
+        figure : "{run}/persistence_BOT/v0/*/{raft}_{slot}_{run}_persistence.png"
   fe55:
     header_text : "Fe55 Analysis"
     rows :
