@@ -25,6 +25,11 @@ slot_plot_tables :
     rows :
       - text : "Bias frame profiles in serial direction"
         figure : "{run}/bias_frame_BOT/v0/*/{raft}_{slot}_{run}_bias_serial_profiles.png"
+  flat_pairs:
+    header_text : "Data from flat pairs"
+    rows:
+      - text : "Row means v. variance"
+        figure : "{run}/flat_pairs_BOT/v0/*/{raft}_{slot}_{run}_row_means_variance.png"
   darks:
     header_text : "Bright and dark defect frames"
     rows :
@@ -95,6 +100,11 @@ slot_plot_tables :
         figure : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_fe55_p3_p5_hists.png"
       - text : "Fe55 P3-P5 profiles"
         figure : "{run}/fe55_analysis_BOT/v0/*/{raft}_{slot}_{run}_fe55_p3_p5_profiles.png"
+  persistence:
+    header_text : "Persistence analysis"
+    rows :
+      - text : "Persistence"
+        figure : "{run}/persistence_BOT/v0/*/{raft}_{slot}_{run}_persistence.png"
   fe55:
     header_text : "Fe55 Analysis"
     rows :
@@ -125,7 +135,7 @@ slot_plot_tables :
       - text : "Scan mode dispersion"
         figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{slot}_{run}_TM_OFF_000_dispersion.png"
       - text : "Scan mode dispersion"
-        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{slot}_{run}_TM_ON_000_dispersion.png"	
+        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{slot}_{run}_TM_ON_000_dispersion.png"
 raft_plot_tables:
   noise :
     header_text : "Electronic noise"
@@ -143,7 +153,7 @@ raft_plot_tables:
     header_text : "Flat by filter"
     rows:
       - text : "SSDS U Band Flat"
-        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_SDSSU_flat.png"
+        figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_SDSSu_flat.png"
       - text : "SSDS g Band Flat"
         figure : "{run}/raft_results_summary_BOT/v0/*/{raft}_{run}_SDSSg_flat.png"
       - text : "SSDS r Band Flat"
@@ -203,9 +213,9 @@ raft_plot_tables:
     header_text: "Scan mode"
     rows:
       - text : "Scan mode multiscope plots"
-        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{run}_TM_OFF_multisope.png"
+        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{run}_TM_OFF_000_multiscope.png"
       - text : "Scan mode multiscope plots"
-        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{run}_TM_ON_multisope.png"
+        figure : "{run}/scan_mode_analysis_BOT/v0/*/{raft}_{run}_TM_ON_000_multiscope.png"
   fe55:
     header_text: "Fe55"
     rows: 
@@ -254,6 +264,10 @@ run_plot_tables:
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_psf_sigma.png"
       - text : "Fe55 gain"
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_gain.png"
+      - text : "Divisadero max"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_divisadero_max_dev.png"
+      - text : "Tearing detections"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_tearing_detections.png"
   histograms:
     header_text : "Summary histograms"
     rows :
@@ -295,6 +309,10 @@ run_plot_tables:
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_psf_sigma_hist.png"
       - text : "Fe55 gain"
         figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_gain_hist.png"
+      - text : "Divisadero max"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_divisadero_max_dev_hist.png"
+      - text : "Tearing detections"
+        figure : "{run}/raft_results_summary_BOT/v0/*/LCA-10134_Cryostat-0001_{run}_tearing_detections_hist.png"
   stability:
     header_text: "Stability plot"
     rows : 
