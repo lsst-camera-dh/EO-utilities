@@ -50,7 +50,8 @@ if os.environ.get('EO_PRINT_OPTS', False):
 
 # Map the Butler repos to simple names
 BUTLER_REPO_DICT = dict(ts8=BUTLER_TS8_REPO,
-                        bot=BUTLER_BOT_REPO)
+                        bot=BUTLER_BOT_REPO,
+                        gen3=BUTLER_GEN3_REPO)
 
 # The amps
 ALL_AMPS = ['C10', 'C11', 'C12', 'C13', 'C14', 'C15', 'C16', 'C17',
