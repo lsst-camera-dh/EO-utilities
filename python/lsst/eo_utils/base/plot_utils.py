@@ -25,7 +25,7 @@ from .image_utils import get_raw_image, raw_amp_image,\
     get_amp_list, unbias_amp, get_geom_regions,\
     get_image_frames_2d, unbiased_ccd_image_dict, get_amp_offset
 
-from .defaults import TESTCOLORMAP, ALL_SLOTS, ALL_AMPS, getSlotList, CORNER_RAFTS
+from .defaults import TESTCOLORMAP, ALL_AMPS, getSlotList, CORNER_RAFTS
 
 from . import mpl_utils
 

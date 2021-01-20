@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS, getSlotList
+from lsst.eo_utils.base.defaults import getSlotList
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
@@ -121,68 +121,72 @@ class EOResultsRaftTask(AnalysisTask):
         self.safe_update(**kwargs)
         table = dtables['eo_results']
 
+        slot_list = self.config.slots
+        if slot_list is None:
+            slot_list = getSlotList(self.config.raft)
+
         try:
             figs.plot_raft_amp_values('gain',
                                       table['GAIN'],
                                       title="Fe55 Gain",
                                       yerrs=table['GAIN_ERROR'],
                                       ylabel='Gain Ne/DN',
-                                      slots=ALL_SLOTS)
+                                      slots=slot_list)
             figs.plot_raft_amp_values('ptc-gain',
                                       table['PTC_GAIN'],
                                       title="PTC Gain",
                                       yerrs=table['PTC_GAIN_ERROR'],
                                       ylabel='Gain Ne/DN',
-                                      slots=ALL_SLOTS)
+                                      slots=slot_list)
             figs.plot_raft_amp_values('read-noise',
                                       table['READ_NOISE'],
                                       title="Read Noise",
                                       ylabel='rms e-/pixel',
-                                      slots=ALL_SLOTS)
+                                      slots=slot_list)
             figs.plot_raft_amp_values('full-well',
                                       table['FULL_WELL'],
                                       title='Full well Measurment',
                                       ylabel='e-/pixel',
-                                      slots=ALL_SLOTS)
+                                      slots=slot_list)
             figs.plot_raft_amp_values('dark-current',
                                       table['DARK_CURRENT_95'],
                                       title='Dark Current 95%',
                                       ylabel='e-/s/pixel',
-                                      slots=ALL_SLOTS)
+                                      slots=slot_list)
             figs.plot_raft_amp_values('cti-high-serial',
                                       table['CTI_HIGH_SERIAL'],
                                       title="CTI High Serial",
                                       yerrs=table['CTI_HIGH_SERIAL_ERROR'],
                                       ylabel='loss/pixel',
-                                      slots=ALL_SLOTS)
+                                      slots=slot_list)
             figs.plot_raft_amp_values('cti-high-parallel',
                                       table['CTI_HIGH_PARALLEL'],
                                       title="CTI High Parallel",
                                       yerrs=table['CTI_HIGH_PARALLEL_ERROR'],
                                       ylabel='loss/pixel',
-                                      slots=ALL_SLOTS)
+                                      slots=slot_list)
             figs.plot_raft_amp_values('cti-low-serial',
                                       table['CTI_LOW_SERIAL'],
                                       title="CTI Low Serial",
                                       yerrs=table['CTI_LOW_SERIAL_ERROR'],
                                       ylabel='loss/pixel',
-                                      slots=ALL_SLOTS)
+                                      slots=slot_list)
             figs.plot_raft_amp_values('cti-low-parallel',
                                       table['CTI_LOW_PARALLEL'],
                                       title="CTI Low Parallel",
                                       yerrs=table['CTI_LOW_PARALLEL_ERROR'],
                                       ylabel='loss/pixel',
-                                      slots=ALL_SLOTS)
+                                      slots=slot_list)
             figs.plot_raft_amp_values('max-frac-dev',
                                       table['MAX_FRAC_DEV'],
                                       title="Maximum fractional deviation",
                                       ylabel='Fraction',
-                                      slots=ALL_SLOTS)
+                                      slots=slot_list)
             figs.plot_raft_amp_values('psf-sigma',
                                       table['PSF_SIGMA'],
                                       title="PSF Width",
                                       ylabel='pixels',
-                                      slots=ALL_SLOTS)
+                                      slots=slot_list)
         except KeyError:
             pass
 

@@ -6,7 +6,7 @@ import lsst.afw.math as afwMath
 
 import lsst.eotest.image_utils as imutil
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS
+from lsst.eo_utils.base.defaults import getAllSlots
 
 from lsst.eo_utils.base.file_utils import makedir_safe,\
     SUPERBIAS_FORMATTER, SUPERBIAS_STAT_FORMATTER
@@ -404,7 +404,8 @@ class SuperbiasRaftTask(SuperbiasRaftTableAnalysisTask):
 
         slot_list = self.config.slots
         if slot_list is None:
-            slot_list = ALL_SLOTS
+            slot_list = getSlotList(self.config.raft)
+
         for slot in slot_list:
             if not os.path.exists(data[slot]):
                 self.log.warn("Skipping missing file for %s:%s" % (self.config.raft, slot))

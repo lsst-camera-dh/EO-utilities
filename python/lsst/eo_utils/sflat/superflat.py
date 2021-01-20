@@ -10,7 +10,7 @@ import lsst.afw.image as afwImage
 
 import lsst.eotest.image_utils as imutil
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS
+from lsst.eo_utils.base.defaults import getSlotList
 
 from lsst.eo_utils.base.file_utils import makedir_safe
 
@@ -489,7 +489,7 @@ class SuperflatRaftTask(SflatRaftTableAnalysisTask):
 
         slots = self.config.slots
         if slots is None:
-            slots = ALL_SLOTS
+            slots = getSlotList(self.config.raft)
 
         for slot in slots:
             basename = data[slot]

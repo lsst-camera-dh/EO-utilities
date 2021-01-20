@@ -6,7 +6,7 @@ import lsst.afw.math as afwMath
 
 import lsst.eotest.image_utils as imutil
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS
+from lsst.eo_utils.base.defaults import getSlotList
 
 from lsst.eo_utils.base.file_utils import makedir_safe
 
@@ -323,11 +323,12 @@ class SuperdarkRaftTask(AnalysisTask):
             Used to override default configuration
         """
         self.safe_update(**kwargs)
-        slots = self.config.slots
-        if slots is None:
-            slots = ALL_SLOTS
 
-        for slot in slots:
+        slot_list = self.config.slots
+        if slot_list is None:
+            slot_list = getSlotList(self.config.raft)
+
+        for slot in slot_list:
             if not os.path.exists(data[slot]):
                 self.log.warn("skipping missing data for %s:%s" % (self.config.raft, slot))
                 continue

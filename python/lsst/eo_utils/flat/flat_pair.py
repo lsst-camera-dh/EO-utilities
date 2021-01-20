@@ -108,7 +108,6 @@ class FlatPairTask(FlatAnalysisTask):
         superbias_frame = self.get_superbias_frame(mask_files)
 
         nlc = self.get_nonlinearirty_correction()
-        #slot_idx = ALL_SLOTS.index(self.config.slot)
 
         self.log_info_slot_msg(self.config, "%i %i files" % (len(flat1_files), len(flat2_files)))
 

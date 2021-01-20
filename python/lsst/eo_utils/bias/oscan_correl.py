@@ -6,7 +6,7 @@ import itertools
 
 import numpy as np
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS
+from lsst.eo_utils.base.defaults import getSlotList
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
@@ -67,7 +67,10 @@ class OscanCorrelTask(BiasAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        slots = ALL_SLOTS
+        slots = self.config.slots
+        if slots is None:
+            slots = getSlotList(self.config.raft)
+
         overscans = []
 
         for slot in slots:
@@ -110,7 +113,12 @@ class OscanCorrelTask(BiasAnalysisTask):
         """
         self.safe_update(**kwargs)
         data = dtables.get_table('correl')['correl']
-        figs.plot_raft_correl_matrix("matrix", data, title="Overscan Correlations", slots=ALL_SLOTS)
+
+        slots = self.config.slots
+        if slots is None:
+            slots = getSlotList(self.config.raft)
+
+        figs.plot_raft_correl_matrix("matrix", data, title="Overscan Correlations", slots=slots)
 
 
     def get_ccd_data(self, butler, ccd, **kwargs):

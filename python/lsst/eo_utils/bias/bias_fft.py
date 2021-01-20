@@ -6,7 +6,7 @@ import numpy as np
 
 from scipy import fftpack
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS, getSlotList
+from lsst.eo_utils.base.defaults import getSlotList
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 

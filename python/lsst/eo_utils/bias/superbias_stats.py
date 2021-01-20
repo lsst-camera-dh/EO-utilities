@@ -4,7 +4,7 @@ import os
 
 import numpy as np
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS
+from lsst.eo_utils.base.defaults import getSlotList
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
@@ -68,7 +68,7 @@ class SuperbiasStatsTask(SuperbiasRaftTableAnalysisTask):
 
         slot_list = self.config.slots
         if slot_list is None:
-            slot_list = ALL_SLOTS
+            slot_list = getSlotList(self.config.raft)
 
         for islot, slot in enumerate(slot_list):
 

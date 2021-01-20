@@ -4,7 +4,7 @@ import os
 
 import numpy as np
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS
+from lsst.eo_utils.base.defaults import getSlotList
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
@@ -60,9 +60,9 @@ class DarkCurrentTask(DarkRaftTableAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        slots = self.config.slots
-        if slots is None:
-            slots = ALL_SLOTS
+        slot_list = self.config.slots
+        if slot_list is None:
+            slot_list = getSlotList(self.config.raft)
 
         if butler is not None:
             self.log.warn("Ignoring butler")
@@ -81,7 +81,7 @@ class DarkCurrentTask(DarkRaftTableAnalysisTask):
 
         self.log_info_raft_msg(self.config, "")
 
-        for islot, slot in enumerate(slots):
+        for islot, slot in enumerate(slot_list):
 
             self.log_progress("  %s" % slot)
 
@@ -140,12 +140,15 @@ class DarkCurrentTask(DarkRaftTableAnalysisTask):
         """
         self.safe_update(**kwargs)
 
+        if slot_list is None:
+            slot_list = getSlotList(self.config.raft)
+
         dtable = dtables['dark_current']
         figs.plot_raft_amp_values('val',
                                   dtable['current'],
                                   xlabel='Amplifier',
                                   ylabel='Current [ADU/s]',
-                                  slots=ALL_SLOTS)
+                                  slots=slot_list)
 
 
 class DarkCurrentSummaryConfig(DarkSummaryAnalysisConfig):

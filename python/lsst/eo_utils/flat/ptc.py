@@ -8,7 +8,7 @@ import numpy as np
 
 from lsst.eotest.sensor.ptcTask import ptc_func
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS
+from lsst.eo_utils.base.defaults import getSlotList
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
@@ -296,7 +296,7 @@ class PTCStatsTask(FlatRaftTableAnalysisTask):
 
         slot_list = self.config.slots
         if slot_list is None:
-            slot_list = ALL_SLOTS
+            slot_list = getSlotList(self.config.raft)
 
         remove_cols = ['ptc_mean', 'ptc_var']
 
