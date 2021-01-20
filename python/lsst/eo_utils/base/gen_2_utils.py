@@ -1,10 +1,9 @@
 """This module contains functions to find files of a particular type using the data Butler"""
 
-from lsst.daf.bulter import Butler
+from lsst.daf.persistence import Butler
 
 from .defaults import BUTLER_REPO_DICT
 
-RAW_COLS = ['LSSTCam/raw/all']
 
 def get_butler_by_repo(repo, **kwargs):
     """Construct and return a Bulter for the requested repository
@@ -29,7 +28,7 @@ def get_butler_by_repo(repo, **kwargs):
         repo_path = BUTLER_REPO_DICT[repo]
     except KeyError:
         raise KeyError("Unknown Bulter repo key %s" % repo)
-    butler = Butler(repo_path, collections=RAW_COLS, **kwargs)
+    butler = Butler(repo_path, **kwargs)
     return butler
 
 
@@ -48,7 +47,7 @@ def get_filename_from_id(butler, data_id):
     filename : `str`
         The filename for the assocated CCD data
     """
-    return butler.getURIs("raw", collections=RAW_COLS, data_id)[0].path
+    return butler.get("raw_filename", data_id)[0][0:-3]
 
 
 def get_hardware_info(butler, run_num):
@@ -69,7 +68,7 @@ def get_hardware_info(butler, run_num):
     hid : `str`
         The hardware id, e.g., RMT-004
     """
-    rafts = get_raft_names_butler(butler, run_num)
+    rafts = butler.queryMetadata('raw', 'raftname', dict(run=run_num))
     if len(rafts) > 1:
         htype = 'LCA-10134'
         hid = 'LCA-10134-0001'
@@ -94,33 +93,8 @@ def get_raft_names_butler(butler, run):
     rafts : lists
         The raft names for that run
     """
-    sqlline = "instrument='LSSTCam' AND exposure.science_program='%s'" % run    
-    refs = list(butler.registry.queryDatasets("raw", collections=RAW_COLS, where=sqlline)
-    rafts = np.unique([butler.registry.expandDataId(ref.dataId).records['detector'].raft for ref in refs])
+    rafts = butler.queryMetadata('raw', 'raftname', dict(run=run))
     return rafts
-
-
-def get_slot_names_butler(butler, run, raft):
-    """Return the list of rafts from a given run
-
-    Parameters
-    ----------
-    butler : `Bulter`
-        The data Butler
-    run : `str`
-        The number number we are reading
-    raft : `str`
-        The raft 
-
-    Returns
-    -------
-    slots : list
-        The slot names for that raft and run
-    """
-    sqlline = "instrument='LSSTCam' AND exposure.science_program='%s' AND detector.raft='%s'" % (run, raft)
-    refs = list(butler.registry.queryDatasets("raw", collections=RAW_COLS, where=sqlline)
-    slots = np.unique([butler.registry.expandDataId(ref.dataId).records['detector'].name_in_raft for ref in refs])
-    return slots
 
 
 def get_visit_list(butler, run, **kwargs):
@@ -159,8 +133,8 @@ def get_visit_list(butler, run, **kwargs):
     data_id = dict(run=run, imagetype=kwargs.get('imagetype', 'BIAS'))
     visit_list = []
     for testtype in testtypes:
-        sqlline = "instrument='LSSTCam' AND exposure.science_program='%s' AND exposure.observation_reason='%s'" % (run, testtype)
-        visit_list += butler.queryDataIds("exposure", collections=RAW_COLS, where=sqlline)
+        data_id['testtype'] = testtype
+        visit_list += butler.queryMetadata("raw", 'visit', data_id)
     return visit_list
 
 
@@ -210,26 +184,54 @@ def get_data_ref_list(butler, run, **kwargs):
     if raftname is not None:
         data_id['raftname'] = raftname
 
-    sqlline_base = "instrument='LSSTCam' AND exposure.science_program='%s' AND exposure.observation_type='%s'" %\
-                    (run, imagetype=kwargs.get('imagetype', 'bias')
-        
     data_ref_list = []
     for testtype in testtypes:
         data_id['testtype'] = testtype.upper()
-        
-        sqlline = sqlline_base + " AND exposure.observation_reason='%s'" % testtype
-        if detectorname is not None:
-            sqlline += " AND detector.name_in_raft='%s'" % detectorname
-        if raftname is not None:
-            sqlline += " AND detector.raft='%s'" % raftname
-        
-        data_ids = butler.registry.queryDatasets("raw", collections=['LSSTCam/raw/all'], where=sqlline)
-        idx = np.argsort([ref.dataId['exposure'] for ref in data_ids])
+        subset = butler.subset("raw", '', data_id)
         if nfiles is None:
-            data_ref_list += data_ids[idx]
+            data_ref_list += subset.cache
         else:
-            data_ref_list += data_ids[idx][0:min(nfiles, len(subset.cache))]
+            data_ref_list += subset.cache[0:min(nfiles, len(subset.cache))]
     return data_ref_list
+
+
+def make_file_dict(butler, runlist, varlist=None):
+    """Get a set of data_ids of the Butler and sort them into a dictionary
+
+    Parameters
+    ----------
+    butler : `Bulter`
+        The data Butler
+    runlist : `list`
+        List of complete dataIDs
+    varlist : `list`
+        List of variables values to use as keys for the output dictionary
+
+    Returns
+    -------
+    odict : dict
+        A dictionary of dataIDs,
+    """
+    if varlist is None:
+        varlist = ['testtype', 'visit']
+
+    odict = {var:[] for var in varlist}
+
+    for run in runlist:
+        for var in varlist:
+            if butler is None:
+                value = -1
+            else:
+                if var in run:
+                    value = run[var]
+                else:
+                    vallist = butler.queryMetadata('raw', var, run)
+                    if len(vallist) != 1:
+                        raise ValueError("Could not get %s for run %s")
+                    value = vallist[0]
+            odict[var].append(value)
+    return odict
+
 
 
 def get_files_butler(butler, run_id, **kwargs):
@@ -272,7 +274,7 @@ def get_files_butler(butler, run_id, **kwargs):
 
     outdict = {}
     if rafts is None:
-        rafts = get_raft_names_butler(butler, run_id)
+        rafts = butler.queryMetadata('raw', 'raftname', dict(run=run_id, imagetype=imagetype))
 
     bias_kwargs = dict(imagetype=imagetype, testtype=testtypes, nfiles=nfiles)
     for raft in rafts:
@@ -281,8 +283,9 @@ def get_files_butler(butler, run_id, **kwargs):
             outdict[raft] = {}
 
         if slots is None:
-            slots = get_slot_names_butler(butler, run_id, raft)
-
+            slots = butler.queryMetadata('raw', 'detectorname', dict(run=run_id,
+                                                                     imagetype=imagetype,
+                                                                     raftname=raft))
         for slot in slots:
             bias_kwargs['detectorname'] = slot
             outdict[raft][slot] = {outkey:get_data_ref_list(butler, run_id, **bias_kwargs)}

@@ -19,7 +19,9 @@ from . import file_utils
 
 from . import data_access
 
-from . import gen_3_utils
+from . import gen_2_utils
+
+from . import butler_utils
 
 from .data_utils import TableDict, vstack_tables
 

@@ -1,4 +1,4 @@
-2"""Class to analyze the FFT of the bias frames"""
+"""Class to analyze the FFT of the bias frames"""
 
 import os
 

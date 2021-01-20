@@ -27,6 +27,8 @@ from lsst.eotest.sensor.flatPairTask import mondiode_value
 
 from .defaults import T_SERIAL, T_PARALLEL
 
+from .butler_utils import get_filename_from_id
+
 # These are the names and labels for the parts of the data array
 REGION_KEYS = ['i', 's', 'p']
 REGION_NAMES = ['imaging', 'serial_overscan', 'parallel_overscan']
@@ -347,7 +349,8 @@ def get_ccd_from_id(butler, data_id, mask_files, **kwargs):
                              mask_files=mask_files,
                              bias_frame=bias_frame)
     elif kwargs.get('masked_ccd', False):
-        filepath = butler.get('raw_filename', data_id)[0][0:-3]
+        #filepath = butler.get('raw_filename', data_id)[0][0:-3]
+        filepath = get_filename_from_id(butler, data_id)
         exposure = MaskedCCD(str(filepath),
                              mask_files=mask_files,
                              bias_frame=bias_frame)
