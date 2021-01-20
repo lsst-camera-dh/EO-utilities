@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS
+from lsst.eo_utils.base.defaults import ALL_SLOTS, getSlotList
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
@@ -82,7 +82,7 @@ class EOResultsRaftTask(AnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        slots = ALL_SLOTS
+        slots = getSlotList(self.config.raft)
 
         # This is a dictionary of dictionaries to store all the
         # data you extract from the base_files
@@ -250,7 +250,6 @@ class EOResultsRunTask(AnalysisTask):
         self.safe_update(**kwargs)
 
         for key, val in data.items():
-            print(key, val)
             data[key] = val.replace(self.config.filekey, self.config.infilekey)
 
         # Define the set of columns to keep and remove
