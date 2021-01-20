@@ -374,7 +374,6 @@ class AnalysisIterator(AnalysisHandler):
         self._task.safe_update(**kwargs)
 
         htype, _ = self.get_hardware(self._butler, run)
-        print(htype, run)
 
         if self.config.batch in ['None', 'none', None]:
             self.call_analysis_task(run, **kwargs)
@@ -897,7 +896,7 @@ class TableAnalysisByRaft(AnalysisByRaft):
         for raft in raft_list:
             kwcopy['raft'] = raft
             slot_dict = {}
-            slot_list = getSlotList(slots)
+            slot_list = getSlotList(raft)
             for slot in slot_list:
                 kwcopy['slot'] = slot
                 datapath = self._task.get_filename_from_format(formatter, '.fits', **kwcopy)
@@ -1047,7 +1046,7 @@ class TableAnalysisByRun(AnalysisByRun):
             except Exception:
                 pass
             slot_dict = {}
-            for slot in slot_list:
+            for slot in slot_list_use:
                 kwcopy['slot'] = slot
                 datapath = self._task.get_filename_from_format(formatter, '.fits', **kwcopy)
                 slot_dict[slot] = datapath
