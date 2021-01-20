@@ -47,7 +47,7 @@ class BiasRunTableAnalysisConfig(AnalysisConfig):
     outdir = EOUtilOptions.clone_param('outdir')
     teststand = EOUtilOptions.clone_param('teststand')
     run = EOUtilOptions.clone_param('run')
-    calib = EOUtilOptions.clone_param('calib', default='defualt')
+    calib = EOUtilOptions.clone_param('calib', default='normal')
     infilekey = EOUtilOptions.clone_param('infilekey')
     filekey = EOUtilOptions.clone_param('filekey')
 
