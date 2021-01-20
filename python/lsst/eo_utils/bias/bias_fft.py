@@ -1,4 +1,4 @@
-"""Class to analyze the FFT of the bias frames"""
+2"""Class to analyze the FFT of the bias frames"""
 
 import os
 
@@ -6,7 +6,7 @@ import numpy as np
 
 from scipy import fftpack
 
-from lsst.eo_utils.base.defaults import ALL_SLOTS
+from lsst.eo_utils.base.defaults import ALL_SLOTS, getSlotList
 
 from lsst.eo_utils.base.config_utils import EOUtilOptions
 
@@ -377,7 +377,7 @@ class BiasFFTStatsTask(BiasRaftTableAnalysisTask):
 
         slot_list = self.config.slots
         if slot_list is None:
-            slot_list = ALL_SLOTS
+            slot_list = getSlotList(self.config.raft)
 
         for islot, slot in enumerate(slot_list):
 
@@ -401,7 +401,10 @@ class BiasFFTStatsTask(BiasRaftTableAnalysisTask):
                 freqs_col = table_col['freqs']
 
             for amp in range(16):
-                tablevals = table['fftpow_%s_a%02i' % (slot, amp)]
+                try:
+                    tablevals = table['fftpow_%s_a%02i' % (slot, amp)]
+                except KeyError:
+                    continue
                 tablevals_col = table_col['fftpow_%s_a%02i' % (slot, amp)]
                 if len(tablevals.shape) == 1:
                     tablevals = tablevals.reshape(tablevals.shape[0], 1)
@@ -508,13 +511,14 @@ class BiasFFTRunTask(BiasRunTableAnalysisTask):
         """
         self.safe_update(**kwargs)
 
-        print(data)
         for key, val in data.items():
             if isinstance(val, dict):
-                data[key] = val['S00'].replace(self.config.filekey, self.config.infilekey)
+                try:
+                    data[key] = val["S00"].replace(self.config.filekey, self.config.infilekey)
+                except KeyError:
+                    data[key] = val["SG0"].replace(self.config.filekey, self.config.infilekey)
             else:
                 data[key] = val.replace(self.config.filekey, self.config.infilekey)
-        print(data)
         # Define the set of columns to keep and remove
         # keep_cols = []
         remove_cols = ['fftpow_mean','fftpow_median','fftpow_std','fftpow_min','fftpow_max','fftpow_argmax','fftpow_mean_col','fftpow_median_col','fftpow_std_col','fftpow_min_col','fftpow_max_col','fftpow_maxval_col','fftpow_argmax_col']
