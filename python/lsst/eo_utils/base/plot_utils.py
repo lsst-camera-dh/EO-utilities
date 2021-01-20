@@ -25,7 +25,7 @@ from .image_utils import get_raw_image, raw_amp_image,\
     get_amp_list, unbias_amp, get_geom_regions,\
     get_image_frames_2d, unbiased_ccd_image_dict, get_amp_offset
 
-from .defaults import TESTCOLORMAP, ALL_SLOTS, ALL_AMPS
+from .defaults import TESTCOLORMAP, ALL_SLOTS, ALL_AMPS, getSlotList, CORNER_RAFTS
 
 from . import mpl_utils
 
@@ -62,11 +62,17 @@ def convert_amp_table_to_amp_dict(amp_data_table, colname, func):
         raft_mask = amp_data_table['raft'] == raft
         raft_table = amp_data_table[raft_mask]
         slots = np.unique(amp_data_table['slot'])
+        if raft in CORNER_RAFTS:
+            continue
+        sl = getSlotList(raft)
         for slot in slots:
-            if isinstance(slot, str):
-                key = "%s_%s" % (raft, slot)
-            else:
-                key = "%s_%s" % (raft, ALL_SLOTS[int(slot)])
+            try:
+                if isinstance(slot, str):
+                    key = "%s_%s" % (raft, slot)
+                else:
+                    key = "%s_%s" % (raft, sl[int(slot)])
+            except:
+                continue
             slot_mask = raft_table['slot'] == slot
             slot_table = raft_table[slot_mask]
             if 'amp' in slot_table.columns:
