@@ -6,7 +6,7 @@ import lsst.afw.math as afwMath
 
 import lsst.eotest.image_utils as imutil
 
-from lsst.eo_utils.base.defaults import getAllSlots
+from lsst.eo_utils.base.defaults import getSlotList
 
 from lsst.eo_utils.base.file_utils import makedir_safe,\
     SUPERBIAS_FORMATTER, SUPERBIAS_STAT_FORMATTER

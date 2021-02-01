@@ -16,7 +16,7 @@ SITE = os.environ.get('EO_UTILS_SITE', 'slac')
 if SITE == 'slac':
     BUTLER_TS8_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/ts8'
     BUTLER_BOT_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/bot_etu'
-    BUTLER_GEN3_REPO = '/sdf/group/lsst/camera/IandT/repo_gen3/test/butler.yaml'
+    BUTLER_GEN3_REPO = '/sdf/group/lsst/camera/IandT/repo_gen3/bot/butler.yaml'
     ARCHIVE_DIR = '/gpfs/slac/lsst/fs*/g/data/jobHarness/jh_stage*'
     DEFAULT_DATA_SOURCE = os.environ.get('EO_DATA_SOURCE', 'glob')
     DEFAULT_BATCH_ARGS = '-W 1200 -R bubble'
@@ -24,6 +24,7 @@ if SITE == 'slac':
 elif SITE == 'rd':
     BUTLER_TS8_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/ts8'
     BUTLER_BOT_REPO = '/gpfs/slac/lsst/fs3/g/data/datasets/bot_etu'
+    BUTLER_GEN3_REPO = '/sdf/group/lsst/camera/IandT/repo_gen3/ts8/butler.yaml'
     ARCHIVE_DIR = 'data_links'
     DEFAULT_DATA_SOURCE = os.environ.get('EO_DATA_SOURCE', 'glob')
     DEFAULT_BATCH_ARGS = '-W 1200 -R bubble'
@@ -31,6 +32,7 @@ elif SITE == 'rd':
 elif SITE == 'ncsa':
     BUTLER_TS8_REPO = '/datasets/ts8/repo'
     BUTLER_BOT_REPO = '/project/production/tmpdataloc/BOT/gen2repo'
+    BUTLER_GEN3_REPO = '/project/production/tmpdataloc/BOT/gen3repo'
     ARCHIVE_DIR = None
     DEFAULT_BATCH_ARGS = ""
     DEFAULT_DATA_SOURCE = os.environ.get('EO_DATA_SOURCE', 'butler_file')
