@@ -1,6 +1,9 @@
 import math
 import numpy as np
 
+from scipy import fftpack
+
+
 from astropy.table import Table
 
 import lsst.pex.config as pexConfig
@@ -10,7 +13,7 @@ import lsst.pipe.base.connectionTypes as cT
 from lsst.eo_utils.base.image_utils import REGION_KEYS, REGION_NAMES,\
     raw_amp_image, get_readout_freqs_from_ccd, get_raw_image,\
     get_geom_regions, get_amp_list, get_image_frames_2d, array_struct, unbias_amp,\
-    get_amp_offset
+    get_amp_offset, get_ccd_from_id
 
 __all__ = ["BiasFFTTask", "BiasFFTTaskConfig"]
 
@@ -100,24 +103,28 @@ class BiasFFTTask(pipeBase.PipelineTask,
         -------
         """
         # Use MaskedCCD class by default
-        data_kw = {'masked_ccd':True}
-        ccd = get_ccd_from_id(butler, inputExp, [], **kwargs)
+        #data_kw = {'masked_ccd':True}
+        ccd = inputExp
         freqs_dict = get_readout_freqs_from_ccd(ccd)
 
         fft_data = {}
         for key in REGION_KEYS:
-            out_name_row = "outputBiasFFT_%i_row" % key
-            out_name_col = "outputBiasFFT_%i_col" % key
-            freqs_row = freqs_dict['freqs_%s_row' % key]
+            out_name_row = "outputBiasFFT_%s_row" % key
+            out_name_col = "outputBiasFFT_%s_col" % key
+            freqs_row = freqs_dict['freqs_%s' % key]
             freqs_col = freqs_dict['freqs_%s_col' % key]
             nfreqs_row = len(freqs_row)
             nfreqs_col = len(freqs_col)
-            fft_data[out_name_row] = dict(freqs=freqs[0:int(nfreqs/2)])
+            fft_data[out_name_row] = dict(freqs=freqs_row[0:int(nfreqs_row/2)])
             fft_data[out_name_col] = dict(freqs=freqs_col[0:int(nfreqs_col/2)])
 
-        self._get_ccd_data(ccd, fft_data, bias_type=None)
+        self.get_ccd_data(ccd, fft_data, bias_type=None)
 
-        return pipeBase.Struct(**fft_data)
+        out_data = {}
+        for key, val in fft_data.items():
+            out_data[key] = Table(val)
+
+        return pipeBase.Struct(**out_data)
 
 
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
@@ -163,8 +170,8 @@ class BiasFFTTask(pipeBase.PipelineTask,
             key_str = "fftpow_a%02i" % (i)
 
             for key, region in zip(REGION_KEYS, REGION_NAMES):
-                key_row = "outputBiasFFT_%i_row" % key
-                key_col = "outputBiasFFT_%i_col" % key
+                key_row = "outputBiasFFT_%s_row" % key
+                key_col = "outputBiasFFT_%s_col" % key
 
                 struct = array_struct(frames[region], do_std=std)
                 fftpow = np.abs(fftpack.fft(struct['rows']-struct['rows'].mean()))
